@@ -1,0 +1,204 @@
+---
+import { Font } from "astro:assets";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import SmoothScroll from "../components/SmoothScroll.astro";
+import Tunnel from "../components/Tunnel.astro";
+import Webgl from "../components/Webgl.astro";
+import StudioLoader from "../components/StudioLoader.astro";
+import CursorField from "../components/CursorField.astro";
+import CaseTransition from "../components/CaseTransition.astro";
+import { ui, defaultLang } from "../i18n/ui";
+import { useTranslations } from "../i18n/utils";
+import type { Link } from "../types";
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  /** "deck" = fixed, non-scrolling presentation (no footer, no smooth scroll). */
+  mode?: "scroll" | "deck";
+}
+
+const lang = defaultLang;
+const t = useTranslations(lang);
+const { title = t("meta.title"), mode = "scroll" } = Astro.props;
+const isDeck = mode === "deck";
+const homePrefix = Astro.url.pathname === "/" ? "" : "/";
+
+const nav: Link[] = isDeck
+  ? []
+  : [
+      { title: t("nav.about"), url: `${homePrefix}#about`, i18n: "nav.about" },
+      { title: t("nav.work"), url: `${homePrefix}#work`, i18n: "nav.work" },
+      { title: t("nav.contact"), url: `${homePrefix}#contact`, i18n: "nav.contact" },
+    ];
+const cta = isDeck
+  ? { title: t("portal.back"), url: "/", i18n: "portal.back", tunnel: true }
+  : { title: t("nav.gallery"), url: "/gallery", i18n: "nav.gallery", tunnel: true };
+
+// Serialize the full dictionary for the in-page language controller, and set the
+// preferred <html lang> before paint to avoid a flash of the wrong locale attr.
+const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
+  defaultLang,
+)};try{var l=localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l])document.documentElement.lang=l;}catch(e){}try{if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive'))document.documentElement.classList.add('rb-case-arriving')}catch(e){}`;
+---
+
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={t("meta.description")} />
+    <meta name="author" content="Rodion Belousov" />
+    <meta name="theme-color" content="#08080a" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={t("meta.description")} />
+    <meta property="og:url" content="https://rodionbelousov.studio" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <Font cssVariable="--font-display" preload />
+    <Font cssVariable="--font-inter" preload />
+
+    <script is:inline set:html={bootScript} />
+
+    <title>{title}</title>
+  </head>
+  <body class:list={[{ "is-deck": isDeck }]}>
+    <StudioLoader />
+    <CursorField />
+
+    <div class="cosmic-backdrop" aria-hidden="true">
+      <Webgl />
+    </div>
+
+    <div class="site-fx" aria-hidden="true">
+      <span class="site-fx__stars"></span>
+      <span class="site-fx__grain"></span>
+      <span class="site-fx__scan"></span>
+      <span class="site-fx__vignette"></span>
+    </div>
+
+    <a href="#main" class="skip-link" data-i18n="accessibility.skip-to-content">
+      {t("accessibility.skip-to-content")}
+    </a>
+
+    <Header logoUrl="/" logoAlt="Rodion Belousov" links={nav} cta={cta} />
+
+    <main id="main">
+      <slot />
+    </main>
+
+    {!isDeck && <Footer logoUrl="/" logoAlt="Rodion Belousov" links={nav} />}
+    {!isDeck && <SmoothScroll />}
+    <CaseTransition />
+    <Tunnel />
+  </body>
+</html>
+
+<style>
+  .skip-link {
+    background: var(--color-accent);
+    color: var(--color-black);
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: min-content;
+    white-space: nowrap;
+    padding: 0.5rem 1rem;
+    border-radius: 0 0 0.5rem 0.5rem;
+    position: absolute;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    z-index: 100;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0%);
+  }
+
+  .cosmic-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: #000;
+  }
+
+  :global(main) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Deck mode: lock the viewport — navigation is by chapter, not scroll. */
+  :global(body.is-deck) {
+    height: 100svh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  :global(body.is-deck main) {
+    height: 100svh;
+  }
+
+  .site-fx,
+  .site-fx span {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .site-fx {
+    z-index: 45;
+    overflow: hidden;
+  }
+
+  .site-fx__stars {
+    opacity: 0.24;
+    background-image:
+      radial-gradient(circle at 9% 18%, rgba(255, 255, 255, 0.56) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 22% 72%, rgba(255, 255, 255, 0.38) 0 1px, transparent 1.4px),
+      radial-gradient(circle at 44% 28%, rgba(var(--rgb-accent), 0.48) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 67% 61%, rgba(255, 255, 255, 0.34) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 86% 24%, rgba(var(--rgb-accent), 0.42) 0 1px, transparent 1.4px);
+    background-size: 19rem 19rem, 23rem 23rem, 29rem 29rem, 31rem 31rem, 37rem 37rem;
+    animation: fx-stars 26s linear infinite;
+  }
+
+  .site-fx__grain {
+    opacity: 0.07;
+    background-image:
+      repeating-radial-gradient(circle at 17% 32%, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 4px),
+      repeating-radial-gradient(circle at 82% 21%, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 5px);
+    background-size: 180px 180px, 220px 220px;
+    mix-blend-mode: overlay;
+    animation: fx-grain 0.8s steps(2) infinite;
+  }
+
+  .site-fx__scan {
+    display: none;
+  }
+
+  .site-fx__vignette {
+    z-index: 1;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.15), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.2)),
+      radial-gradient(120% 90% at 50% 42%, transparent 0%, transparent 68%, rgba(0, 0, 0, 0.46) 100%);
+  }
+
+  @keyframes fx-grain {
+    0% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(-1.5%, 1%, 0); }
+    100% { transform: translate3d(1%, -1.5%, 0); }
+  }
+
+  @keyframes fx-stars {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-2rem, 1.4rem, 0); }
+  }
+</style>
+
+<script>
+  import "../utils/reveals";
+</script>

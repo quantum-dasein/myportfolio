@@ -1,0 +1,284 @@
+---
+import type { Link } from "../types";
+import { useTranslations } from "../i18n/utils";
+
+interface Props {
+  logoUrl: string;
+  logoAlt: string;
+  links: Link[];
+}
+
+const { logoUrl, logoAlt, links } = Astro.props;
+const t = useTranslations();
+const year = new Date().getFullYear();
+---
+
+<sy-footer>
+  <footer id="contact">
+    <div class="finale">
+      <div class="terrain terrain-back" aria-hidden="true"></div>
+      <div class="terrain terrain-front" aria-hidden="true"></div>
+      <span class="signal-line line-a" aria-hidden="true"></span>
+      <span class="signal-line line-b" aria-hidden="true"></span>
+      <span class="signal-line line-c" aria-hidden="true"></span>
+      <span class="final-orb orb-a" aria-hidden="true"></span>
+      <span class="final-orb orb-b" aria-hidden="true"></span>
+      <span class="final-orb orb-c" aria-hidden="true"></span>
+
+      <div class="finale-card" data-reveal>
+        <span class="finale-eyebrow" data-i18n="footer.cta.eyebrow">{t("footer.cta.eyebrow")}</span>
+        <h2 data-sy-reveal="words" data-i18n="footer.cta.title">{t("footer.cta.title")}</h2>
+        <a class="project-link" href="mailto:rodionbelousov@protonmail.com" data-cursor="OPEN" data-magnetic>
+          <span class="project-icon" aria-hidden="true">↗</span>
+          <span data-i18n="footer.cta.button">{t("footer.cta.button")}</span>
+          <span class="project-rule" aria-hidden="true"></span>
+          <span class="project-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer-main">
+      <div class="brand-cell">
+        <a class="brand-mark" href={logoUrl} aria-label={logoAlt}>RB</a>
+        <div>
+          <a class="logo" href={logoUrl}><span>Rodion Belousov</span><span class="dot">.studio</span></a>
+          <p data-i18n="footer.tagline">{t("footer.tagline")}</p>
+        </div>
+      </div>
+
+      <nav class="footer-nav" aria-label="Footer">
+        {
+          links.map((link) => (
+            <a href={link.url} data-i18n={link.i18n}>{link.title}</a>
+          ))
+        }
+        <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance</a>
+      </nav>
+
+      <a class="archive-control" href="/gallery" data-tunnel data-cursor="ENTER">
+        <span>Archiv ansehen</span><span aria-hidden="true">↗</span>
+      </a>
+    </div>
+
+    <div class="footer-base">
+      <p>© {year} Rodion Belousov · <span data-i18n="footer.rights">{t("footer.rights")}</span></p>
+    </div>
+  </footer>
+</sy-footer>
+
+<style>
+  sy-footer { position: relative; z-index: 2; display: block; color: var(--color-text); font-family: var(--font-inter); }
+
+  footer {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid rgba(255,255,255,.09);
+    background: #020203;
+  }
+
+  .finale {
+    position: relative;
+    display: grid;
+    min-height: 700px;
+    place-items: center;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 34%, rgba(255,255,255,.07), transparent 26rem),
+      linear-gradient(180deg, #020203, #050607 64%, #010102);
+  }
+
+  .finale::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .5;
+    background-image: radial-gradient(circle, rgba(255,255,255,.72) 0 1px, transparent 1.3px);
+    background-size: 8rem 8rem;
+    mask-image: radial-gradient(circle at 50% 40%, #000, transparent 76%);
+  }
+
+  .terrain {
+    position: absolute;
+    left: -15%;
+    width: 130%;
+    height: 45%;
+    bottom: -13%;
+    background-image:
+      linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+    background-size: 1rem 1rem;
+    mask-image: radial-gradient(ellipse at 50% 70%, #000 8%, rgba(0,0,0,.8) 42%, transparent 76%);
+    transform: perspective(560px) rotateX(62deg) rotateZ(-2deg);
+    transform-origin: bottom;
+    animation: terrain-drift 14s ease-in-out infinite alternate;
+  }
+
+  .terrain-back { bottom: 9%; opacity: .42; transform: perspective(640px) rotateX(67deg) rotateZ(2deg) scale(.86); }
+  .terrain-front { opacity: .62; }
+
+  .signal-line {
+    position: absolute;
+    bottom: 22%;
+    width: 1px;
+    height: 26%;
+    background: linear-gradient(transparent, rgba(255,255,255,.38));
+  }
+  .signal-line::after { content: ""; position: absolute; left: -2px; bottom: 100%; width: 5px; aspect-ratio: 1; border-radius: 50%; background: #fff; box-shadow: 0 0 1rem #fff; }
+  .line-a { left: 21%; height: 31%; }
+  .line-b { right: 20%; height: 38%; }
+  .line-c { right: 8%; height: 24%; }
+
+  .final-orb {
+    position: absolute;
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 32% 24%, rgba(255,255,255,.62) 0 .6%, rgba(255,255,255,.18) 2%, transparent 10%),
+      radial-gradient(circle at 38% 30%, rgba(255,255,255,.15), transparent 24%),
+      radial-gradient(circle at 60% 68%, #030304, #151719 44%, #030304 72%);
+    box-shadow: inset -2rem -2rem 4rem rgba(0,0,0,.68), inset 1rem 1rem 2rem rgba(255,255,255,.09), 0 2rem 5rem rgba(0,0,0,.7), 0 0 5rem rgba(255,255,255,.1);
+    filter: brightness(1.28);
+    animation: orb-float 8s ease-in-out infinite;
+  }
+  .orb-a { left: 2%; bottom: 5%; width: clamp(180px, 18vw, 280px); }
+  .orb-b { right: 10%; bottom: 12%; width: clamp(90px, 8vw, 130px); animation-delay: -3s; }
+  .orb-c { right: 7%; top: 8%; width: clamp(100px, 9vw, 145px); animation-delay: -5s; opacity: .86; }
+
+  .finale-card {
+    position: relative;
+    z-index: 4;
+    width: min(920px, calc(100% - 48px));
+    padding: clamp(32px, 3.4vw, 54px);
+    border: 1px solid rgba(255,255,255,.26);
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 32% 12%, rgba(255,255,255,.075), transparent 19rem),
+      linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.008)),
+      rgba(3,4,5,.74);
+    backdrop-filter: blur(24px) saturate(.75);
+    box-shadow: 0 3rem 8rem rgba(0,0,0,.66), inset 0 1px rgba(255,255,255,.08);
+  }
+
+  .finale-eyebrow {
+    display: block;
+    color: rgba(var(--rgb-text), .66);
+    font-size: .63rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+  }
+
+  .finale-card h2 {
+    max-width: 14ch;
+    margin: 1.5rem 0 2.4rem;
+    color: #f8fafa;
+    font-family: var(--font-display);
+    font-size: clamp(52px, 4.3vw, 78px);
+    font-weight: 500;
+    line-height: .92;
+    letter-spacing: 0;
+  }
+
+  .project-link {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    color: #fff;
+    font-size: .92rem;
+  }
+
+  .project-icon {
+    display: grid;
+    width: 3.5rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.42);
+    border-radius: 50%;
+    box-shadow: 0 0 1.5rem rgba(255,255,255,.1);
+  }
+  .project-rule { height: 1px; background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.58)); }
+  .project-arrow { font-size: 1.2rem; }
+
+  .footer-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 8.5rem;
+    border-block: 1px solid rgba(255,255,255,.1);
+  }
+  .footer-main > * { padding: 1.8rem clamp(1.5rem, 5vw, 5rem); }
+  .footer-main > * + * { border-left: 1px solid rgba(255,255,255,.1); }
+
+  .brand-cell { display: flex; align-items: center; gap: 1.4rem; }
+  .brand-mark {
+    display: grid;
+    flex: 0 0 4.5rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.32);
+    border-radius: 50%;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    box-shadow: 0 0 1.8rem rgba(255,255,255,.06);
+  }
+  .logo { color: #fff; font-family: var(--font-display); font-size: 1rem; }
+  .logo .dot { color: rgba(var(--rgb-text), .52); }
+  .brand-cell p { margin: .5rem 0 0; color: rgba(var(--rgb-text),.48); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; }
+
+  .footer-nav { display: flex; align-items: center; justify-content: center; gap: clamp(1.2rem, 2.8vw, 2.8rem); }
+  .footer-nav a { color: rgba(var(--rgb-text), .64); font-size: .82rem; transition: color .3s ease; }
+  .footer-nav a:hover { color: #fff; }
+
+  .archive-control {
+    display: none;
+    align-self: center;
+    justify-self: center;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2.5rem;
+    min-width: 13rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 999px;
+    color: #fff;
+    font-size: .62rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    box-shadow: 0 0 2rem rgba(255,255,255,.05);
+  }
+
+  .footer-base {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.6rem clamp(1.5rem, 5vw, 5rem);
+    color: rgba(var(--rgb-text), .46);
+    font-size: .65rem;
+  }
+  .footer-base p { margin: 0; }
+  .footer-base div { display: flex; gap: 1rem; }
+
+  @keyframes terrain-drift { to { transform: perspective(560px) rotateX(62deg) rotateZ(1deg) translateX(1.5%); } }
+  @keyframes orb-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.2rem); } }
+
+  @media (max-width: 900px) {
+    .footer-main { grid-template-columns: 1fr; }
+    .footer-main > * + * { border-left: 0; border-top: 1px solid rgba(255,255,255,.1); }
+    .footer-nav { flex-wrap: wrap; }
+    .archive-control { margin-block: 1.2rem; }
+  }
+
+  @media (max-width: 600px) {
+    .finale { min-height: 680px; }
+    .finale-card h2 { font-size: 46px; }
+    .project-link { grid-template-columns: auto 1fr auto; }
+    .project-rule { display: none; }
+    .orb-a { left: -25%; }
+    .brand-cell { padding-inline: 1.5rem; }
+    .footer-base { flex-direction: column; align-items: center; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .terrain, .final-orb { animation: none; }
+  }
+</style>

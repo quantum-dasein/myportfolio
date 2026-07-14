@@ -1,0 +1,1101 @@
+---
+import Layout from "../layouts/Layout.astro";
+import BridgeDataScene from "./BridgeDataScene.astro";
+import { useTranslations, type UIKey } from "../i18n/utils";
+
+interface CaseItem {
+  label: string;
+  value: string;
+  translated?: boolean;
+}
+
+interface Props {
+  id: "bridge" | "fidic";
+  image: string;
+  nextHref: string;
+  liveUrl?: string;
+  stack: string;
+  year: string;
+}
+
+const { id, image, nextHref, liveUrl, stack, year } = Astro.props;
+const isBridge = id === "bridge";
+const t = useTranslations();
+const tk = (key: string) => t(key as UIKey);
+
+const key = (part: string) => `case.${id}.${part}`;
+const titleKey = key("title");
+const items: CaseItem[] = [
+  { label: "case.role", value: key("role.value"), translated: true },
+  { label: "case.stack", value: stack },
+  { label: "case.year", value: year },
+  { label: "case.scope", value: key("scope.value"), translated: true },
+];
+const highlights = [1, 2, 3].map((n) => key(`highlight.${n}`));
+const process = [1, 2, 3].map((n) => key(`process.${n}`));
+const bridgeMetrics = [
+  { value: "+780%", key: "case.bridge.metric.organic", detail: "5 -> 44", fill: "100%" },
+  { value: "+626.67%", key: "case.bridge.metric.users", detail: "109", fill: "82%" },
+  { value: "+645.69%", key: "case.bridge.metric.events", detail: "865", fill: "88%" },
+  { value: "04", key: "case.bridge.metric.markets", detail: "UZ / US / AT / PL", fill: "64%" },
+];
+const bridgeWorkflow = [
+  { no: "01", key: "case.bridge.workflow.human", tool: "Cinema 4D / After Effects" },
+  { no: "02", key: "case.bridge.workflow.gemini", tool: "Gemini" },
+  { no: "03", key: "case.bridge.workflow.claude", tool: "Claude" },
+  { no: "04", key: "case.bridge.workflow.cursor", tool: "Cursor / Codex" },
+];
+const bridgeSystems = [
+  { no: "01", title: "case.bridge.system.positioning.title", text: "case.bridge.system.positioning.text", meta: "MARKET / TRUST" },
+  { no: "02", title: "case.bridge.system.content.title", text: "case.bridge.system.content.text", meta: "RU / EN / UZ" },
+  { no: "03", title: "case.bridge.system.search.title", text: "case.bridge.system.search.text", meta: "SCHEMA / HREFLANG" },
+  { no: "04", title: "case.bridge.system.universe.title", text: "case.bridge.system.universe.text", meta: "THREE.JS / 08 NODES" },
+];
+---
+
+<Layout title={`${tk(titleKey)} - Case Study`}>
+  <article class="case" data-case-page>
+    <section class="case-hero">
+      <div class="case-bg" aria-hidden="true">
+        <img src={image} alt="" />
+      </div>
+
+      <div class="u-container case-hero-inner">
+        <a class="back-link" href="/#work" data-case-back data-i18n="case.back" data-magnetic>{t("case.back")}</a>
+
+        <div class="case-title-wrap">
+          <span class="case-kicker" data-i18n={key("kicker")}>
+            {tk(key("kicker"))}
+          </span>
+          <h1 class="case-title" data-i18n={titleKey}>{tk(titleKey)}</h1>
+          <p class="case-subtitle" data-reveal data-i18n={key("subtitle")}>{tk(key("subtitle"))}</p>
+        </div>
+
+        <div class="case-visual" data-reveal>
+          <div class="case-screen">
+            <img src={image} alt={`${tk(titleKey)} digital marketing and web development case study`} loading="eager" fetchpriority="high" />
+            <span class="screen-line top"></span>
+            <span class="screen-line bottom"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {isBridge && (
+      <section class="bridge-impact" aria-labelledby="bridge-impact-title">
+        <div class="u-container impact-head">
+          <span class="chapter-label">GA4 / EARLY LAUNCH SIGNAL</span>
+          <h2 id="bridge-impact-title" data-i18n="case.bridge.impact.title">{tk("case.bridge.impact.title")}</h2>
+          <p data-i18n="case.bridge.impact.text">{tk("case.bridge.impact.text")}</p>
+        </div>
+
+        <div class="u-container impact-stage" data-reveal>
+          <BridgeDataScene />
+          <div class="metric-grid">
+            {bridgeMetrics.map((metric, index) => (
+              <article class:list={["metric", `metric-${index + 1}`]} data-kinetic>
+                <span class="metric-no">0{index + 1}</span>
+                <strong>{metric.value}</strong>
+                <p data-i18n={metric.key}>{tk(metric.key)}</p>
+                <div class="metric-track" aria-hidden="true"><i style={`--fill:${metric.fill}`}></i></div>
+                <small>{metric.detail}</small>
+              </article>
+            ))}
+          </div>
+          <p class="impact-note" data-i18n="case.bridge.impact.note">{tk("case.bridge.impact.note")}</p>
+        </div>
+      </section>
+    )}
+
+    <section class="case-strip">
+      <div class="u-container case-strip-inner">
+        {
+          items.map((item) => (
+            <div class="case-stat" data-kinetic>
+              <span data-i18n={item.label}>{tk(item.label)}</span>
+              {item.translated ? (
+                <strong data-i18n={item.value}>{tk(item.value)}</strong>
+              ) : (
+                <strong>{item.value}</strong>
+              )}
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    {isBridge && (
+      <section class="bridge-system-map">
+        <div class="u-container system-map-head">
+          <span class="chapter-label">ONE MONTH / TWO LAUNCHES / 2026</span>
+          <h2 data-i18n="case.bridge.system.title">{tk("case.bridge.system.title")}</h2>
+          <p data-i18n="case.bridge.system.text">{tk("case.bridge.system.text")}</p>
+        </div>
+        <div class="u-container system-rail">
+          {bridgeSystems.map((item) => (
+            <article data-kinetic>
+              <span class="system-no">{item.no}</span>
+              <span class="system-meta">{item.meta}</span>
+              <h3 data-i18n={item.title}>{tk(item.title)}</h3>
+              <p data-i18n={item.text}>{tk(item.text)}</p>
+              <i aria-hidden="true"></i>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {isBridge && (
+      <section class="bridge-build-system">
+        <div class="u-container build-head">
+          <span class="chapter-label">HUMAN DIRECTION / AI LEVERAGE</span>
+          <h2 data-i18n="case.bridge.workflow.title">{tk("case.bridge.workflow.title")}</h2>
+          <p data-i18n="case.bridge.workflow.text">{tk("case.bridge.workflow.text")}</p>
+        </div>
+        <div class="u-container workflow-grid">
+          {bridgeWorkflow.map((item) => (
+            <article data-kinetic>
+              <span>{item.no}</span>
+              <strong>{item.tool}</strong>
+              <p data-i18n={item.key}>{tk(item.key)}</p>
+            </article>
+          ))}
+        </div>
+        <div class="u-container proof-grid">
+          <a class="proof-node proof-code" href="https://github.com/quantum-dasein/bridge-astro" target="_blank" rel="noopener" data-kinetic>
+            <div class="proof-top"><span>PUBLIC REPOSITORY</span><b>ASTRO 6 / OPEN SOURCE</b></div>
+            <div class="code-orbit" aria-hidden="true">
+              <span class="code-core">BC</span>
+              <i class="branch branch-a"></i><i class="branch branch-b"></i><i class="branch branch-c"></i>
+              <em>CONTENT</em><em>SEO</em><em>WEBGL</em>
+            </div>
+            <div class="proof-bottom"><span>MODULAR BUILD / AUTOMATED SITEMAP</span><b>OPEN GITHUB -></b></div>
+          </a>
+          <a class="proof-node proof-universe" href="https://www.bridgeconsult.uz/EN/projects.html" target="_blank" rel="noopener" data-kinetic>
+            <div class="proof-top"><span>THREE.JS PROJECT UNIVERSE</span><b>08 INFRASTRUCTURE NODES</b></div>
+            <div class="mini-universe" aria-hidden="true">
+              <span class="planet"></span>
+              {Array.from({ length: 8 }).map((_, index) => <i style={`--i:${index}`}></i>)}
+            </div>
+            <div class="proof-bottom"><span>DRAG / ROTATE / EXPLORE</span><b>ENTER LIVE SCENE -></b></div>
+          </a>
+        </div>
+      </section>
+    )}
+
+    <section class="case-body">
+      <div class="u-container case-body-grid">
+        <aside class="case-index" data-reveal>
+          <span>{id === "bridge" ? "BC/01" : "FIDIC/02"}</span>
+          <p>{stack}</p>
+        </aside>
+
+        <div class="case-main">
+          <section class="case-chapter">
+            <span class="chapter-label" data-i18n="case.problem">{t("case.problem")}</span>
+            <p data-kinetic data-i18n={key("problem.text")}>{tk(key("problem.text"))}</p>
+          </section>
+
+          <section class="case-chapter">
+            <span class="chapter-label" data-i18n="case.solution">{t("case.solution")}</span>
+            <p data-kinetic data-i18n={key("solution.text")}>{tk(key("solution.text"))}</p>
+          </section>
+
+          <section class="case-chapter">
+            <span class="chapter-label" data-i18n="case.outcome">{t("case.outcome")}</span>
+            <p data-kinetic data-i18n={key("outcome.text")}>{tk(key("outcome.text"))}</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="case-highlights">
+      <div class="u-container case-highlight-grid">
+        <div>
+          <span class="chapter-label" data-i18n="case.highlights">{t("case.highlights")}</span>
+          <h2 data-sy-reveal="words" data-i18n={key("mantra")}>{tk(key("mantra"))}</h2>
+        </div>
+
+        <div class="highlight-list">
+          {
+            highlights.map((highlight, index) => (
+              <article data-kinetic>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <p data-i18n={highlight}>{tk(highlight)}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="case-process">
+      <div class="u-container">
+        <span class="chapter-label" data-i18n="case.process">{t("case.process")}</span>
+        <div class="process-list">
+          {
+            process.map((row, index) => (
+              <article data-kinetic>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <p data-i18n={row}>{tk(row)}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="case-visual-language">
+      <div class="u-container visual-language-inner">
+        <div>
+          <span class="chapter-label" data-i18n="case.visual">{t("case.visual")}</span>
+          <p data-kinetic data-i18n={key("visual.text")}>{tk(key("visual.text"))}</p>
+        </div>
+        <div class="specimen" data-reveal>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="case-next">
+      <div class="u-container next-inner">
+        {liveUrl && (
+          <a class="case-button secondary" href={liveUrl} target="_blank" rel="noopener" data-magnetic>
+            <span data-i18n="case.visit">{t("case.visit")}</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+        )}
+        <a class="case-button" href={nextHref} data-case-link data-magnetic>
+          <span data-i18n="case.next">{t("case.next")}</span>
+          <span aria-hidden="true">-></span>
+        </a>
+      </div>
+    </section>
+  </article>
+</Layout>
+
+<style>
+  .case {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 78% 12%, rgba(var(--rgb-cosmic-pink), 0.1), transparent 24rem),
+      radial-gradient(circle at 28% 28%, rgba(var(--rgb-accent), 0.08), transparent 28rem),
+      linear-gradient(180deg, rgba(2, 3, 5, 0.96), rgba(2, 3, 5, 0.98) 45%, rgba(2, 3, 5, 0.96)),
+      #020305;
+  }
+
+  .case-hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .case-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.22;
+    transform: scale(1.03);
+  }
+
+  .case-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 76% 36%, rgba(var(--rgb-accent), 0.18), transparent 24%),
+      linear-gradient(90deg, rgba(3, 4, 11, 0.96), rgba(3, 4, 11, 0.56) 52%, rgba(3, 4, 11, 0.9)),
+      linear-gradient(180deg, rgba(3, 4, 11, 0.38), var(--color-bg));
+  }
+
+  .case-bg img,
+  .case-screen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .case-hero-inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 0.88fr) minmax(22rem, 0.72fr);
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: center;
+    min-height: 100svh;
+    padding: 8rem 0 5rem;
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+      padding-top: 7rem;
+    }
+  }
+
+  .back-link {
+    position: absolute;
+    top: 5.6rem;
+    left: 0;
+    color: var(--color-text-alt);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+
+    &:hover {
+      color: var(--color-accent);
+    }
+  }
+
+  .case-kicker,
+  .chapter-label {
+    display: inline-block;
+    color: var(--color-accent);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .case-title {
+    max-width: 9ch;
+    margin: 1.3rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 8.5vw, 8.8rem);
+    font-weight: 500;
+    line-height: 0.9;
+    letter-spacing: 0;
+  }
+
+  .case-subtitle {
+    max-width: 44rem;
+    margin: 2rem 0 0;
+    color: rgba(var(--rgb-text), 0.72);
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    line-height: 1.55;
+  }
+
+  .case-visual {
+    position: relative;
+    min-height: clamp(31rem, 52vw, 43rem);
+    perspective: 1000px;
+  }
+
+  .case-screen {
+    position: absolute;
+    inset: 3% 6% 3% 9%;
+    z-index: 1;
+    overflow: hidden;
+    border: 1px solid rgba(var(--rgb-accent), 0.35);
+    background:
+      linear-gradient(135deg, rgba(var(--rgb-accent), 0.12), transparent 34%),
+      var(--color-elev);
+    transform: rotateY(-5deg) rotateX(1deg);
+    opacity: 1;
+    box-shadow:
+      0 0 5rem rgba(var(--rgb-accent), 0.1),
+      0 3rem 8rem rgba(0, 0, 0, 0.58),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .case-screen img { object-position: center; }
+
+  .case-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(120deg, transparent 0 36%, rgba(255, 255, 255, 0.16) 48%, transparent 60%),
+      linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.24));
+    pointer-events: none;
+  }
+
+  .case-hero [data-reveal] { opacity: 1; transform: none; }
+
+  .bridge-impact,
+  .bridge-build-system,
+  .bridge-system-map {
+    position: relative;
+    padding: clamp(5rem, 10vw, 9rem) 0;
+    border-block: 1px solid rgba(255,255,255,.09);
+    background:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+      rgba(2,3,5,.9);
+    background-size: 5rem 5rem;
+  }
+
+  .impact-head,
+  .build-head,
+  .system-map-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr);
+    gap: clamp(2rem, 6vw, 7rem);
+    align-items: end;
+  }
+
+  .impact-head .chapter-label,
+  .build-head .chapter-label,
+  .system-map-head .chapter-label { grid-column: 1 / -1; }
+
+  .impact-head h2,
+  .build-head h2,
+  .system-map-head h2 {
+    max-width: 11ch;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(3.2rem, 7vw, 7rem);
+    font-weight: 500;
+    line-height: .94;
+    letter-spacing: 0;
+  }
+
+  .impact-head > p,
+  .build-head > p,
+  .system-map-head > p {
+    margin: 0;
+    color: rgba(var(--rgb-text), .7);
+    font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+    line-height: 1.55;
+  }
+
+  .metric-grid {
+    position: absolute;
+    z-index: 4;
+    inset: 4.2rem 1.2rem 6rem;
+    display: grid;
+    grid-template-columns: minmax(13rem, 19rem) minmax(13rem, 19rem);
+    grid-template-rows: 1fr 1fr;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1.1rem;
+    pointer-events: none;
+  }
+
+  .metric-2,
+  .metric-4 { grid-column: 2; }
+
+  .metric-3,
+  .metric-4 { align-self: end; }
+
+  .metric-3 { grid-column: 1; grid-row: 2; }
+  .metric-4 { grid-row: 2; }
+
+  .metric {
+    position: relative;
+    min-width: 0;
+    min-height: 11rem;
+    padding: 1.05rem 1.1rem;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 6px;
+    background:
+      radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.12), transparent 34%),
+      linear-gradient(145deg, rgba(255,255,255,.082), rgba(255,255,255,.012));
+    backdrop-filter: blur(20px);
+    transform-style: preserve-3d;
+    pointer-events: auto;
+  }
+
+  .metric::after,
+  [data-kinetic]::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: 4;
+    border-radius: inherit;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.32) 48%, transparent 64%);
+    opacity: 0;
+    transform: translateX(-70%);
+    pointer-events: none;
+    transition: opacity .35s ease, transform .7s var(--ease-out-expo);
+  }
+
+  .metric:hover::after,
+  [data-kinetic]:hover::after { opacity: .5; transform: translateX(70%); }
+
+  .metric-no,
+  .metric small {
+    color: rgba(var(--rgb-text), .42);
+    font: 500 .64rem/1 var(--font-inter);
+    letter-spacing: .14em;
+  }
+
+  .metric strong {
+    display: block;
+    margin-top: 1.35rem;
+    max-width: 100%;
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 2.45vw, 3.05rem);
+    font-weight: 500;
+    line-height: .95;
+    white-space: nowrap;
+  }
+
+  .metric p {
+    min-height: 0;
+    margin: .55rem 0 1rem;
+    color: rgba(var(--rgb-text), .7);
+    line-height: 1.45;
+  }
+
+  .metric-track { height: 2px; margin-bottom: .85rem; overflow: hidden; background: rgba(255,255,255,.12); }
+  .metric-track i { display: block; width: var(--fill); height: 100%; background: #fff; box-shadow: 0 0 1rem rgba(255,255,255,.45); transform: scaleX(0); transform-origin: left; }
+
+  .impact-stage {
+    position: relative;
+    min-height: clamp(34rem, 63vw, 52rem);
+    margin-top: clamp(3rem, 6vw, 5rem);
+  }
+
+  .impact-note {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    bottom: clamp(2.7rem, 5vw, 4rem);
+    max-width: 32rem;
+    margin: 0;
+    text-align: center;
+    transform: translateX(-50%);
+    color: rgba(var(--rgb-text), .58);
+    font-size: .86rem;
+    line-height: 1.55;
+  }
+
+  .system-rail {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .7rem;
+    margin-top: 4rem;
+  }
+
+  .system-rail::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 2.05rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.5), rgba(255,255,255,.08));
+  }
+
+  .system-rail article {
+    position: relative;
+    min-height: 22rem;
+    padding: 4.5rem 1.25rem 1.3rem;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: 6px;
+    background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.012));
+  }
+
+  .system-rail article > i {
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    height: 1px;
+    background: rgba(255,255,255,.22);
+  }
+
+  .system-rail article > i::after {
+    content: "";
+    display: block;
+    width: 32%;
+    height: 100%;
+    background: #fff;
+    box-shadow: 0 0 1rem rgba(255,255,255,.5);
+    animation: system-pulse 3.2s ease-in-out infinite alternate;
+  }
+
+  .system-no { position: absolute; top: 1.7rem; left: 1.25rem; color: #fff; font: 500 .68rem/1 var(--font-inter); }
+  .system-meta { color: rgba(var(--rgb-text),.38); font-size: .58rem; letter-spacing: .13em; }
+  .system-rail h3 { margin: 1.3rem 0 0; font: 500 clamp(1.4rem, 2.2vw, 2.1rem)/1 var(--font-display); }
+  .system-rail p { margin: 1rem 0 0; color: rgba(var(--rgb-text),.62); line-height: 1.55; }
+
+  @keyframes system-pulse { to { width: 88%; transform: translateX(12%); } }
+
+  .workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: .75rem;
+    margin-top: 4rem;
+  }
+
+  .workflow-grid article { position: relative; min-height: 17rem; padding: 1.25rem; overflow: hidden; border: 1px solid rgba(255,255,255,.11); border-radius: 6px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)); }
+  .workflow-grid article > span { color: rgba(var(--rgb-text), .4); font-size: .66rem; letter-spacing: .15em; }
+  .workflow-grid strong { display: block; margin-top: 3rem; font-family: var(--font-display); font-size: clamp(1.2rem, 2vw, 1.75rem); font-weight: 500; }
+  .workflow-grid p { margin: 1rem 0 0; color: rgba(var(--rgb-text), .62); line-height: 1.5; }
+
+  .proof-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: .7rem; margin-top: .7rem; }
+  .proof-node { position: relative; display: block; min-height: 30rem; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: 6px; color: #fff; background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.1), transparent 28%), rgba(3,4,6,.76); }
+  .proof-top,
+  .proof-bottom { position: absolute; z-index: 5; left: 1.2rem; right: 1.2rem; display: flex; justify-content: space-between; gap: 1rem; color: rgba(var(--rgb-text),.55); font-size: .57rem; letter-spacing: .12em; }
+  .proof-top { top: 1.2rem; }
+  .proof-bottom { bottom: 1.2rem; }
+  .proof-top b,
+  .proof-bottom b { color: #fff; font-weight: 500; }
+
+  .code-orbit,
+  .mini-universe { position: absolute; inset: 3.5rem 1rem; }
+  .code-core,
+  .planet { position: absolute; left: 50%; top: 50%; width: 7.5rem; aspect-ratio: 1; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.38); border-radius: 50%; transform: translate(-50%,-50%); font: 500 2rem/1 var(--font-display); box-shadow: 0 0 4rem rgba(255,255,255,.08), inset 0 0 2rem rgba(255,255,255,.05); }
+  .branch { position: absolute; left: 50%; top: 50%; width: 72%; height: 38%; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; transform: translate(-50%,-50%) rotate(var(--r)); }
+  .branch-a { --r: 0deg; } .branch-b { --r: 60deg; } .branch-c { --r: 120deg; }
+  .code-orbit em { position: absolute; color: rgba(var(--rgb-text),.55); font: normal .56rem/1 var(--font-inter); letter-spacing: .13em; }
+  .code-orbit em:nth-of-type(1) { left: 8%; top: 28%; }
+  .code-orbit em:nth-of-type(2) { right: 10%; top: 31%; }
+  .code-orbit em:nth-of-type(3) { left: 50%; bottom: 10%; transform: translateX(-50%); }
+
+  .mini-universe::before,
+  .mini-universe::after { content:""; position:absolute; left:50%; top:50%; width:72%; aspect-ratio:1; border:1px solid rgba(255,255,255,.12); border-radius:50%; transform:translate(-50%,-50%) rotateX(68deg); }
+  .mini-universe::after { width:54%; transform:translate(-50%,-50%) rotateY(67deg); }
+  .planet { width: 11rem; background: radial-gradient(circle at 37% 30%, rgba(255,255,255,.2), rgba(255,255,255,.025) 42%, #020304 72%); animation: planet-breathe 4s ease-in-out infinite alternate; }
+  .mini-universe > i { position:absolute; left:50%; top:50%; width:.42rem; aspect-ratio:1; border-radius:50%; background:#fff; box-shadow:0 0 1rem #fff; transform:translate(-50%,-50%) rotate(calc(var(--i) * 45deg)) translateX(clamp(7rem, 15vw, 11rem)); }
+  @keyframes planet-breathe { to { box-shadow: 0 0 7rem rgba(255,255,255,.18), inset 0 0 3rem rgba(255,255,255,.1); transform: translate(-50%,-50%) scale(1.035); } }
+
+  .screen-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-accent);
+    opacity: 0.55;
+    animation: scan 4s linear infinite;
+  }
+
+  .screen-line.top {
+    top: 18%;
+  }
+
+  .screen-line.bottom {
+    top: 72%;
+    animation-delay: -2s;
+  }
+
+  @keyframes scan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .case-strip {
+    background: rgba(2, 3, 7, 0.72);
+    backdrop-filter: blur(18px);
+  }
+
+  .case-strip-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+    background: transparent;
+
+    @media (--mq-tablet) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (--mq-phone) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .case-stat {
+    position: relative;
+    min-height: 9rem;
+    padding: 1.2rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.095);
+    border-radius: 0.65rem;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+      rgba(5, 7, 14, 0.78);
+    backdrop-filter: blur(18px);
+  }
+
+  .case-stat span {
+    display: block;
+    color: var(--color-text-alt);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .case-stat strong {
+    display: block;
+    margin-top: 1rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2vw, 1.8rem);
+    font-weight: 500;
+    line-height: 1.05;
+  }
+
+  .case-body,
+  .case-highlights,
+  .case-process,
+  .case-visual-language,
+  .case-next {
+    padding: clamp(5rem, 11vw, 10rem) 0;
+    background:
+      linear-gradient(180deg, rgba(2, 3, 7, 0.58), rgba(2, 3, 7, 0.78));
+  }
+
+  .case-body-grid {
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 6rem);
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .case-index {
+    position: sticky;
+    top: 7rem;
+    align-self: start;
+    color: var(--color-text-alt);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+
+    @media (--mq-tablet) {
+      position: static;
+    }
+  }
+
+  .case-index span {
+    color: var(--color-accent);
+  }
+
+  .case-index p {
+    line-height: 1.8;
+  }
+
+  .case-main {
+    display: grid;
+    gap: clamp(3rem, 7vw, 6rem);
+  }
+
+  .case-chapter p,
+  .visual-language-inner p {
+    position: relative;
+    max-width: 58rem;
+    margin: 1rem 0 0;
+    font-family: var(--font-display);
+    padding: clamp(1.2rem, 2.8vw, 2rem);
+    border: 1px solid rgba(255, 255, 255, 0.095);
+    border-radius: 0.75rem;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
+      rgba(5, 7, 14, 0.76);
+    backdrop-filter: blur(20px);
+    color: rgba(var(--rgb-text), 0.84);
+    font-size: clamp(1.55rem, 3.45vw, 3.5rem);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  .case-highlight-grid,
+  .visual-language-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(2rem, 6vw, 6rem);
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .case-highlight-grid h2 {
+    max-width: 9ch;
+    margin: 1rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 6rem);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .highlight-list,
+  .process-list {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .highlight-list article,
+  .process-list article {
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 1.5rem;
+    padding: 1.35rem;
+    border: 1px solid rgba(255, 255, 255, 0.095);
+    border-radius: 0.65rem;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.018)),
+      rgba(5, 7, 14, 0.78);
+    backdrop-filter: blur(18px);
+
+    @media (--mq-phone) {
+      grid-template-columns: 1fr;
+      gap: 0.7rem;
+    }
+  }
+
+  .highlight-list span,
+  .process-list span {
+    color: var(--color-accent);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+  }
+
+  .highlight-list p,
+  .process-list p {
+    margin: 0;
+    color: var(--color-text-alt);
+    font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+    line-height: 1.5;
+  }
+
+  .process-list {
+    margin-top: 2rem;
+  }
+
+  .specimen {
+    position: relative;
+    min-height: 22rem;
+    border: 1px solid rgba(255, 255, 255, 0.095);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background:
+      linear-gradient(var(--color-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-line) 1px, transparent 1px),
+      rgba(5, 7, 14, 0.82);
+    background-size: 3rem 3rem;
+  }
+
+  .specimen span {
+    position: absolute;
+    border: 1px solid rgba(var(--rgb-accent), 0.5);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.01));
+    backdrop-filter: blur(12px);
+  }
+
+  .specimen span:nth-child(1) {
+    inset: 12% 42% 18% 12%;
+  }
+
+  .specimen span:nth-child(2) {
+    inset: 24% 18% 34% 52%;
+  }
+
+  .specimen span:nth-child(3) {
+    inset: 62% 12% 12% 36%;
+  }
+
+  .next-inner {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .case-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-height: 3.2rem;
+    padding: 0.9rem 1.35rem;
+    border-radius: 999px;
+    background: var(--color-text);
+    color: var(--color-black);
+    transition:
+      transform 0.35s var(--ease-out-expo),
+      background 0.35s var(--ease-out-expo);
+  }
+
+  .case-button.secondary {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-line);
+  }
+
+  .case-button:hover {
+    transform: translateY(-2px);
+    background: var(--color-accent);
+  }
+
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  [data-kinetic] {
+    --mx: 50%;
+    --my: 50%;
+    opacity: 0;
+    transform: translateY(34px) rotateX(5deg) scale(.985);
+    transform-origin: center bottom;
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+  }
+
+  @media (max-width: 1050px) {
+    .case-hero-inner { grid-template-columns: minmax(0, 1fr) minmax(19rem, .72fr); gap: 2rem; }
+    .case-title { font-size: clamp(4rem, 9.5vw, 7rem); }
+    .workflow-grid,
+    .system-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .metric strong { font-size: clamp(2rem, 5.2vw, 3.4rem); }
+  }
+
+  @media (max-width: 760px) {
+    .case-hero { min-height: auto; }
+    .case-hero-inner { grid-template-columns: 1fr; min-height: auto; padding: 8.5rem 0 4rem; }
+    .case-title { font-size: clamp(3.7rem, 18vw, 5.5rem); }
+    .case-visual { min-height: 31rem; }
+    .case-screen { inset: 0 8%; transform: none; }
+    .impact-head,
+    .build-head,
+    .system-map-head,
+    .proof-grid { grid-template-columns: 1fr; }
+    .workflow-grid,
+    .system-rail { grid-template-columns: 1fr; }
+    .metric-grid {
+      inset: 10rem .7rem 7.5rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, 1fr);
+      gap: .55rem;
+    }
+    .metric { min-height: 0; padding: .82rem; backdrop-filter: blur(12px); }
+    .metric strong { margin-top: .85rem; font-size: clamp(1.45rem, 7vw, 2.4rem); }
+    .metric p { margin: .42rem 0 .7rem; font-size: .76rem; }
+    .metric-track { margin-bottom: .55rem; }
+    .impact-stage { min-height: 48rem; margin-top: 2rem; }
+    .impact-note { right: auto; width: calc(100% - 2rem); }
+    .system-rail article { min-height: 18rem; }
+    .proof-grid a { min-height: 18rem; }
+    .proof-node { min-height: 25rem !important; }
+    .proof-top,
+    .proof-bottom { align-items: flex-start; flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+    [data-kinetic] { opacity: 1; transform: none; }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reveal = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+  const kinetic = gsap.utils.toArray<HTMLElement>("[data-kinetic]");
+
+  if (reduced) {
+    gsap.set([...reveal, ...kinetic], { opacity: 1, y: 0, rotateX: 0, scale: 1 });
+  } else {
+    ScrollTrigger.batch(reveal, {
+      start: "top 88%",
+      once: true,
+      onEnter: (batch) =>
+        gsap.to(batch, {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: "power3.out",
+          stagger: 0.08,
+          overwrite: true,
+        }),
+      onEnterBack: (batch) => gsap.set(batch, { opacity: 1, y: 0 }),
+    });
+
+    ScrollTrigger.batch(kinetic, {
+      start: "top 91%",
+      once: true,
+      onEnter: (batch) => batch.forEach((card, index) => {
+        gsap.to(card, {
+          opacity: 1,
+          y: 0,
+          rotateX: 0,
+          scale: 1,
+          duration: 1.05,
+          delay: index * .055,
+          ease: "power4.out",
+          clearProps: "willChange",
+        });
+        const children = Array.from(card.children).filter((child) => !(child as HTMLElement).classList.contains("metric-track"));
+        if (children.length) {
+          gsap.fromTo(children, { opacity: 0, y: 12 }, {
+            opacity: 1,
+            y: 0,
+            duration: .72,
+            delay: .18 + index * .055,
+            stagger: .045,
+            ease: "power3.out",
+          });
+        }
+        card.querySelectorAll<HTMLElement>(".metric-track i").forEach((track) => {
+          gsap.to(track, { scaleX: 1, duration: 1.3, delay: .35 + index * .07, ease: "power3.out" });
+        });
+      }),
+      onEnterBack: (batch) => gsap.set(batch, { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1 }),
+    });
+
+    gsap.timeline({ defaults: { ease: "power4.out" }, delay: .08 })
+      .fromTo(".case-screen", {
+        clipPath: "inset(47% 0 47% 0 round 6px)",
+        rotateY: -14,
+        rotateX: 5,
+        scale: .92,
+      }, {
+        clipPath: "inset(0% 0 0% 0 round 6px)",
+        rotateY: -5,
+        rotateX: 1,
+        scale: 1,
+        duration: 1.35,
+      })
+      .fromTo(".case-screen img", { scale: 1.16, filter: "brightness(.25)" }, { scale: 1, filter: "brightness(1)", duration: 1.5 }, "<")
+      .fromTo(".case-kicker, .case-title, .case-subtitle", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: .9, stagger: .09 }, .22);
+
+    gsap.to(".case-bg img", {
+      yPercent: 10,
+      ease: "none",
+      scrollTrigger: {
+        trigger: ".case-hero",
+        start: "top top",
+        end: "bottom top",
+        scrub: true,
+      },
+    });
+
+    if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      kinetic.forEach((card) => {
+        const xTo = gsap.quickTo(card, "rotateY", { duration: .55, ease: "power3.out" });
+        const yTo = gsap.quickTo(card, "rotateX", { duration: .55, ease: "power3.out" });
+        const liftTo = gsap.quickTo(card, "y", { duration: .45, ease: "power3.out" });
+        card.addEventListener("pointermove", (event) => {
+          const rect = card.getBoundingClientRect();
+          const nx = (event.clientX - rect.left) / rect.width;
+          const ny = (event.clientY - rect.top) / rect.height;
+          card.style.setProperty("--mx", `${nx * 100}%`);
+          card.style.setProperty("--my", `${ny * 100}%`);
+          xTo((nx - .5) * 5);
+          yTo((.5 - ny) * 4);
+          liftTo(-4);
+        }, { passive: true });
+        card.addEventListener("pointerleave", () => {
+          xTo(0); yTo(0); liftTo(0);
+        }, { passive: true });
+      });
+    }
+  }
+</script>

@@ -1,0 +1,330 @@
+---
+import { BEHANCE } from "../data/works";
+import { useTranslations } from "../i18n/utils";
+
+const t = useTranslations();
+
+const tiles = [
+  {
+    img: "/portfolio/rodion-belousov-luxury-interior-lighting-3d-visualization.webp",
+    title: "Obsidian Residence",
+    cat: "3D Interior",
+    alt: "Luxury noir interior lighting and furniture 3D visualization by Rodion Belousov",
+  },
+  {
+    img: "/portfolio/rodion-belousov-modern-sectional-sofa-3d-render.webp",
+    title: "Modular Lounge",
+    cat: "Interior Visualization",
+    alt: "Modern sectional sofa and living room furniture 3D render by Rodion Belousov",
+  },
+  {
+    img: "/portfolio/rodion-belousov-custom-tv-media-wall-3d-visualization.webp",
+    title: "Media Wall System",
+    cat: "Product Visualization",
+    alt: "Custom wood and black TV media wall interior 3D visualization by Rodion Belousov",
+  },
+  {
+    img: "/portfolio/rodion-belousov-decorative-console-styling-3d-render.webp",
+    title: "Olive Still Life",
+    cat: "Art Direction",
+    alt: "Olive green decorative console styling and product 3D render by Rodion Belousov",
+  },
+  {
+    img: "/portfolio/rodion-belousov-classical-residential-facade-3d-visualization.webp",
+    title: "Classical Facade Study",
+    cat: "Architecture",
+    alt: "Classical residential facade window and balcony 3D visualization by Rodion Belousov",
+  },
+  {
+    img: "/portfolio/rodion-belousov-luxury-wedding-pergola-3d-visualization.webp",
+    title: "Nocturne Ceremony",
+    cat: "Event Visualization",
+    alt: "Luxury wedding pergola and candlelit event setup 3D visualization by Rodion Belousov",
+  },
+];
+---
+
+<section class="motion" id="motion">
+  <div class="u-container motion-scene" data-gallery-scene>
+    <div class="motion-copy">
+      <span class="s-idx">05 - <span data-i18n="gallery.label">{t("gallery.label")}</span></span>
+      <h2 class="motion-title" data-sy-reveal="words" data-i18n="gallery.title">{t("gallery.title")}</h2>
+      <p class="motion-lead" data-reveal data-i18n="gallery.text">{t("gallery.text")}</p>
+      <a class="gallery-link" href={BEHANCE} target="_blank" rel="noopener" data-reveal data-cursor="VIEW">
+        <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span aria-hidden="true">↗</span>
+      </a>
+    </div>
+
+    <div class="gallery-stage">
+      <div class="archive-sculpture" aria-hidden="true" data-gallery-depth="0.4">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      {
+        tiles.map((tile, index) => (
+          <a
+            class={`tile tile-${index + 1}`}
+            href={BEHANCE}
+            target="_blank"
+            rel="noopener"
+            data-reveal
+            data-gallery-depth={0.65 + index * 0.08}
+            data-cursor="VIEW"
+          >
+            <figure>
+              <img src={tile.img} alt={tile.alt} loading="lazy" decoding="async" fetchpriority="low" />
+              <span class="tile-arrow" aria-hidden="true">↗</span>
+              <figcaption>
+                <span><b>{String(index + 1).padStart(2, "0")}</b> <span>{tile.cat}</span></span>
+                <strong>{tile.title}</strong>
+              </figcaption>
+            </figure>
+          </a>
+        ))
+      }
+    </div>
+
+    <a class="gallery-pill" href="/gallery" data-tunnel data-cursor="ENTER">
+      <span aria-hidden="true">✦</span><span data-i18n="portal.cta">{t("portal.cta")}</span><span aria-hidden="true">→</span>
+    </a>
+  </div>
+</section>
+
+<style>
+  .motion {
+    position: relative;
+    min-height: 100svh;
+    padding: clamp(4.5rem, 6vw, 6rem) 0;
+    overflow: hidden;
+    border-block: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+      radial-gradient(circle at 55% 47%, rgba(255, 255, 255, 0.08), transparent 29rem),
+      radial-gradient(circle at 8% 74%, rgba(255, 255, 255, 0.04), transparent 22rem),
+      rgba(1, 2, 3, 0.72);
+    contain: layout paint style;
+  }
+
+  .motion-scene {
+    position: relative;
+    min-height: 44rem;
+  }
+
+  .motion-copy {
+    position: absolute;
+    z-index: 8;
+    left: 0;
+    top: 3rem;
+    width: min(36%, 33rem);
+  }
+
+  .s-idx {
+    display: block;
+    margin-bottom: 1.5rem;
+    color: var(--color-text-alt);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .motion-title {
+    max-width: 14ch;
+    margin: 0;
+    color: #f7f9f9;
+    font-family: var(--font-display);
+    font-size: clamp(2.35rem, 3.25vw, 3.6rem);
+    font-weight: 520;
+    line-height: 1.02;
+    letter-spacing: 0;
+  }
+
+  .motion-lead {
+    max-width: 29rem;
+    margin: 1.6rem 0 0;
+    color: rgba(var(--rgb-text), 0.76);
+    font-size: clamp(0.98rem, 1.18vw, 1.12rem);
+    line-height: 1.58;
+  }
+
+  .gallery-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.6rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.42);
+    color: #f7f9f9;
+    font-size: 0.82rem;
+  }
+
+  .gallery-stage {
+    position: absolute;
+    z-index: 2;
+    inset: 0 -2% 0 34%;
+    perspective: 1500px;
+  }
+
+  .archive-sculpture {
+    position: absolute;
+    z-index: 0;
+    left: 25%;
+    top: 18%;
+    width: 41%;
+    aspect-ratio: 1;
+    opacity: 0.78;
+  }
+
+  .archive-sculpture span {
+    position: absolute;
+    width: 55%;
+    aspect-ratio: 1;
+    border-radius: 44% 56% 52% 48% / 54% 41% 59% 46%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+      radial-gradient(circle at 29% 21%, rgba(255,255,255,.7) 0 1%, rgba(255,255,255,.18) 3%, transparent 13%),
+      radial-gradient(circle at 34% 28%, rgba(255,255,255,.18), transparent 24%),
+      radial-gradient(circle at 66% 72%, #020203, #121416 45%, #030304 72%);
+    box-shadow: inset -1.4rem -1.6rem 2.8rem rgba(0,0,0,.68);
+    animation: none;
+  }
+
+  .archive-sculpture span:nth-child(1) { left: 3%; top: 22%; transform: rotate(20deg); }
+  .archive-sculpture span:nth-child(2) { right: 3%; top: 5%; transform: rotate(-28deg) scale(.92); animation-delay: -2s; }
+  .archive-sculpture span:nth-child(3) { right: 0; bottom: 5%; transform: rotate(12deg) scale(.82); animation-delay: -4s; }
+  .archive-sculpture span:nth-child(4) { left: 19%; bottom: 0; transform: rotate(-18deg) scale(.88); animation-delay: -6s; }
+  .archive-sculpture span:nth-child(5) { left: 27%; top: 27%; transform: scale(1.08); animation-delay: -3s; }
+
+  .tile {
+    position: absolute;
+    z-index: 2;
+    display: block;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 8px;
+    background: #08090a;
+    box-shadow: 0 1.2rem 2.8rem rgba(0, 0, 0, 0.46), inset 0 1px rgba(255,255,255,.1);
+    transition: border-color 0.25s ease;
+    contain: layout paint style;
+  }
+
+  .tile:hover {
+    border-color: rgba(255, 255, 255, 0.58);
+  }
+
+  .tile-1 { left: 7%; top: 51%; width: 39%; height: 34%; }
+  .tile-2 { left: 46%; top: 46%; width: 20%; height: 42%; z-index: 5; }
+  .tile-3 { left: 31%; top: 15%; width: 22%; height: 29%; }
+  .tile-4 { left: 58%; top: 6%; width: 34%; height: 34%; z-index: 4; }
+  .tile-5 { right: 0; top: 43%; width: 36%; height: 28%; }
+  .tile-6 { right: -1%; bottom: 3%; width: 34%; height: 23%; }
+
+  figure { position: relative; width: 100%; height: 100%; margin: 0; }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.002);
+    transition: none;
+  }
+
+  .tile:hover img { transform: scale(1.002); }
+
+  figure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 46%, rgba(0,0,0,.88));
+    pointer-events: none;
+  }
+
+  figcaption {
+    position: absolute;
+    z-index: 2;
+    left: 1rem;
+    right: 1rem;
+    bottom: .85rem;
+  }
+
+  figcaption > span {
+    display: flex;
+    gap: .55rem;
+    color: rgba(var(--rgb-text), .72);
+    font-size: .58rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+
+  figcaption b { color: #fff; font-weight: 500; }
+
+  strong {
+    display: block;
+    margin-top: .35rem;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 1.8vw, 1.75rem);
+    font-weight: 520;
+    line-height: 1;
+  }
+
+  .tile-arrow {
+    position: absolute;
+    z-index: 3;
+    right: .75rem;
+    top: .75rem;
+    display: grid;
+    width: 1.8rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.68);
+    border-radius: 50%;
+    color: #fff;
+    font-size: .72rem;
+  }
+
+  .gallery-pill {
+    display: none;
+    position: absolute;
+    z-index: 10;
+    left: 0;
+    bottom: 1rem;
+    align-items: center;
+    gap: .9rem;
+    padding: .85rem 1.15rem;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px;
+    background: rgba(4,5,6,.72);
+    color: #fff;
+    backdrop-filter: blur(16px);
+  }
+
+  @keyframes archive-lobe {
+    from { border-radius: 44% 56% 52% 48% / 54% 41% 59% 46%; }
+    to { border-radius: 58% 42% 39% 61% / 42% 58% 44% 56%; }
+  }
+
+  @media (max-width: 1050px) {
+    .motion-scene { min-height: auto; }
+    .motion-copy { position: relative; top: auto; width: min(100%, 38rem); }
+    .gallery-stage { position: relative; inset: auto; height: 45rem; margin-top: 3rem; }
+    .gallery-pill { position: relative; bottom: auto; margin-top: 2rem; }
+  }
+
+  @media (max-width: 700px) {
+    .motion { padding-block: 5rem; }
+    .gallery-stage {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: .9rem;
+      height: auto;
+      padding-top: 8rem;
+    }
+    .archive-sculpture { left: 50%; top: 0; width: 18rem; transform: translateX(-50%); opacity: .7; }
+    .tile { position: relative; inset: auto; width: 100%; height: auto; aspect-ratio: 1.28; }
+    .tile-2 { aspect-ratio: .9; }
+    .gallery-pill { width: 100%; justify-content: space-between; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .archive-sculpture span { animation: none; }
+  }
+</style>

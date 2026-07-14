@@ -1,0 +1,191 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  Tunnel.astro — the seamless "warp" transition between the 2D studio (/) and
+//  the spatial 3D archive (/gallery).
+//
+//  Any <a data-tunnel> click plays a hyperspace warp that accelerates to black,
+//  then navigates. The destination page detects the arrival (sessionStorage) and
+//  plays the warp in reverse (decelerating out of black) → the trip feels like
+//  one continuous flight through a tunnel, both directions.
+// ─────────────────────────────────────────────────────────────────────────────
+---
+
+<div class="tunnel" data-tunnel-root aria-hidden="true">
+  <div class="tunnel-black" data-tunnel-black></div>
+  <canvas class="tunnel-canvas" data-tunnel-canvas></canvas>
+</div>
+
+<style>
+  .tunnel {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .tunnel.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .tunnel-black {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg);
+    opacity: 0;
+  }
+  .tunnel-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+
+  const root = document.querySelector<HTMLElement>("[data-tunnel-root]")!;
+  const black = document.querySelector<HTMLElement>("[data-tunnel-black]")!;
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
+  const ctx = canvas.getContext("2d")!;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let stars: { x: number; y: number; z: number }[] = [];
+  let W = 0, H = 0, cx = 0, cy = 0, focal = 0;
+  let running = false;
+  let rafId = 0;
+  let navigationTimer = 0;
+  let safetyTimer = 0;
+  const state = { speed: 0 };
+
+  function resize() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = canvas.width = Math.floor(innerWidth * dpr);
+    H = canvas.height = Math.floor(innerHeight * dpr);
+    cx = W / 2;
+    cy = H / 2;
+    focal = W * 0.5;
+  }
+  resize();
+  addEventListener("resize", resize);
+
+  function initStars() {
+    stars = [];
+    for (let i = 0; i < 460; i++) {
+      stars.push({ x: (Math.random() * 2 - 1) * W, y: (Math.random() * 2 - 1) * H, z: Math.random() * W });
+    }
+  }
+
+  function frame() {
+    if (!running) return;
+    ctx.fillStyle = "rgba(5,5,5,0.32)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(222,227,234,0.9)";
+    const sp = state.speed;
+    for (const s of stars) {
+      const z0 = s.z;
+      s.z -= sp;
+      if (s.z < 1) {
+        s.z = W;
+        s.x = (Math.random() * 2 - 1) * W;
+        s.y = (Math.random() * 2 - 1) * H;
+        continue;
+      }
+      const k = focal / s.z;
+      const k0 = focal / z0;
+      ctx.lineWidth = Math.max(0.5, (1 - s.z / W) * 2.6);
+      ctx.beginPath();
+      ctx.moveTo(cx + s.x * k0, cy + s.y * k0);
+      ctx.lineTo(cx + s.x * k, cy + s.y * k);
+      ctx.stroke();
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function resetTunnel() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    clearTimeout(navigationTimer);
+    clearTimeout(safetyTimer);
+    gsap.killTweensOf(state);
+    gsap.killTweensOf(black);
+    state.speed = 0;
+    black.style.opacity = "0";
+    root.classList.remove("is-active");
+    ctx.clearRect(0, 0, W, H);
+  }
+
+  function warpIn(href: string) {
+    if (running) return;
+    if (reduced) { location.href = href; return; }
+    sessionStorage.setItem("rb-warp", "1");
+    sessionStorage.setItem("rb-warp-origin", location.href);
+    running = true;
+    root.classList.add("is-active");
+    initStars();
+    state.speed = 6;
+    frame();
+    gsap.to(state, { speed: 85, duration: 0.9, ease: "power2.in" });
+    gsap.to(black, { opacity: 1, duration: 0.6, delay: 0.25 });
+    navigationTimer = window.setTimeout(() => (location.href = href), 820);
+  }
+
+  function warpOut() {
+    running = true;
+    root.classList.add("is-active");
+    initStars();
+    state.speed = 80;
+    black.style.opacity = "1";
+    frame();
+    gsap.to(state, { speed: 4, duration: 1.15, ease: "power2.out" });
+    gsap.to(black, {
+      opacity: 0,
+      duration: 0.9,
+      delay: 0.3,
+      onComplete: () => {
+        running = false;
+        root.classList.remove("is-active");
+        ctx.clearRect(0, 0, W, H);
+      },
+    });
+    // safety net (hidden tabs throttle rAF/gsap)
+    safetyTimer = window.setTimeout(resetTunnel, 2200);
+  }
+
+  // arrival: reverse-warp out of black
+  if (sessionStorage.getItem("rb-warp")) {
+    sessionStorage.removeItem("rb-warp");
+    warpOut();
+  } else {
+    const origin = sessionStorage.getItem("rb-warp-origin");
+    if (origin && new URL(origin, location.href).pathname === location.pathname) {
+      sessionStorage.removeItem("rb-warp-origin");
+      warpOut();
+    }
+  }
+
+  // Browsers restore the previous document from BFCache with its old JS state.
+  // Reset the frozen outgoing warp, then play a fresh reverse flight.
+  addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    resetTunnel();
+    const origin = sessionStorage.getItem("rb-warp-origin");
+    if (origin && new URL(origin, location.href).pathname === location.pathname) {
+      sessionStorage.removeItem("rb-warp-origin");
+      if (!reduced) warpOut();
+    }
+  });
+
+  // any [data-tunnel] link triggers the warp
+  document.addEventListener("click", (e) => {
+    const a = (e.target as HTMLElement)?.closest<HTMLAnchorElement>("a[data-tunnel]");
+    if (!a) return;
+    const url = new URL(a.href, location.href);
+    e.preventDefault();
+    if (url.pathname === location.pathname) return; // already here
+    document.body.classList.remove("is-nav-opened");
+    warpIn(url.href);
+  });
+</script>

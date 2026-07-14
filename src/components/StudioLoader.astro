@@ -1,0 +1,436 @@
+<rb-studio-loader aria-hidden="true">
+  <div class="loader-topline">
+    <span>RB / DIGITAL STUDIO</span>
+    <span>VIENNA / 2026</span>
+  </div>
+
+  <div class="loader-stage" data-loader-stage aria-hidden="true">
+    <span class="loader-axis axis-x"></span>
+    <span class="loader-axis axis-y"></span>
+    <span class="loader-grid"></span>
+    <span class="loader-node node-a"></span>
+    <span class="loader-node node-b"></span>
+    <span class="loader-node node-c"></span>
+    <span class="loader-node node-d"></span>
+    <span class="loader-orbit orbit-a"></span>
+    <span class="loader-orbit orbit-b"></span>
+    <div class="loader-cube" data-loader-cube>
+      <span class="cube-face cube-front"></span>
+      <span class="cube-face cube-back"></span>
+      <span class="cube-face cube-left"></span>
+      <span class="cube-face cube-right"></span>
+      <span class="cube-face cube-top"></span>
+      <span class="cube-face cube-bottom"></span>
+      <i></i>
+    </div>
+  </div>
+
+  <div class="loader-shell">
+    <div class="loader-readout">
+      <span data-loader-phase>INITIALISING RENDER</span>
+      <span class="loader-count"><strong data-loader-count>000</strong><small>%</small></span>
+    </div>
+    <div class="loader-line" aria-hidden="true"><span data-loader-line></span></div>
+    <div class="loader-meta">
+      <span>PASS <b data-loader-pass>01/04</b></span>
+      <span>WEBGL <b>READY</b></span>
+      <span>COLOR <b>NOIR</b></span>
+    </div>
+  </div>
+</rb-studio-loader>
+
+<style>
+  :global(html.rb-loader-seen) rb-studio-loader { display: none; }
+
+  rb-studio-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    padding: clamp(1.2rem, 3vw, 2.5rem);
+    background:
+      radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.095), transparent 28%),
+      radial-gradient(circle at 65% 54%, rgba(255, 255, 255, 0.035), transparent 34%),
+      linear-gradient(145deg, #000, #08090a 54%, #010101);
+    color: #e8e9e9;
+  }
+
+  rb-studio-loader::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, transparent 49.95%, rgba(255, 255, 255, 0.035) 50%, transparent 50.05%),
+      linear-gradient(180deg, transparent 49.95%, rgba(255, 255, 255, 0.025) 50%, transparent 50.05%);
+  }
+
+  rb-studio-loader::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      conic-gradient(from 0deg at 50% 42%, transparent, rgba(185, 213, 224, 0.045), transparent 18%, transparent 48%, rgba(185, 213, 224, 0.035), transparent 68%),
+      radial-gradient(circle at 50% 42%, rgba(196, 222, 232, 0.16), transparent 34%, transparent 68%, rgba(0, 0, 0, 0.64));
+  }
+
+  rb-studio-loader.is-hidden { pointer-events: none; }
+
+  .loader-topline,
+  .loader-meta,
+  [data-loader-phase] {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: clamp(0.58rem, 0.85vw, 0.72rem);
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .loader-topline {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    color: rgba(232, 233, 233, 0.38);
+  }
+
+  .loader-stage {
+    position: absolute;
+    z-index: 1;
+    top: 42%;
+    left: 50%;
+    width: min(58vw, 36rem);
+    aspect-ratio: 1;
+    perspective: 900px;
+    transform: translate(-50%, -50%);
+  }
+
+  .loader-stage::before {
+    content: "RENDER OBJECT / 01";
+    position: absolute;
+    top: -1.5rem;
+    left: 50%;
+    color: rgba(232, 233, 233, 0.25);
+    font: 400 0.55rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  .loader-cube {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8rem;
+    height: 8rem;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%) rotateX(-24deg) rotateY(38deg);
+    animation: loader-cube 6s linear infinite;
+  }
+
+  .cube-face {
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 42% 58% 54% 46% / 48% 43% 57% 52%;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012));
+    box-shadow: inset 0 0 2.4rem rgba(255, 255, 255, 0.06), 0 0 1.5rem rgba(255, 255, 255, 0.055);
+    backdrop-filter: blur(3px);
+  }
+
+  .cube-front { transform: translateZ(4rem); }
+  .cube-back { transform: rotateY(180deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.13); }
+  .cube-left { transform: rotateY(-90deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.18); }
+  .cube-right { transform: rotateY(90deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.1); }
+  .cube-top { transform: rotateX(90deg) translateZ(4rem); }
+  .cube-bottom { transform: rotateX(-90deg) translateZ(4rem); }
+
+  .loader-cube i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #ecfeff;
+    box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.86), 0 0 4rem rgba(255, 255, 255, 0.22);
+    transform: translate3d(-50%, -50%, 0);
+  }
+
+  .loader-orbit,
+  .loader-axis {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    pointer-events: none;
+  }
+
+  .loader-grid {
+    position: absolute;
+    left: 50%;
+    bottom: -4%;
+    width: 92%;
+    height: 52%;
+    opacity: 0.42;
+    background-image:
+      linear-gradient(rgba(204, 226, 234, 0.13) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(204, 226, 234, 0.13) 1px, transparent 1px);
+    background-size: 2.4rem 2.4rem;
+    mask-image: linear-gradient(180deg, transparent, #000 24%, transparent 92%);
+    transform: translateX(-50%) perspective(520px) rotateX(65deg);
+    transform-origin: bottom;
+    animation: loader-grid 2.2s linear infinite;
+  }
+
+  .loader-node {
+    position: absolute;
+    width: 0.48rem;
+    height: 0.48rem;
+    border: 1px solid rgba(229, 241, 245, 0.65);
+    border-radius: 50%;
+    background: #eef2f3;
+    box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.72);
+  }
+
+  .loader-node::after {
+    content: "";
+    position: absolute;
+    inset: -0.7rem;
+    border: 1px solid rgba(209, 231, 239, 0.12);
+    border-radius: 50%;
+    animation: node-pulse 1.8s ease-out infinite;
+  }
+
+  .node-a { top: 15%; left: 23%; }
+  .node-b { top: 28%; right: 16%; animation-delay: -0.4s; }
+  .node-b { background: #c9ced0; box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.58); }
+  .node-c { bottom: 20%; left: 15%; animation-delay: -0.8s; background: #fff; box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.62); }
+  .node-d { right: 24%; bottom: 12%; animation-delay: -1.2s; background: #b9bfc2; box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.48); }
+
+  .loader-orbit {
+    width: 72%;
+    aspect-ratio: 1;
+    border: 1px solid rgba(216, 232, 237, 0.1);
+    border-top-color: rgba(230, 239, 242, 0.44);
+    border-radius: 50%;
+    filter: drop-shadow(0 0 0.65rem rgba(205, 225, 232, 0.2));
+  }
+
+  .orbit-a {
+    transform: translate(-50%, -50%) rotateX(67deg) rotateZ(12deg);
+    animation: loader-orbit-a 7s linear infinite;
+    border-top-color: #f6f8f8;
+    border-right-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .orbit-b {
+    width: 54%;
+    transform: translate(-50%, -50%) rotateY(68deg) rotateZ(-18deg);
+    animation: loader-orbit-b 5.5s linear infinite reverse;
+    border-top-color: #d9dddf;
+    border-left-color: rgba(255, 255, 255, 0.16);
+  }
+
+  .loader-axis { background: rgba(255, 255, 255, 0.045); }
+  .axis-x { width: 100%; height: 1px; transform: translate(-50%, -50%); }
+  .axis-y { width: 1px; height: 100%; transform: translate(-50%, -50%); }
+
+  @keyframes loader-cube {
+    to { transform: translate(-50%, -50%) rotateX(336deg) rotateY(398deg); }
+  }
+
+  @keyframes loader-orbit-a {
+    to { transform: translate(-50%, -50%) rotateX(67deg) rotateZ(372deg); }
+  }
+
+  @keyframes loader-orbit-b {
+    to { transform: translate(-50%, -50%) rotateY(68deg) rotateZ(342deg); }
+  }
+
+  @keyframes loader-grid {
+    to { background-position: 0 2.4rem, 0 0; }
+  }
+
+  @keyframes node-pulse {
+    0% { transform: scale(0.5); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
+  .loader-shell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+  }
+
+  .loader-readout {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 1.1rem;
+  }
+
+  [data-loader-phase] { color: rgba(232, 233, 233, 0.55); }
+
+  .loader-count {
+    display: inline-flex;
+    align-items: start;
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    line-height: 0.75;
+  }
+
+  .loader-count strong {
+    min-width: 3ch;
+    font-size: clamp(4rem, 13vw, 10rem);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-align: right;
+    color: transparent;
+    background: linear-gradient(135deg, #fff, #d8dddf 52%, #8e9599);
+    background-clip: text;
+    -webkit-background-clip: text;
+    filter: drop-shadow(0 0 1.8rem rgba(255, 255, 255, 0.16));
+  }
+
+  .loader-count small {
+    margin: 0.1rem 0 0 0.45rem;
+    color: rgba(232, 233, 233, 0.4);
+    font: 400 0.65rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .loader-line {
+    height: 1px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .loader-line span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #fff, #b8bec1 58%, #f4f6f6);
+    box-shadow: 0 0 1.2rem rgba(255, 255, 255, 0.42);
+    transform-origin: left;
+  }
+
+  .loader-meta {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.9rem;
+    color: rgba(232, 233, 233, 0.28);
+  }
+
+  .loader-meta b {
+    color: rgba(232, 233, 233, 0.62);
+    font-weight: 400;
+  }
+
+  @media (max-width: 600px) {
+    .loader-topline span:last-child,
+    .loader-meta span:nth-child(2) { display: none; }
+    .loader-meta { grid-template-columns: repeat(2, max-content); }
+    .loader-stage { width: 88vw; top: 39%; }
+    .loader-cube { width: 5.6rem; height: 5.6rem; }
+    .cube-front { transform: translateZ(2.8rem); }
+    .cube-back { transform: rotateY(180deg) translateZ(2.8rem); }
+    .cube-left { transform: rotateY(-90deg) translateZ(2.8rem); }
+    .cube-right { transform: rotateY(90deg) translateZ(2.8rem); }
+    .cube-top { transform: rotateX(90deg) translateZ(2.8rem); }
+    .cube-bottom { transform: rotateX(-90deg) translateZ(2.8rem); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader-cube,
+    .loader-orbit { animation-play-state: paused; }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+
+  const phases = [
+    "INITIALISING RENDER",
+    "TRACING GEOMETRY",
+    "RESOLVING TYPOGRAPHY",
+    "OPENING CASE ARCHIVE",
+  ];
+
+  class StudioLoader extends HTMLElement {
+    connectedCallback() {
+      if (sessionStorage.getItem("rb-loader-seen") === "1") {
+        document.body.classList.add("is-loaded");
+        this.remove();
+        queueMicrotask(() => window.dispatchEvent(new CustomEvent("rb:loaded")));
+        return;
+      }
+
+      sessionStorage.setItem("rb-loader-seen", "1");
+      this.play();
+    }
+
+    private play() {
+      const line = this.querySelector<HTMLElement>("[data-loader-line]")!;
+      const count = this.querySelector<HTMLElement>("[data-loader-count]")!;
+      const phase = this.querySelector<HTMLElement>("[data-loader-phase]")!;
+      const pass = this.querySelector<HTMLElement>("[data-loader-pass]")!;
+      const cube = this.querySelector<HTMLElement>("[data-loader-cube]");
+      const state = { value: 0 };
+
+      gsap.to(state, {
+        value: 100,
+        duration: 3.1,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          const value = Math.round(state.value);
+          const phaseIndex = Math.min(3, Math.floor(value / 25.1));
+          line.style.width = `${value}%`;
+          count.textContent = String(value).padStart(3, "0");
+          phase.textContent = phases[phaseIndex];
+          pass.textContent = `${String(phaseIndex + 1).padStart(2, "0")}/04`;
+          if (cube) cube.style.setProperty("--loader-progress", String(value / 100));
+        },
+        onComplete: () => this.dismiss(),
+      });
+    }
+
+    private dismiss() {
+      this.classList.add("is-hidden");
+      document.body.classList.add("is-loaded");
+      window.dispatchEvent(new CustomEvent("rb:loaded"));
+
+      const timeline = gsap.timeline({
+        onComplete: () => this.remove(),
+      });
+      timeline
+        .to(this.querySelector("[data-loader-stage]"), {
+          scale: 0.28,
+          rotate: 28,
+          opacity: 0,
+          duration: 0.72,
+          ease: "power3.in",
+        })
+        .to(this.querySelectorAll(".loader-topline, .loader-shell"), {
+          opacity: 0,
+          y: -12,
+          duration: 0.38,
+          ease: "power2.in",
+        }, "-=0.45")
+        .to(this, {
+          clipPath: "inset(0 0 100% 0)",
+          duration: 1.05,
+          ease: "power4.inOut",
+        }, "-=0.08");
+    }
+  }
+
+  if (!customElements.get("rb-studio-loader")) {
+    customElements.define("rb-studio-loader", StudioLoader);
+  }
+</script>

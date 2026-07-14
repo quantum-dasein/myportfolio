@@ -1,0 +1,211 @@
+<rb-cursor-field aria-hidden="true">
+  <span class="cursor-trail"></span>
+  <span class="cursor-lens"><span data-cursor-label></span></span>
+  <span class="cursor-dot"></span>
+</rb-cursor-field>
+
+<style>
+  rb-cursor-field {
+    --x: -100px;
+    --y: -100px;
+    --lx: -100px;
+    --ly: -100px;
+    --s: 1;
+    --trail: 0px;
+    --angle: 0deg;
+    position: fixed;
+    inset: 0;
+    z-index: 260;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+
+    @media (pointer: coarse) { display: none; }
+  }
+
+  :global(html.has-custom-cursor),
+  :global(html.has-custom-cursor a),
+  :global(html.has-custom-cursor button) {
+    cursor: none;
+  }
+
+  .cursor-dot,
+  .cursor-lens,
+  .cursor-trail {
+    position: absolute;
+    left: 0;
+    top: 0;
+    will-change: transform;
+  }
+
+  .cursor-dot {
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0.8rem rgba(255, 255, 255, 0.85);
+    transform: translate3d(calc(var(--x) - 50%), calc(var(--y) - 50%), 0);
+  }
+
+  .cursor-lens {
+    display: grid;
+    place-items: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.018) 52%, transparent 54%);
+    box-shadow:
+      0 0 1.4rem rgba(255, 255, 255, 0.09),
+      inset 0 0 1rem rgba(255, 255, 255, 0.055);
+    backdrop-filter: none;
+    transform: translate3d(calc(var(--lx) - 50%), calc(var(--ly) - 50%), 0) scale(var(--s));
+    transition:
+      width 0.45s var(--ease-out-expo),
+      height 0.45s var(--ease-out-expo),
+      border-color 0.35s ease,
+      background 0.35s ease;
+  }
+
+  .cursor-lens::before,
+  .cursor-lens::after {
+    content: "";
+    position: absolute;
+    background: rgba(255, 255, 255, 0.34);
+    transform: scale(0);
+    transition: transform 0.4s var(--ease-out-expo);
+  }
+
+  .cursor-lens::before { width: 0.7rem; height: 1px; }
+  .cursor-lens::after { width: 1px; height: 0.7rem; }
+
+  [data-cursor-label] {
+    color: #fff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.5rem;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    opacity: 0;
+    transform: scale(0.75);
+    transition: opacity 0.25s ease, transform 0.4s var(--ease-out-expo);
+  }
+
+  .cursor-trail {
+    width: var(--trail);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42));
+    transform-origin: right center;
+    transform: translate3d(calc(var(--x) - var(--trail)), var(--y), 0) rotate(var(--angle));
+    opacity: 0.58;
+  }
+
+  rb-cursor-field.is-action .cursor-lens {
+    width: 4.4rem;
+    height: 4.4rem;
+    border-color: rgba(255, 255, 255, 0.72);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.11), rgba(8, 9, 10, 0.17) 58%, transparent 60%);
+  }
+
+  rb-cursor-field.is-action [data-cursor-label] { opacity: 1; transform: scale(1); }
+  rb-cursor-field:not(.is-action) .cursor-lens::before,
+  rb-cursor-field:not(.is-action) .cursor-lens::after { transform: scale(1); }
+
+  :global([data-magnetic]) {
+    transform: translate3d(var(--mx, 0), var(--my, 0), 0);
+    transition: transform 0.35s var(--ease-out-expo);
+  }
+
+  :global(body.is-cursor-active) rb-cursor-field { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor-trail { display: none; }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+
+  class CursorField extends HTMLElement {
+    private x = -100;
+    private y = -100;
+    private lx = -100;
+    private ly = -100;
+    private tx = -100;
+    private ty = -100;
+    private scale = 1;
+    private targetScale = 1;
+    private label = this.querySelector<HTMLElement>("[data-cursor-label]");
+    private tick = () => this.render();
+
+    connectedCallback() {
+      if (matchMedia("(pointer: coarse)").matches) return;
+      document.documentElement.classList.add("has-custom-cursor");
+      addEventListener("pointermove", this.onMove, { passive: true });
+      addEventListener("pointerover", this.onOver, { passive: true });
+      addEventListener("pointerout", this.onOut, { passive: true });
+      gsap.ticker.add(this.tick);
+    }
+
+    disconnectedCallback() {
+      document.documentElement.classList.remove("has-custom-cursor");
+      removeEventListener("pointermove", this.onMove);
+      removeEventListener("pointerover", this.onOver);
+      removeEventListener("pointerout", this.onOut);
+      gsap.ticker.remove(this.tick);
+    }
+
+    private onMove = (event: PointerEvent) => {
+      document.body.classList.add("is-cursor-active");
+      this.tx = event.clientX;
+      this.ty = event.clientY;
+
+      document.querySelectorAll<HTMLElement>("[data-magnetic]:hover").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const dx = event.clientX - (r.left + r.width / 2);
+        const dy = event.clientY - (r.top + r.height / 2);
+        el.style.setProperty("--mx", `${dx * 0.07}px`);
+        el.style.setProperty("--my", `${dy * 0.07}px`);
+      });
+    };
+
+    private onOver = (event: PointerEvent) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>("[data-cursor], a, button");
+      if (!target) return;
+      const mode = target.dataset.cursor || (target.matches("a") ? "OPEN" : "SELECT");
+      if (this.label) this.label.textContent = mode;
+      this.classList.add("is-action");
+      this.targetScale = 1.05;
+    };
+
+    private onOut = (event: PointerEvent) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>("[data-cursor], a, button");
+      if (target && (event.relatedTarget as HTMLElement | null)?.closest?.("[data-cursor], a, button") === target) return;
+      const magnetic = (event.target as HTMLElement).closest<HTMLElement>("[data-magnetic]");
+      magnetic?.style.setProperty("--mx", "0px");
+      magnetic?.style.setProperty("--my", "0px");
+      this.classList.remove("is-action");
+      this.targetScale = 1;
+    };
+
+    private render() {
+      this.x = this.tx;
+      this.y = this.ty;
+      this.lx += (this.tx - this.lx) * 0.17;
+      this.ly += (this.ty - this.ly) * 0.17;
+      this.scale += (this.targetScale - this.scale) * 0.12;
+      const dx = this.tx - this.lx;
+      const dy = this.ty - this.ly;
+      const distance = Math.min(38, Math.hypot(dx, dy));
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      this.style.setProperty("--x", `${this.x}px`);
+      this.style.setProperty("--y", `${this.y}px`);
+      this.style.setProperty("--lx", `${this.lx}px`);
+      this.style.setProperty("--ly", `${this.ly}px`);
+      this.style.setProperty("--s", `${this.scale}`);
+      this.style.setProperty("--trail", `${distance}px`);
+      this.style.setProperty("--angle", `${angle}deg`);
+    }
+  }
+
+  if (!customElements.get("rb-cursor-field")) customElements.define("rb-cursor-field", CursorField);
+</script>

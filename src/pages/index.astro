@@ -1,0 +1,1552 @@
+---
+import Layout from "../layouts/Layout.astro";
+import HeroHome from "../components/HeroHome.astro";
+import MotionGallery from "../components/MotionGallery.astro";
+import TextMarquee from "../components/TextMarquee.astro";
+import { useTranslations, type UIKey } from "../i18n/utils";
+
+const lang = "en";
+const t = useTranslations(lang);
+const tk = (key: string) => t(key as UIKey);
+
+const pillars = [1, 2, 3].map((n) => ({
+  title: `about.pillar.${n}.title`,
+  text: `about.pillar.${n}.text`,
+}));
+
+const jobs = [1, 2, 3].map((n) => ({
+  n,
+  company: `exp.${n}.company`,
+  role: `exp.${n}.role`,
+  period: `exp.${n}.period`,
+  text: `exp.${n}.text`,
+}));
+
+const edu = [1, 2, 3].map((n) => ({
+  degree: `edu.${n}.degree`,
+  school: `edu.${n}.school`,
+  period: `edu.${n}.period`,
+}));
+
+const selectedWork = [
+  {
+    title: "work.1.title",
+    tag: "work.1.tag",
+    role: "work.1.role",
+    year: "work.1.year",
+    text: "work.1.text",
+    img: "/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp",
+    href: "/work/bridge-consult",
+  },
+  {
+    title: "work.2.title",
+    tag: "work.2.tag",
+    role: "work.2.role",
+    year: "work.2.year",
+    text: "work.2.text",
+    img: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp",
+    href: "/work/fidic",
+  },
+];
+---
+
+<Layout>
+  <HeroHome />
+
+  <TextMarquee
+    class="signal-marquee"
+    texts={["Digital Marketing", "Content Systems", "SEO", "Creative Development", "Vienna"]}
+  />
+
+  <section class="section approach" id="about">
+    <div class="u-container section-grid">
+      <span class="s-idx">01 - <span data-i18n="about.label">{t("about.label")}</span></span>
+      <div>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="about.title">{t("about.title")}</h2>
+        <p class="s-lead" data-reveal data-i18n="about.text">{t("about.text")}</p>
+
+        <div class="pillars">
+          {
+            pillars.map((pillar, index) => (
+              <article class="pillar glass-tilt" data-reveal data-tilt-card>
+                <span class="pillar-glint" aria-hidden="true"></span>
+                <span class="pillar-index">{String(index + 1).padStart(2, "0")}</span>
+                <h3 data-sy-reveal="words" data-i18n={pillar.title}>{tk(pillar.title)}</h3>
+                <p data-i18n={pillar.text}>{tk(pillar.text)}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section career" id="career">
+    <div class="u-container section-grid">
+      <span class="s-idx">02 - <span data-i18n="exp.label">{t("exp.label")}</span></span>
+      <div>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="exp.title">{t("exp.title")}</h2>
+        <div class="jobs">
+          {
+            jobs.map((job) => (
+              <article class="job" data-reveal data-job-card tabindex="0">
+                <span class="job-idx">{String(job.n).padStart(2, "0")}</span>
+                <div>
+                  <h3 data-sy-reveal="words" data-i18n={job.company}>{tk(job.company)}</h3>
+                  <p class="job-role" data-i18n={job.role}>{tk(job.role)}</p>
+                </div>
+                <span class="job-period" data-i18n={job.period}>{tk(job.period)}</span>
+                <p class="job-text" data-i18n={job.text}>{tk(job.text)}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="education">
+    <div class="u-container section-grid">
+      <span class="s-idx">03 - <span data-i18n="edu.label">{t("edu.label")}</span></span>
+      <div>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="edu.title">{t("edu.title")}</h2>
+
+        <div class="edu-list">
+          {
+            edu.map((item) => (
+              <article class="edu-row" data-reveal>
+                <span class="edu-period" data-i18n={item.period}>{tk(item.period)}</span>
+                <div>
+                  <h3 data-sy-reveal="words" data-i18n={item.degree}>{tk(item.degree)}</h3>
+                  <p data-i18n={item.school}>{tk(item.school)}</p>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="facts" data-reveal>
+          <article>
+            <span data-i18n="edu.langs.label">{t("edu.langs.label")}</span>
+            <p data-i18n="edu.langs.value">{t("edu.langs.value")}</p>
+          </article>
+          <article>
+            <span data-i18n="edu.stack.label">{t("edu.stack.label")}</span>
+            <p data-i18n="edu.stack.value">{t("edu.stack.value")}</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section work" id="work">
+    <div class="u-container work-composition">
+      <div class="work-intro">
+        <span class="s-idx">04 - <span data-i18n="work.label">{t("work.label")}</span></span>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
+        <p class="s-lead" data-reveal data-i18n="work.text">{t("work.text")}</p>
+        <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
+          <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span aria-hidden="true">↗</span>
+        </a>
+        <div class="work-signals" aria-label="Solo AI workflow">
+          <span>Solo Build</span><span>Claude</span><span>Cursor</span><span>Codex</span>
+        </div>
+      </div>
+
+      <div class="work-stage">
+        <div class="work-core" aria-hidden="true">
+          <span class="work-core-shine"></span>
+          <span class="work-core-grid"></span>
+        </div>
+        <div class="work-terrain" aria-hidden="true"></div>
+        <div class="work-orbits" aria-hidden="true">
+          <span class="orbit orbit-one"></span>
+          <span class="orbit orbit-two"></span>
+          <span class="orbit-node node-one"></span>
+          <span class="orbit-node node-two"></span>
+          <span class="orbit-label label-one">SYSTEMS<br />THINKING</span>
+          <span class="orbit-label label-two">CONTENT<br />ARCHITECTURE</span>
+          <span class="orbit-label label-three">FRONTEND<br />ENGINEERING</span>
+        </div>
+
+        <div class="work-grid">
+          {
+            selectedWork.map((work, index) => (
+              <article class="work-card" style={`--case-index:${index}`}>
+                <a
+                  href={work.href}
+                  target={work.href.startsWith("http") ? "_blank" : undefined}
+                  rel={work.href.startsWith("http") ? "noopener" : undefined}
+                  data-case-link={!work.href.startsWith("http") ? true : undefined}
+                  data-cursor="OPEN"
+                >
+                  <figure>
+                    <img src={work.img} alt={tk(work.title)} loading="lazy" />
+                  </figure>
+                  <div class="work-copy">
+                    <div class="work-meta">
+                      <span>{String(index + 1).padStart(2, "0")} / <span data-i18n={work.tag}>{tk(work.tag)}</span></span>
+                      <span data-i18n={work.year}>{tk(work.year)}</span>
+                    </div>
+                    <h3 data-sy-reveal="words" data-i18n={work.title}>{tk(work.title)}</h3>
+                    <p class="work-role" data-i18n={work.role}>{tk(work.role)}</p>
+                    <p data-i18n={work.text}>{tk(work.text)}</p>
+                    <span class="work-cta">
+                      <span data-i18n="work.cta">{t("work.cta")}</span>
+                      <span aria-hidden="true">↗</span>
+                    </span>
+                  </div>
+                </a>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <MotionGallery />
+
+  <section class="portal" id="archive">
+    <div class="u-container portal-inner">
+      <div>
+        <span class="s-idx">06 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
+        <p class="portal-text" data-reveal data-i18n="portal.text">{t("portal.text")}</p>
+      </div>
+      <a class="archive-button" href="/gallery" data-tunnel data-reveal data-cursor="ENTER" aria-label={t("portal.cta")}>
+        <span class="archive-orbit" aria-hidden="true"></span>
+        <span class="archive-label" data-i18n="portal.cta">{t("portal.cta")}</span>
+        <span class="archive-arrow" aria-hidden="true">↘</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section contact legacy-ending" id="contact">
+    <div class="u-container contact-grid">
+      <span class="s-idx">07 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+      <div>
+        <h2 class="contact-title" data-sy-reveal="words" data-i18n="contact.title">{t("contact.title")}</h2>
+        <p class="s-lead" data-reveal data-i18n="contact.text">{t("contact.text")}</p>
+        <div class="contact-links" data-reveal>
+          <a href={`mailto:${t("contact.email")}`} data-i18n="contact.email">{t("contact.email")}</a>
+          <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener" data-i18n="contact.behance.label">
+            {t("contact.behance.label")}
+          </a>
+          <span data-i18n="contact.location">{t("contact.location")}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .signal-marquee {
+    --c: rgba(var(--rgb-text), 0.95);
+    position: relative;
+    z-index: 2;
+    padding: 1.2rem 0;
+    overflow: hidden;
+    border-block: 1px solid rgba(255, 255, 255, 0.11);
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.018)),
+      rgba(2, 2, 3, 0.72);
+    backdrop-filter: blur(18px) saturate(0.8);
+    box-shadow: 0 0 3rem rgba(255, 255, 255, 0.035);
+  }
+
+  .signal-marquee :global(.text) {
+    --fs: 2.15rem;
+    font-weight: 420;
+    letter-spacing: 0;
+    color: rgba(248, 250, 250, 0.88);
+    background: none;
+  }
+
+  .signal-marquee :global(.divider) {
+    opacity: 0.42;
+  }
+
+  .section {
+    position: relative;
+    padding: clamp(6rem, 13vw, 12rem) 0;
+    overflow: clip;
+    background:
+      radial-gradient(circle at 82% 16%, rgba(255, 255, 255, 0.055), transparent 29rem),
+      radial-gradient(circle at 12% 76%, rgba(255, 255, 255, 0.032), transparent 32rem),
+      linear-gradient(180deg, rgba(3, 3, 4, 0.4), rgba(8, 9, 10, 0.74) 18%, rgba(5, 6, 7, 0.66) 82%, rgba(2, 2, 3, 0.36));
+  }
+
+  .section::before {
+    content: "";
+    position: absolute;
+    inset: -20% 0 auto;
+    height: 36rem;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 76% 22%, rgba(255, 255, 255, 0.075), transparent 25rem),
+      linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.018) 49%, transparent 66%);
+    opacity: 0.82;
+  }
+
+  .section-grid,
+  .work-head,
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 18rem minmax(0, 1fr);
+    gap: 3rem;
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+
+  .s-idx {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--color-text-alt);
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  .s-idx.center {
+    display: block;
+    text-align: center;
+  }
+
+  .s-title,
+  .contact-title {
+    max-width: 15ch;
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.2rem, 5.8vw, 5.1rem);
+    line-height: 0.98;
+    letter-spacing: 0;
+    color: #f7f9f9;
+    background: none;
+    filter: drop-shadow(0 0 1.6rem rgba(255, 255, 255, 0.06));
+  }
+
+  .s-lead {
+    max-width: 43rem;
+    margin: 2.2rem 0 0;
+    color: rgba(var(--rgb-text), 0.82);
+    font-size: clamp(1.1rem, 2vw, 1.55rem);
+    line-height: 1.55;
+    text-shadow: 0 1px 18px rgba(0, 0, 0, 0.45);
+  }
+
+  .pillars {
+    --tilt-x: 0deg;
+    --tilt-y: 0deg;
+    --glint-x: 50%;
+    --glint-y: 50%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(0.9rem, 2vw, 1.3rem);
+    margin-top: 4rem;
+    perspective: 1100px;
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .pillar {
+    --panel-accent: 220, 226, 229;
+    min-height: 20rem;
+    position: relative;
+    isolation: isolate;
+    padding: clamp(1.2rem, 2.5vw, 2rem);
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid rgba(210, 228, 235, 0.12);
+    background:
+      radial-gradient(circle at var(--glint-x) var(--glint-y), rgba(var(--panel-accent), 0.18), transparent 34%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(154, 181, 192, 0.024) 48%, rgba(0, 0, 0, 0.08)),
+      rgba(10, 13, 17, 0.7);
+    backdrop-filter: blur(20px) saturate(0.95);
+    box-shadow:
+      0 2rem 5rem rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.045),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    transform:
+      rotateX(var(--tilt-x))
+      rotateY(var(--tilt-y))
+      translate3d(0, var(--lift, 0), 0);
+    transform-style: preserve-3d;
+    transition:
+      box-shadow 0.5s var(--ease-out-expo),
+      border-color 0.5s var(--ease-out-expo),
+      background 0.5s var(--ease-out-expo),
+      transform 0.25s var(--ease-out-expo);
+  }
+
+  .pillar:nth-child(2) { --panel-accent: 194, 201, 205; }
+  .pillar:nth-child(3) { --panel-accent: 234, 237, 238; }
+
+  .pillar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 42%);
+    opacity: 0.8;
+  }
+
+  .pillar::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      linear-gradient(115deg, transparent 0 38%, rgba(255, 255, 255, 0.15), transparent 58%),
+      radial-gradient(circle at var(--glint-x) var(--glint-y), rgba(255, 255, 255, 0.09), transparent 22%);
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity 0.4s var(--ease-out-expo);
+  }
+
+  .pillar:hover {
+    --lift: -10px;
+    border-color: rgba(var(--panel-accent), 0.38);
+    box-shadow:
+      0 2.8rem 7rem rgba(0, 0, 0, 0.38),
+      0 0 3.8rem rgba(var(--panel-accent), 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .pillar:hover::after {
+    opacity: 0.74;
+  }
+
+  .pillar > *:not(.pillar-glint) {
+    position: relative;
+    z-index: 1;
+    transform: translateZ(34px);
+  }
+
+  .pillar-glint {
+    position: absolute;
+    inset: -40%;
+    z-index: 0;
+    pointer-events: none;
+    background: conic-gradient(from 120deg at var(--glint-x) var(--glint-y), transparent, rgba(255, 255, 255, 0.055), transparent 32%);
+    opacity: 0;
+    transition: opacity 0.45s var(--ease-out-expo);
+  }
+
+  .pillar:hover .pillar-glint {
+    opacity: 1;
+  }
+
+  .pillar-index,
+  .work-meta,
+  .job-idx,
+  .edu-period,
+  .facts span {
+    color: rgb(var(--panel-accent, 214, 220, 223));
+    text-shadow: 0 0 1.2rem rgba(var(--panel-accent, 214, 220, 223), 0.22);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .pillar h3,
+  .job h3,
+  .edu-row h3,
+  .work-card h3 {
+    margin: 1rem 0 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.4rem, 2.4vw, 2.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .pillar p,
+  .job-text,
+  .edu-row p,
+  .facts p,
+  .work-card p,
+  .portal-text {
+    color: rgba(var(--rgb-text), 0.8);
+    line-height: 1.58;
+  }
+
+  .pillar p {
+    margin-top: 1.15rem;
+    transform: translateZ(24px);
+  }
+
+  .jobs,
+  .edu-list {
+    margin-top: clamp(3rem, 6vw, 5rem);
+    display: grid;
+    gap: 0.85rem;
+    border-top: 0;
+  }
+
+  .edu-list {
+    gap: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.012);
+    backdrop-filter: blur(12px);
+  }
+
+  .career .section-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .career .section-grid > div {
+    min-width: 0;
+  }
+
+  .career .s-title {
+    max-width: 11ch;
+  }
+
+  .jobs {
+    position: relative;
+    padding-left: 2.1rem;
+  }
+
+  .jobs::before {
+    content: "";
+    position: absolute;
+    top: 1.25rem;
+    bottom: 1.25rem;
+    left: 0.5rem;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.2) 12%, rgba(255, 255, 255, 0.08) 86%, transparent);
+  }
+
+  .job {
+    --career-accent: 220, 226, 229;
+    --job-x: 50%;
+    --job-y: 50%;
+    display: grid;
+    grid-template-columns: 3.4rem minmax(13rem, 0.82fr) 10rem minmax(0, 1.25fr);
+    gap: 1.6rem;
+    align-items: start;
+    position: relative;
+    padding: 1.7rem;
+    overflow: hidden;
+    border: 1px solid rgba(215, 231, 237, 0.13);
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at var(--job-x) var(--job-y), rgba(var(--career-accent), 0.21), transparent 25rem),
+      linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(148, 173, 184, 0.025) 58%, rgba(255, 255, 255, 0.018)),
+      rgba(12, 15, 20, 0.72);
+    backdrop-filter: blur(20px) saturate(0.95);
+    box-shadow:
+      0 1.4rem 4rem rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    transform-origin: left center;
+    transition:
+      transform 0.55s var(--ease-out-expo),
+      border-color 0.45s ease,
+      background 0.45s ease,
+      box-shadow 0.55s var(--ease-out-expo);
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: -2.05rem;
+      width: 0.65rem;
+      height: 0.65rem;
+      border: 1px solid rgba(225, 239, 244, 0.55);
+      border-radius: 50%;
+      background: #030304;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 0.35rem rgba(214, 232, 239, 0.06), 0 0 1rem rgba(200, 224, 233, 0.12);
+      transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.45s var(--ease-out-expo);
+    }
+
+    &::after {
+      content: "↗";
+      position: absolute;
+      right: 1.1rem;
+      top: 1rem;
+      color: rgba(var(--rgb-text), 0.22);
+      font-size: 0.8rem;
+      transition: color 0.35s ease, transform 0.45s var(--ease-out-expo);
+    }
+
+    @media (--mq-tablet) {
+      grid-template-columns: 3rem minmax(12rem, 1fr) 8rem;
+      gap: 1rem;
+    }
+  }
+
+  .job:nth-child(2) { --career-accent: 184, 191, 195; }
+  .job:nth-child(3) { --career-accent: 236, 239, 240; }
+
+  @media (max-width: 1024px) {
+    .job-text {
+      grid-column: 2 / -1;
+    }
+  }
+
+  .job:hover,
+  .job:focus-visible {
+    z-index: 2;
+    outline: none;
+    border-color: rgba(var(--career-accent), 0.42);
+    transform: translateX(0.8rem) perspective(900px) rotateY(-1.25deg);
+    box-shadow:
+      -1.1rem 2.2rem 5rem rgba(0, 0, 0, 0.42),
+      0 0 4rem rgba(var(--career-accent), 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .job:hover::before,
+  .job:focus-visible::before {
+    background: rgb(var(--career-accent));
+    box-shadow: 0 0 1.8rem rgba(var(--career-accent), 0.62);
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+
+  .job:hover::after,
+  .job:focus-visible::after {
+    color: rgba(var(--rgb-text), 0.8);
+    transform: translate(0.2rem, -0.2rem);
+  }
+
+  .job h3 {
+    margin-top: 0;
+    font-size: 1.7rem;
+  }
+
+  .job-role {
+    margin: 0.35rem 0 0;
+    color: rgba(var(--rgb-text), 0.65);
+  }
+
+  .job-period {
+    color: rgba(var(--rgb-text), 0.66);
+  }
+
+  .job-text {
+    margin: 0;
+    color: rgba(var(--rgb-text), 0.74);
+    transition: color 0.4s ease, transform 0.55s var(--ease-out-expo);
+  }
+
+  .job:hover .job-text,
+  .job:focus-visible .job-text {
+    color: rgba(var(--rgb-text), 0.92);
+    transform: translateX(0.25rem);
+  }
+
+  @media (max-width: 760px) {
+    .jobs { padding-left: 1.35rem; }
+    .jobs::before { left: 0.25rem; }
+    .job::before { left: -1.15rem; }
+    .job:hover,
+    .job:focus-visible { transform: translateX(0.25rem); }
+    .job { grid-template-columns: 1fr; }
+    .job-text { grid-column: auto; }
+  }
+
+  .edu-row {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 2rem;
+    padding: clamp(1.1rem, 2.2vw, 1.55rem);
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.025), transparent 55%);
+    backdrop-filter: none;
+    transition: background 0.4s ease, padding-left 0.5s var(--ease-out-expo);
+
+    @media (--mq-tablet-sm) {
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+  }
+
+  .edu-row:hover {
+    padding-left: calc(clamp(1.1rem, 2.2vw, 1.55rem) + 0.45rem);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.075), transparent 64%);
+  }
+
+  .edu-row h3 {
+    margin-top: 0;
+  }
+
+  .edu-row p {
+    margin: 0.4rem 0 0;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 0.85rem;
+    margin-top: 2.5rem;
+    padding: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.012));
+    backdrop-filter: blur(22px);
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .facts article {
+    padding: 1.25rem;
+    border: 0;
+    border-radius: 7px;
+    background: rgba(3, 4, 5, 0.72);
+    backdrop-filter: none;
+  }
+
+  .facts p {
+    margin: 0.8rem 0 0;
+  }
+
+  .work {
+    min-height: 100svh;
+    padding: clamp(6rem, 9vw, 8rem) 0;
+    overflow: hidden;
+  }
+
+  .work::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    left: -10%;
+    right: -10%;
+    bottom: -5rem;
+    height: 15rem;
+    pointer-events: none;
+    opacity: 0.24;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.62) 0 1px, transparent 1.3px);
+    background-size: 0.85rem 0.85rem;
+    mask-image: linear-gradient(180deg, transparent, #000 32%, transparent 96%);
+    transform: perspective(480px) rotateX(64deg);
+    transform-origin: bottom;
+  }
+
+  .work-composition {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(18rem, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(2.5rem, 5vw, 6rem);
+    align-items: center;
+    min-height: 44rem;
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+      min-height: auto;
+    }
+  }
+
+  .work-intro {
+    position: relative;
+    z-index: 4;
+    align-self: center;
+  }
+
+  .work-intro .s-title {
+    max-width: 10ch;
+    font-size: 4.15rem;
+    line-height: 1.02;
+  }
+
+  .work-intro .s-lead {
+    max-width: 34rem;
+    font-size: 1.05rem;
+  }
+
+  .work-archive-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 2rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+    color: rgba(var(--rgb-text), 0.82);
+    font-size: 0.82rem;
+    transition: color 0.35s ease, border-color 0.35s ease, gap 0.45s var(--ease-out-expo);
+  }
+
+  .work-archive-link:hover {
+    color: #fff;
+    border-color: #fff;
+    gap: 1.15rem;
+  }
+
+  .work-signals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.35rem;
+    margin-top: 2rem;
+    color: rgba(var(--rgb-text), 0.38);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .work-signals span::before {
+    content: "";
+    display: inline-block;
+    width: 0.25rem;
+    height: 0.25rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 0 0.7rem rgba(255, 255, 255, 0.35);
+  }
+
+  .work-stage {
+    position: relative;
+    min-height: 44rem;
+    perspective: 1500px;
+
+    @media (--mq-tablet) {
+      min-height: 41rem;
+    }
+  }
+
+  .work-grid {
+    position: absolute;
+    inset: 0;
+
+    @media (--mq-phone) {
+      position: relative;
+      display: grid;
+      gap: 1rem;
+    }
+  }
+
+  .work-orbits {
+    position: absolute;
+    inset: 4% -8%;
+    z-index: 0;
+    pointer-events: none;
+
+    @media (--mq-phone) { display: none; }
+  }
+
+  .orbit {
+    position: absolute;
+    inset: 18% 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: rotate(-9deg);
+    box-shadow: 0 0 1.4rem rgba(255, 255, 255, 0.025);
+  }
+
+  .orbit-two {
+    inset: 8% 9% 28%;
+    border-color: rgba(255, 255, 255, 0.055);
+    transform: rotate(23deg);
+  }
+
+  .orbit-node {
+    position: absolute;
+    width: 0.36rem;
+    height: 0.36rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 1rem rgba(255, 255, 255, 0.82);
+  }
+
+  .node-one { left: 9%; top: 32%; }
+  .node-two { right: 5%; top: 48%; }
+
+  .orbit-label {
+    position: absolute;
+    color: rgba(var(--rgb-text), 0.38);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.52rem;
+    letter-spacing: 0.12em;
+    line-height: 1.65;
+  }
+
+  .label-one { left: 1%; top: 22%; }
+  .label-two { left: 56%; top: 3%; }
+  .label-three { right: -1%; top: 39%; }
+
+  .work-card {
+    --work-accent: 220, 226, 229;
+    position: absolute;
+    z-index: 2;
+    width: min(51%, 23.5rem);
+    min-height: 31rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012));
+    backdrop-filter: blur(24px) saturate(0.82);
+    overflow: hidden;
+    box-shadow:
+      0 3rem 7rem rgba(0, 0, 0, 0.58),
+      inset 0 1px 0 rgba(255, 255, 255, 0.13),
+      inset 1px 0 0 rgba(255, 255, 255, 0.055);
+    transform-style: preserve-3d;
+    transition:
+      border-color 0.45s ease,
+      box-shadow 0.55s var(--ease-out-expo),
+      transform 0.65s var(--ease-out-expo);
+
+    @media (--mq-phone) {
+      position: relative;
+      inset: auto !important;
+      width: 100%;
+      min-height: 0;
+      transform: none !important;
+    }
+  }
+
+  .work-card:nth-child(1) {
+    left: 1%;
+    top: 15%;
+    transform: perspective(1200px) rotateY(9deg) rotateZ(-2.4deg) translateZ(2rem);
+  }
+
+  .work-card:nth-child(2) {
+    --work-accent: 184, 191, 195;
+    right: 0;
+    top: 25%;
+    transform: perspective(1200px) rotateY(-8deg) rotateZ(2.6deg);
+  }
+
+  .work-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 0 28%, rgba(255, 255, 255, 0.2) 44%, transparent 58%);
+    transform: translateX(-70%);
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity 0.45s var(--ease-out-expo), transform 0.8s var(--ease-out-expo);
+  }
+
+  .work-card:nth-child(1):hover {
+    border-color: rgba(var(--work-accent), 0.42);
+    transform: perspective(1200px) rotateY(4deg) rotateZ(-1deg) translate3d(0, -12px, 3.2rem);
+    box-shadow:
+      0 3.8rem 8rem rgba(0, 0, 0, 0.68),
+      0 0 4rem rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .work-card:nth-child(2):hover {
+    border-color: rgba(var(--work-accent), 0.42);
+    transform: perspective(1200px) rotateY(-3deg) rotateZ(1deg) translate3d(0, -12px, 2rem);
+    box-shadow:
+      0 3.8rem 8rem rgba(0, 0, 0, 0.68),
+      0 0 4rem rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .work-card:hover::before {
+    opacity: 0.7;
+    transform: translateX(70%);
+  }
+
+  .work-card a {
+    position: relative;
+    z-index: 2;
+    display: block;
+    min-height: inherit;
+    color: var(--color-text);
+  }
+
+  .work-card figure {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    overflow: hidden;
+    background: var(--color-bg);
+  }
+
+  .work-card figure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(2, 3, 4, 0.76) 0%, rgba(2, 3, 4, 0.26) 43%, rgba(2, 3, 4, 0.9) 100%),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.4), transparent 65%);
+    opacity: 1;
+    transition: opacity 0.45s var(--ease-out-expo);
+  }
+
+  .work-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.08);
+    transition: transform 0.65s var(--ease-out-expo);
+  }
+
+  .work-card:hover img {
+    transform: scale(1.02);
+  }
+
+  .work-card:hover figure::after {
+    opacity: 0.86;
+  }
+
+  .work-copy {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    min-height: inherit;
+    padding: 1.6rem;
+  }
+
+  .work-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--color-text-alt);
+  }
+
+  .work-role {
+    margin: 0.45rem 0 1rem;
+    color: rgba(var(--rgb-text), 0.66);
+    text-shadow: none;
+  }
+
+  .work-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 1.5rem;
+    color: rgba(var(--rgb-text), 0.88);
+  }
+
+  @media (max-width: 1080px) and (min-width: 561px) {
+    .work-card { width: min(52%, 23rem); }
+    .work-stage { min-height: 41rem; }
+  }
+
+  @media (max-width: 900px) {
+    .work-intro .s-title { font-size: 3.6rem; }
+  }
+
+  @media (--mq-phone) {
+    .work-stage { min-height: 0; margin-top: 2.5rem; }
+    .work-card figure { position: relative; aspect-ratio: 1.28; }
+    .work-copy { min-height: 19rem; }
+    .work-intro .s-title { font-size: 3rem; }
+  }
+
+  .portal {
+    position: relative;
+    padding: clamp(7rem, 14vw, 12rem) 0;
+    overflow: hidden;
+    border-block: 1px solid rgba(255, 255, 255, 0.045);
+    background:
+      radial-gradient(circle at 50% 58%, rgba(255, 255, 255, 0.085), transparent 24rem),
+      radial-gradient(circle at 66% 42%, rgba(255, 255, 255, 0.035), transparent 30rem),
+      rgba(2, 2, 3, 0.58);
+    backdrop-filter: blur(6px);
+  }
+
+  .portal-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3.5rem;
+    text-align: center;
+  }
+
+  .portal-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.7rem, 8vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .archive-button {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    width: 15rem;
+    aspect-ratio: 1;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    color: rgba(var(--rgb-text), 0.78);
+    background:
+      radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.13), transparent 34%),
+      radial-gradient(circle at 70% 74%, rgba(255, 255, 255, 0.055), transparent 42%),
+      rgba(4, 5, 6, 0.76);
+    backdrop-filter: blur(20px) saturate(0.72);
+    box-shadow:
+      0 0 0 0.35rem rgba(255, 255, 255, 0.018),
+      0 0 4.8rem rgba(255, 255, 255, 0.13),
+      0 0 8rem rgba(255, 255, 255, 0.035),
+      inset 0 0 3.2rem rgba(255, 255, 255, 0.07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+    transition: color 0.35s ease, border-color 0.35s ease, background 0.35s ease, transform 0.35s ease;
+  }
+
+  .archive-button::before,
+  .archive-button::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .archive-button::before {
+    inset: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.045);
+  }
+
+  .archive-button::after {
+    inset: -0.45rem;
+    border: 1px solid transparent;
+    border-top-color: #f1f5f6;
+    border-right-color: rgba(255, 255, 255, 0.22);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    filter: drop-shadow(0 0 0.9rem rgba(255, 255, 255, 0.42));
+    animation: archive-rotate 28s linear infinite;
+  }
+
+  .archive-orbit {
+    position: absolute;
+    inset: 19%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    transform: rotate(-18deg) scaleY(0.32);
+    transition: transform 0.65s var(--ease-out-expo), border-color 0.4s ease;
+  }
+
+  .archive-label,
+  .archive-arrow { position: relative; z-index: 1; }
+
+  .archive-label { max-width: 11ch; line-height: 1.5; }
+  .archive-label {
+    color: #f8fdff;
+    text-shadow: 0 0 1.5rem rgba(255, 255, 255, 0.28);
+  }
+
+  .archive-arrow {
+    color: rgba(var(--rgb-text), 0.42);
+    font-size: 1.15rem;
+    transition: transform 0.5s var(--ease-out-expo), color 0.35s ease;
+  }
+
+  .archive-button:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+    background:
+      radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.075), transparent 38%),
+      rgba(4, 4, 5, 0.72);
+    transform: translateY(-4px) scale(1.018);
+    box-shadow:
+      0 0 0 0.4rem rgba(255, 255, 255, 0.025),
+      0 0 5.5rem rgba(188, 215, 225, 0.2),
+      inset 0 0 3.4rem rgba(205, 225, 233, 0.065);
+  }
+
+  .archive-button:hover .archive-orbit {
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: rotate(16deg) scaleY(0.52);
+  }
+
+  .archive-button:hover .archive-arrow {
+    color: #fff;
+    transform: translate(0.25rem, 0.25rem);
+  }
+
+  @keyframes archive-rotate { to { transform: rotate(360deg); } }
+
+  .portal-text {
+    max-width: 42ch;
+    margin: 1.6rem 0 0;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  @media (max-width: 760px) {
+    .portal-inner { gap: 2.5rem; }
+    .archive-button { width: 13rem; justify-self: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .archive-button::after { animation: none; }
+  }
+
+  .contact-title {
+    max-width: 13ch;
+  }
+
+  .contact-links {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 2rem;
+    font-size: clamp(1.1rem, 2.2vw, 1.6rem);
+  }
+
+  .contact-links a,
+  .contact-links span {
+    width: fit-content;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-line);
+    padding-bottom: 0.35rem;
+  }
+
+  .contact-links a:hover {
+    color: var(--color-accent);
+    border-color: currentColor;
+  }
+
+  .contact.legacy-ending { display: none; }
+  .work-archive-link,
+  .orbit-label { display: none; }
+
+  /* Selected work is staged as one orbital composition, not two tall panels. */
+  .work {
+    padding: clamp(5.5rem, 8vw, 7.5rem) 0;
+    background:
+      radial-gradient(circle at 66% 48%, rgba(255, 255, 255, 0.075), transparent 25rem),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(3, 4, 5, 0.7));
+    contain: layout paint;
+  }
+
+  .work-composition {
+    grid-template-columns: minmax(17rem, 0.62fr) minmax(37rem, 1.38fr);
+    gap: clamp(2rem, 4vw, 4.5rem);
+    min-height: 42rem;
+  }
+
+  .work-intro .s-title {
+    max-width: 9.5ch;
+    font-size: clamp(3rem, 4.35vw, 4.65rem);
+    line-height: 0.98;
+  }
+
+  .work-intro .s-lead {
+    max-width: 31rem;
+    font-size: clamp(0.98rem, 1.25vw, 1.16rem);
+  }
+
+  .work-stage { min-height: 42rem; }
+
+  .work-core {
+    position: absolute;
+    z-index: 0;
+    left: 50%;
+    top: 48%;
+    width: min(35vw, 31rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle at 31% 24%, rgba(255, 255, 255, 0.78) 0 0.45%, rgba(255, 255, 255, 0.24) 1.1%, transparent 4%),
+      radial-gradient(circle at 38% 28%, rgba(255, 255, 255, 0.22), transparent 17%),
+      radial-gradient(circle at 68% 66%, rgba(157, 170, 176, 0.12), transparent 31%),
+      radial-gradient(circle at 46% 42%, #202326 0%, #090a0c 52%, #010102 76%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+      -2rem -1.2rem 5rem rgba(255, 255, 255, 0.045),
+      2rem 2rem 7rem rgba(0, 0, 0, 0.9),
+      inset -3rem -2rem 5rem rgba(0, 0, 0, 0.76),
+      inset 1rem 0.5rem 2.6rem rgba(255, 255, 255, 0.08);
+    animation: work-core-float 9s ease-in-out infinite;
+  }
+
+  .work-core::before,
+  .work-core::after {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    transform: rotate(24deg) scaleY(0.28);
+  }
+
+  .work-core::after {
+    inset: -12%;
+    border-color: rgba(255, 255, 255, 0.055);
+    transform: rotate(-18deg) scaleY(0.44);
+  }
+
+  .work-core-shine {
+    position: absolute;
+    inset: 7%;
+    border-radius: inherit;
+    background: conic-gradient(from 205deg, transparent 0 45%, rgba(255, 255, 255, 0.2) 50%, transparent 56%);
+    filter: blur(8px);
+    opacity: 0.56;
+    animation: work-core-turn 16s linear infinite;
+  }
+
+  .work-core-grid {
+    position: absolute;
+    inset: 20%;
+    border-radius: inherit;
+    opacity: 0.12;
+    background-image:
+      linear-gradient(rgba(255,255,255,.25) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px);
+    background-size: 1.1rem 1.1rem;
+    mask-image: radial-gradient(circle, #000, transparent 72%);
+  }
+
+  .work-terrain {
+    position: absolute;
+    z-index: 0;
+    left: -18%;
+    right: -15%;
+    bottom: -7%;
+    height: 13rem;
+    opacity: 0.34;
+    background-image:
+      linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px);
+    background-size: 1.15rem 1.15rem;
+    mask-image: linear-gradient(180deg, transparent, #000 24%, transparent 96%);
+    transform: perspective(420px) rotateX(65deg) rotateZ(-2deg);
+    transform-origin: bottom;
+  }
+
+  .work-orbits { inset: 9% -3% 7%; }
+
+  .work-card {
+    width: min(40%, 19.5rem);
+    height: 23rem;
+    min-height: 0;
+    background: rgba(5, 6, 7, 0.48);
+    backdrop-filter: none;
+    box-shadow: 0 2.5rem 5.5rem rgba(0, 0, 0, 0.62), inset 0 1px rgba(255,255,255,.14);
+  }
+
+  .work-card:nth-child(1) {
+    left: 5%;
+    top: 16%;
+    transform: perspective(1200px) rotateY(8deg) rotateZ(-2deg) translateZ(2rem);
+  }
+
+  .work-card:nth-child(2) {
+    right: 1%;
+    top: 27%;
+    transform: perspective(1200px) rotateY(-7deg) rotateZ(2.2deg);
+  }
+
+  .work-copy { padding: 1.35rem; }
+  .work-card h3 { font-size: clamp(1.45rem, 2vw, 2rem); }
+  .work-card p { font-size: 0.86rem; line-height: 1.48; }
+  .work-card a,
+  .work-copy { height: 100%; min-height: 0; }
+  .work-copy > p:not(.work-role) {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+  }
+  .work-role { margin-bottom: 0.7rem; }
+
+  @keyframes work-core-float {
+    0%, 100% { transform: translate(-50%, -50%) rotate(-1deg) scale(1); }
+    50% { transform: translate(-50%, calc(-50% - 0.7rem)) rotate(1.5deg) scale(1.015); }
+  }
+
+  @keyframes work-core-turn { to { transform: rotate(360deg); } }
+
+  @media (max-width: 1100px) {
+    .work-composition { grid-template-columns: 1fr; }
+    .work-stage { min-height: 40rem; }
+    .work-core { width: min(54vw, 29rem); }
+  }
+
+  @media (max-width: 560px) {
+    .work-intro .s-title { font-size: 3rem; }
+    .work-stage { min-height: 0; padding-top: 7rem; }
+    .work-grid { position: relative; }
+    .work-core { width: 19rem; top: 2rem; opacity: 0.72; }
+    .work-terrain { display: none; }
+    .work-card { width: 100%; height: auto; min-height: 0; }
+    .work-card figure { aspect-ratio: 1.22; }
+  }
+
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    will-change: transform, opacity;
+  }
+
+  :global(html.is-motion-ready) [data-reveal]:not(.is-revealed) {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let motionStarted = false;
+
+  const initReveals = async () => {
+    if (motionStarted) return;
+    motionStarted = true;
+    const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+
+    if (reduced) {
+      gsap.set(items, { opacity: 1, y: 0 });
+      items.forEach((item) => item.classList.add("is-revealed"));
+      return;
+    }
+
+    await document.fonts?.ready;
+    document.documentElement.classList.add("is-motion-ready");
+
+    requestAnimationFrame(() => {
+      ScrollTrigger.batch(items, {
+        start: "top 82%",
+        once: true,
+        onEnter: (batch) =>
+          gsap.to(batch, {
+            opacity: 1,
+            y: 0,
+            duration: 0.9,
+            ease: "power3.out",
+            stagger: 0.07,
+            overwrite: true,
+            onComplete: () => batch.forEach((item) => item.classList.add("is-revealed")),
+          }),
+        onEnterBack: (batch) => {
+          gsap.set(batch, { opacity: 1, y: 0 });
+          batch.forEach((item) => item.classList.add("is-revealed"));
+        },
+      });
+      ScrollTrigger.refresh();
+    });
+  };
+
+  if (document.body.classList.contains("is-loaded") || !document.querySelector("rb-studio-loader")) {
+    void initReveals();
+  } else {
+    addEventListener("rb:loaded", () => void initReveals(), { once: true });
+  }
+
+  addEventListener("rb:langchange", () => requestAnimationFrame(() => ScrollTrigger.refresh()));
+
+  const tiltCards = gsap.utils.toArray<HTMLElement>("[data-tilt-card]");
+  tiltCards.forEach((card) => {
+    const reset = () => {
+      gsap.to(card, {
+        rotationX: 0,
+        rotationY: 0,
+        z: 0,
+        "--tilt-x": "0deg",
+        "--tilt-y": "0deg",
+        "--glint-x": "50%",
+        "--glint-y": "50%",
+        duration: 0.7,
+        ease: "power3.out",
+      });
+    };
+
+    card.addEventListener("pointermove", (event) => {
+      if (reduced) return;
+      const rect = card.getBoundingClientRect();
+      const px = (event.clientX - rect.left) / rect.width;
+      const py = (event.clientY - rect.top) / rect.height;
+      const rx = (0.5 - py) * 5;
+      const ry = (px - 0.5) * 7;
+      gsap.to(card, {
+        rotationX: rx,
+        rotationY: ry,
+        z: 10,
+        "--tilt-x": `${rx}deg`,
+        "--tilt-y": `${ry}deg`,
+        "--glint-x": `${px * 100}%`,
+        "--glint-y": `${py * 100}%`,
+        duration: 0.35,
+        ease: "power3.out",
+      });
+    });
+
+    card.addEventListener("pointerleave", reset);
+    card.addEventListener("blur", reset);
+  });
+
+  const jobCards = gsap.utils.toArray<HTMLElement>("[data-job-card]");
+  jobCards.forEach((card) => {
+    card.addEventListener("pointermove", (event) => {
+      if (reduced) return;
+      const rect = card.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty("--job-x", `${x}%`);
+      card.style.setProperty("--job-y", `${y}%`);
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.setProperty("--job-x", "50%");
+      card.style.setProperty("--job-y", "50%");
+    });
+  });
+
+  const workStage = document.querySelector<HTMLElement>(".work-stage");
+  const caseCards = gsap.utils.toArray<HTMLElement>(".work-card");
+  const workOrbits = document.querySelector<HTMLElement>(".work-orbits");
+
+  workStage?.addEventListener("pointermove", (event) => {
+    if (reduced || innerWidth < 760) return;
+    const rect = workStage.getBoundingClientRect();
+    const nx = (event.clientX - rect.left) / rect.width - 0.5;
+    const ny = (event.clientY - rect.top) / rect.height - 0.5;
+    caseCards.forEach((card, index) => {
+      const direction = index === 0 ? 1 : -1;
+      gsap.to(card, {
+        x: nx * 18 * direction,
+        y: ny * 12 * (index === 0 ? 0.75 : 1),
+        duration: 0.65,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
+    });
+    if (workOrbits) gsap.to(workOrbits, { x: nx * -12, y: ny * -8, duration: 0.9, ease: "power3.out" });
+  });
+
+  workStage?.addEventListener("pointerleave", () => {
+    gsap.to(caseCards, { x: 0, y: 0, duration: 0.9, ease: "power3.out", overwrite: "auto" });
+    if (workOrbits) gsap.to(workOrbits, { x: 0, y: 0, duration: 1.1, ease: "power3.out" });
+  });
+
+</script>

@@ -1,0 +1,426 @@
+---
+import type { Link } from "../types";
+
+interface Props {
+  logoUrl: string;
+  logoAlt: string;
+  links: Link[];
+  cta?: Link;
+}
+
+const { logoUrl, logoAlt, links, cta } = Astro.props;
+---
+
+<header>
+  <sy-head>
+    <div class="inner u-container">
+      <div class="wrapper">
+        <a class="logo" href={logoUrl} aria-label={logoAlt} data-tunnel>
+          <span class="mark">Rodion Belousov</span><span class="dot">.studio</span>
+        </a>
+
+        {
+          links.length ? (
+            <div class="menu">
+              <ul>
+                {links.map((l) => (
+                  <li>
+                    <a href={l.url} data-i18n={l.i18n} data-overlay={l.overlay}>
+                      {l.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        }
+
+        <div class="buttons">
+          <!-- Language switcher -->
+          <div class="lang" role="group" aria-label="Language">
+            <button type="button" data-lang="en" aria-pressed="true">
+              <span data-i18n="lang.en">EN</span>
+            </button>
+            <button type="button" data-lang="de" aria-pressed="false">
+              <span data-i18n="lang.de">DE</span>
+            </button>
+          </div>
+
+          {
+            cta ? (
+              <a class="nav-cta" href={cta.url} data-tunnel={cta.tunnel ? "" : undefined}>
+                <span data-i18n={cta.i18n}>{cta.title}</span>
+              </a>
+            ) : null
+          }
+
+          {
+            links.length ? (
+              <button type="button" class="toggle" aria-label="Toggle menu">
+                <span class="u-sr-only">Toggle menu</span>
+                <span aria-hidden>
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </button>
+            ) : null
+          }
+        </div>
+      </div>
+    </div>
+  </sy-head>
+</header>
+
+<style>
+  sy-head {
+    --br: 1.25rem;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50; /* above gallery UI (10); below overlays (60) & preloader (100) */
+    color: var(--color-text);
+    margin: 0 auto;
+    transition: transform 0.3s var(--ease-out-cubic);
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+
+    :global(body.is-nav-hidden) & {
+      transform: translate3d(0, -100%, 0);
+    }
+
+    /* scroll-triggered frosted backdrop */
+    &::after {
+      content: "";
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      background: rgba(2, 2, 3, 0.64);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: transform 0.3s var(--ease-out-cubic);
+      backdrop-filter: blur(16px);
+    }
+
+    :global(body.is-nav-small) &::after {
+      transform: scaleY(1);
+    }
+  }
+
+  .inner {
+    padding: 1.15rem 0;
+    transition: padding 0.3s var(--ease-out-cubic);
+
+    :global(body.is-nav-small) & {
+      padding: 0.7rem 0;
+    }
+  }
+
+  .wrapper {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  /* ── Wordmark ──────────────────────────────────────────────────────────── */
+  .logo {
+    position: relative;
+    z-index: 3;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    white-space: nowrap;
+
+    .dot {
+      color: var(--color-accent);
+    }
+
+    @media (--mq-phone-md) {
+      font-size: 1rem;
+
+      .mark {
+        /* keep it compact on phones */
+        clip-path: inset(0 0 0 0);
+      }
+    }
+  }
+
+  /* ── Center nav ────────────────────────────────────────────────────────── */
+  .menu {
+    display: flex;
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: min-content;
+
+    @media (--mq-tablet) {
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100dvh;
+      position: fixed;
+      z-index: 2;
+      background: var(--color-bg);
+      top: 0;
+      left: 0;
+      clip-path: inset(0 0 0%);
+      transition: clip-path 0.6s var(--ease-out-expo);
+
+      :global(body:not(.is-nav-opened)) & {
+        clip-path: inset(0 0 100%);
+        pointer-events: none;
+      }
+    }
+
+    ul {
+      font-family: var(--font-inter);
+      font-size: var(--font-size-sm);
+      letter-spacing: 0.02em;
+      display: flex;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      align-items: center;
+      gap: 2rem;
+
+      @media (--mq-tablet) {
+        flex-direction: column;
+        font-family: var(--font-display);
+        font-size: 2.25rem;
+        gap: 1.25rem;
+      }
+    }
+
+    a {
+      text-decoration: none;
+      position: relative;
+      color: var(--color-text);
+      transition: color 0.3s var(--ease-out-expo);
+
+      &::before {
+        content: "";
+        position: absolute;
+        height: 1px;
+        background: var(--color-accent);
+        top: 125%;
+        width: 100%;
+        left: 0;
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.35s var(--ease-out-expo);
+      }
+
+      &:hover,
+      &:focus {
+        color: var(--color-accent);
+
+        &::before {
+          transform: scaleX(1);
+          transform-origin: left;
+        }
+      }
+    }
+  }
+
+  /* ── Right cluster ─────────────────────────────────────────────────────── */
+  .buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    z-index: 2;
+  }
+
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.2rem;
+    border: 1px solid var(--color-line);
+    border-radius: 100px;
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 100px;
+      font-family: var(--font-inter);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--color-text-alt);
+      transition:
+        color 0.3s var(--ease-out-expo),
+        background 0.3s var(--ease-out-expo);
+
+      &.is-active {
+        color: var(--color-black);
+        background: var(--color-text);
+      }
+
+      &:not(.is-active):hover {
+        color: var(--color-text);
+      }
+    }
+  }
+
+  .nav-cta {
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.7em 1.25em;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 6px;
+    color: rgba(var(--rgb-text), 0.78);
+    background: rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(14px);
+    white-space: nowrap;
+    transition:
+      color 0.35s var(--ease-out-expo),
+      border-color 0.35s var(--ease-out-expo),
+      background 0.35s var(--ease-out-expo),
+      transform 0.35s var(--ease-out-expo);
+
+    &:hover,
+    &:focus {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.055);
+      transform: translateY(-1px);
+    }
+
+    @media (--mq-phone-md) {
+      display: none;
+    }
+  }
+
+  /* ── Mobile toggle ─────────────────────────────────────────────────────── */
+  .toggle {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    display: none;
+    z-index: 3;
+    color: var(--color-text);
+
+    @media (--mq-tablet) {
+      display: flex;
+    }
+
+    > span:last-child {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 1.25rem;
+      width: 2rem;
+
+      span {
+        display: flex;
+        width: 100%;
+        height: 2px;
+        background: currentcolor;
+        border-radius: 10px;
+        transition: transform 0.25s var(--ease-out-cubic), opacity 0.2s;
+      }
+    }
+
+    :global(body.is-nav-opened) & {
+      > span span {
+        &:first-child {
+          transform: translateY(calc(0.625rem - 1px)) rotate(45deg);
+        }
+        &:nth-child(2) {
+          opacity: 0;
+        }
+        &:last-child {
+          transform: translateY(calc(-0.625rem + 1px)) rotate(-45deg);
+        }
+      }
+    }
+  }
+</style>
+
+<script>
+  import { addScrollObserver } from "../utils/observers";
+  // Boot the language switcher (swaps copy in place + persists preference).
+  import "../utils/i18n";
+
+  const heroSelectors = ["[data-hero]"];
+
+  class Header extends HTMLElement {
+    smallThreshold = 100;
+    hiddenThreshold = 200;
+    toggleEl = this.querySelector(".toggle");
+    hero = document.querySelector(heroSelectors.join(","));
+    prevY = -1;
+
+    constructor() {
+      super();
+      addScrollObserver(this);
+      this.toggleEl?.addEventListener("click", this.toggleNav);
+
+      // Close the mobile menu after navigating to an anchor.
+      this.querySelectorAll(".menu a").forEach((a) =>
+        a.addEventListener("click", () =>
+          document.body.classList.remove("is-nav-opened"),
+        ),
+      );
+
+      // (Wordmark + CTA carry [data-tunnel]; the Tunnel component handles them.)
+
+      this.onResize();
+      this.onScroll(window.scrollY);
+    }
+
+    onScroll(y: number) {
+      const classList = document.body.classList;
+
+      const shouldBeSmall = y > this.smallThreshold;
+      if (shouldBeSmall !== classList.contains("is-nav-small")) {
+        classList.toggle("is-nav-small", shouldBeSmall);
+      }
+
+      if (this.prevY < 0) {
+        this.prevY = y;
+        return;
+      }
+
+      const delta = y - this.prevY;
+      if (Math.abs(delta) < 6) return;
+      this.prevY = y;
+
+      if (y <= this.hiddenThreshold) {
+        classList.remove("is-nav-hidden");
+      } else if (delta > 0) {
+        classList.add("is-nav-hidden");
+      } else {
+        classList.remove("is-nav-hidden");
+      }
+    }
+
+    toggleNav = () => {
+      document.body.classList.toggle("is-nav-opened");
+    };
+
+    onResize() {
+      const bcr = this.getBoundingClientRect();
+      const heroBcr = this.hero && this.hero.getBoundingClientRect();
+      this.smallThreshold = heroBcr ? heroBcr.height - bcr.height : bcr.height;
+    }
+  }
+
+  customElements.define("sy-head", Header);
+</script>
