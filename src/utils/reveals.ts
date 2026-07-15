@@ -38,6 +38,7 @@ function visibilityUnobserve(element: HTMLElement, onChange: (entries: Intersect
 
 const stagger = 100;
 const toReveal: { el: HTMLElement; shouldReveal: boolean, inFn?: () => void }[] = [];
+const lightweightReveal = matchMedia("(max-width: 767px), (pointer: coarse), (prefers-reduced-motion: reduce)").matches;
 
 const stMap = new WeakMap<HTMLElement, InstanceType<typeof SplitText>>()
 
@@ -230,6 +231,17 @@ addGlobalTicker(() => {
 
 document.fonts.ready.then(() => {
   document.querySelectorAll<HTMLHtmlElement>("[data-sy-reveal]").forEach((elem) => {
+    if (lightweightReveal) {
+      elem.classList.add("is-in");
+
+      if (elem.hasAttribute('data-sy-reveal-manual')) {
+        elem.addEventListener('reveal-in', () => elem.classList.add("is-in"));
+        elem.addEventListener('reveal-out', () => elem.classList.remove("is-in"));
+      }
+
+      return;
+    }
+
     if (elem.hasAttribute('data-sy-reveal-manual')) {
       const _fn = elem.dataset.syReveal as keyof typeof fns | undefined;
       const fn = _fn && fns[_fn] && fns[_fn](elem);
