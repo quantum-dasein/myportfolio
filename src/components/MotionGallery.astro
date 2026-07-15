@@ -50,8 +50,9 @@ const tiles = [
       <span class="s-idx">05 - <span data-i18n="gallery.label">{t("gallery.label")}</span></span>
       <h2 class="motion-title" data-sy-reveal="words" data-i18n="gallery.title">{t("gallery.title")}</h2>
       <p class="motion-lead" data-reveal data-i18n="gallery.text">{t("gallery.text")}</p>
+      <p class="motion-tools" data-reveal>Cinema 4D · Redshift · After Effects · Premiere Pro · Photoshop</p>
       <a class="gallery-link" href={BEHANCE} target="_blank" rel="noopener" data-reveal data-cursor="VIEW">
-        <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span aria-hidden="true">↗</span>
+        <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow--plain" aria-hidden="true"></span>
       </a>
     </div>
 
@@ -73,7 +74,7 @@ const tiles = [
           >
             <figure>
               <img src={tile.img} alt={tile.alt} loading="lazy" decoding="async" fetchpriority="low" />
-              <span class="tile-arrow" aria-hidden="true">↗</span>
+              <span class="tile-arrow" aria-hidden="true"><span class="css-arrow"></span></span>
               <figcaption>
                 <span><b>{String(index + 1).padStart(2, "0")}</b> <span>{tile.cat}</span></span>
                 <strong>{tile.title}</strong>
@@ -85,7 +86,7 @@ const tiles = [
     </div>
 
     <a class="gallery-pill" href="/gallery" data-tunnel data-cursor="ENTER">
-      <span aria-hidden="true">✦</span><span data-i18n="portal.cta">{t("portal.cta")}</span><span aria-hidden="true">→</span>
+      <span class="pill-spark" aria-hidden="true"></span><span data-i18n="portal.cta">{t("portal.cta")}</span><span class="css-arrow css-arrow--plain" aria-hidden="true"></span>
     </a>
   </div>
 </section>
@@ -114,7 +115,7 @@ const tiles = [
     z-index: 8;
     left: 0;
     top: 3rem;
-    width: min(36%, 33rem);
+    width: min(38%, 35rem);
   }
 
   .s-idx {
@@ -127,14 +128,25 @@ const tiles = [
   }
 
   .motion-title {
-    max-width: 14ch;
+    max-width: 15ch;
     margin: 0;
     color: #f7f9f9;
     font-family: var(--font-display);
-    font-size: clamp(2.35rem, 3.25vw, 3.6rem);
+    font-size: clamp(2.25rem, 3vw, 3.35rem);
     font-weight: 520;
     line-height: 1.02;
     letter-spacing: 0;
+  }
+
+  .motion-tools {
+    max-width: 38rem;
+    margin: 1rem 0 0;
+    color: rgba(var(--rgb-text), 0.58);
+    font-family: var(--font-inter);
+    font-size: 0.72rem;
+    line-height: 1.6;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
   .motion-lead {
@@ -155,6 +167,60 @@ const tiles = [
     color: #f7f9f9;
     font-size: 0.82rem;
   }
+
+  .css-arrow {
+    position: relative;
+    display: block;
+    width: .7rem;
+    height: .7rem;
+  }
+
+  .css-arrow::before,
+  .css-arrow::after {
+    content: "";
+    position: absolute;
+  }
+
+  .css-arrow::before {
+    left: .08rem;
+    bottom: .06rem;
+    width: .72rem;
+    height: 1px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    transform-origin: left center;
+  }
+
+  .css-arrow::after {
+    right: 0;
+    top: 0;
+    width: .42rem;
+    height: .42rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+  }
+
+  .css-arrow--plain { flex: 0 0 auto; }
+
+  .pill-spark {
+    position: relative;
+    width: .75rem;
+    height: .75rem;
+    flex: 0 0 auto;
+  }
+
+  .pill-spark::before,
+  .pill-spark::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: currentColor;
+    transform: translate(-50%, -50%);
+  }
+
+  .pill-spark::before { width: 100%; height: 1px; }
+  .pill-spark::after { width: 1px; height: 100%; }
 
   .gallery-stage {
     position: absolute;
@@ -204,6 +270,8 @@ const tiles = [
     box-shadow: 0 1.2rem 2.8rem rgba(0, 0, 0, 0.46), inset 0 1px rgba(255,255,255,.1);
     transition: border-color 0.25s ease;
     contain: layout paint style;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   .tile:hover {
@@ -225,6 +293,7 @@ const tiles = [
     object-fit: cover;
     transform: scale(1.002);
     transition: none;
+    backface-visibility: hidden;
   }
 
   .tile:hover img { transform: scale(1.002); }
@@ -278,7 +347,6 @@ const tiles = [
     border: 1px solid rgba(255,255,255,.68);
     border-radius: 50%;
     color: #fff;
-    font-size: .72rem;
   }
 
   .gallery-pill {
@@ -311,17 +379,45 @@ const tiles = [
 
   @media (max-width: 700px) {
     .motion { padding-block: 5rem; }
+    .motion-title { max-width: 12ch; font-size: clamp(2.35rem, 12vw, 3.35rem); }
+    .motion-lead { max-width: 34rem; font-size: .98rem; }
+    .motion-tools { max-width: 30rem; font-size: .62rem; }
     .gallery-stage {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-auto-flow: column;
+      grid-auto-columns: min(82vw, 22rem);
+      grid-template-columns: none;
       gap: .9rem;
       height: auto;
-      padding-top: 8rem;
+      margin-inline: calc(var(--container-offset) * -1);
+      padding: 1rem var(--container-offset) .75rem;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline mandatory;
+      scrollbar-width: none;
     }
-    .archive-sculpture { left: 50%; top: 0; width: 18rem; transform: translateX(-50%); opacity: .7; }
-    .tile { position: relative; inset: auto; width: 100%; height: auto; aspect-ratio: 1.28; }
-    .tile-2 { aspect-ratio: .9; }
+    .gallery-stage::-webkit-scrollbar { display: none; }
+    .archive-sculpture { display: none; }
+    .tile {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      height: auto;
+      aspect-ratio: .86;
+      scroll-snap-align: center;
+      scroll-snap-stop: always;
+      box-shadow: 0 .9rem 1.8rem rgba(0, 0, 0, .36);
+    }
+    .tile-2 { aspect-ratio: .86; }
+    .tile-arrow { width: 2.2rem; }
+    figcaption { left: .85rem; right: .85rem; bottom: .8rem; }
+    strong { font-size: clamp(1.35rem, 7vw, 1.85rem); }
     .gallery-pill { width: 100%; justify-content: space-between; }
+  }
+
+  @media (pointer: coarse) {
+    .gallery-pill { backdrop-filter: none; }
+    .tile:hover { border-color: rgba(255, 255, 255, .24); }
   }
 
   @media (prefers-reduced-motion: reduce) {

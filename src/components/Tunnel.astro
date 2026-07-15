@@ -1,191 +1,240 @@
----
-// ─────────────────────────────────────────────────────────────────────────────
-//  Tunnel.astro — the seamless "warp" transition between the 2D studio (/) and
-//  the spatial 3D archive (/gallery).
-//
-//  Any <a data-tunnel> click plays a hyperspace warp that accelerates to black,
-//  then navigates. The destination page detects the arrival (sessionStorage) and
-//  plays the warp in reverse (decelerating out of black) → the trip feels like
-//  one continuous flight through a tunnel, both directions.
-// ─────────────────────────────────────────────────────────────────────────────
----
-
 <div class="tunnel" data-tunnel-root aria-hidden="true">
   <div class="tunnel-black" data-tunnel-black></div>
   <canvas class="tunnel-canvas" data-tunnel-canvas></canvas>
+  <div class="tunnel-hud"><span>RB / SPATIAL TRANSIT</span><b>ARCHIVE VECTOR</b></div>
 </div>
 
 <style>
   .tunnel {
     position: fixed;
     inset: 0;
-    z-index: 300;
+    z-index: 480;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    background: #000;
   }
-  .tunnel.is-active {
+  .tunnel.is-active,
+  :global(html.rb-warp-arriving) .tunnel {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
   }
-  .tunnel-black {
+  .tunnel-black { position: absolute; inset: 0; background: #000; opacity: 0; }
+  :global(html.rb-warp-arriving) .tunnel-black { opacity: 1; }
+  .tunnel-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tunnel-hud {
     position: absolute;
-    inset: 0;
-    background: var(--color-bg);
+    z-index: 2;
+    left: clamp(1.2rem,4vw,4rem);
+    right: clamp(1.2rem,4vw,4rem);
+    bottom: clamp(1rem,3vw,2.5rem);
+    display: flex;
+    justify-content: space-between;
+    color: rgba(255,255,255,.5);
+    font: 500 .58rem/1 var(--font-inter);
+    letter-spacing: .17em;
     opacity: 0;
   }
-  .tunnel-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
+  .tunnel-hud b { color: #fff; font-weight: 500; }
+  :global(html.rb-transitioning),
+  :global(html.rb-transitioning body) { overflow: hidden !important; }
 </style>
 
 <script>
   import gsap from "gsap";
 
   const root = document.querySelector<HTMLElement>("[data-tunnel-root]")!;
-  const black = document.querySelector<HTMLElement>("[data-tunnel-black]")!;
-  const canvas = document.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
-  const ctx = canvas.getContext("2d")!;
+  const black = root.querySelector<HTMLElement>("[data-tunnel-black]")!;
+  const hud = root.querySelector<HTMLElement>(".tunnel-hud")!;
+  const canvas = root.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
+  const ctx = canvas.getContext("2d", { alpha: false })!;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  let stars: { x: number; y: number; z: number }[] = [];
+  const lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+  const isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
+  let stars: { x: number; y: number; z: number; tone: number }[] = [];
   let W = 0, H = 0, cx = 0, cy = 0, focal = 0;
   let running = false;
+  let completingBack = false;
   let rafId = 0;
-  let navigationTimer = 0;
   let safetyTimer = 0;
-  const state = { speed: 0 };
+  const state = { speed: 0, alpha: 1 };
+
+  const originMatches = () => {
+    const raw = sessionStorage.getItem("rb-warp-origin");
+    if (!raw) return false;
+    const origin = new URL(raw, location.href);
+    return origin.origin === location.origin && origin.pathname === location.pathname && origin.search === location.search;
+  };
 
   function resize() {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const dpr = lowPower ? 1 : Math.min(devicePixelRatio || 1, 1.45);
     W = canvas.width = Math.floor(innerWidth * dpr);
     H = canvas.height = Math.floor(innerHeight * dpr);
-    cx = W / 2;
-    cy = H / 2;
-    focal = W * 0.5;
+    cx = W / 2; cy = H / 2; focal = W * .52;
   }
-  resize();
-  addEventListener("resize", resize);
 
   function initStars() {
-    stars = [];
-    for (let i = 0; i < 460; i++) {
-      stars.push({ x: (Math.random() * 2 - 1) * W, y: (Math.random() * 2 - 1) * H, z: Math.random() * W });
-    }
+    stars = Array.from({ length: lowPower ? 220 : 620 }, () => ({
+      x: (Math.random() * 2 - 1) * W,
+      y: (Math.random() * 2 - 1) * H,
+      z: Math.random() * W + 1,
+      tone: .48 + Math.random() * .52,
+    }));
   }
 
-  function frame() {
+  function draw() {
     if (!running) return;
-    ctx.fillStyle = "rgba(5,5,5,0.32)";
+    ctx.fillStyle = `rgba(0,0,0,${Math.max(.12, .46 - state.speed / 300)})`;
     ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = "rgba(222,227,234,0.9)";
-    const sp = state.speed;
-    for (const s of stars) {
-      const z0 = s.z;
-      s.z -= sp;
-      if (s.z < 1) {
-        s.z = W;
-        s.x = (Math.random() * 2 - 1) * W;
-        s.y = (Math.random() * 2 - 1) * H;
+    const speed = state.speed;
+    for (const star of stars) {
+      const previous = star.z;
+      star.z -= speed;
+      if (star.z < 1) {
+        star.z = W;
+        star.x = (Math.random() * 2 - 1) * W;
+        star.y = (Math.random() * 2 - 1) * H;
         continue;
       }
-      const k = focal / s.z;
-      const k0 = focal / z0;
-      ctx.lineWidth = Math.max(0.5, (1 - s.z / W) * 2.6);
+      const k = focal / star.z;
+      const oldK = focal / previous;
+      const depth = 1 - star.z / W;
+      ctx.strokeStyle = `rgba(238,244,247,${star.tone * state.alpha})`;
+      ctx.lineWidth = Math.max(.55, depth * 3.2);
       ctx.beginPath();
-      ctx.moveTo(cx + s.x * k0, cy + s.y * k0);
-      ctx.lineTo(cx + s.x * k, cy + s.y * k);
+      ctx.moveTo(cx + star.x * oldK, cy + star.y * oldK);
+      ctx.lineTo(cx + star.x * k, cy + star.y * k);
       ctx.stroke();
     }
-    rafId = requestAnimationFrame(frame);
+    rafId = requestAnimationFrame(draw);
   }
 
-  function resetTunnel() {
+  function reset() {
+    clearTimeout(safetyTimer);
     running = false;
     cancelAnimationFrame(rafId);
-    clearTimeout(navigationTimer);
-    clearTimeout(safetyTimer);
-    gsap.killTweensOf(state);
-    gsap.killTweensOf(black);
+    gsap.killTweensOf([state, black, hud]);
     state.speed = 0;
     black.style.opacity = "0";
     root.classList.remove("is-active");
+    document.documentElement.classList.remove("rb-transitioning", "rb-warp-arriving");
     ctx.clearRect(0, 0, W, H);
   }
 
-  function warpIn(href: string) {
-    if (running) return;
-    if (reduced) { location.href = href; return; }
-    sessionStorage.setItem("rb-warp", "1");
-    sessionStorage.setItem("rb-warp-origin", location.href);
+  function depart(complete: () => void) {
+    if (running) reset();
+    if (reduced) { complete(); return; }
     running = true;
+    document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
     initStars();
-    state.speed = 6;
-    frame();
-    gsap.to(state, { speed: 85, duration: 0.9, ease: "power2.in" });
-    gsap.to(black, { opacity: 1, duration: 0.6, delay: 0.25 });
-    navigationTimer = window.setTimeout(() => (location.href = href), 820);
+    state.speed = 5;
+    state.alpha = 1;
+    black.style.opacity = "0";
+    draw();
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(safetyTimer);
+      complete();
+    };
+    safetyTimer = window.setTimeout(finish, 1650);
+    gsap.timeline({ onComplete: finish })
+      .to(hud, { opacity: 1, duration: .25 }, 0)
+      .to(state, { speed: 112, duration: 1.05, ease: "power3.in" }, 0)
+      .to(black, { opacity: 1, duration: .48, ease: "power2.in" }, .72);
   }
 
-  function warpOut() {
+  function arrive(clearOrigin = false) {
+    if (reduced) { reset(); return; }
+    if (running) reset();
     running = true;
+    document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
     initStars();
-    state.speed = 80;
+    state.speed = 105;
+    state.alpha = 1;
     black.style.opacity = "1";
-    frame();
-    gsap.to(state, { speed: 4, duration: 1.15, ease: "power2.out" });
-    gsap.to(black, {
-      opacity: 0,
-      duration: 0.9,
-      delay: 0.3,
-      onComplete: () => {
-        running = false;
-        root.classList.remove("is-active");
-        ctx.clearRect(0, 0, W, H);
-      },
+    draw();
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(safetyTimer);
+        reset();
+        if (clearOrigin) {
+          sessionStorage.removeItem("rb-warp-origin");
+          sessionStorage.removeItem("rb-warp-scroll");
+          sessionStorage.removeItem("rb-warp-return");
+        }
+    };
+    safetyTimer = window.setTimeout(finish, 1750);
+    gsap.timeline({ onComplete: finish })
+      .to(black, { opacity: 0, duration: .7, ease: "power2.out" }, .12)
+      .to(state, { speed: 2.8, duration: 1.25, ease: "power3.out" }, 0)
+      .fromTo(hud, { opacity: 1 }, { opacity: 0, duration: .35 }, .62);
+  }
+
+  function enterArchive(href: string) {
+    if (running) reset();
+    sessionStorage.removeItem("rb-case-arrive");
+    sessionStorage.removeItem("rb-case-return");
+    sessionStorage.setItem("rb-warp-origin", location.href);
+    sessionStorage.setItem("rb-warp-scroll", String(scrollY));
+    depart(() => {
+      sessionStorage.setItem("rb-warp-arrive", "1");
+      location.assign(href);
     });
-    // safety net (hidden tabs throttle rAF/gsap)
-    safetyTimer = window.setTimeout(resetTunnel, 2200);
   }
 
-  // arrival: reverse-warp out of black
-  if (sessionStorage.getItem("rb-warp")) {
-    sessionStorage.removeItem("rb-warp");
-    warpOut();
-  } else {
-    const origin = sessionStorage.getItem("rb-warp-origin");
-    if (origin && new URL(origin, location.href).pathname === location.pathname) {
-      sessionStorage.removeItem("rb-warp-origin");
-      warpOut();
+  function returnToOrigin() {
+    if (completingBack) return;
+    completingBack = true;
+    history.back();
+  }
+
+  const arriving = sessionStorage.getItem("rb-warp-arrive");
+  if (arriving) {
+    sessionStorage.removeItem("rb-warp-arrive");
+    arrive(sessionStorage.getItem("rb-warp-return") === "1");
+    if (isGallery && sessionStorage.getItem("rb-warp-origin") && !history.state?.rbWarpGuard) {
+      history.pushState({ ...(history.state || {}), rbWarpGuard: true }, "", location.href);
     }
   }
 
-  // Browsers restore the previous document from BFCache with its old JS state.
-  // Reset the frozen outgoing warp, then play a fresh reverse flight.
+  addEventListener("popstate", () => {
+    if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
+    depart(() => {
+      sessionStorage.setItem("rb-warp-arrive", "1");
+      sessionStorage.setItem("rb-warp-return", "1");
+      history.back();
+    });
+  });
+
   addEventListener("pageshow", (event) => {
-    if (!event.persisted) return;
-    resetTunnel();
-    const origin = sessionStorage.getItem("rb-warp-origin");
-    if (origin && new URL(origin, location.href).pathname === location.pathname) {
-      sessionStorage.removeItem("rb-warp-origin");
-      if (!reduced) warpOut();
-    }
+    if (!event.persisted || sessionStorage.getItem("rb-warp-return") !== "1" || !originMatches()) return;
+    reset();
+    sessionStorage.removeItem("rb-warp-arrive");
+    scrollTo(0, Number(sessionStorage.getItem("rb-warp-scroll") || 0));
+    arrive(true);
   });
 
-  // any [data-tunnel] link triggers the warp
-  document.addEventListener("click", (e) => {
-    const a = (e.target as HTMLElement)?.closest<HTMLAnchorElement>("a[data-tunnel]");
-    if (!a) return;
-    const url = new URL(a.href, location.href);
-    e.preventDefault();
-    if (url.pathname === location.pathname) return; // already here
+  document.addEventListener("click", (event) => {
+    const anchor = (event.target as HTMLElement)?.closest<HTMLAnchorElement>("a[data-tunnel]");
+    if (!anchor) return;
+    const url = new URL(anchor.href, location.href);
+    event.preventDefault();
+    if (isGallery && sessionStorage.getItem("rb-warp-origin")) {
+      returnToOrigin();
+      return;
+    }
+    if (url.pathname === location.pathname) return;
     document.body.classList.remove("is-nav-opened");
-    warpIn(url.href);
+    enterArchive(url.href);
   });
+
+  resize();
+  addEventListener("resize", resize);
 </script>

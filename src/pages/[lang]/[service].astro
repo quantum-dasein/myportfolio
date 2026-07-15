@@ -1,0 +1,16 @@
+---
+import ServicePage from "../../components/ServicePage.astro";
+import { serviceContent, type SeoLang, type ServiceKey } from "../../data/seo-content";
+
+export function getStaticPaths() {
+  return Object.values(serviceContent).flatMap((service) => (["en", "de"] as SeoLang[]).map((lang) => ({
+    params: { lang, service: service.paths[lang].split("/").filter(Boolean).at(-1)! },
+    props: { lang, serviceKey: service.key },
+  })));
+}
+
+interface Props { lang: SeoLang; serviceKey: ServiceKey }
+const { lang, serviceKey } = Astro.props;
+---
+
+<ServicePage lang={lang} serviceKey={serviceKey} />

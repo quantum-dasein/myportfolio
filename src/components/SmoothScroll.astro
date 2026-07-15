@@ -5,6 +5,7 @@
       scrollDirection: number;
       scrollCurrent: number;
       scrollStickyOffsets: [number, number, number][];
+      __rbLenis?: Lenis;
     }
   }
 
@@ -20,6 +21,7 @@
     syncTouch: true,
     lerp: 0.125,
   });
+  window.__rbLenis = lenis;
   lenis.on("scroll", ScrollTrigger.update);
 
   lenis.direction = 1;
@@ -30,6 +32,53 @@
     window.scrollDirection = lenis.direction;
     window.scrollCurrent = lenis.animatedScroll;
   });
+
+  let syncFrame = 0;
+  const syncNativeJump = () => {
+    cancelAnimationFrame(syncFrame);
+    syncFrame = requestAnimationFrame(() => {
+      const nativeY = window.scrollY;
+      const delta = Math.abs(nativeY - lenis.animatedScroll);
+      if (delta > Math.max(180, innerHeight * .32)) {
+        lenis.scrollTo(nativeY, { immediate: true, force: true });
+        window.scrollCurrent = nativeY;
+        ScrollTrigger.update();
+      }
+    });
+  };
+
+  addEventListener("scroll", syncNativeJump, { passive: true });
+  addEventListener("scrollend", () => lenis.scrollTo(window.scrollY, { immediate: true, force: true }), { passive: true });
+  addEventListener("resize", () => {
+    lenis.resize();
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+  }, { passive: true });
+
+  document.fonts?.ready.then(() => {
+    lenis.resize();
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+  });
+
+  const scrollToHash = (hash: string, immediate = false) => {
+    if (!hash || hash === "#") return false;
+    const target = document.querySelector<HTMLElement>(hash);
+    if (!target) return false;
+    lenis.scrollTo(target, { offset: -84, immediate, duration: immediate ? 0 : 1.05 });
+    return true;
+  };
+
+  document.addEventListener("click", (event) => {
+    const anchor = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href*='#']");
+    if (!anchor || anchor.hasAttribute("data-tunnel") || anchor.hasAttribute("data-case-link")) return;
+    const url = new URL(anchor.href, location.href);
+    if (url.origin !== location.origin || url.pathname !== location.pathname || !url.hash) return;
+    if (!scrollToHash(url.hash)) return;
+    event.preventDefault();
+    history.pushState(history.state, "", url.hash);
+  });
+
+  addEventListener("hashchange", () => scrollToHash(location.hash));
+  if (location.hash) requestAnimationFrame(() => scrollToHash(location.hash, true));
 </script>
 
 <style>

@@ -1,0 +1,13 @@
+---
+import LocalizedLanding from "../../components/LocalizedLanding.astro";
+import type { SeoLang } from "../../data/seo-content";
+
+export function getStaticPaths() {
+  return (["en", "de"] as SeoLang[]).map((lang) => ({ params: { lang }, props: { lang } }));
+}
+
+interface Props { lang: SeoLang }
+const { lang } = Astro.props;
+---
+
+<LocalizedLanding lang={lang} />

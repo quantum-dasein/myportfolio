@@ -20,6 +20,7 @@ interface Props {
 
 const { id, image, nextHref, liveUrl, stack, year } = Astro.props;
 const isBridge = id === "bridge";
+const liveHost = liveUrl ? new URL(liveUrl).hostname.replace(/^www\./, "") : "";
 const t = useTranslations();
 const tk = (key: string) => t(key as UIKey);
 
@@ -51,9 +52,58 @@ const bridgeSystems = [
   { no: "03", title: "case.bridge.system.search.title", text: "case.bridge.system.search.text", meta: "SCHEMA / HREFLANG" },
   { no: "04", title: "case.bridge.system.universe.title", text: "case.bridge.system.universe.text", meta: "THREE.JS / 08 NODES" },
 ];
+const fidicMetrics = [
+  { value: "109", label: "case.fidic.metric.routes", meta: "ASTRO ROUTES" },
+  { value: "105", label: "case.fidic.metric.articles", meta: "EXPERT MDX" },
+  { value: "09", label: "case.fidic.metric.books", meta: "FIDIC LIBRARY" },
+  { value: "15", label: "case.fidic.metric.tools", meta: "TOOLS + CALCULATORS" },
+  { value: "03", label: "case.fidic.metric.languages", meta: "RU / EN / UZ" },
+];
+const fidicLayers = [
+  { no: "01", key: "case.fidic.layer.knowledge", meta: "105 / MDX" },
+  { no: "02", key: "case.fidic.layer.books", meta: "09 / CONTRACTS" },
+  { no: "03", key: "case.fidic.layer.tools", meta: "10 / WORKFLOWS" },
+  { no: "04", key: "case.fidic.layer.calculators", meta: "05 / MODELS" },
+  { no: "05", key: "case.fidic.layer.ai", meta: "SERVERLESS / AI" },
+  { no: "06", key: "case.fidic.layer.trust", meta: "CERTIFY / VERIFY" },
+];
+const seoTitle = isBridge
+  ? "Bridge Consult Case Study | SEO & Astro by Rodion Belousov"
+  : "FIDIC.uz Case Study | Content, SEO & Astro by Rodion Belousov";
+const seoDescription = isBridge
+  ? "How Rodion Belousov built Bridge Consult's multilingual Astro and Three.js website, technical SEO system and 780% organic search growth."
+  : "Inside Rodion Belousov's solo build of FIDIC.uz: 109 Astro routes, 105 expert articles, technical SEO, contract tools and multilingual content.";
+const seoKeywords = isBridge
+  ? ["Bridge Consult case study", "Astro case study", "Three.js website", "technical SEO Austria", "multilingual website development", "AI-assisted web development"]
+  : ["FIDIC knowledge platform", "FIDIC SEO", "Astro content platform", "technical SEO case study", "multilingual content architecture", "contract management tools"];
+const caseSchema = {
+  "@type": "CreativeWork",
+  "@id": `https://rodionbelousov.studio/work/${isBridge ? "bridge-consult" : "fidic"}#project`,
+  name: tk(titleKey),
+  headline: seoTitle,
+  description: seoDescription,
+  image: new URL(image, "https://rodionbelousov.studio").toString(),
+  dateCreated: "2026",
+  inLanguage: ["en", "de-AT"],
+  creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+  url: liveUrl,
+  keywords: seoKeywords.join(", "),
+  about: isBridge
+    ? ["Infrastructure consulting", "Technical SEO", "Astro", "Three.js", "Multilingual content"]
+    : ["FIDIC contracts", "Knowledge management", "Technical SEO", "Astro", "Content architecture"],
+};
 ---
 
-<Layout title={`${tk(titleKey)} - Case Study`}>
+<Layout
+  title={seoTitle}
+  description={seoDescription}
+  image={image}
+  imageAlt={`${tk(titleKey)} digital marketing, technical SEO and creative web development case study`}
+  pageType="article"
+  keywords={seoKeywords}
+  structuredData={caseSchema}
+  theme={id}
+>
   <article class="case" data-case-page>
     <section class="case-hero">
       <div class="case-bg" aria-hidden="true">
@@ -61,25 +111,62 @@ const bridgeSystems = [
       </div>
 
       <div class="u-container case-hero-inner">
-        <a class="back-link" href="/#work" data-case-back data-i18n="case.back" data-magnetic>{t("case.back")}</a>
+        <a class="back-link" href="/en/#work" data-locale-hash="#work" data-case-back data-i18n="case.back" data-magnetic>{t("case.back")}</a>
 
         <div class="case-title-wrap">
           <span class="case-kicker" data-i18n={key("kicker")}>
             {tk(key("kicker"))}
           </span>
-          <h1 class="case-title" data-i18n={titleKey}>{tk(titleKey)}</h1>
+          <h1 class="case-title"><a href={liveUrl} target="_blank" rel="noopener" data-i18n={titleKey}>{tk(titleKey)}</a></h1>
           <p class="case-subtitle" data-reveal data-i18n={key("subtitle")}>{tk(key("subtitle"))}</p>
+          {liveUrl && <a class="case-live-url" href={liveUrl} target="_blank" rel="noopener"><span>{liveHost}</span><b>LIVE <i class="ui-arrow" aria-hidden="true"></i></b></a>}
         </div>
 
-        <div class="case-visual" data-reveal>
-          <div class="case-screen">
+        <div class:list={["case-visual", `case-visual-${id}`]} data-reveal style={`--case-image:url('${image}')`}>
+          <span class="visual-depth visual-depth-a" aria-hidden="true"></span>
+          <span class="visual-depth visual-depth-b" aria-hidden="true"></span>
+          <div class="case-screen" data-magnetic>
             <img src={image} alt={`${tk(titleKey)} digital marketing and web development case study`} loading="eager" fetchpriority="high" />
-            <span class="screen-line top"></span>
-            <span class="screen-line bottom"></span>
+            <span class="screen-index">{id === "bridge" ? "BC / 01" : "FIDIC / 02"}</span>
+            <span class="screen-status">LIVE SYSTEM / 2026</span>
+            <a class="screen-live" href={liveUrl} target="_blank" rel="noopener" aria-label={`${tk("case.visit")}: ${tk(titleKey)}`}><span class="ui-arrow" aria-hidden="true"></span></a>
           </div>
+          <span class="visual-orbit" aria-hidden="true"></span>
         </div>
       </div>
     </section>
+
+    {!isBridge && (
+      <section class="fidic-platform" aria-labelledby="fidic-platform-title">
+        <div class="u-container fidic-platform-head">
+          <span class="chapter-label">PRODUCT ECOSYSTEM / SOLO BUILD / 2026</span>
+          <h2 id="fidic-platform-title" data-i18n="case.fidic.platform.title">{tk("case.fidic.platform.title")}</h2>
+          <p data-i18n="case.fidic.platform.text">{tk("case.fidic.platform.text")}</p>
+        </div>
+        <div class="u-container fidic-atlas" data-reveal>
+          <div class="fidic-core" aria-hidden="true">
+            <span>FIDIC</span><b>.UZ</b><small>KNOWLEDGE OS</small>
+            <i></i><i></i><i></i>
+          </div>
+          <div class="fidic-metrics">
+            {fidicMetrics.map((metric, index) => (
+              <article class={`fidic-metric fidic-metric-${index + 1}`} data-kinetic>
+                <span>{metric.meta}</span><strong>{metric.value}</strong><p data-i18n={metric.label}>{tk(metric.label)}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div class="u-container fidic-layers">
+          {fidicLayers.map((layer) => (
+            <article data-kinetic>
+              <span>{layer.no}</span><small>{layer.meta}</small>
+              <h3 data-i18n={`${layer.key}.title`}>{tk(`${layer.key}.title`)}</h3>
+              <p data-i18n={`${layer.key}.text`}>{tk(`${layer.key}.text`)}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
 
     {isBridge && (
       <section class="bridge-impact" aria-labelledby="bridge-impact-title">
@@ -102,7 +189,11 @@ const bridgeSystems = [
               </article>
             ))}
           </div>
-          <p class="impact-note" data-i18n="case.bridge.impact.note">{tk("case.bridge.impact.note")}</p>
+        </div>
+        <div class="u-container impact-proofline" data-reveal>
+          <span>GA4 / VERIFIED LAUNCH WINDOW</span>
+          <p data-i18n="case.bridge.impact.note">{tk("case.bridge.impact.note")}</p>
+          <b>BASELINE -> WEEK 03</b>
         </div>
       </section>
     )}
@@ -252,9 +343,11 @@ const bridgeSystems = [
           <p data-kinetic data-i18n={key("visual.text")}>{tk(key("visual.text"))}</p>
         </div>
         <div class="specimen" data-reveal>
-          <span></span>
-          <span></span>
-          <span></span>
+          <div class="specimen-axis"><span>VISUAL SYSTEM / 04</span><b>{isBridge ? "BRIDGE CONSULT" : "FIDIC.UZ"}</b></div>
+          <span class="specimen-module specimen-module-a"><b>01</b><em>EDITORIAL GRID</em></span>
+          <span class="specimen-module specimen-module-b"><b>02</b><em>{isBridge ? "NOIR GLASS" : "CONTRACT ATLAS"}</em></span>
+          <span class="specimen-module specimen-module-c"><b>03</b><em>{isBridge ? "CHROME SIGNAL" : "FIDIC GOLD"}</em></span>
+          <i class="specimen-orbit" aria-hidden="true"></i>
         </div>
       </div>
     </section>
@@ -264,7 +357,7 @@ const bridgeSystems = [
         {liveUrl && (
           <a class="case-button secondary" href={liveUrl} target="_blank" rel="noopener" data-magnetic>
             <span data-i18n="case.visit">{t("case.visit")}</span>
-            <span aria-hidden="true">↗</span>
+            <span class="ui-arrow" aria-hidden="true"></span>
           </a>
         )}
         <a class="case-button" href={nextHref} data-case-link data-magnetic>
@@ -278,14 +371,17 @@ const bridgeSystems = [
 
 <style>
   .case {
+    --case-accent: 204, 180, 132;
     position: relative;
-    overflow: hidden;
+    overflow: clip;
     background:
       radial-gradient(circle at 78% 12%, rgba(var(--rgb-cosmic-pink), 0.1), transparent 24rem),
       radial-gradient(circle at 28% 28%, rgba(var(--rgb-accent), 0.08), transparent 28rem),
       linear-gradient(180deg, rgba(2, 3, 5, 0.96), rgba(2, 3, 5, 0.98) 45%, rgba(2, 3, 5, 0.96)),
       #020305;
   }
+
+  :global(body.case-theme-fidic) .case { --case-accent: 219, 169, 73; }
 
   .case-hero {
     position: relative;
@@ -370,6 +466,32 @@ const bridgeSystems = [
     letter-spacing: 0;
   }
 
+  .case-title a {
+    color: inherit;
+    text-decoration: none;
+    background-image: linear-gradient(90deg, rgba(var(--case-accent), .92), rgba(255,255,255,.9));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0 2px;
+    transition: background-size .65s var(--ease-out-expo), color .35s ease;
+  }
+
+  .case-title a:hover { color: rgb(var(--case-accent)); background-size: 100% 2px; }
+
+  .case-live-url {
+    display: flex;
+    width: min(25rem, 100%);
+    justify-content: space-between;
+    margin-top: 1.6rem;
+    padding-bottom: .65rem;
+    border-bottom: 1px solid rgba(var(--case-accent), .5);
+    color: rgba(var(--rgb-text), .72);
+    font-size: .68rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .case-live-url b { color: rgb(var(--case-accent)); font-weight: 500; }
+
   .case-subtitle {
     max-width: 44rem;
     margin: 2rem 0 0;
@@ -381,7 +503,8 @@ const bridgeSystems = [
   .case-visual {
     position: relative;
     min-height: clamp(31rem, 52vw, 43rem);
-    perspective: 1000px;
+    perspective: 1400px;
+    isolation: isolate;
   }
 
   .case-screen {
@@ -389,16 +512,17 @@ const bridgeSystems = [
     inset: 3% 6% 3% 9%;
     z-index: 1;
     overflow: hidden;
-    border: 1px solid rgba(var(--rgb-accent), 0.35);
+    border: 1px solid rgba(var(--case-accent), 0.46);
     background:
       linear-gradient(135deg, rgba(var(--rgb-accent), 0.12), transparent 34%),
       var(--color-elev);
-    transform: rotateY(-5deg) rotateX(1deg);
+    transform: rotateY(-7deg) rotateX(2deg) translateZ(2rem);
     opacity: 1;
     box-shadow:
       0 0 5rem rgba(var(--rgb-accent), 0.1),
       0 3rem 8rem rgba(0, 0, 0, 0.58),
       inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    animation: case-portal-float 7s ease-in-out infinite alternate;
   }
 
   .case-screen img { object-position: center; }
@@ -408,16 +532,65 @@ const bridgeSystems = [
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(120deg, transparent 0 36%, rgba(255, 255, 255, 0.16) 48%, transparent 60%),
-      linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.24));
+      radial-gradient(circle at 74% 22%, rgba(var(--case-accent), .2), transparent 23%),
+      linear-gradient(180deg, transparent 42%, rgba(0, 0, 0, 0.44));
     pointer-events: none;
   }
+
+  .visual-depth {
+    position: absolute;
+    z-index: 0;
+    inset: 9% 1% 9% 16%;
+    border: 1px solid rgba(var(--case-accent), .16);
+    background: var(--case-image) center/cover;
+    opacity: .16;
+    filter: saturate(.55) contrast(1.12);
+    transform: translateZ(-5rem) rotateY(-11deg);
+  }
+
+  .visual-depth-b { inset: 15% -3% 15% 22%; opacity: .08; transform: translateZ(-9rem) rotateY(-15deg); }
+
+  .visual-orbit {
+    position: absolute;
+    z-index: 3;
+    left: 48%;
+    top: 50%;
+    width: 118%;
+    aspect-ratio: 1;
+    border: 1px solid rgba(var(--case-accent), .22);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotateX(72deg);
+    pointer-events: none;
+    animation: portal-orbit 12s linear infinite;
+  }
+
+  .visual-orbit::after {
+    content: "";
+    position: absolute;
+    left: 18%; top: 4%;
+    width: .42rem; aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgb(var(--case-accent));
+    box-shadow: 0 0 1.5rem rgba(var(--case-accent), .9);
+  }
+
+  .screen-index,
+  .screen-status,
+  .screen-live { position: absolute; z-index: 4; color: #fff; font: 500 .58rem/1 var(--font-inter); letter-spacing: .14em; }
+  .screen-index { top: 1.2rem; left: 1.2rem; }
+  .screen-status { right: 1.2rem; bottom: 1.2rem; color: rgba(255,255,255,.62); }
+  .screen-live { top: 1rem; right: 1rem; display: grid; width: 2.8rem; aspect-ratio: 1; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; font-size: 1rem; transition: background .3s ease, color .3s ease, transform .3s ease; }
+  .screen-live:hover { background: #fff; color: #050607; transform: rotate(45deg); }
+
+  @keyframes case-portal-float { to { transform: rotateY(-3deg) rotateX(-1deg) translate3d(0,-.8rem,2.8rem); } }
+  @keyframes portal-orbit { to { transform: translate(-50%, -50%) rotateX(72deg) rotateZ(360deg); } }
 
   .case-hero [data-reveal] { opacity: 1; transform: none; }
 
   .bridge-impact,
   .bridge-build-system,
-  .bridge-system-map {
+  .bridge-system-map,
+  .fidic-platform {
     position: relative;
     padding: clamp(5rem, 10vw, 9rem) 0;
     border-block: 1px solid rgba(255,255,255,.09);
@@ -428,11 +601,68 @@ const bridgeSystems = [
     background-size: 5rem 5rem;
   }
 
+  .fidic-platform {
+    --fidic-gold: 219, 169, 73;
+    background:
+      radial-gradient(circle at 50% 43%, rgba(var(--fidic-gold), .08), transparent 27rem),
+      linear-gradient(rgba(var(--fidic-gold),.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--fidic-gold),.035) 1px, transparent 1px),
+      rgba(1, 7, 12, .94);
+    background-size: auto, 5rem 5rem, 5rem 5rem, auto;
+  }
+
+  .fidic-platform-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, .8fr);
+    gap: clamp(2rem, 6vw, 7rem);
+    align-items: end;
+  }
+  .fidic-platform-head .chapter-label { grid-column: 1 / -1; }
+  .fidic-platform-head h2 { max-width: 13ch; margin: 0; font: 500 clamp(3.2rem,5.3vw,5.8rem)/.92 var(--font-display); text-wrap: balance; }
+  .fidic-platform-head > p { margin: 0; color: rgba(var(--rgb-text),.7); font-size: clamp(1.05rem,1.6vw,1.35rem); line-height: 1.55; }
+
+  .fidic-atlas {
+    position: relative;
+    min-height: clamp(35rem, 58vw, 49rem);
+    margin-top: 4rem;
+    overflow: hidden;
+    border: 1px solid rgba(var(--fidic-gold), .2);
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(var(--fidic-gold),.1), transparent 20rem),
+      rgba(1,6,11,.72);
+    isolation: isolate;
+  }
+  .fidic-atlas::before,
+  .fidic-atlas::after { content:""; position:absolute; left:50%; top:50%; border:1px solid rgba(var(--fidic-gold),.13); border-radius:50%; transform:translate(-50%,-50%) rotateX(66deg); }
+  .fidic-atlas::before { width:min(48rem,78vw); aspect-ratio:1; animation:fidic-ring 18s linear infinite; }
+  .fidic-atlas::after { width:min(36rem,61vw); aspect-ratio:1; transform:translate(-50%,-50%) rotateY(66deg); animation:fidic-ring-alt 14s linear infinite reverse; }
+  .fidic-core { position:absolute; z-index:2; left:50%; top:50%; display:grid; width:clamp(10rem,16vw,14rem); aspect-ratio:1; place-content:center; border:1px solid rgba(var(--fidic-gold),.42); border-radius:50%; color:#fff; text-align:center; background:radial-gradient(circle at 35% 25%, rgba(255,255,255,.14), transparent 22%), #03090e; box-shadow:0 0 8rem rgba(var(--fidic-gold),.13), inset 0 0 3rem rgba(var(--fidic-gold),.08); transform:translate(-50%,-50%); }
+  .fidic-core span { font:500 clamp(2rem,4vw,3.5rem)/.85 var(--font-display); }
+  .fidic-core b { color:rgb(var(--fidic-gold)); font:500 clamp(1.1rem,2vw,1.6rem)/1 var(--font-display); }
+  .fidic-core small { margin-top:.75rem; color:rgba(255,255,255,.45); font-size:.5rem; letter-spacing:.18em; }
+  .fidic-core i { position:absolute; left:50%; top:50%; width:.34rem; aspect-ratio:1; border-radius:50%; background:rgb(var(--fidic-gold)); box-shadow:0 0 1.2rem rgb(var(--fidic-gold)); transform:translate(-50%,-50%) rotate(calc(var(--i) * 120deg)) translateX(clamp(8rem,15vw,13rem)); }
+  .fidic-core i:nth-of-type(1){--i:1}.fidic-core i:nth-of-type(2){--i:2}.fidic-core i:nth-of-type(3){--i:3}
+  .fidic-metrics { position:absolute; z-index:3; inset:1.4rem; }
+  .fidic-metric { position:absolute; width:min(13.5rem,25vw); min-height:8.5rem; padding:1rem; overflow:hidden; border:1px solid rgba(var(--fidic-gold),.2); border-radius:6px; background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.012)),rgba(2,8,13,.78); backdrop-filter:blur(16px); }
+  .fidic-metric-1{left:3%;top:8%}.fidic-metric-2{right:3%;top:7%}.fidic-metric-3{left:4%;bottom:8%}.fidic-metric-4{right:4%;bottom:8%}.fidic-metric-5{left:calc(50% - 6.75rem);bottom:3%}
+  .fidic-metric span { color:rgba(var(--fidic-gold),.68); font-size:.54rem; letter-spacing:.14em; }
+  .fidic-metric strong { display:block; margin:.8rem 0 .3rem; font:500 clamp(2.3rem,4vw,4rem)/.85 var(--font-display); }
+  .fidic-metric p { margin:0; color:rgba(var(--rgb-text),.62); font-size:.75rem; line-height:1.35; }
+  .fidic-layers { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin-top:1rem; }
+  .fidic-layers article { position:relative; min-height:18rem; padding:1.3rem; overflow:hidden; border:1px solid rgba(var(--fidic-gold),.15); border-radius:6px; background:linear-gradient(150deg,rgba(var(--fidic-gold),.065),rgba(255,255,255,.012)); }
+  .fidic-layers article > span { color:rgb(var(--fidic-gold)); font-size:.64rem; }
+  .fidic-layers small { position:absolute; top:1.3rem; right:1.3rem; color:rgba(var(--rgb-text),.35); font-size:.52rem; letter-spacing:.12em; }
+  .fidic-layers h3 { margin:4rem 0 .8rem; font:500 clamp(1.5rem,2vw,2rem)/1 var(--font-display); }
+  .fidic-layers p { margin:0; color:rgba(var(--rgb-text),.62); line-height:1.55; }
+  @keyframes fidic-ring { to{transform:translate(-50%,-50%) rotateX(66deg) rotateZ(360deg)} }
+  @keyframes fidic-ring-alt { to{transform:translate(-50%,-50%) rotateY(66deg) rotateZ(360deg)} }
+
   .impact-head,
   .build-head,
   .system-map-head {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr);
+    grid-template-columns: minmax(0, 1.28fr) minmax(18rem, .72fr);
     gap: clamp(2rem, 6vw, 7rem);
     align-items: end;
   }
@@ -444,13 +674,17 @@ const bridgeSystems = [
   .impact-head h2,
   .build-head h2,
   .system-map-head h2 {
-    max-width: 11ch;
+    max-width: 15ch;
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(3.2rem, 7vw, 7rem);
+    font-size: clamp(3.15rem, 5vw, 5.35rem);
     font-weight: 500;
     line-height: .94;
     letter-spacing: 0;
+    text-wrap: balance;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
   }
 
   .impact-head > p,
@@ -500,8 +734,7 @@ const bridgeSystems = [
     pointer-events: auto;
   }
 
-  .metric::after,
-  [data-kinetic]::after {
+  .metric::after {
     content: "";
     position: absolute;
     inset: -1px;
@@ -514,8 +747,7 @@ const bridgeSystems = [
     transition: opacity .35s ease, transform .7s var(--ease-out-expo);
   }
 
-  .metric:hover::after,
-  [data-kinetic]:hover::after { opacity: .5; transform: translateX(70%); }
+  .metric:hover::after { opacity: .28; transform: translateX(70%); }
 
   .metric-no,
   .metric small {
@@ -551,18 +783,35 @@ const bridgeSystems = [
     margin-top: clamp(3rem, 6vw, 5rem);
   }
 
-  .impact-note {
-    position: absolute;
-    z-index: 5;
-    left: 50%;
-    bottom: clamp(2.7rem, 5vw, 4rem);
-    max-width: 32rem;
-    margin: 0;
-    text-align: center;
-    transform: translateX(-50%);
-    color: rgba(var(--rgb-text), .58);
+  .impact-proofline {
+    display: grid;
+    grid-template-columns: 12rem minmax(0, 1fr) 11rem;
+    gap: 2rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(255,255,255,.055), rgba(255,255,255,.015));
+  }
+
+  .impact-proofline span,
+  .impact-proofline b {
+    color: rgba(var(--rgb-text), .5);
+    font-size: .58rem;
+    font-weight: 500;
+    letter-spacing: .14em;
+  }
+
+  .impact-proofline b { text-align: right; color: #fff; }
+
+  .impact-proofline p {
+    max-width: 52rem;
+    margin: 0 auto;
+    color: rgba(var(--rgb-text), .66);
     font-size: .86rem;
     line-height: 1.55;
+    text-align: center;
   }
 
   .system-rail {
@@ -614,7 +863,15 @@ const bridgeSystems = [
 
   .system-no { position: absolute; top: 1.7rem; left: 1.25rem; color: #fff; font: 500 .68rem/1 var(--font-inter); }
   .system-meta { color: rgba(var(--rgb-text),.38); font-size: .58rem; letter-spacing: .13em; }
-  .system-rail h3 { margin: 1.3rem 0 0; font: 500 clamp(1.4rem, 2.2vw, 2.1rem)/1 var(--font-display); }
+  .system-rail h3 {
+    max-width: 15ch;
+    margin: 1.3rem 0 0;
+    font: 500 clamp(1.3rem, 1.65vw, 1.72rem)/1.05 var(--font-display);
+    text-wrap: balance;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
   .system-rail p { margin: 1rem 0 0; color: rgba(var(--rgb-text),.62); line-height: 1.55; }
 
   @keyframes system-pulse { to { width: 88%; transform: translateX(12%); } }
@@ -657,30 +914,6 @@ const bridgeSystems = [
   .planet { width: 11rem; background: radial-gradient(circle at 37% 30%, rgba(255,255,255,.2), rgba(255,255,255,.025) 42%, #020304 72%); animation: planet-breathe 4s ease-in-out infinite alternate; }
   .mini-universe > i { position:absolute; left:50%; top:50%; width:.42rem; aspect-ratio:1; border-radius:50%; background:#fff; box-shadow:0 0 1rem #fff; transform:translate(-50%,-50%) rotate(calc(var(--i) * 45deg)) translateX(clamp(7rem, 15vw, 11rem)); }
   @keyframes planet-breathe { to { box-shadow: 0 0 7rem rgba(255,255,255,.18), inset 0 0 3rem rgba(255,255,255,.1); transform: translate(-50%,-50%) scale(1.035); } }
-
-  .screen-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--color-accent);
-    opacity: 0.55;
-    animation: scan 4s linear infinite;
-  }
-
-  .screen-line.top {
-    top: 18%;
-  }
-
-  .screen-line.bottom {
-    top: 72%;
-    animation-delay: -2s;
-  }
-
-  @keyframes scan {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
 
   .case-strip {
     background: rgba(2, 3, 7, 0.72);
@@ -793,9 +1026,9 @@ const bridgeSystems = [
       rgba(5, 7, 14, 0.76);
     backdrop-filter: blur(20px);
     color: rgba(var(--rgb-text), 0.84);
-    font-size: clamp(1.55rem, 3.45vw, 3.5rem);
+    font-size: clamp(1.45rem, 2.65vw, 2.75rem);
     line-height: 1.12;
-    letter-spacing: -0.025em;
+    letter-spacing: 0;
   }
 
   .case-highlight-grid,
@@ -874,26 +1107,78 @@ const bridgeSystems = [
       linear-gradient(90deg, var(--color-line) 1px, transparent 1px),
       rgba(5, 7, 14, 0.82);
     background-size: 3rem 3rem;
+    isolation: isolate;
   }
 
-  .specimen span {
+  .specimen-axis {
     position: absolute;
+    z-index: 4;
+    top: 1.25rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    color: rgba(var(--rgb-text), .5);
+    font-size: .58rem;
+    letter-spacing: .14em;
+  }
+
+  .specimen-axis b { color: #fff; font-weight: 500; }
+
+  .specimen-module {
+    position: absolute;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem;
     border: 1px solid rgba(var(--rgb-accent), 0.5);
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.01));
     backdrop-filter: blur(12px);
+    box-shadow: 0 1.5rem 3rem rgba(0,0,0,.32);
   }
 
-  .specimen span:nth-child(1) {
+  .specimen-module b { font: 500 .62rem/1 var(--font-inter); color: rgba(var(--rgb-text),.55); }
+  .specimen-module em { font: normal .62rem/1 var(--font-inter); color: #fff; letter-spacing: .12em; }
+
+  .specimen-module-a {
     inset: 12% 42% 18% 12%;
   }
 
-  .specimen span:nth-child(2) {
+  .specimen-module-b {
     inset: 24% 18% 34% 52%;
   }
 
-  .specimen span:nth-child(3) {
+  .specimen-module-c {
     inset: 62% 12% 12% 36%;
   }
+
+  .specimen-orbit {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    top: 55%;
+    width: 72%;
+    aspect-ratio: 1;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 50%;
+    transform: translate(-50%,-50%) rotateX(68deg);
+    animation: specimen-spin 9s linear infinite;
+  }
+
+  .specimen-orbit::after {
+    content: "";
+    position: absolute;
+    left: 14%;
+    top: 4%;
+    width: .42rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 1.2rem #fff;
+  }
+
+  @keyframes specimen-spin { to { transform: translate(-50%,-50%) rotateX(68deg) rotateZ(360deg); } }
 
   .next-inner {
     display: flex;
@@ -947,18 +1232,26 @@ const bridgeSystems = [
     .case-title { font-size: clamp(4rem, 9.5vw, 7rem); }
     .workflow-grid,
     .system-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fidic-layers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .metric strong { font-size: clamp(2rem, 5.2vw, 3.4rem); }
   }
 
   @media (max-width: 760px) {
     .case-hero { min-height: auto; }
     .case-hero-inner { grid-template-columns: 1fr; min-height: auto; padding: 8.5rem 0 4rem; }
-    .case-title { font-size: clamp(3.7rem, 18vw, 5.5rem); }
+    .case-title {
+      max-width: 100%;
+      font-size: clamp(3.25rem, 16.5vw, 5.15rem);
+      line-height: .92;
+      overflow-wrap: anywhere;
+    }
+    .case-subtitle { margin-top: 1.35rem; font-size: 1.05rem; line-height: 1.48; }
     .case-visual { min-height: 31rem; }
     .case-screen { inset: 0 8%; transform: none; }
     .impact-head,
     .build-head,
     .system-map-head,
+    .fidic-platform-head,
     .proof-grid { grid-template-columns: 1fr; }
     .workflow-grid,
     .system-rail { grid-template-columns: 1fr; }
@@ -968,17 +1261,96 @@ const bridgeSystems = [
       grid-template-rows: repeat(2, 1fr);
       gap: .55rem;
     }
-    .metric { min-height: 0; padding: .82rem; backdrop-filter: blur(12px); }
+    .metric { min-height: 0; padding: .82rem; backdrop-filter: none; }
     .metric strong { margin-top: .85rem; font-size: clamp(1.45rem, 7vw, 2.4rem); }
     .metric p { margin: .42rem 0 .7rem; font-size: .76rem; }
     .metric-track { margin-bottom: .55rem; }
     .impact-stage { min-height: 48rem; margin-top: 2rem; }
-    .impact-note { right: auto; width: calc(100% - 2rem); }
+    .impact-proofline { grid-template-columns: 1fr; gap: .7rem; }
+    .impact-proofline p { text-align: left; }
+    .impact-proofline b { text-align: left; }
     .system-rail article { min-height: 18rem; }
     .proof-grid a { min-height: 18rem; }
     .proof-node { min-height: 25rem !important; }
     .proof-top,
     .proof-bottom { align-items: flex-start; flex-direction: column; }
+    .fidic-atlas { min-height: 48rem; }
+    .fidic-core { top: 43%; }
+    .fidic-metrics { inset: .7rem; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; align-content: end; }
+    .fidic-metric { position: relative; inset: auto !important; width: auto; min-height: 8rem; backdrop-filter: none; }
+    .fidic-metric-5 { grid-column: 1 / -1; }
+    .fidic-layers { grid-template-columns: 1fr; }
+    .fidic-layers article { min-height: 15rem; }
+  }
+
+  @media (max-width: 520px) {
+    .case-hero-inner { padding-top: 7.25rem; }
+    .case-title { font-size: clamp(3rem, 16vw, 4.25rem); }
+    .case-live-url { font-size: .58rem; letter-spacing: .1em; }
+    .case-visual { min-height: 26rem; }
+    .case-screen { inset-inline: 2%; }
+
+    .impact-head h2,
+    .build-head h2,
+    .system-map-head h2,
+    .fidic-platform-head h2 {
+      max-width: 100%;
+      font-size: clamp(2.55rem, 12.2vw, 3.55rem);
+      line-height: .96;
+      text-wrap: balance;
+    }
+
+    .impact-head > p,
+    .build-head > p,
+    .system-map-head > p,
+    .fidic-platform-head > p { font-size: 1rem; line-height: 1.5; }
+
+    .impact-stage { min-height: 70rem; }
+    .metric-grid {
+      inset: 7rem .35rem 5.5rem;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+      gap: .55rem;
+    }
+    .metric-2,
+    .metric-3,
+    .metric-4 { grid-column: 1; grid-row: auto; align-self: stretch; }
+    .metric { min-height: 0; padding: .9rem 1rem; }
+    .metric strong { margin-top: .65rem; font-size: clamp(2rem, 10.8vw, 2.75rem); white-space: nowrap; }
+    .metric p { margin-block: .4rem .65rem; font-size: .82rem; }
+
+    .fidic-atlas { min-height: 66rem; }
+    .fidic-core { top: 25%; width: 9rem; }
+    .fidic-metrics {
+      inset: auto .55rem .55rem;
+      grid-template-columns: 1fr;
+      align-content: end;
+    }
+    .fidic-metric,
+    .fidic-metric-5 { grid-column: auto; min-height: 7.25rem; }
+    .fidic-metric strong { margin-top: .55rem; font-size: 2rem; }
+
+    .case-chapter p,
+    .visual-language-inner p,
+    .highlight-list article,
+    .process-list article { overflow-wrap: break-word; }
+  }
+
+  @media (pointer: coarse) {
+    .case-screen { animation-duration: 11s; }
+    .visual-orbit,
+    .fidic-atlas::before,
+    .fidic-atlas::after { animation-duration: 26s; }
+    .metric,
+    .fidic-metric,
+    .case-strip,
+    .case-stat,
+    .case-chapter p,
+    .visual-language-inner p,
+    .highlight-list article,
+    .process-list article,
+    .specimen-module { backdrop-filter: none; }
+    .metric::after { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {

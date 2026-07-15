@@ -101,7 +101,7 @@ export const ui = {
       "German C2 · English C1 · Russian native · Czech A2–B1",
     "edu.stack.label": "Toolkit",
     "edu.stack.value":
-      "Marketing strategy · Content systems · SEO · Analytics · Astro · Three.js · GSAP · JavaScript · HTML/CSS · Premiere Pro · Photoshop",
+      "Marketing strategy · Content systems · SEO · Analytics · Astro · Three.js · GSAP · Cinema 4D · Redshift · After Effects · Premiere Pro · Photoshop",
 
     // ── Selected Work (teaser — immersive cases land next) ───────────────────
     "work.label": "Selected Work",
@@ -157,7 +157,7 @@ export const ui = {
     "case.bridge.process.2": "Architecture - shaped the site around credibility, scan speed and direct contact intent.",
     "case.bridge.process.3": "Build - shipped Astro 6, multilingual routing, automated sitemap logic, technical SEO and a custom Three.js project universe.",
     "case.bridge.visual.text":
-      "Noir glass, chrome lines, restrained contrast and large editorial spacing. The site feels closer to an infrastructure report from the future than a marketing template.",
+      "Warm taupe, graphite and off-white; Inter for operational clarity, Playfair Display for editorial authority; generous whitespace, restrained motion and a cinematic Three.js project universe. The result feels like a contemporary infrastructure consultancy, not a generic corporate template.",
 
     "case.bridge.impact.title": "From launch to measurable demand.",
     "case.bridge.impact.text":
@@ -190,8 +190,8 @@ export const ui = {
     "case.fidic.title": "FIDIC - fidic.uz",
     "case.fidic.subtitle":
       "A fast, premium knowledge platform around FIDIC contract standards - built to make complex authoritative material feel navigable, trustworthy and modern.",
-    "case.fidic.role.value": "Content strategy, SEO structure, Astro implementation",
-    "case.fidic.scope.value": "Knowledge platform, education flow, premium web experience",
+    "case.fidic.role.value": "Solo build: product strategy, content, SEO, code and art direction",
+    "case.fidic.scope.value": "3 locales, 109 routes, 105 articles, 15 professional tools",
     "case.fidic.problem.text":
       "FIDIC content is dense by nature. The challenge was to avoid the usual legal-document fatigue and build a platform where users can enter through clarity: contract logic, learning paths, article structure and trust-first navigation.",
     "case.fidic.solution.text":
@@ -206,13 +206,32 @@ export const ui = {
     "case.fidic.process.2": "Frame - designed the interface around trust, hierarchy and momentum.",
     "case.fidic.process.3": "Ship - implemented the front-end with Astro, animation timing and performance discipline.",
     "case.fidic.visual.text":
-      "Editorial black, glass panels, technical markers and precise rhythm. The visual tone says: serious knowledge, premium delivery.",
+      "Blueprint & Brass: deep ink surfaces, brass signals, monospaced technical labels, editorial grids and the color-coded Rainbow Book library. Dense contract knowledge becomes a navigable professional operating system rather than a legal-document archive.",
+    "case.fidic.platform.title": "A contract knowledge operating system.",
+    "case.fidic.platform.text": "Designed and shipped solo as a multilingual product, not a brochure: 109 Astro routes, 105 expert articles, nine contract books, professional tools, calculators, certification flows and an AI-assisted knowledge layer.",
+    "case.fidic.metric.routes": "production routes",
+    "case.fidic.metric.articles": "expert articles",
+    "case.fidic.metric.books": "contract books",
+    "case.fidic.metric.tools": "tools and calculators",
+    "case.fidic.metric.languages": "complete languages",
+    "case.fidic.layer.knowledge.title": "Knowledge graph",
+    "case.fidic.layer.knowledge.text": "Clauses, glossary terms, expert articles and MDB cases connect specialist contract knowledge through structured, searchable content.",
+    "case.fidic.layer.books.title": "Nine-book atlas",
+    "case.fidic.layer.books.text": "Red through White Book profiles translate scope, risk and applicability into a visual contract library.",
+    "case.fidic.layer.tools.title": "Professional workflows",
+    "case.fidic.layer.tools.text": "Contract Map, Claim Readiness, Notice Deadline, risk scoring, tender labs and book selection turn reading into action.",
+    "case.fidic.layer.calculators.title": "Contract calculators",
+    "case.fidic.layer.calculators.text": "Time-bar, delay, damages, interim payment and DAAB timeline models make recurring commercial decisions faster.",
+    "case.fidic.layer.ai.title": "Ask FIDIC layer",
+    "case.fidic.layer.ai.text": "A serverless AI endpoint, search index and lead-routing layer connect expert content with direct user intent.",
+    "case.fidic.layer.trust.title": "Trust infrastructure",
+    "case.fidic.layer.trust.text": "Certificate issue and verification, multilingual metadata, OG generation, schema and sitemaps make authority machine-readable.",
 
     // ── Motion & 3D gallery ─────────────────────────────────────────────────
     "gallery.label": "Behance Showcase",
     "gallery.title": "Visual systems that support the message.",
     "gallery.text":
-      "Selected motion, 3D and visual experiments published on Behance - the craft layer I use when a marketing system needs atmosphere.",
+      "Selected Cinema 4D and Redshift renders, After Effects motion, Premiere Pro edits and Photoshop visuals - the craft layer I use when a marketing system needs atmosphere.",
     "gallery.cta": "View full gallery on Behance",
     "gallery.hint": "Drag to explore · Click to enter",
     "preloader.label": "Calibrating the void",
@@ -334,7 +353,7 @@ export const ui = {
       "Deutsch C2 · Englisch C1 · Russisch Muttersprache · Tschechisch A2–B1",
     "edu.stack.label": "Toolkit",
     "edu.stack.value":
-      "Marketingstrategie · Content-Systeme · SEO · Analytics · Astro · Three.js · GSAP · JavaScript · HTML/CSS · Premiere Pro · Photoshop",
+      "Marketingstrategie · Content-Systeme · SEO · Analytics · Astro · Three.js · GSAP · Cinema 4D · Redshift · After Effects · Premiere Pro · Photoshop",
 
     // ── Selected Work (teaser — immersive cases land next) ───────────────────
     "work.label": "Ausgewählte Arbeiten",
@@ -390,7 +409,7 @@ export const ui = {
     "case.bridge.process.2": "Architektur - die Site auf Glaubwürdigkeit, Scan-Speed und Kontaktintention ausgerichtet.",
     "case.bridge.process.3": "Build - Astro 6, mehrsprachiges Routing, automatisierte Sitemap-Logik, Technical SEO und eine eigene Three.js-Projektwelt ausgeliefert.",
     "case.bridge.visual.text":
-      "Noir-Glas, Chrome-Linien, kontrollierter Kontrast und große redaktionelle Abstände. Die Site fühlt sich eher wie ein Infrastruktur-Report aus der Zukunft an als wie ein Marketing-Template.",
+      "Warmes Taupe, Graphit und Off-White; Inter für operative Klarheit, Playfair Display für redaktionelle Autorität; viel Weißraum, kontrollierte Motion und eine filmische Three.js-Projektwelt. Das Ergebnis positioniert Bridge Consult als zeitgemäße Infrastrukturberatung. Kein generisches Corporate-Template.",
 
     "case.bridge.impact.title": "Vom Launch zu messbarer Nachfrage.",
     "case.bridge.impact.text":
@@ -423,8 +442,8 @@ export const ui = {
     "case.fidic.title": "FIDIC - fidic.uz",
     "case.fidic.subtitle":
       "Eine schnelle, hochwertige Wissensplattform rund um FIDIC-Vertragsstandards - gebaut, damit komplexe verbindliche Inhalte navigierbar, vertrauenswürdig und modern wirken.",
-    "case.fidic.role.value": "Content-Strategie, SEO-Struktur, Astro-Umsetzung",
-    "case.fidic.scope.value": "Wissensplattform, Education Flow, Premium-Web-Erlebnis",
+    "case.fidic.role.value": "Solo Build: Produktstrategie, Content, SEO, Code und Art Direction",
+    "case.fidic.scope.value": "3 Sprachen, 109 Routen, 105 Fachartikel, 15 Profi-Tools",
     "case.fidic.problem.text":
       "FIDIC-Inhalte sind von Natur aus dicht. Die Herausforderung war, die typische Legal-Document-Müdigkeit zu vermeiden und eine Plattform zu bauen, in die Nutzer über Klarheit einsteigen: Vertragslogik, Lernpfade, Artikelstruktur und trust-first Navigation.",
     "case.fidic.solution.text":
@@ -439,13 +458,32 @@ export const ui = {
     "case.fidic.process.2": "Frame - Interface um Vertrauen, Hierarchie und Momentum gestaltet.",
     "case.fidic.process.3": "Ship - Frontend mit Astro, Animation Timing und Performance-Disziplin umgesetzt.",
     "case.fidic.visual.text":
-      "Editorial Black, Glass Panels, technische Marker und präziser Rhythmus. Der Ton sagt: seriöses Wissen, hochwertige Lieferung.",
+      "Blueprint & Brass: tiefe Ink-Flächen, Messing-Signale, technische Mono-Labels, redaktionelle Raster und die farbcodierte Rainbow-Book-Bibliothek. Dichtes Vertragswissen wird zum navigierbaren professionellen Betriebssystem statt zu einem juristischen Dokumentenarchiv.",
+    "case.fidic.platform.title": "Ein Betriebssystem für Vertragswissen.",
+    "case.fidic.platform.text": "Solo als mehrsprachiges Produkt konzipiert und ausgeliefert, nicht als Broschüre: 109 Astro-Routen, 105 Fachartikel, neun Vertragsbücher, professionelle Tools, Rechner, Zertifikatsprozesse und eine AI-gestützte Wissensebene.",
+    "case.fidic.metric.routes": "produktive Routen",
+    "case.fidic.metric.articles": "Fachartikel",
+    "case.fidic.metric.books": "Vertragsbücher",
+    "case.fidic.metric.tools": "Tools und Rechner",
+    "case.fidic.metric.languages": "vollständige Sprachen",
+    "case.fidic.layer.knowledge.title": "Knowledge Graph",
+    "case.fidic.layer.knowledge.text": "Clauses, Glossar, Fachartikel und MDB Cases verbinden Vertragswissen als strukturierte, durchsuchbare Content-Architektur.",
+    "case.fidic.layer.books.title": "Atlas aus neun Books",
+    "case.fidic.layer.books.text": "Profile vom Red bis White Book übersetzen Scope, Risiko und Einsatzgebiet in eine visuelle Vertragsbibliothek.",
+    "case.fidic.layer.tools.title": "Professionelle Workflows",
+    "case.fidic.layer.tools.text": "Contract Map, Claim Readiness, Notice Deadline, Risk Scoring, Tender Labs und Book Selector machen aus Wissen konkrete Arbeit.",
+    "case.fidic.layer.calculators.title": "Vertragsrechner",
+    "case.fidic.layer.calculators.text": "Time Bar, Delay, Damages, Interim Payment und DAAB Timeline beschleunigen wiederkehrende kommerzielle Entscheidungen.",
+    "case.fidic.layer.ai.title": "Ask-FIDIC-Layer",
+    "case.fidic.layer.ai.text": "Ein serverloser AI-Endpunkt, Search Index und Lead Routing verbinden Fachcontent direkt mit der Nutzerintention.",
+    "case.fidic.layer.trust.title": "Trust Infrastructure",
+    "case.fidic.layer.trust.text": "Zertifikate, Verifikation, mehrsprachige Metadaten, OG-Generierung, Schema und Sitemaps machen Autorität maschinenlesbar.",
 
     // ── Motion & 3D gallery ─────────────────────────────────────────────────
     "gallery.label": "Behance Showcase",
-    "gallery.title": "Visuelle Systeme, die die Botschaft stutzen.",
+    "gallery.title": "Visuelle Systeme, die Marken spürbar machen.",
     "gallery.text":
-      "Ausgewählte Motion-, 3D- und visuelle Experimente auf Behance - die Craft-Ebene, wenn ein Marketing-System Atmosphäre braucht.",
+      "Ausgewählte Cinema-4D- und Redshift-Renderings, After-Effects-Motion, Premiere-Pro-Edits und Photoshop-Visuals - die Craft-Ebene, wenn ein Marketing-System Atmosphäre braucht.",
     "gallery.cta": "Ganze Galerie auf Behance ansehen",
     "gallery.hint": "Ziehen zum Entdecken · Klick zum Eintreten",
     "preloader.label": "Kalibriere die Leere",

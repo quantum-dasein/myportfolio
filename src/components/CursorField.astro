@@ -135,6 +135,7 @@
     private scale = 1;
     private targetScale = 1;
     private label = this.querySelector<HTMLElement>("[data-cursor-label]");
+    private magnetic: HTMLElement | null = null;
     private tick = () => this.render();
 
     connectedCallback() {
@@ -159,18 +160,20 @@
       this.tx = event.clientX;
       this.ty = event.clientY;
 
-      document.querySelectorAll<HTMLElement>("[data-magnetic]:hover").forEach((el) => {
+      if (this.magnetic) {
+        const el = this.magnetic;
         const r = el.getBoundingClientRect();
         const dx = event.clientX - (r.left + r.width / 2);
         const dy = event.clientY - (r.top + r.height / 2);
         el.style.setProperty("--mx", `${dx * 0.07}px`);
         el.style.setProperty("--my", `${dy * 0.07}px`);
-      });
+      }
     };
 
     private onOver = (event: PointerEvent) => {
       const target = (event.target as HTMLElement).closest<HTMLElement>("[data-cursor], a, button");
       if (!target) return;
+      this.magnetic = target.closest<HTMLElement>("[data-magnetic]");
       const mode = target.dataset.cursor || (target.matches("a") ? "OPEN" : "SELECT");
       if (this.label) this.label.textContent = mode;
       this.classList.add("is-action");
@@ -183,6 +186,7 @@
       const magnetic = (event.target as HTMLElement).closest<HTMLElement>("[data-magnetic]");
       magnetic?.style.setProperty("--mx", "0px");
       magnetic?.style.setProperty("--my", "0px");
+      if (this.magnetic === magnetic) this.magnetic = null;
       this.classList.remove("is-action");
       this.targetScale = 1;
     };

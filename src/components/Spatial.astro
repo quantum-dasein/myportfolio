@@ -66,6 +66,12 @@ import { works } from "../data/works";
   <!-- exit prompt (project world) -->
   <button class="exit mono" data-exit>⟵ EXIT</button>
 
+  <aside class="film-note" data-film-note aria-live="polite">
+    <span class="film-note__tools mono" data-film-tools></span>
+    <div class="film-note__line" aria-hidden="true"><i></i><b><span class="film-note__arrow"></span></b></div>
+    <p data-film-copy></p>
+  </aside>
+
   <!-- corner brackets -->
   <span class="bracket tl"></span><span class="bracket tr"></span>
   <span class="bracket bl"></span><span class="bracket br"></span>
@@ -230,20 +236,24 @@ import { works } from "../data/works";
   }
 
   .scrollhint {
-    bottom: 3rem;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 5.15rem;
+    left: auto;
+    right: var(--container-offset);
+    transform: none;
     color: var(--color-text-alt);
     animation: fade 2.4s ease-in-out infinite;
+    white-space: nowrap;
+    text-align: right;
   }
 
   .sector-nav {
     right: var(--container-offset);
-    bottom: 2.7rem;
+    bottom: 1.75rem;
     display: flex;
     gap: 0.5rem;
     pointer-events: auto;
   }
+
   .sector-nav button {
     display: grid;
     grid-template-columns: 1rem auto;
@@ -302,6 +312,58 @@ import { works } from "../data/works";
     pointer-events: none;
   }
   :global(body.is-inside) .sector-nav { opacity: 0; pointer-events: none; }
+
+  .film-note {
+    position: fixed;
+    z-index: 12;
+    right: clamp(1.25rem, 4vw, 4.5rem);
+    top: 50%;
+    width: min(21rem, 22vw);
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(1.25rem, -50%, 0);
+    transition: opacity .32s ease, transform .55s var(--ease-out-expo), visibility 0s .55s;
+    pointer-events: none;
+  }
+  :global(body.is-inside.has-film-note) .film-note {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, -50%, 0);
+    transition-delay: .18s, .18s, 0s;
+  }
+  .film-note__tools { display:block; color:rgba(255,255,255,.62); font-size:.58rem; letter-spacing:.17em; line-height:1.5; }
+  .film-note__line { display:grid; grid-template-columns:1fr auto; align-items:center; gap:1rem; margin:1rem 0; }
+  .film-note__line i { height:1px; background:linear-gradient(90deg,rgba(255,255,255,.75),rgba(255,255,255,.08)); transform-origin:left; animation:film-signal 1.4s var(--ease-out-expo) both; }
+  .film-note__line b { display:grid; width:2.7rem; aspect-ratio:1; place-items:center; border:1px solid rgba(255,255,255,.38); border-radius:50%; font-weight:400; }
+  .film-note__arrow { position:relative; display:block; width:.72rem; height:.72rem; }
+  .film-note__arrow::before,
+  .film-note__arrow::after { content:""; position:absolute; }
+  .film-note__arrow::before { left:.07rem; bottom:.05rem; width:.72rem; height:1px; background:currentColor; transform:rotate(-45deg); transform-origin:left center; }
+  .film-note__arrow::after { right:0; top:0; width:.4rem; height:.4rem; border-top:1px solid currentColor; border-right:1px solid currentColor; }
+  .film-note p { margin:0; color:rgba(255,255,255,.82); font:400 clamp(.92rem,1.15vw,1.08rem)/1.58 var(--font-inter); }
+  @keyframes film-signal { from { transform:scaleX(0); opacity:0; } to { transform:scaleX(1); opacity:1; } }
+  @media (max-width: 1100px) and (min-width: 701px) {
+    .film-note { right:1.5rem; width:min(19rem,29vw); }
+    .film-note p { font-size:.88rem; line-height:1.48; }
+  }
+  @media (max-width: 700px) {
+    .film-note {
+      left:1rem;
+      right:1rem;
+      top:auto;
+      bottom:4.6rem;
+      width:auto;
+      padding:1rem;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(3,4,5,.9);
+      transform:translate3d(0,1rem,0);
+    }
+    :global(body.is-inside.has-film-note) .film-note { transform:translate3d(0,0,0); }
+    .film-note__tools { font-size:.52rem; letter-spacing:.12em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .film-note__line { margin:.55rem 0; }
+    .film-note__line b { width:2rem; }
+    .film-note p { display:-webkit-box; overflow:hidden; font-size:.82rem; line-height:1.42; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
+  }
 
   .bracket {
     width: 18px;
@@ -540,6 +602,8 @@ import { works } from "../data/works";
     private inside = false;
     private busy = false;
     private paused = false;
+    private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+    private lastFrame = -Infinity;
     private _v = new THREE.Vector3();
     private caseDeparture?: {
       position: THREE.Vector3;
@@ -558,7 +622,11 @@ import { works } from "../data/works";
       this.camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 400);
       this.camera.position.set(0, 0, 4);
 
-      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      this.renderer = new THREE.WebGLRenderer({
+        antialias: !this.lowPower,
+        alpha: false,
+        powerPreference: "high-performance",
+      });
       this.renderer.setClearColor(0x050505, 1);
       this.renderer.domElement.className = "rb-space-canvas";
       this.stage.appendChild(this.renderer.domElement);
@@ -625,7 +693,7 @@ import { works } from "../data/works";
     }
 
     private buildDust() {
-      const N = 1400;
+      const N = this.lowPower ? 520 : 1400;
       const pos = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) {
         pos[i * 3] = (Math.random() - 0.5) * 40;
@@ -666,7 +734,7 @@ import { works } from "../data/works";
         bevelEnabled: true,
         bevelThickness: 0.06,
         bevelSize: 0.06,
-        bevelSegments: 2,
+        bevelSegments: this.lowPower ? 1 : 2,
       });
       frameGeo.center();
       const glassGeo = new THREE.PlaneGeometry(HOLE_W, HOLE_H, 1, 1);
@@ -765,7 +833,7 @@ import { works } from "../data/works";
           if (image?.width) p.glass.uniforms.uImgAspect.value = image.width / image.height;
           gsap.to(p.glass.uniforms.uReveal, { value: 1, duration: .7, delay: index * .04 });
 
-          if (p.work.video) {
+          if (p.work.video && !this.lowPower) {
             const v = document.createElement("video");
             v.src = p.work.video;
             v.muted = true;
@@ -904,15 +972,20 @@ import { works } from "../data/works";
           targetProgress: this.targetProgress,
           active: i,
         };
-        sessionStorage.setItem("rb-case-origin", location.href);
-        sessionStorage.setItem("rb-case-sector", String(i));
-        sessionStorage.setItem("rb-case-arrive", title);
-        gsap.timeline({
-          onComplete: () => location.assign(p.work.href),
-        })
-          .to(p.glass.uniforms.uActive, { value: 1, duration: .32, ease: "power2.out" }, 0)
-          .to(this.camera.position, { x: p.group.position.x, y: p.group.position.y, z: p.z - 1.2, duration: .82, ease: "power4.in" }, 0)
-          .to(this.comp.uniforms.uWipe, { value: .96, duration: .72, ease: "power3.in" }, .16);
+        const transition = (window as any).__rbCaseTransition as undefined | ((options: any) => void);
+        if (transition) {
+          transition({
+            href: p.work.href,
+            kind: p.work.id === "fidic" ? "fidic" : "bridge",
+            title,
+            sector: i,
+          });
+        } else {
+          sessionStorage.setItem("rb-case-origin", location.href);
+          sessionStorage.setItem("rb-case-sector", String(i));
+          sessionStorage.setItem("rb-case-arrive", p.work.id === "fidic" ? "fidic" : "bridge");
+          location.assign(p.work.href);
+        }
         return;
       }
 
@@ -921,6 +994,7 @@ import { works } from "../data/works";
           this.busy = false;
           this.inside = true;
           document.body.classList.add("is-inside");
+          document.body.classList.toggle("has-film-note", Boolean(p.work.video && p.work.detail));
         },
       });
       // dip to black while the camera surges through the gate
@@ -950,6 +1024,7 @@ import { works } from "../data/works";
     private exit = () => {
       if (this.busy || !this.inside) return;
       this.busy = true;
+      document.body.classList.remove("has-film-note");
       const p = this.portals[this.active];
       const tl = gsap.timeline({
         onComplete: () => {
@@ -983,13 +1058,18 @@ import { works } from "../data/works";
         if (index === i) portal.video.play().catch(() => {});
         else portal.video.pause();
       });
-      const dict = (window as any).__I18N__?.[document.documentElement.lang || "en"] ?? {};
+      const activeLang = (document.documentElement.lang || "en").split("-")[0];
+      const dict = (window as any).__I18N__?.[activeLang] ?? {};
       const title = w.title ?? dict[w.kTitle ?? ""] ?? "";
       const cat = dict[w.kCat] ?? "";
       const yr = w.kText ? "CASE" : "REEL";
       this.decode(document.querySelector("[data-panel-title]"), title);
       this.decode(document.querySelector("[data-panel-cat]"), cat);
       this.decode(document.querySelector("[data-panel-meta]"), `${yr} · SECTOR ${String(i + 1).padStart(2, "0")}`);
+      const tools = document.querySelector<HTMLElement>("[data-film-tools]");
+      const copy = document.querySelector<HTMLElement>("[data-film-copy]");
+      if (tools) tools.textContent = w.detail?.tools ?? "";
+      if (copy) copy.textContent = w.detail?.[activeLang === "de" ? "de" : "en"] ?? "";
       const idxEl = document.querySelector("[data-marker-idx]");
       if (idxEl) idxEl.textContent = String(i + 1).padStart(2, "0");
       const sec = document.querySelector("[data-hud-sector]");
@@ -1020,6 +1100,8 @@ import { works } from "../data/works";
     // ── loop ────────────────────────────────────────────────────────────────
     private render(t: number) {
       if (this.paused) return;
+      if (this.lowPower && t - this.lastFrame < 1 / 45) return;
+      this.lastFrame = t;
       this.comp.uniforms.uTime.value = t;
 
       // ease scroll → camera Z fly-through
@@ -1104,11 +1186,12 @@ import { works } from "../data/works";
       const w = innerWidth, h = innerHeight;
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
-      const dpr = Math.min(devicePixelRatio || 1, 1.35);
+      const dpr = this.lowPower ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.35);
+      const targetScale = this.lowPower ? .74 : 1;
       this.renderer.setPixelRatio(dpr);
       this.renderer.setSize(w, h, true);
-      this.rt.setSize(w * dpr, h * dpr);
-      this.comp.uniforms.uRes.value.set(w * dpr, h * dpr);
+      this.rt.setSize(Math.round(w * dpr * targetScale), Math.round(h * dpr * targetScale));
+      this.comp.uniforms.uRes.value.set(w * dpr * targetScale, h * dpr * targetScale);
     }
   }
 

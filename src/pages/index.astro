@@ -50,7 +50,22 @@ const selectedWork = [
 ];
 ---
 
-<Layout>
+<Layout
+  alternateUrls={{ en: "/en/", de: "/de/", "x-default": "/" }}
+  title="Rodion Belousov | Digital Marketer & Creative Developer Vienna"
+  description="Vienna-based digital marketer Rodion Belousov builds positioning, content systems, technical SEO and high-performance Astro and Three.js websites."
+  pageType="profile"
+  keywords={[
+    "Digital Marketer Vienna",
+    "SEO Consultant Austria",
+    "Creative Developer Vienna",
+    "Astro Developer Austria",
+    "Three.js Developer Vienna",
+    "Content Marketing Austria",
+    "WebGL Portfolio",
+    "Rodion Belousov",
+  ]}
+>
   <HeroHome />
 
   <TextMarquee
@@ -146,7 +161,7 @@ const selectedWork = [
         <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="work.text">{t("work.text")}</p>
         <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
-          <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span aria-hidden="true">↗</span>
+          <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
         <div class="work-signals" aria-label="Solo AI workflow">
           <span>Solo Build</span><span>Claude</span><span>Cursor</span><span>Codex</span>
@@ -193,7 +208,7 @@ const selectedWork = [
                     <p data-i18n={work.text}>{tk(work.text)}</p>
                     <span class="work-cta">
                       <span data-i18n="work.cta">{t("work.cta")}</span>
-                      <span aria-hidden="true">↗</span>
+                      <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
                     </span>
                   </div>
                 </a>
@@ -217,12 +232,12 @@ const selectedWork = [
       <a class="archive-button" href="/gallery" data-tunnel data-reveal data-cursor="ENTER" aria-label={t("portal.cta")}>
         <span class="archive-orbit" aria-hidden="true"></span>
         <span class="archive-label" data-i18n="portal.cta">{t("portal.cta")}</span>
-        <span class="archive-arrow" aria-hidden="true">↘</span>
+        <span class="archive-arrow css-arrow css-arrow-down" aria-hidden="true"></span>
       </a>
     </div>
   </section>
 
-  <section class="section contact legacy-ending" id="contact">
+  <section class="section contact legacy-ending" id="legacy-contact">
     <div class="u-container contact-grid">
       <span class="s-idx">07 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
       <div>
@@ -233,6 +248,7 @@ const selectedWork = [
           <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener" data-i18n="contact.behance.label">
             {t("contact.behance.label")}
           </a>
+          <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn</a>
           <span data-i18n="contact.location">{t("contact.location")}</span>
         </div>
       </div>
@@ -571,12 +587,14 @@ const selectedWork = [
     }
 
     &::after {
-      content: "↗";
+      content: "";
       position: absolute;
       right: 1.1rem;
       top: 1rem;
-      color: rgba(var(--rgb-text), 0.22);
-      font-size: 0.8rem;
+      width: .62rem;
+      height: .62rem;
+      border-top: 1px solid rgba(var(--rgb-text), 0.22);
+      border-right: 1px solid rgba(var(--rgb-text), 0.22);
       transition: color 0.35s ease, transform 0.45s var(--ease-out-expo);
     }
 
@@ -1034,6 +1052,35 @@ const selectedWork = [
     color: rgba(var(--rgb-text), 0.88);
   }
 
+  .css-arrow {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: .82rem;
+    height: .82rem;
+  }
+
+  .css-arrow::before,
+  .css-arrow::after { content: ""; position: absolute; }
+  .css-arrow::before {
+    left: .05rem;
+    top: 50%;
+    width: .78rem;
+    height: 1px;
+    background: currentColor;
+    transform: translateY(-50%);
+  }
+  .css-arrow::after {
+    right: 0;
+    top: .12rem;
+    width: .46rem;
+    height: .46rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+  }
+  .css-arrow-up { transform: rotate(-45deg); }
+  .css-arrow-down { transform: rotate(45deg); }
+
   @media (max-width: 1080px) and (min-width: 561px) {
     .work-card { width: min(52%, 23rem); }
     .work-stage { min-height: 41rem; }
@@ -1178,7 +1225,7 @@ const selectedWork = [
 
   .archive-button:hover .archive-arrow {
     color: #fff;
-    transform: translate(0.25rem, 0.25rem);
+    transform: rotate(45deg) translate(0.25rem, 0);
   }
 
   @keyframes archive-rotate { to { transform: rotate(360deg); } }
@@ -1392,6 +1439,22 @@ const selectedWork = [
     .work-card figure { aspect-ratio: 1.22; }
   }
 
+  @media (pointer: coarse) {
+    .facts,
+    .portal,
+    .archive-button,
+    .work-card { backdrop-filter: none; }
+    .job:hover,
+    .job:focus-visible,
+    .edu-row:hover,
+    .work-card:nth-child(1):hover,
+    .work-card:nth-child(2):hover,
+    .archive-button:hover { transform: none; }
+    .work-card::before { display: none; }
+    .work-core,
+    .work-core-shine { animation-duration: 24s; }
+  }
+
   [data-reveal] {
     opacity: 1;
     transform: none;
@@ -1418,6 +1481,7 @@ const selectedWork = [
   gsap.registerPlugin(ScrollTrigger);
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
   let motionStarted = false;
 
   const initReveals = async () => {
@@ -1466,7 +1530,7 @@ const selectedWork = [
   addEventListener("rb:langchange", () => requestAnimationFrame(() => ScrollTrigger.refresh()));
 
   const tiltCards = gsap.utils.toArray<HTMLElement>("[data-tilt-card]");
-  tiltCards.forEach((card) => {
+  if (finePointer) tiltCards.forEach((card) => {
     const reset = () => {
       gsap.to(card, {
         rotationX: 0,
@@ -1506,7 +1570,7 @@ const selectedWork = [
   });
 
   const jobCards = gsap.utils.toArray<HTMLElement>("[data-job-card]");
-  jobCards.forEach((card) => {
+  if (finePointer) jobCards.forEach((card) => {
     card.addEventListener("pointermove", (event) => {
       if (reduced) return;
       const rect = card.getBoundingClientRect();
@@ -1526,7 +1590,7 @@ const selectedWork = [
   const caseCards = gsap.utils.toArray<HTMLElement>(".work-card");
   const workOrbits = document.querySelector<HTMLElement>(".work-orbits");
 
-  workStage?.addEventListener("pointermove", (event) => {
+  if (finePointer) workStage?.addEventListener("pointermove", (event) => {
     if (reduced || innerWidth < 760) return;
     const rect = workStage.getBoundingClientRect();
     const nx = (event.clientX - rect.left) / rect.width - 0.5;
@@ -1544,7 +1608,7 @@ const selectedWork = [
     if (workOrbits) gsap.to(workOrbits, { x: nx * -12, y: ny * -8, duration: 0.9, ease: "power3.out" });
   });
 
-  workStage?.addEventListener("pointerleave", () => {
+  if (finePointer) workStage?.addEventListener("pointerleave", () => {
     gsap.to(caseCards, { x: 0, y: 0, duration: 0.9, ease: "power3.out", overwrite: "auto" });
     if (workOrbits) gsap.to(workOrbits, { x: 0, y: 0, duration: 1.1, ease: "power3.out" });
   });

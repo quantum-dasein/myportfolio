@@ -12,14 +12,6 @@
 
 @font-face {
   font-family: 'RB Inter';
-  src: url('/fonts') format('woff2');
-  font-display: swap;
-  font-style: normal;
-  font-weight: 100 900;
-}
-
-@font-face {
-  font-family: 'RB Inter';
   src: url('/rb-inter-italic.woff2') format('woff2');
   font-display: swap;
   font-style: italic;
@@ -28,7 +20,7 @@
 
 :root {
   --font-display: 'RB Space', Arial, sans-serif !important;
-  --font-inter: 'RB Inter', Arial, sans-serif !important;
+  --font-inter: Arial, Helvetica, sans-serif !important;
   /* fonts */
   --font-size-base: 20px;
   --font-size-lg: 1.1rem;
@@ -121,6 +113,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 html {
@@ -129,6 +123,36 @@ html {
 
 body {
   min-height: 100svh;
+}
+
+main,
+section,
+article,
+div {
+  min-width: 0;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --font-size-base: 16px;
+    --container-offset: 1rem;
+  }
+
+  html,
+  body {
+    text-rendering: auto;
+  }
 }
 
 ::selection {
@@ -143,4 +167,27 @@ a {
 
 button {
   color: currentcolor;
+}
+
+.ui-arrow {
+  display: inline-block;
+  width: 0.58em;
+  height: 0.58em;
+  flex: 0 0 auto;
+  border-top: 1px solid currentcolor;
+  border-right: 1px solid currentcolor;
+  transform: translateY(-0.08em);
+}
+
+.ui-arrow-down {
+  transform: rotate(135deg) translate(-0.08em, 0.08em);
+}
+
+html.is-preloading,
+html.is-preloading body,
+body.is-preloading {
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  touch-action: none;
 }

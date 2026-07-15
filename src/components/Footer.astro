@@ -1,15 +1,16 @@
 ---
 import type { Link } from "../types";
-import { useTranslations } from "../i18n/utils";
+import { useTranslations, type Lang } from "../i18n/utils";
 
 interface Props {
   logoUrl: string;
   logoAlt: string;
   links: Link[];
+  lang?: Lang;
 }
 
-const { logoUrl, logoAlt, links } = Astro.props;
-const t = useTranslations();
+const { logoUrl, logoAlt, links, lang = "en" } = Astro.props;
+const t = useTranslations(lang);
 const year = new Date().getFullYear();
 ---
 
@@ -25,23 +26,25 @@ const year = new Date().getFullYear();
       <span class="final-orb orb-b" aria-hidden="true"></span>
       <span class="final-orb orb-c" aria-hidden="true"></span>
 
-      <div class="finale-card" data-reveal>
+      <div class="finale-card" id="contact-cta" data-reveal>
         <span class="finale-eyebrow" data-i18n="footer.cta.eyebrow">{t("footer.cta.eyebrow")}</span>
         <h2 data-sy-reveal="words" data-i18n="footer.cta.title">{t("footer.cta.title")}</h2>
         <a class="project-link" href="mailto:rodionbelousov@protonmail.com" data-cursor="OPEN" data-magnetic>
-          <span class="project-icon" aria-hidden="true">↗</span>
+          <span class="project-icon css-arrow css-arrow-up" aria-hidden="true"></span>
           <span data-i18n="footer.cta.button">{t("footer.cta.button")}</span>
           <span class="project-rule" aria-hidden="true"></span>
-          <span class="project-arrow" aria-hidden="true">→</span>
+          <span class="project-arrow css-arrow" aria-hidden="true"></span>
         </a>
       </div>
     </div>
 
     <div class="footer-main">
       <div class="brand-cell">
-        <a class="brand-mark" href={logoUrl} aria-label={logoAlt}>RB</a>
+        <a class="brand-mark" href={logoUrl} aria-label={logoAlt} data-case-exit data-locale-home>
+          <img src="/brand/rodion-belousov-rb-monogram.png" alt="" width="869" height="878" loading="lazy" />
+        </a>
         <div>
-          <a class="logo" href={logoUrl}><span>Rodion Belousov</span><span class="dot">.studio</span></a>
+          <a class="logo" href={logoUrl} data-case-exit data-locale-home><span>Rodion Belousov</span><span class="dot">.studio</span></a>
           <p data-i18n="footer.tagline">{t("footer.tagline")}</p>
         </div>
       </div>
@@ -49,14 +52,16 @@ const year = new Date().getFullYear();
       <nav class="footer-nav" aria-label="Footer">
         {
           links.map((link) => (
-            <a href={link.url} data-i18n={link.i18n}>{link.title}</a>
+            <a href={link.url} data-i18n={link.i18n} data-case-exit data-locale-hash={link.url.startsWith("/#") ? link.url.slice(1) : undefined}>{link.title}</a>
           ))
         }
         <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance</a>
+        <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn</a>
+        <a href="https://github.com/quantum-dasein" target="_blank" rel="noopener">GitHub</a>
       </nav>
 
       <a class="archive-control" href="/gallery" data-tunnel data-cursor="ENTER">
-        <span>Archiv ansehen</span><span aria-hidden="true">↗</span>
+        <span data-i18n="nav.gallery">{t("nav.gallery")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
       </a>
     </div>
 
@@ -67,13 +72,13 @@ const year = new Date().getFullYear();
 </sy-footer>
 
 <style>
-  sy-footer { position: relative; z-index: 2; display: block; color: var(--color-text); font-family: var(--font-inter); }
+  sy-footer { --footer-accent: 220, 226, 230; --footer-deep: 2, 3, 4; position: relative; z-index: 2; display: block; color: var(--color-text); font-family: var(--font-inter); }
 
   footer {
     position: relative;
     overflow: hidden;
     border-top: 1px solid rgba(255,255,255,.09);
-    background: #020203;
+    background: rgb(var(--footer-deep));
   }
 
   .finale {
@@ -83,8 +88,8 @@ const year = new Date().getFullYear();
     place-items: center;
     overflow: hidden;
     background:
-      radial-gradient(circle at 50% 34%, rgba(255,255,255,.07), transparent 26rem),
-      linear-gradient(180deg, #020203, #050607 64%, #010102);
+      radial-gradient(circle at 50% 34%, rgba(var(--footer-accent),.13), transparent 27rem),
+      linear-gradient(180deg, rgb(var(--footer-deep)), rgba(var(--footer-accent),.035) 64%, #010102);
   }
 
   .finale::before {
@@ -149,14 +154,15 @@ const year = new Date().getFullYear();
     z-index: 4;
     width: min(920px, calc(100% - 48px));
     padding: clamp(32px, 3.4vw, 54px);
-    border: 1px solid rgba(255,255,255,.26);
+    border: 1px solid rgba(var(--footer-accent),.34);
     border-radius: 8px;
     background:
       radial-gradient(circle at 32% 12%, rgba(255,255,255,.075), transparent 19rem),
       linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.008)),
       rgba(3,4,5,.74);
     backdrop-filter: blur(24px) saturate(.75);
-    box-shadow: 0 3rem 8rem rgba(0,0,0,.66), inset 0 1px rgba(255,255,255,.08);
+    box-shadow: 0 3rem 8rem rgba(0,0,0,.66), inset 0 1px rgba(var(--footer-accent),.15), 0 0 6rem rgba(var(--footer-accent),.06);
+    scroll-margin-top: 7rem;
   }
 
   .finale-eyebrow {
@@ -194,8 +200,37 @@ const year = new Date().getFullYear();
     place-items: center;
     border: 1px solid rgba(255,255,255,.42);
     border-radius: 50%;
-    box-shadow: 0 0 1.5rem rgba(255,255,255,.1);
+    border-color: rgba(var(--footer-accent),.55);
+    box-shadow: 0 0 1.5rem rgba(var(--footer-accent),.2);
   }
+  .css-arrow {
+    position: relative;
+    display: inline-block;
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+  .css-arrow::before {
+    content: "";
+    position: absolute;
+    left: .08rem;
+    top: 50%;
+    width: .82rem;
+    height: 1px;
+    background: currentColor;
+    transform: translateY(-50%);
+  }
+  .css-arrow::after {
+    content: "";
+    position: absolute;
+    right: .08rem;
+    top: 50%;
+    width: .38rem;
+    height: .38rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .css-arrow-up { transform: rotate(-45deg); }
   .project-rule { height: 1px; background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.58)); }
   .project-arrow { font-size: 1.2rem; }
 
@@ -216,11 +251,9 @@ const year = new Date().getFullYear();
     place-items: center;
     border: 1px solid rgba(255,255,255,.32);
     border-radius: 50%;
-    color: #fff;
-    font-family: var(--font-display);
-    font-size: 1.25rem;
     box-shadow: 0 0 1.8rem rgba(255,255,255,.06);
   }
+  .brand-mark img { width: 76%; height: 76%; object-fit: contain; filter: brightness(1.06) contrast(1.08); }
   .logo { color: #fff; font-family: var(--font-display); font-size: 1rem; }
   .logo .dot { color: rgba(var(--rgb-text), .52); }
   .brand-cell p { margin: .5rem 0 0; color: rgba(var(--rgb-text),.48); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; }
@@ -269,13 +302,22 @@ const year = new Date().getFullYear();
   }
 
   @media (max-width: 600px) {
-    .finale { min-height: 680px; }
-    .finale-card h2 { font-size: 46px; }
+    .finale { min-height: 590px; }
+    .finale-card { width: calc(100% - 2rem); padding: 1.5rem; backdrop-filter: none; }
+    .finale-card h2 { margin-block: 1.1rem 1.8rem; font-size: clamp(2.3rem, 12vw, 3.2rem); line-height: .96; }
     .project-link { grid-template-columns: auto 1fr auto; }
     .project-rule { display: none; }
     .orb-a { left: -25%; }
     .brand-cell { padding-inline: 1.5rem; }
+    .brand-mark { flex-basis: 3.8rem; }
+    .footer-nav { gap: 1rem 1.4rem; padding-block: 1.3rem; }
     .footer-base { flex-direction: column; align-items: center; text-align: center; }
+  }
+
+  @media (max-width: 900px), (pointer: coarse) {
+    .terrain,
+    .final-orb { animation: none; }
+    .finale::before { opacity: .32; }
   }
 
   @media (prefers-reduced-motion: reduce) {

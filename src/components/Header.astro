@@ -1,21 +1,25 @@
 ---
 import type { Link } from "../types";
+import type { Lang } from "../i18n/utils";
 
 interface Props {
   logoUrl: string;
   logoAlt: string;
   links: Link[];
   cta?: Link;
+  lang?: Lang;
+  localeLinks?: Partial<Record<Lang, string>>;
+  logoTunnel?: boolean;
 }
 
-const { logoUrl, logoAlt, links, cta } = Astro.props;
+const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = false } = Astro.props;
 ---
 
 <header>
   <sy-head>
     <div class="inner u-container">
       <div class="wrapper">
-        <a class="logo" href={logoUrl} aria-label={logoAlt} data-tunnel>
+        <a class="logo" href={logoUrl} aria-label={logoAlt} data-case-exit data-locale-home data-tunnel={logoTunnel ? "" : undefined}>
           <span class="mark">Rodion Belousov</span><span class="dot">.studio</span>
         </a>
 
@@ -25,7 +29,7 @@ const { logoUrl, logoAlt, links, cta } = Astro.props;
               <ul>
                 {links.map((l) => (
                   <li>
-                    <a href={l.url} data-i18n={l.i18n} data-overlay={l.overlay}>
+                    <a href={l.url} data-i18n={l.i18n} data-overlay={l.overlay} data-case-exit data-locale-hash={l.url.startsWith("/#") ? l.url.slice(1) : undefined}>
                       {l.title}
                     </a>
                   </li>
@@ -38,17 +42,22 @@ const { logoUrl, logoAlt, links, cta } = Astro.props;
         <div class="buttons">
           <!-- Language switcher -->
           <div class="lang" role="group" aria-label="Language">
-            <button type="button" data-lang="en" aria-pressed="true">
-              <span data-i18n="lang.en">EN</span>
-            </button>
-            <button type="button" data-lang="de" aria-pressed="false">
-              <span data-i18n="lang.de">DE</span>
-            </button>
+            {localeLinks ? (
+              <>
+                <a href={localeLinks.en ?? "/en/"} data-lang-route="en" class:list={{ "is-active": lang === "en" }} aria-current={lang === "en" ? "page" : undefined}>EN</a>
+                <a href={localeLinks.de ?? "/de/"} data-lang-route="de" class:list={{ "is-active": lang === "de" }} aria-current={lang === "de" ? "page" : undefined}>DE</a>
+              </>
+            ) : (
+              <>
+                <button type="button" data-lang="en" aria-pressed="true"><span data-i18n="lang.en">EN</span></button>
+                <button type="button" data-lang="de" aria-pressed="false"><span data-i18n="lang.de">DE</span></button>
+              </>
+            )}
           </div>
 
           {
             cta ? (
-              <a class="nav-cta" href={cta.url} data-tunnel={cta.tunnel ? "" : undefined}>
+              <a class="nav-cta" href={cta.url} data-tunnel={cta.tunnel ? "" : undefined} data-locale-home={cta.url === "/" ? "" : undefined}>
                 <span data-i18n={cta.i18n}>{cta.title}</span>
               </a>
             ) : null
@@ -249,7 +258,8 @@ const { logoUrl, logoAlt, links, cta } = Astro.props;
     border: 1px solid var(--color-line);
     border-radius: 100px;
 
-    button {
+    button,
+    a {
       cursor: pointer;
       border: none;
       background: none;
@@ -350,6 +360,21 @@ const { logoUrl, logoAlt, links, cta } = Astro.props;
         }
       }
     }
+  }
+
+  @media (max-width: 600px) {
+    .inner { padding-block: .82rem; }
+    .wrapper { gap: .65rem; }
+    .logo { font-size: .9rem; }
+    .buttons { gap: .5rem; }
+    .lang button,
+    .lang a { padding: .27rem .45rem; font-size: .68rem; }
+    .toggle > span:last-child { width:1.65rem; height:1.05rem; }
+  }
+
+  @media (pointer: coarse) {
+    sy-head::after,
+    .nav-cta { backdrop-filter: none; }
   }
 </style>
 

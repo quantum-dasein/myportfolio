@@ -346,6 +346,14 @@
     .cube-bottom { transform: rotateX(-90deg) translateZ(2.8rem); }
   }
 
+  @media (pointer: coarse) {
+    .cube-face { backdrop-filter: none; }
+    .loader-orbit,
+    .loader-count strong { filter: none; }
+    .loader-grid { opacity: 0.25; animation-duration: 4.4s; }
+    .loader-node::after { animation-duration: 3.6s; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .loader-cube,
     .loader-orbit { animation-play-state: paused; }
@@ -365,6 +373,8 @@
   class StudioLoader extends HTMLElement {
     connectedCallback() {
       if (sessionStorage.getItem("rb-loader-seen") === "1") {
+        document.documentElement.classList.remove("is-preloading");
+        document.body.classList.remove("is-preloading");
         document.body.classList.add("is-loaded");
         this.remove();
         queueMicrotask(() => window.dispatchEvent(new CustomEvent("rb:loaded")));
@@ -372,6 +382,8 @@
       }
 
       sessionStorage.setItem("rb-loader-seen", "1");
+      document.documentElement.classList.add("is-preloading");
+      document.body.classList.add("is-preloading");
       this.play();
     }
 
@@ -406,7 +418,11 @@
       window.dispatchEvent(new CustomEvent("rb:loaded"));
 
       const timeline = gsap.timeline({
-        onComplete: () => this.remove(),
+        onComplete: () => {
+          document.documentElement.classList.remove("is-preloading");
+          document.body.classList.remove("is-preloading");
+          this.remove();
+        },
       });
       timeline
         .to(this.querySelector("[data-loader-stage]"), {

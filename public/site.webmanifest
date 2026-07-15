@@ -1,0 +1,18 @@
+{
+  "name": "Rodion Belousov Studio",
+  "short_name": "RB Studio",
+  "description": "Digital marketing, SEO, creative development, 3D and motion design portfolio by Rodion Belousov in Vienna.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020304",
+  "theme_color": "#08080a",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

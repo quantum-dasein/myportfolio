@@ -1,6 +1,13 @@
 <div class="case-transition" data-case-transition-root aria-hidden="true">
+  <canvas data-case-transition-canvas></canvas>
+  <div class="case-transition__destination" data-transition-destination></div>
   <div class="case-transition__veil" data-case-transition-veil></div>
-  <div class="case-transition__rays" data-case-transition-rays></div>
+  <div class="case-transition__hud">
+    <span data-transition-index>CASE / 01</span>
+    <p data-transition-label>BRIDGE CONSULT</p>
+    <small data-transition-status>ASSEMBLING INFRASTRUCTURE</small>
+  </div>
+  <div class="case-transition__meter"><i data-transition-meter></i></div>
 </div>
 
 <style>
@@ -9,170 +16,610 @@
     inset: 0;
     z-index: 500;
     overflow: hidden;
-    pointer-events: none;
     visibility: hidden;
+    pointer-events: none;
+    background: #020304;
+    color: #f7f9fa;
+    opacity: 1;
   }
 
   .case-transition.is-active,
-  :global(html.rb-case-arriving) .case-transition { visibility: visible; }
+  :global(html.rb-case-arriving) .case-transition {
+    visibility: visible;
+    pointer-events: auto;
+  }
 
+  .case-transition canvas,
   .case-transition__veil,
-  .case-transition__rays { position: absolute; inset: 0; }
+  .case-transition__destination { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .case-transition__destination {
+    z-index: 1;
+    display: none;
+  }
 
   .case-transition__veil {
-    opacity: 0;
+    z-index: 2;
     background:
-      radial-gradient(circle at var(--tx, 50%) var(--ty, 50%), rgba(255,255,255,.18) 0 1px, transparent 18%),
-      radial-gradient(circle at var(--tx, 50%) var(--ty, 50%), rgba(150,165,176,.18), transparent 34%),
-      #020304;
+      radial-gradient(circle at 50% 48%, transparent 0 20%, rgba(0,0,0,.26) 58%, rgba(0,0,0,.82) 100%),
+      repeating-linear-gradient(90deg, transparent 0 8vw, rgba(255,255,255,.025) 8vw calc(8vw + 1px));
   }
 
-  :global(html.rb-case-arriving) .case-transition__veil { opacity: 1; }
-
-  .case-transition__rays {
-    opacity: 0;
-    background: repeating-conic-gradient(from 0deg at var(--tx, 50%) var(--ty, 50%), transparent 0deg 5.6deg, rgba(225,232,236,.2) 5.8deg 5.9deg);
-    mask-image: radial-gradient(circle at var(--tx, 50%) var(--ty, 50%), transparent 0 8%, #000 25%, transparent 76%);
-    transform: scale(.3) rotate(-8deg);
-  }
-
-  .case-transition__aperture {
-    position: fixed;
-    left: var(--x);
-    top: var(--y);
-    width: var(--w);
-    height: var(--h);
-    border: 1px solid rgba(255,255,255,.72);
-    border-radius: 6px;
-    background: rgba(8,10,12,.28);
-    box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 0 5rem rgba(205,220,230,.18);
-    transform-origin: center;
-  }
-
-  .case-transition__aperture::before,
-  .case-transition__aperture::after {
-    content: "";
+  .case-transition__hud {
     position: absolute;
-    inset: -1rem;
-    border: 1px solid rgba(255,255,255,.22);
-    border-radius: inherit;
+    z-index: 3;
+    inset: clamp(1.2rem, 4vw, 4rem);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr auto;
+    align-items: start;
+    font-family: var(--font-inter);
+    opacity: 0;
   }
 
-  .case-transition__aperture::after { inset: -2rem; opacity: .42; }
+  .case-transition__hud span,
+  .case-transition__hud small {
+    font-size: .62rem;
+    letter-spacing: .18em;
+    color: rgba(255,255,255,.55);
+  }
 
-  .case-transition__label {
-    position: fixed;
-    left: var(--container-offset);
-    bottom: var(--container-offset);
+  .case-transition__hud p {
+    grid-column: 1 / -1;
+    align-self: center;
     margin: 0;
-    color: #f7f9fa;
     font-family: var(--font-display);
-    font-size: clamp(2.4rem, 6vw, 6.5rem);
+    font-size: clamp(2.6rem, 7vw, 7rem);
     font-weight: 500;
-    line-height: .94;
-    opacity: 0;
+    line-height: .92;
+    text-align: center;
+    letter-spacing: 0;
+  }
+
+  .case-transition.is-bridge .case-transition__hud p {
+    font-size: clamp(3.2rem, 10vw, 10rem);
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+
+  .case-transition.is-fidic .case-transition__hud p {
+    align-self: end;
+    margin-bottom: clamp(3.4rem, 8vh, 6.5rem);
+    font-size: clamp(2.4rem, 5.5vw, 6rem);
+    text-align: left;
+  }
+
+  .case-transition__hud small { grid-column: 2; text-align: right; }
+
+  .case-transition__meter {
+    position: absolute;
+    z-index: 4;
+    left: clamp(1.2rem, 4vw, 4rem);
+    right: clamp(1.2rem, 4vw, 4rem);
+    bottom: clamp(.9rem, 2vw, 1.8rem);
+    height: 1px;
+    background: rgba(255,255,255,.14);
+  }
+
+  .case-transition__meter i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    box-shadow: 0 0 1.4rem #fff;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  :global(html.rb-transitioning),
+  :global(html.rb-transitioning body) { overflow: hidden !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .case-transition__hud { display: none; }
   }
 </style>
 
 <script>
+  import * as THREE from "three";
   import gsap from "gsap";
 
+  type CaseKind = "bridge" | "fidic";
+  type TransitionOptions = { href: string; kind?: CaseKind; title?: string; sector?: number };
+
+  declare global {
+    interface Window {
+      __rbCaseTransition?: (options: TransitionOptions) => void;
+    }
+  }
+
   const root = document.querySelector<HTMLElement>("[data-case-transition-root]")!;
+  const canvas = root.querySelector<HTMLCanvasElement>("[data-case-transition-canvas]")!;
   const veil = root.querySelector<HTMLElement>("[data-case-transition-veil]")!;
-  const rays = root.querySelector<HTMLElement>("[data-case-transition-rays]")!;
+  const destination = root.querySelector<HTMLElement>("[data-transition-destination]")!;
+  const hud = root.querySelector<HTMLElement>(".case-transition__hud")!;
+  const label = root.querySelector<HTMLElement>("[data-transition-label]")!;
+  const status = root.querySelector<HTMLElement>("[data-transition-status]")!;
+  const index = root.querySelector<HTMLElement>("[data-transition-index]")!;
+  const meter = root.querySelector<HTMLElement>("[data-transition-meter]")!;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
   const casePage = document.querySelector<HTMLElement>("[data-case-page]");
+  let renderer: THREE.WebGLRenderer | null = null;
+  let scene: THREE.Scene | null = null;
+  let camera: THREE.PerspectiveCamera | null = null;
+  let frame = 0;
   let running = false;
   let completingBack = false;
+  let clock = 0;
+  let animated: THREE.Object3D[] = [];
+  let safetyTimer = 0;
 
-  const normalize = (value: string) => {
-    try {
-      const url = new URL(value, location.href);
-      return `${url.origin}${url.pathname}${url.search}${url.hash}`;
-    } catch { return value; }
-  };
+  const normalize = (value: string) => new URL(value, location.href).href;
+  const kindFromHref = (href: string): CaseKind => new URL(href, location.href).pathname.includes("fidic") ? "fidic" : "bridge";
 
   const originMatches = () => {
     const origin = sessionStorage.getItem("rb-case-origin");
     if (!origin) return false;
-    const a = new URL(origin, location.href);
-    return a.origin === location.origin && a.pathname === location.pathname;
+    const url = new URL(origin, location.href);
+    return url.origin === location.origin && url.pathname === location.pathname && url.search === location.search;
   };
 
-  const reset = () => {
-    running = false;
-    root.classList.remove("is-active");
-    root.querySelectorAll(".case-transition__aperture, .case-transition__label").forEach((node) => node.remove());
-    gsap.killTweensOf([veil, rays]);
-    gsap.set(veil, { opacity: 0 });
-    gsap.set(rays, { opacity: 0, scale: .3, rotation: -8 });
-    document.documentElement.classList.remove("rb-case-arriving");
-  };
-
-  const revealDestination = (clearOrigin = false) => {
-    running = true;
-    root.classList.add("is-active");
-    gsap.set(veil, { opacity: 1 });
-    gsap.set(rays, { opacity: .55, scale: .5, rotation: -8 });
-    gsap.timeline({
-      onComplete: () => {
-        reset();
-        if (clearOrigin) {
-          sessionStorage.removeItem("rb-case-origin");
-          sessionStorage.removeItem("rb-case-sector");
-        }
-      },
-    })
-      .to(rays, { opacity: 0, scale: 1.45, rotation: 7, duration: .9, ease: "power3.out" }, 0)
-      .to(veil, { opacity: 0, duration: .78, ease: "power2.out" }, .14);
-  };
-
-  const closeCurrent = (complete: () => void) => {
-    if (reduced) { complete(); return; }
-    gsap.killTweensOf([veil, rays]);
-    running = true;
-    root.classList.add("is-active");
-    gsap.timeline({ onComplete: complete })
-      .to(rays, { opacity: .7, scale: 1.25, rotation: 5, duration: .72, ease: "power3.in" }, 0)
-      .to(veil, { opacity: 1, duration: .58, ease: "power2.in" }, .08);
-  };
-
-  function runTransition(card: HTMLElement, href: string) {
-    if (running) return;
-    if (reduced) { location.assign(href); return; }
-
-    running = true;
-    sessionStorage.setItem("rb-case-origin", normalize(location.href));
-    const rect = card.getBoundingClientRect();
-    const title = card.querySelector("h3")?.textContent?.trim() || card.textContent?.trim() || "Case Study";
-    const aperture = document.createElement("div");
-    const label = document.createElement("p");
-    aperture.className = "case-transition__aperture";
-    label.className = "case-transition__label";
-    label.textContent = title;
-
-    root.style.setProperty("--tx", `${rect.left + rect.width / 2}px`);
-    root.style.setProperty("--ty", `${rect.top + rect.height / 2}px`);
-    aperture.style.setProperty("--x", `${rect.left}px`);
-    aperture.style.setProperty("--y", `${rect.top}px`);
-    aperture.style.setProperty("--w", `${rect.width}px`);
-    aperture.style.setProperty("--h", `${rect.height}px`);
-    root.append(aperture, label);
-    root.classList.add("is-active");
-
-    const scale = Math.max(innerWidth / Math.max(rect.width, 1), innerHeight / Math.max(rect.height, 1)) * 1.45;
-    gsap.timeline({
-      defaults: { ease: "power3.inOut" },
-      onComplete: () => {
-        sessionStorage.setItem("rb-case-arrive", title);
-        location.assign(href);
-      },
-    })
-      .to(aperture, { scale, rotation: 2, borderRadius: "50%", duration: .64 }, 0)
-      .to(rays, { opacity: .6, scale: 1.3, rotation: 8, duration: .58 }, .08)
-      .to(veil, { opacity: 1, duration: .46 }, .2)
-      .to(label, { opacity: 1, y: -10, duration: .3 }, .2);
+  function disposeScene() {
+    cancelAnimationFrame(frame);
+    if (scene) {
+      scene.traverse((node: any) => {
+        node.geometry?.dispose?.();
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        materials.forEach((material: any) => material?.dispose?.());
+      });
+    }
+    renderer?.dispose();
+    renderer = null;
+    scene = null;
+    camera = null;
+    animated = [];
   }
+
+  function reset() {
+    clearTimeout(safetyTimer);
+    running = false;
+    document.documentElement.classList.remove("rb-transitioning", "rb-case-arriving");
+    root.classList.remove("is-active", "is-bridge", "is-fidic");
+    gsap.killTweensOf([root, canvas, veil, destination, hud, meter, animated]);
+    gsap.set([root, canvas], { clearProps: "opacity" });
+    gsap.set([hud, veil, destination, label], { clearProps: "opacity,transform,letterSpacing" });
+    gsap.set(meter, { clearProps: "transform" });
+    disposeScene();
+  }
+
+  function addStars(target: THREE.Scene) {
+    const count = lowPower ? 220 : 900;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - .5) * 34;
+      positions[i * 3 + 1] = (Math.random() - .5) * 22;
+      positions[i * 3 + 2] = (Math.random() - .5) * 32 - 4;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const points = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xe9f0f3, size: .035, transparent: true, opacity: .72 }));
+    points.userData.spin = .025;
+    target.add(points);
+    animated.push(points);
+  }
+
+  function bridgeWorld(target: THREE.Scene) {
+    const group = new THREE.Group();
+    const graphite = new THREE.MeshPhysicalMaterial({ color: 0x111416, metalness: .86, roughness: .22, clearcoat: .82, transparent: true, opacity: .08 });
+    const road = new THREE.MeshPhysicalMaterial({ color: 0x20252a, metalness: .7, roughness: .34, transparent: true, opacity: .08 });
+    const chrome = new THREE.MeshStandardMaterial({ color: 0xbfc8ce, metalness: .95, roughness: .15, transparent: true, opacity: .12 });
+    const signal = new THREE.MeshStandardMaterial({ color: 0xf5f7f8, emissive: 0xd8b777, emissiveIntensity: 2.2, metalness: .65, roughness: .16 });
+    const wireMaterial = new THREE.LineBasicMaterial({ color: 0xf2f6f8, transparent: true, opacity: .82 });
+
+    const deckCount = lowPower ? 24 : 34;
+    for (let i = 0; i < deckCount; i++) {
+      const finalZ = 5.2 - i * 1.18;
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(6.6, .18, 1.08), i % 4 === 0 ? graphite.clone() : road.clone());
+      slab.position.set(0, 0, finalZ);
+      slab.userData.role = "deck";
+      slab.userData.finalZ = finalZ;
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(slab.geometry), wireMaterial.clone());
+      edges.userData.role = "wire";
+      slab.add(edges);
+      group.add(slab);
+      animated.push(slab, edges);
+
+      [-1.35, 1.35].forEach((x) => {
+        const lane = new THREE.Mesh(new THREE.BoxGeometry(.035, .025, .86), signal);
+        lane.position.set(x, .105, finalZ);
+        lane.userData.role = "lane";
+        lane.userData.finalZ = finalZ;
+        group.add(lane);
+        animated.push(lane);
+      });
+    }
+
+    const towerZs = [-9.2, -25.7];
+    towerZs.forEach((z, towerIndex) => {
+      const tower = new THREE.Group();
+      tower.position.z = z;
+      tower.userData.role = "tower";
+      [-2.75, 2.75].forEach((x) => {
+        const pylon = new THREE.Mesh(new THREE.BoxGeometry(.48, 7.4, .58), chrome.clone());
+        pylon.position.set(x, 3.7, 0);
+        const outline = new THREE.LineSegments(new THREE.EdgesGeometry(pylon.geometry), wireMaterial.clone());
+        pylon.add(outline);
+        tower.add(pylon);
+      });
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(6.05, .34, .46), chrome.clone());
+      crown.position.y = 6.55;
+      tower.add(crown);
+      group.add(tower);
+      animated.push(tower);
+
+      for (let i = 0; i < 7; i++) {
+        const distance = 2.7 + i * 1.75;
+        [-1, 1].forEach((side) => {
+          [-1, 1].forEach((bank) => {
+            const start = new THREE.Vector3(bank * 2.72, 6.15 - i * .22, z);
+            const end = new THREE.Vector3(bank * 3.12, .18, z + side * distance);
+            const midpoint = start.clone().add(end).multiplyScalar(.5);
+            const direction = end.clone().sub(start);
+            const length = direction.length();
+            const cable = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, length, 6), signal.clone());
+            cable.position.copy(midpoint);
+            cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+            cable.userData.role = "cable";
+            cable.userData.order = towerIndex * 14 + i * 2 + (side > 0 ? 1 : 0);
+            group.add(cable);
+            animated.push(cable);
+          });
+        });
+      }
+    });
+
+    group.position.y = -1.02;
+    target.add(group);
+    return group;
+  }
+
+  function bookWorld(target: THREE.Scene) {
+    const book = new THREE.Group();
+    const atlasTexture = (pageIndex: number, cover = false) => {
+      const textureCanvas = document.createElement("canvas");
+      textureCanvas.width = lowPower ? 512 : 1024;
+      textureCanvas.height = lowPower ? 350 : 700;
+      const context = textureCanvas.getContext("2d")!;
+      const sx = textureCanvas.width / 1024;
+      const sy = textureCanvas.height / 700;
+      context.scale(sx, sy);
+      const gradient = context.createLinearGradient(0, 0, 1024, 700);
+      gradient.addColorStop(0, cover ? "#111820" : "#151b21");
+      gradient.addColorStop(1, "#05080b");
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, 1024, 700);
+      context.strokeStyle = "rgba(224,231,235,.16)";
+      context.lineWidth = 1;
+      for (let x = 56; x < 1024; x += 72) {
+        context.beginPath(); context.moveTo(x, 0); context.lineTo(x, 700); context.stroke();
+      }
+      for (let y = 52; y < 700; y += 58) {
+        context.beginPath(); context.moveTo(0, y); context.lineTo(1024, y); context.stroke();
+      }
+      context.strokeStyle = "rgba(218,226,231,.58)";
+      context.strokeRect(42, 40, 940, 620);
+      context.fillStyle = "rgba(239,243,245,.92)";
+      context.font = cover ? "600 72px Arial" : "600 42px Arial";
+      context.fillText(cover ? "FIDIC.UZ" : `CONTRACT / 0${pageIndex + 1}`, 78, cover ? 142 : 104);
+      context.fillStyle = "rgba(224,230,234,.5)";
+      context.font = "500 21px Arial";
+      context.fillText(cover ? "INFRASTRUCTURE CONTRACT KNOWLEDGE SYSTEM" : "CLAUSES · RISK · NOTICE · CLAIMS", 80, cover ? 192 : 148);
+      context.strokeStyle = "rgba(211,219,224,.46)";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(760, 350, cover ? 146 : 112, 0, Math.PI * 2);
+      context.stroke();
+      context.beginPath();
+      context.arc(760, 350, cover ? 92 : 68, 0, Math.PI * 2);
+      context.stroke();
+      context.fillStyle = "rgba(239,243,245,.76)";
+      context.font = "500 24px Arial";
+      ["20.1  CLAIMS", "20.2  NOTICE", "21.6  DAAB", "08.5  TIME"].forEach((line, lineIndex) => {
+        context.fillText(line, 82, 330 + lineIndex * 58);
+      });
+      const texture = new THREE.CanvasTexture(textureCanvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = Math.min(renderer?.capabilities.getMaxAnisotropy() || 4, 8);
+      return texture;
+    };
+    const coverMat = new THREE.MeshPhysicalMaterial({ map: atlasTexture(0, true), color: 0xffffff, metalness: .32, roughness: .32, clearcoat: 1 });
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xb8c1c7, metalness: .9, roughness: .18 });
+    const back = new THREE.Mesh(new THREE.BoxGeometry(7.8, 5.15, .18), coverMat.clone());
+    back.position.z = -.32;
+    book.add(back);
+    animated.push(back);
+
+    for (let i = 0; i < 9; i++) {
+      const pivot = new THREE.Group();
+      pivot.position.set(-3.72, 0, -.18 + i * .032);
+      const pageMaterial = new THREE.MeshStandardMaterial({ map: atlasTexture(i), color: 0xffffff, roughness: .68, side: THREE.DoubleSide });
+      const page = new THREE.Mesh(new THREE.PlaneGeometry(7.35, 4.72, 16, 10), pageMaterial);
+      page.position.x = 3.675;
+      pivot.add(page);
+      book.add(pivot);
+      pivot.userData.page = true;
+      pivot.userData.delay = i * .045;
+      animated.push(pivot);
+    }
+
+    const coverPivot = new THREE.Group();
+    coverPivot.position.x = -3.9;
+    coverPivot.userData.cover = true;
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(7.8, 5.15, .14), coverMat);
+    cover.position.x = 3.9;
+    coverPivot.add(cover);
+    book.add(coverPivot);
+    animated.push(coverPivot);
+
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(.15, 5.28, .45), edgeMat);
+    spine.position.set(-3.92, 0, -.05);
+    book.add(spine);
+    animated.push(spine);
+    const orbit = new THREE.Mesh(
+      new THREE.TorusGeometry(5.25, .014, 5, 180),
+      new THREE.MeshBasicMaterial({ color: 0xc9d1d6, transparent: true, opacity: .34 }),
+    );
+    orbit.rotation.set(1.12, .08, .1);
+    orbit.position.z = -1.8;
+    book.add(orbit);
+    animated.push(orbit);
+    book.rotation.set(-.16, -.08, -.035);
+    book.scale.setScalar(innerWidth < 760 ? .72 : 1.02);
+    target.add(book);
+    return book;
+  }
+
+  function init(kind: CaseKind) {
+    disposeScene();
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowPower, alpha: false, powerPreference: "high-performance" });
+    renderer.setPixelRatio(lowPower ? 1 : Math.min(devicePixelRatio, 1.5));
+    renderer.setSize(innerWidth, innerHeight, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.35;
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020304);
+    scene.fog = new THREE.FogExp2(0x020304, .04);
+    camera = new THREE.PerspectiveCamera(kind === "bridge" ? 58 : 46, innerWidth / innerHeight, .1, 120);
+    camera.position.set(0, kind === "bridge" ? .72 : .15, kind === "bridge" ? 8.2 : 9.4);
+    if (kind === "bridge") camera.lookAt(0, -.1, -24);
+    scene.add(new THREE.HemisphereLight(0xdde8ee, 0x050607, 1.5));
+    const key = new THREE.DirectionalLight(0xffffff, 6);
+    key.position.set(-4, 7, 8);
+    scene.add(key);
+    const rim = new THREE.PointLight(kind === "bridge" ? 0xd7e0e5 : 0xbcc9d2, 18, 36);
+    rim.position.set(5, -1, 5);
+    scene.add(rim);
+    addStars(scene);
+    const object = kind === "bridge" ? bridgeWorld(scene) : bookWorld(scene);
+    object.userData.kind = kind;
+    const render = () => {
+      if (!renderer || !scene || !camera) return;
+      clock += .01;
+      animated.forEach((item) => {
+        if (item.userData.spin) item.rotation.y += item.userData.spin * .1;
+      });
+      if (kind !== "bridge") object.rotation.y += (Math.sin(clock) * .0015);
+      renderer.render(scene, camera);
+      frame = requestAnimationFrame(render);
+    };
+    render();
+    return object;
+  }
+
+  function clearCaseTransaction() {
+    sessionStorage.removeItem("rb-case-origin");
+    sessionStorage.removeItem("rb-case-scroll");
+    sessionStorage.removeItem("rb-case-sector");
+    sessionStorage.removeItem("rb-case-kind");
+    sessionStorage.removeItem("rb-case-return");
+    sessionStorage.removeItem("rb-case-direct-arrive");
+  }
+
+  function revealPage(kind: CaseKind, clearTransaction = false) {
+    if (running) reset();
+    running = true;
+    disposeScene();
+    document.documentElement.classList.add("rb-transitioning", "rb-case-arriving");
+    root.classList.add("is-active", `is-${kind}`);
+    gsap.set(root, { opacity: 1 });
+    gsap.set([canvas, destination, hud, meter], { opacity: 0 });
+    gsap.set(veil, { opacity: 1 });
+
+    const finish = () => {
+      reset();
+      if (clearTransaction) clearCaseTransaction();
+    };
+    const reveal = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (reduced) { finish(); return; }
+      safetyTimer = window.setTimeout(finish, 1300);
+      gsap.to(root, { opacity: 0, duration: .82, ease: "power2.out", onComplete: finish });
+    }));
+    const fontsReady = (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+    if (fontsReady) Promise.race([fontsReady, new Promise((resolve) => setTimeout(resolve, 180))]).then(reveal);
+    else reveal();
+  }
+
+  function play(kind: CaseKind, direction: "depart" | "exit", done?: () => void) {
+    if (running) return;
+    running = true;
+    const returning = direction === "exit";
+    document.documentElement.classList.add("rb-transitioning");
+    root.classList.add("is-active", `is-${kind}`);
+    gsap.set([root, canvas], { opacity: 1 });
+    label.textContent = kind === "bridge" ? "BRIDGE CONSULT" : "FIDIC.UZ";
+    status.textContent = kind === "bridge" ? "ASSEMBLING INFRASTRUCTURE" : "OPENING CONTRACT ATLAS";
+    index.textContent = kind === "bridge" ? "CASE / 01" : "CASE / 02";
+    const object = init(kind);
+    if (!camera) return;
+    const pages = animated.filter((item) => item.userData.page);
+    const cover = kind === "fidic" ? animated.find((item) => item.userData.cover) : null;
+    const baseScale = object.scale.x;
+    gsap.set(veil, { opacity: returning ? 1 : 0 });
+    gsap.set(destination, { opacity: 0, scale: 1.05 });
+    gsap.set(hud, { opacity: returning ? 0 : 0 });
+    gsap.set(meter, { opacity: returning ? 0 : 1, scaleX: 0 });
+
+    if (kind === "bridge") {
+      const decks = animated.filter((item) => item.userData.role === "deck");
+      const lanes = animated.filter((item) => item.userData.role === "lane");
+      const towers = animated.filter((item) => item.userData.role === "tower");
+      const cables = animated.filter((item) => item.userData.role === "cable");
+      decks.forEach((item, i) => {
+        gsap.set(item.position, { x: 0, y: 0, z: returning ? item.userData.finalZ : item.userData.finalZ - 28 - (i % 5) * 2 });
+        gsap.set(item.rotation, { z: 0 });
+        gsap.set(item.scale, { x: returning ? 1 : .42 });
+        gsap.set((item as THREE.Mesh).material, { opacity: returning ? .94 : .06 });
+      });
+      lanes.forEach((item, i) => gsap.set(item.position, { z: returning ? item.userData.finalZ : item.userData.finalZ - 28 - (i % 7) }));
+      towers.forEach((item) => gsap.set(item.scale, { y: returning ? 1 : .015 }));
+      cables.forEach((item) => gsap.set(item.scale, { y: returning ? 1 : .001 }));
+      gsap.set(object.rotation, { x: 0, y: 0, z: 0 });
+      gsap.set(object.scale, { x: 1, y: 1, z: 1 });
+      camera.position.set(0, returning ? .58 : .72, returning ? 6.6 : 8.2);
+      camera.lookAt(0, -.12, -24);
+    } else {
+      gsap.set(object.rotation, { y: returning ? .02 : -.34, z: -.035 });
+      gsap.set(object.scale, { x: baseScale, y: baseScale, z: baseScale });
+      pages.forEach((page, i) => gsap.set(page.rotation, { y: returning ? -Math.PI * (.62 + i * .025) : 0 }));
+      if (cover) gsap.set(cover.rotation, { y: returning ? -Math.PI * .92 : 0 });
+      camera.position.set(0, .15, returning ? 8.1 : 9.4);
+    }
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(safetyTimer);
+      done?.();
+    };
+    if (reduced) { gsap.to(veil, { opacity: 1, duration: .2, onComplete: finish }); return; }
+
+    safetyTimer = window.setTimeout(finish, returning ? 2100 : (kind === "bridge" ? 2750 : 2350));
+    const tl = gsap.timeline({ defaults: { ease: "power3.inOut" }, onComplete: finish });
+
+    if (!returning) {
+      tl.to(hud, { opacity: 1, duration: .3 }, 0)
+        .to(meter, { scaleX: 1, duration: kind === "bridge" ? 2.15 : 1.82, ease: "power2.inOut" }, 0);
+    } else {
+      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0);
+    }
+
+    if (kind === "bridge") {
+      const decks = animated.filter((item) => item.userData.role === "deck");
+      const lanes = animated.filter((item) => item.userData.role === "lane");
+      const towers = animated.filter((item) => item.userData.role === "tower");
+      const cables = animated.filter((item) => item.userData.role === "cable").sort((a,b) => a.userData.order - b.userData.order);
+      if (!returning) {
+        decks.forEach((item, i) => {
+          tl.to(item.position, { z: item.userData.finalZ, duration: .68, ease: "back.out(1.18)" }, i * .022)
+            .to(item.scale, { x: 1, duration: .52 }, i * .022)
+            .to((item as THREE.Mesh).material, { opacity: .94, duration: .52 }, .22 + i * .016);
+        });
+        lanes.forEach((item, i) => tl.to(item.position, { z: item.userData.finalZ, duration: .58 }, .18 + i * .009));
+        towers.forEach((item, i) => tl.to(item.scale, { y: 1, duration: .85, ease: "power4.out" }, .48 + i * .16));
+        cables.forEach((item, i) => tl.to(item.scale, { y: 1, duration: .34, ease: "power2.out" }, .72 + i * .018));
+        tl.to(label, { letterSpacing: ".5em", opacity: 0, scaleX: 1.22, duration: .75, ease: "power3.in" }, .88)
+          .to(camera.position, { z: -8.7, y: .42, duration: 2.2, ease: "power3.in", onUpdate: () => camera?.lookAt(0, -.12, -28) }, .08)
+          .to(veil, { opacity: 1, duration: .42 }, 2.08);
+      } else {
+        cables.slice().reverse().forEach((item, i) => tl.to(item.scale, { y: .001, duration: .24, ease: "power2.in" }, .22 + i * .008));
+        decks.forEach((item, i) => {
+          const side = i % 2 === 0 ? -1 : 1;
+          tl.to(item.position, { x: side * (2.4 + (i % 5) * .45), y: .3 + (i % 4) * .18, z: item.userData.finalZ - 10, duration: .72, ease: "power3.in" }, .4 + i * .012)
+            .to(item.rotation, { z: side * (.04 + (i % 3) * .025), duration: .64 }, .4 + i * .012)
+            .to((item as THREE.Mesh).material, { opacity: 0, duration: .5 }, .52 + i * .009);
+        });
+        towers.forEach((item, i) => tl.to(item.scale, { y: .015, duration: .62, ease: "power3.in" }, .7 + i * .12));
+        tl.to(object.rotation, { y: .055, duration: 1.1 }, .2)
+          .to(camera.position, { z: 10.8, y: .9, duration: 1.35, ease: "power2.in", onUpdate: () => camera?.lookAt(0, -.12, -24) }, .18)
+          .to(veil, { opacity: 1, duration: .48, ease: "power2.in" }, 1.12)
+          .to(canvas, { opacity: 0, duration: .3 }, 1.26);
+      }
+    } else if (!returning) {
+      tl.to(object.rotation, { y: .04, duration: 1.45 }, 0)
+        .to(camera.position, { z: 3.35, duration: 1.7, ease: "power4.in" }, .08)
+        .to(veil, { opacity: 1, duration: .5, ease: "power2.in" }, 1.52);
+      if (cover) tl.to(cover.rotation, { y: -Math.PI * .92, duration: 1.02, ease: "power3.inOut" }, .12);
+      pages.forEach((page, i) => tl.to(page.rotation, { y: -Math.PI * (.62 + i * .025), duration: .76, ease: "power2.inOut" }, .32 + i * .05));
+    } else {
+      pages.slice().reverse().forEach((page, i) => tl.to(page.rotation, { y: 0, duration: .58, ease: "power3.inOut" }, .2 + i * .045));
+      if (cover) tl.to(cover.rotation, { y: 0, duration: .72, ease: "power3.inOut" }, .46);
+      tl.to(object.rotation, { y: -.2, z: 0, duration: .92 }, .3)
+        .to(object.scale, { x: baseScale * .58, y: baseScale * .58, z: baseScale * .58, duration: .72, ease: "power3.in" }, .68)
+        .to(camera.position, { z: 11.8, duration: 1.1, ease: "power3.in" }, .38)
+        .to(veil, { opacity: 1, duration: .48, ease: "power2.in" }, 1.12)
+        .to(canvas, { opacity: 0, duration: .28 }, 1.26);
+    }
+  }
+
+  function navigate(options: TransitionOptions) {
+    if (running) return;
+    const kind = options.kind || kindFromHref(options.href);
+    sessionStorage.removeItem("rb-case-return");
+    sessionStorage.removeItem("rb-case-arrive");
+    sessionStorage.setItem("rb-case-origin", normalize(location.href));
+    sessionStorage.setItem("rb-case-scroll", String(scrollY));
+    sessionStorage.setItem("rb-case-kind", kind);
+    if (typeof options.sector === "number") sessionStorage.setItem("rb-case-sector", String(options.sector));
+    play(kind, "depart", () => {
+      sessionStorage.setItem("rb-case-arrive", kind);
+      location.assign(options.href);
+    });
+  }
+
+  function restoreCaseEntry() {
+    if (!casePage || !history.state?.rbCaseEntry) return;
+    if (!sessionStorage.getItem("rb-case-origin") && history.state.rbCaseOrigin) {
+      sessionStorage.setItem("rb-case-origin", history.state.rbCaseOrigin);
+      sessionStorage.setItem("rb-case-scroll", String(history.state.rbCaseScroll || 0));
+      sessionStorage.setItem("rb-case-kind", history.state.rbCaseKind || kindFromHref(location.href));
+    }
+  }
+
+  function armCaseHistory(kind: CaseKind) {
+    if (!casePage) return;
+    restoreCaseEntry();
+    const origin = sessionStorage.getItem("rb-case-origin");
+    if (!origin) return;
+
+    if (!history.state?.rbCaseEntry) {
+      history.replaceState({
+        ...(history.state || {}),
+        rbCaseEntry: true,
+        rbCaseOrigin: origin,
+        rbCaseScroll: Number(sessionStorage.getItem("rb-case-scroll") || 0),
+        rbCaseKind: kind,
+      }, "", location.href);
+    }
+
+    if (!history.state?.rbCaseGuard) {
+      history.pushState({ ...(history.state || {}), rbCaseGuard: true }, "", location.href);
+    }
+  }
+
+  function exitTo(href: string) {
+    if (!casePage || running) return;
+    const kind = kindFromHref(location.href);
+    sessionStorage.removeItem("rb-case-arrive");
+    sessionStorage.removeItem("rb-case-return");
+    play(kind, "exit", () => {
+      sessionStorage.setItem("rb-case-direct-arrive", kind);
+      location.assign(href);
+    });
+  }
+
+  window.__rbCaseTransition = navigate;
 
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
@@ -183,35 +630,86 @@
       return;
     }
 
+    const exitLink = target.closest<HTMLAnchorElement>("a[data-case-exit]");
+    if (exitLink && casePage && !exitLink.hasAttribute("data-tunnel")) {
+      const url = new URL(exitLink.href, location.href);
+      const sameDocumentHash = url.pathname === location.pathname && url.search === location.search && Boolean(url.hash);
+      if (url.origin === location.origin && !sameDocumentHash) {
+        event.preventDefault();
+        exitTo(url.href);
+        return;
+      }
+    }
+
     const link = target.closest<HTMLAnchorElement>("a[data-case-link]");
     if (!link) return;
     const url = new URL(link.href, location.href);
     if (url.origin !== location.origin) return;
     event.preventDefault();
-    runTransition(link.closest<HTMLElement>(".work-card") ?? link, url.href);
+    navigate({ href: url.href, kind: kindFromHref(url.href), title: link.textContent || undefined });
   });
 
-  const arriving = sessionStorage.getItem("rb-case-arrive");
-  if (arriving) {
+  const arriving = sessionStorage.getItem("rb-case-arrive") as CaseKind | null;
+  const directArriving = sessionStorage.getItem("rb-case-direct-arrive") as CaseKind | null;
+  const navigationType = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  if (directArriving && !casePage) {
+    sessionStorage.removeItem("rb-case-direct-arrive");
+    revealPage(directArriving, true);
+  } else if (arriving) {
     sessionStorage.removeItem("rb-case-arrive");
-    revealDestination(false);
-    if (casePage && sessionStorage.getItem("rb-case-origin") && !history.state?.rbCaseGuard) {
-      history.pushState({ rbCaseGuard: true }, "", location.href);
-    }
-  } else if (!casePage && originMatches()) {
-    revealDestination(true);
+    revealPage(arriving);
+    armCaseHistory(arriving);
+  } else if (!casePage && sessionStorage.getItem("rb-case-return") && originMatches()) {
+    const kind = sessionStorage.getItem("rb-case-return") as CaseKind;
+    scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
+    revealPage(kind, true);
+  } else if (sessionStorage.getItem("rb-case-return") && !originMatches()) {
+    sessionStorage.removeItem("rb-case-return");
+    document.documentElement.classList.remove("rb-case-arriving");
+  } else if (casePage && navigationType?.type === "back_forward" && history.state?.rbCaseEntry) {
+    restoreCaseEntry();
+    const kind = (history.state.rbCaseKind as CaseKind) || kindFromHref(location.href);
+    revealPage(kind);
+    armCaseHistory(kind);
   }
 
   addEventListener("popstate", () => {
     if (!casePage || completingBack || !sessionStorage.getItem("rb-case-origin")) return;
     completingBack = true;
-    running = false;
-    closeCurrent(() => history.back());
+    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
+    play(kind, "exit", () => {
+      sessionStorage.setItem("rb-case-return", kind);
+      sessionStorage.removeItem("rb-case-arrive");
+      history.back();
+    });
   });
 
   addEventListener("pageshow", (event) => {
-    if (!event.persisted) return;
+    if (casePage && event.persisted) {
+      reset();
+      completingBack = false;
+      restoreCaseEntry();
+      const kind = (history.state?.rbCaseKind as CaseKind) || kindFromHref(location.href);
+      revealPage(kind);
+      armCaseHistory(kind);
+      return;
+    }
+
+    const returning = sessionStorage.getItem("rb-case-return") as CaseKind | null;
+    if (!event.persisted || !returning || !originMatches()) return;
     reset();
-    if (!casePage && originMatches()) revealDestination(true);
+    scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
+    revealPage(returning, true);
+  });
+
+  addEventListener("pagehide", () => {
+    if (casePage) reset();
+  });
+
+  addEventListener("resize", () => {
+    if (!renderer || !camera) return;
+    renderer.setSize(innerWidth, innerHeight, false);
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
   });
 </script>

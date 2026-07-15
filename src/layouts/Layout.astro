@@ -1,5 +1,4 @@
 ---
-import { Font } from "astro:assets";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import SmoothScroll from "../components/SmoothScroll.astro";
@@ -9,28 +8,137 @@ import StudioLoader from "../components/StudioLoader.astro";
 import CursorField from "../components/CursorField.astro";
 import CaseTransition from "../components/CaseTransition.astro";
 import { ui, defaultLang } from "../i18n/ui";
-import { useTranslations } from "../i18n/utils";
+import { useTranslations, type Lang } from "../i18n/utils";
 import type { Link } from "../types";
 import "../styles/global.css";
 
 interface Props {
   title?: string;
+  description?: string;
+  image?: string;
+  imageAlt?: string;
+  pageType?: "website" | "profile" | "article";
+  keywords?: string[];
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
   /** "deck" = fixed, non-scrolling presentation (no footer, no smooth scroll). */
   mode?: "scroll" | "deck";
+  theme?: "bridge" | "fidic";
+  lang?: Lang;
+  alternateUrls?: Partial<Record<Lang | "x-default", string>>;
 }
 
-const lang = defaultLang;
+const {
+  title = t("meta.title"),
+  description = t("meta.description"),
+  image = "/og/rodion-belousov-digital-marketer-vienna.jpg",
+  imageAlt = "Rodion Belousov, Digital Marketer and Creative Developer in Vienna",
+  pageType = "website",
+  keywords = [],
+  structuredData = [],
+  noindex = false,
+  mode = "scroll",
+  theme,
+  lang = defaultLang,
+  alternateUrls,
+} = Astro.props;
 const t = useTranslations(lang);
-const { title = t("meta.title"), mode = "scroll" } = Astro.props;
 const isDeck = mode === "deck";
-const homePrefix = Astro.url.pathname === "/" ? "" : "/";
+const isLocalized = /^\/(de|en)(\/|$)/.test(Astro.url.pathname);
+const localeRoot = isLocalized ? `/${lang}/` : "/";
+const homePrefix = Astro.url.pathname === localeRoot ? "" : localeRoot;
+const site = Astro.site ?? new URL("https://rodionbelousov.studio");
+const canonical = new URL(Astro.url.pathname, site).toString();
+const socialImage = new URL(image, site).toString();
+const resolveAlternate = (value?: string) => value ? new URL(value, site).toString() : undefined;
+const localizedAlternates = alternateUrls ? {
+  en: resolveAlternate(alternateUrls.en),
+  de: resolveAlternate(alternateUrls.de),
+  xDefault: resolveAlternate(alternateUrls["x-default"] ?? "/"),
+} : undefined;
+const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
+const pageSchemas = Array.isArray(structuredData) ? structuredData : [structuredData];
+const schema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": `${site}#rodion-belousov`,
+      name: "Rodion Belousov",
+      url: site.toString(),
+      email: "mailto:rodionbelousov@protonmail.com",
+      jobTitle: "Digital Marketer and Creative Developer",
+      description,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Vienna",
+        addressCountry: "AT",
+      },
+      sameAs: [
+        "https://www.linkedin.com/in/rodion-belousov-413040228/",
+        "https://www.behance.net/gallery/146849483/Meine-3D-Projekte",
+        "https://github.com/quantum-dasein",
+      ],
+      knowsLanguage: ["German", "English", "Russian", "Czech"],
+      knowsAbout: [
+        "Digital marketing",
+        "Marketing strategy",
+        "Search engine optimization",
+        "Technical SEO",
+        "Content strategy",
+        "Web development",
+        "Astro",
+        "Three.js",
+        "WebGL",
+        "Cinema 4D",
+        "Redshift Renderer",
+        "Adobe After Effects",
+        "Adobe Premiere Pro",
+        "Adobe Photoshop",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${site}#website`,
+      url: site.toString(),
+      name: "Rodion Belousov Studio",
+      description: t("meta.description"),
+      inLanguage: lang === "de" ? "de-AT" : "en",
+      publisher: { "@id": `${site}#rodion-belousov` },
+    },
+    {
+      "@type": pageType === "profile" ? "ProfilePage" : pageType === "article" ? "Article" : "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: lang === "de" ? "de-AT" : "en",
+      isPartOf: { "@id": `${site}#website` },
+      about: { "@id": `${site}#rodion-belousov` },
+      ...(pageType === "profile" ? { mainEntity: { "@id": `${site}#rodion-belousov` } } : {}),
+      ...(pageType === "article" ? {
+        author: { "@id": `${site}#rodion-belousov` },
+        datePublished: "2026-07-14",
+        dateModified: "2026-07-14",
+      } : {}),
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: socialImage,
+        caption: imageAlt,
+      },
+    },
+    ...pageSchemas,
+  ],
+};
+const serializedSchema = JSON.stringify(schema).replace(/</g, "\\u003c");
 
 const nav: Link[] = isDeck
   ? []
   : [
       { title: t("nav.about"), url: `${homePrefix}#about`, i18n: "nav.about" },
       { title: t("nav.work"), url: `${homePrefix}#work`, i18n: "nav.work" },
-      { title: t("nav.contact"), url: `${homePrefix}#contact`, i18n: "nav.contact" },
+      { title: t("nav.contact"), url: `${homePrefix}#contact-cta`, i18n: "nav.contact" },
     ];
 const cta = isDeck
   ? { title: t("portal.back"), url: "/", i18n: "portal.back", tunnel: true }
@@ -40,38 +148,63 @@ const cta = isDeck
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
 const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
   defaultLang,
-)};try{var l=localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l])document.documentElement.lang=l;}catch(e){}try{if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive'))document.documentElement.classList.add('rb-case-arriving')}catch(e){}`;
+)};window.__LOCKED_LANG__=${JSON.stringify(alternateUrls ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';if(locked)localStorage.setItem('rb-lang',locked);}}catch(e){}try{if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving')}catch(e){}`;
 ---
 
-<html lang={lang}>
+<html lang={lang === "de" ? "de-AT" : "en"}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={t("meta.description")} />
+    <meta name="description" content={description} />
     <meta name="author" content="Rodion Belousov" />
+    <meta name="creator" content="Rodion Belousov" />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
+    {keywords.length > 0 && <meta name="keywords" content={keywords.join(", ")} />}
+    <meta name="geo.region" content="AT-9" />
+    <meta name="geo.placename" content="Vienna" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="theme-color" content="#08080a" />
+    {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+    {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
+
+    <link rel="canonical" href={canonical} />
+    {localizedAlternates?.en && <link rel="alternate" hreflang="en" href={localizedAlternates.en} />}
+    {localizedAlternates?.de && <link rel="alternate" hreflang="de-AT" href={localizedAlternates.de} />}
+    {localizedAlternates?.xDefault && <link rel="alternate" hreflang="x-default" href={localizedAlternates.xDefault} />}
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={pageType === "article" ? "article" : pageType === "profile" ? "profile" : "website"} />
+    <meta property="og:site_name" content="Rodion Belousov Studio" />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={t("meta.description")} />
-    <meta property="og:url" content="https://rodionbelousov.studio" />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta property="og:locale" content={lang === "de" ? "de_AT" : "en_US"} />
+    <meta property="og:locale:alternate" content={lang === "de" ? "en_US" : "de_AT"} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
 
-    <Font cssVariable="--font-display" preload />
-    <Font cssVariable="--font-inter" preload />
+    <script type="application/ld+json" is:inline set:html={serializedSchema} />
 
     <script is:inline set:html={bootScript} />
 
     <title>{title}</title>
   </head>
-  <body class:list={[{ "is-deck": isDeck }]}>
+  <body class:list={[{ "is-deck": isDeck }, theme && `case-theme-${theme}`]}>
     <StudioLoader />
     <CursorField />
 
-    <div class="cosmic-backdrop" aria-hidden="true">
-      <Webgl />
-    </div>
+    {!isDeck && (
+      <div class="cosmic-backdrop" aria-hidden="true">
+        <Webgl sculpture={!theme} />
+      </div>
+    )}
 
     <div class="site-fx" aria-hidden="true">
       <span class="site-fx__stars"></span>
@@ -84,13 +217,21 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       {t("accessibility.skip-to-content")}
     </a>
 
-    <Header logoUrl="/" logoAlt="Rodion Belousov" links={nav} cta={cta} />
+    <Header
+      logoUrl={isDeck ? "/en/" : localeRoot}
+      logoAlt="Rodion Belousov"
+      links={nav}
+      cta={cta}
+      lang={lang}
+      localeLinks={alternateUrls ? { en: alternateUrls.en ?? "/en/", de: alternateUrls.de ?? "/de/" } : undefined}
+      logoTunnel={isDeck}
+    />
 
     <main id="main">
       <slot />
     </main>
 
-    {!isDeck && <Footer logoUrl="/" logoAlt="Rodion Belousov" links={nav} />}
+    {!isDeck && <Footer logoUrl={localeRoot} logoAlt="Rodion Belousov" links={nav} lang={lang} />}
     {!isDeck && <SmoothScroll />}
     <CaseTransition />
     <Tunnel />
@@ -124,6 +265,17 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     z-index: 0;
     pointer-events: none;
     background: #000;
+  }
+
+  :global(body.case-theme-bridge),
+  :global(body.case-theme-fidic) {
+    background: #030405;
+  }
+
+  :global(body.case-theme-bridge main),
+  :global(body.case-theme-fidic main) {
+    background: #030405;
+    isolation: isolate;
   }
 
   :global(main) {
@@ -196,6 +348,22 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
   @keyframes fx-stars {
     0% { transform: translate3d(0, 0, 0); }
     100% { transform: translate3d(-2rem, 1.4rem, 0); }
+  }
+
+  @media (max-width: 760px), (pointer: coarse) {
+    .site-fx__stars {
+      opacity: .18;
+      animation-duration: 42s;
+    }
+
+    .site-fx__grain {
+      opacity: .035;
+      animation: none;
+    }
+
+    .site-fx__vignette {
+      background: radial-gradient(130% 100% at 50% 42%, transparent 0%, transparent 72%, rgba(0, 0, 0, .38) 100%);
+    }
   }
 </style>
 

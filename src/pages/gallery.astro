@@ -1,14 +1,46 @@
 ---
-// ─────────────────────────────────────────────────────────────────────────────
-//  gallery.astro — the spatial 3D archive.
-//
-//  Reached by flying through the tunnel from the studio (/). The header CTA
-//  ("Studio") tunnels back. Deck mode = fixed, non-scrolling.
-// ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../layouts/Layout.astro";
 import Spatial from "../components/Spatial.astro";
+import { works } from "../data/works";
 ---
 
-<Layout mode="deck" title="Archive — Rodion Belousov">
+<Layout
+  mode="deck"
+  title="3D, Motion & Creative Development Archive | Rodion Belousov"
+  description="Explore Rodion Belousov's interactive archive of Cinema 4D and Redshift renders, After Effects motion design, product films and WebGL case studies."
+  image="/portfolio/rodion-belousov-ski-snowboard-equipment-3d-product-animation-poster.jpg"
+  imageAlt="Rodion Belousov Cinema 4D, Redshift and motion design archive"
+  keywords={[
+    "Cinema 4D artist Vienna",
+    "Redshift renderer portfolio",
+    "Motion Designer Austria",
+    "After Effects portfolio",
+    "3D product visualization Vienna",
+    "Creative Developer Austria",
+  ]}
+  structuredData={{
+    "@type": "CollectionPage",
+    name: "Rodion Belousov 3D and Motion Archive",
+    description: "Cinema 4D, Redshift, After Effects, Premiere Pro, Photoshop and WebGL work by Rodion Belousov.",
+    creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+    hasPart: works.map((work, index) => ({
+      "@type": work.video ? "VideoObject" : "CreativeWork",
+      position: index + 1,
+      name: work.title ?? work.hrefLabel,
+      thumbnailUrl: new URL(work.img, "https://rodionbelousov.studio").toString(),
+      ...(work.video ? {
+        contentUrl: new URL(work.video, "https://rodionbelousov.studio").toString(),
+        uploadDate: "2026-07-14",
+      } : {}),
+    })),
+  }}
+>
+  <section class="u-sr-only" aria-labelledby="archive-title">
+    <h1 id="archive-title">Cinema 4D, Redshift and Motion Design Archive</h1>
+    <p>Interactive portfolio by Rodion Belousov featuring 3D product visualization, architectural rendering, After Effects motion design, Premiere Pro editing, Photoshop art direction, Astro and Three.js development.</p>
+    <ul>
+      {works.map((work) => <li>{work.title ?? work.hrefLabel}</li>)}
+    </ul>
+  </section>
   <Spatial />
 </Layout>

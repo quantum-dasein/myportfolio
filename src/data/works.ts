@@ -21,6 +21,11 @@ export interface Work {
   kText?: string;
   href: string;
   hrefLabel: string;
+  detail?: {
+    tools: string;
+    en: string;
+    de: string;
+  };
 }
 
 export const works: Work[] = [
@@ -107,14 +112,40 @@ export const works: Work[] = [
     kCat: "gallery.4.cat",
     href: BEHANCE,
     hrefLabel: "PLAY REEL",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT / AFTER EFFECTS / PREMIERE PRO",
+      en: "A retail POS film where packaging, display architecture and camera rhythm turn a product system into a spatial brand moment.",
+      de: "Ein Retail-POS-Film, in dem Packaging, Display-Architektur und Kamerarhythmus ein Produktsystem in einen räumlichen Markenmoment verwandeln.",
+    },
   },
   {
     id: "lake-como-interior-film",
     img: "/portfolio/rodion-belousov-lake-como-minimalist-interior-3d-animation-poster.webp",
+    video: "/portfolio/video/rodion-belousov-lake-como-minimalist-interior-3d-animation.mp4",
     type: "reel",
     title: "Lake Como Interior Film",
     kCat: "gallery.1.cat",
     href: BEHANCE,
-    hrefLabel: "FILM POSTER",
+    hrefLabel: "PLAY FILM",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT / AFTER EFFECTS / PREMIERE PRO",
+      en: "A quiet architectural film built around daylight, material restraint and a continuous camera journey through a Lake Como interior.",
+      de: "Ein ruhiger Architekturfilm über Tageslicht, Materialdisziplin und eine kontinuierliche Kamerafahrt durch ein Interieur am Comer See.",
+    },
+  },
+  {
+    id: "alpine-equipment-product-film",
+    img: "/portfolio/rodion-belousov-ski-snowboard-equipment-3d-product-animation-poster.jpg",
+    video: "/portfolio/video/rodion-belousov-ski-snowboard-equipment-3d-product-animation.mp4",
+    type: "reel",
+    title: "Alpine Equipment Product Film",
+    kCat: "gallery.1.cat",
+    href: BEHANCE,
+    hrefLabel: "PLAY FILM",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT / AFTER EFFECTS / PHOTOSHOP",
+      en: "A product-motion study that stages ski and snowboard equipment as sculptural objects through controlled light, color and mechanical choreography.",
+      de: "Eine Product-Motion-Studie, die Ski- und Snowboard-Equipment mit kontrolliertem Licht, Farbe und mechanischer Choreografie als skulpturale Objekte inszeniert.",
+    },
   },
 ];

@@ -1,0 +1,16 @@
+---
+import InsightPage from "../../../components/InsightPage.astro";
+import { insightContent, type InsightContent, type SeoLang } from "../../../data/seo-content";
+
+export function getStaticPaths() {
+  return Object.values(insightContent).flatMap((insight) => (["en", "de"] as SeoLang[]).map((lang) => ({
+    params: { lang, slug: insight.paths[lang].split("/").filter(Boolean).at(-1)! },
+    props: { lang, insight },
+  })));
+}
+
+interface Props { lang: SeoLang; insight: InsightContent }
+const { lang, insight } = Astro.props;
+---
+
+<InsightPage lang={lang} insight={insight} />

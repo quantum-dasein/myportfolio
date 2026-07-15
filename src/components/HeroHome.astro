@@ -25,7 +25,7 @@ const t = useTranslations();
 
       <div class="hero-actions" data-intro>
         <a class="primary" href="#work" data-i18n="hero.cta.primary" data-magnetic>{t("hero.cta.primary")}</a>
-        <a class="secondary" href="#contact" data-i18n="hero.cta.secondary" data-magnetic>{t("hero.cta.secondary")}</a>
+        <a class="secondary" href="#contact-cta" data-i18n="hero.cta.secondary" data-magnetic>{t("hero.cta.secondary")}</a>
       </div>
     </div>
 
@@ -37,8 +37,8 @@ const t = useTranslations();
 
     <nav class="hero-projects" data-intro aria-label="Selected projects">
       <span>SELECTED / 02</span>
-      <a href="/work/bridge-consult" data-case-link>Bridge Consult <b aria-hidden="true">↗</b></a>
-      <a href="/work/fidic" data-case-link>FIDIC.uz <b aria-hidden="true">↗</b></a>
+      <a href="/work/bridge-consult" data-case-link>Bridge Consult <b class="css-arrow" aria-hidden="true"></b></a>
+      <a href="/work/fidic" data-case-link>FIDIC.uz <b class="css-arrow" aria-hidden="true"></b></a>
     </nav>
 
     <div class="hero-cue" data-intro>
@@ -231,6 +231,14 @@ const t = useTranslations();
   .hero-projects a:hover b { color: #fff; transform: translate(0.18rem, -0.18rem); }
   .hero-projects b { font-weight: 400; }
 
+  .css-arrow {
+    width: 0.52rem;
+    height: 0.52rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+    transition: color 0.3s ease, transform 0.3s ease;
+  }
+
   .hero-cue {
     position: absolute;
     right: 0;
@@ -277,6 +285,14 @@ const t = useTranslations();
     .hero-inner { padding-top: 15rem; }
     .hero-title { font-size: 2.9rem; max-width: 100%; }
     .hero-projects { grid-template-columns: 1fr; }
+  }
+
+  @media (pointer: coarse) {
+    .secondary,
+    .hero-readout { backdrop-filter: none; }
+    .primary:hover,
+    .secondary:hover { transform: none; }
+    .cue-line { animation-duration: 4.8s; }
   }
 
   @media (prefers-reduced-motion: reduce) {
