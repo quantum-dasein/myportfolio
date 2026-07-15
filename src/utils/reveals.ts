@@ -38,7 +38,8 @@ function visibilityUnobserve(element: HTMLElement, onChange: (entries: Intersect
 
 const stagger = 100;
 const toReveal: { el: HTMLElement; shouldReveal: boolean, inFn?: () => void }[] = [];
-const lightweightReveal = matchMedia("(max-width: 767px), (pointer: coarse), (prefers-reduced-motion: reduce)").matches;
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const lightweightReveal = !reducedMotion && matchMedia("(max-width: 767px), (pointer: coarse)").matches;
 
 const stMap = new WeakMap<HTMLElement, InstanceType<typeof SplitText>>()
 
@@ -231,12 +232,47 @@ addGlobalTicker(() => {
 
 document.fonts.ready.then(() => {
   document.querySelectorAll<HTMLHtmlElement>("[data-sy-reveal]").forEach((elem) => {
-    if (lightweightReveal) {
+    if (reducedMotion) {
       elem.classList.add("is-in");
+      return;
+    }
+
+    if (lightweightReveal) {
+      let animation: Animation | null = null;
+      const revealIn = () => {
+        animation?.cancel();
+        elem.classList.add("is-in");
+        animation = elem.animate(
+          [
+            { opacity: 0, transform: "translate3d(0, 1.4rem, 0)" },
+            { opacity: 1, transform: "translate3d(0, 0, 0)" },
+          ],
+          { duration: 680, easing: "cubic-bezier(.16, 1, .3, 1)", fill: "both" },
+        );
+      };
+      const revealOut = () => {
+        animation?.cancel();
+        animation = elem.animate(
+          [
+            { opacity: 1, transform: "translate3d(0, 0, 0)" },
+            { opacity: 0, transform: "translate3d(0, -.75rem, 0)" },
+          ],
+          { duration: 260, easing: "ease-in", fill: "both" },
+        );
+        animation.finished.then(() => elem.classList.remove("is-in")).catch(() => {});
+      };
 
       if (elem.hasAttribute('data-sy-reveal-manual')) {
-        elem.addEventListener('reveal-in', () => elem.classList.add("is-in"));
-        elem.addEventListener('reveal-out', () => elem.classList.remove("is-in"));
+        elem.addEventListener('reveal-in', revealIn);
+        elem.addEventListener('reveal-out', revealOut);
+      } else {
+        elem.style.opacity = "0";
+        const onLightVisibility = (entry: IntersectionObserverEntry) => {
+          if (!entry.isIntersecting) return;
+          revealIn();
+          visibilityUnobserve(elem, onLightVisibility);
+        };
+        visibilityObserve(elem, onLightVisibility);
       }
 
       return;

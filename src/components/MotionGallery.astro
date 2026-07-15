@@ -383,36 +383,38 @@ const tiles = [
     .motion-lead { max-width: 34rem; font-size: .98rem; }
     .motion-tools { max-width: 30rem; font-size: .62rem; }
     .gallery-stage {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: min(82vw, 22rem);
-      grid-template-columns: none;
-      gap: .9rem;
-      height: auto;
-      margin-inline: calc(var(--container-offset) * -1);
-      padding: 1rem var(--container-offset) .75rem;
-      overflow-x: auto;
-      overscroll-behavior-inline: contain;
-      scroll-snap-type: inline mandatory;
-      scrollbar-width: none;
-    }
-    .gallery-stage::-webkit-scrollbar { display: none; }
-    .archive-sculpture { display: none; }
-    .tile {
       position: relative;
       inset: auto;
-      width: 100%;
-      height: auto;
-      aspect-ratio: .86;
-      scroll-snap-align: center;
-      scroll-snap-stop: always;
-      box-shadow: 0 .9rem 1.8rem rgba(0, 0, 0, .36);
+      height: 46rem;
+      margin: 2.5rem calc(var(--container-offset) * -.45) 0;
+      overflow: visible;
+      perspective: 900px;
     }
-    .tile-2 { aspect-ratio: .86; }
+    .archive-sculpture {
+      display: block;
+      left: 13%;
+      top: 16%;
+      width: 74%;
+      opacity: .66;
+      transform: scale(.94);
+    }
+    .tile {
+      position: absolute;
+      height: auto;
+      aspect-ratio: .88;
+      box-shadow: 0 1.5rem 3.2rem rgba(0, 0, 0, .52);
+    }
+    .tile-1 { left: -2%; top: 22rem; width: 58%; }
+    .tile-2 { right: -1%; left: auto; top: 24rem; width: 41%; z-index: 6; }
+    .tile-3 { left: 5%; top: 1.5rem; width: 38%; z-index: 3; }
+    .tile-4 { right: 1%; left: auto; top: 0; width: 49%; z-index: 5; }
+    .tile-5 { right: -5%; left: auto; top: 16rem; width: 47%; z-index: 4; }
+    .tile-6 { left: 29%; right: auto; top: 34rem; bottom: auto; width: 48%; z-index: 7; aspect-ratio: 1.24; }
     .tile-arrow { width: 2.2rem; }
     figcaption { left: .85rem; right: .85rem; bottom: .8rem; }
-    strong { font-size: clamp(1.35rem, 7vw, 1.85rem); }
-    .gallery-pill { width: 100%; justify-content: space-between; }
+    figcaption > span { font-size: .5rem; }
+    strong { font-size: clamp(1.05rem, 5.4vw, 1.65rem); }
+    .gallery-pill { display: inline-flex; width: 100%; justify-content: space-between; }
   }
 
   @media (pointer: coarse) {

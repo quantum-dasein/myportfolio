@@ -53,9 +53,9 @@ const { sculpture = true } = Astro.props;
       pmrem.dispose();
 
       this.camera.position.z = 7.2;
-      this.buildStars(this.lowPower ? 1200 : 4800, 1.25, 1.0, 0);
-      this.buildStars(this.lowPower ? 420 : 1800, 2.35, 1.0, 1);
-      this.buildStars(this.lowPower ? 40 : 180, 10.8, 0.46, 2);
+      this.buildStars(this.lowPower ? 2200 : 4800, 1.25, 1.0, 0);
+      this.buildStars(this.lowPower ? 780 : 1800, 2.35, 1.0, 1);
+      this.buildStars(this.lowPower ? 72 : 180, 10.8, 0.46, 2);
       if (this.dataset.sculpture !== "false") this.buildSculpture();
       this.buildLights();
       this.resize();
@@ -180,12 +180,12 @@ const { sculpture = true } = Astro.props;
     }
 
     private buildSculpture() {
-      const geometry = new THREE.IcosahedronGeometry(2.05, this.lowPower ? 2 : 5);
+      const geometry = new THREE.IcosahedronGeometry(2.05, this.lowPower ? 3 : 5);
       const material = new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(0x050608),
         roughness: 0.055,
         metalness: 0.24,
-        transmission: this.lowPower ? 0.42 : 0.84,
+        transmission: this.lowPower ? 0.68 : 0.84,
         thickness: 2.8,
         ior: 1.5,
         clearcoat: 1,
@@ -269,7 +269,7 @@ const { sculpture = true } = Astro.props;
     private render = (now = performance.now()) => {
       this.raf = 0;
       if (!this.renderer || !this.visible) return;
-      if (this.lowPower && now - this.lastFrame < 1000 / 45) {
+      if (this.lowPower && now - this.lastFrame < 1000 / 30) {
         this.raf = requestAnimationFrame(this.render);
         return;
       }

@@ -93,6 +93,8 @@ import { works } from "../data/works";
     position: fixed;
     inset: 0;
     z-index: 0;
+    touch-action: none;
+    user-select: none;
   }
   :global(canvas.rb-space-canvas) {
     position: fixed;
@@ -570,6 +572,9 @@ import { works } from "../data/works";
     activeTarget: number;
     work: (typeof works)[number];
     video?: HTMLVideoElement;
+    videoTexture?: THREE.VideoTexture;
+    videoLoading?: boolean;
+    poster?: THREE.Texture;
     home?: { pos: THREE.Vector3; rot: THREE.Euler };
   };
 
@@ -594,6 +599,7 @@ import { works } from "../data/works";
     private dragX = 0;
     private dragY = 0;
     private dragDistance = 0;
+    private dragPointerType = "";
 
     private progress = 0;
     private targetProgress = 0;
@@ -672,6 +678,7 @@ import { works } from "../data/works";
       removeEventListener("wheel", this.onWheel as EventListener);
       removeEventListener("keydown", this.onKey);
       removeEventListener("pointerup", this.onUp);
+      removeEventListener("pointercancel", this.onCancel);
       removeEventListener("pageshow", this.onPageShow);
       document.removeEventListener("visibilitychange", this.onVis);
       document.querySelector("[data-exit]")?.removeEventListener("click", this.exit);
@@ -683,17 +690,18 @@ import { works } from "../data/works";
           const m = o as THREE.Mesh;
           m.geometry?.dispose?.();
         });
-        (p.glass.uniforms.uTex.value as THREE.Texture)?.dispose();
+        p.poster?.dispose();
+        p.videoTexture?.dispose();
         p.glass.dispose();
         p.frame.dispose();
-        if (p.video) { p.video.pause(); p.video.src = ""; }
+        if (p.video) { p.video.pause(); p.video.removeAttribute("src"); p.video.load(); }
       });
       this.renderer.dispose();
       this.renderer.domElement.remove();
     }
 
     private buildDust() {
-      const N = this.lowPower ? 520 : 1400;
+      const N = this.lowPower ? 850 : 1400;
       const pos = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) {
         pos[i * 3] = (Math.random() - 0.5) * 40;
@@ -828,29 +836,13 @@ import { works } from "../data/works";
       const loaded = this.portals.map(async (p, index) => {
         try {
           const poster = configure(await loader.loadAsync(p.work.img));
-          p.glass.uniforms.uTex.value = poster;
+          p.poster = poster;
+          if (!p.videoTexture) p.glass.uniforms.uTex.value = poster;
           const image = poster.image as HTMLImageElement;
-          if (image?.width) p.glass.uniforms.uImgAspect.value = image.width / image.height;
+          if (!p.videoTexture && image?.width) p.glass.uniforms.uImgAspect.value = image.width / image.height;
           gsap.to(p.glass.uniforms.uReveal, { value: 1, duration: .7, delay: index * .04 });
 
-          if (p.work.video && !this.lowPower) {
-            const v = document.createElement("video");
-            v.src = p.work.video;
-            v.muted = true;
-            v.loop = true;
-            v.autoplay = true;
-            v.playsInline = true;
-            v.preload = "metadata";
-            p.video = v;
-            v.addEventListener("canplay", () => {
-              const tex = new THREE.VideoTexture(v);
-              tex.colorSpace = THREE.SRGBColorSpace;
-              p.glass.uniforms.uTex.value = tex;
-              if (v.videoWidth) p.glass.uniforms.uImgAspect.value = v.videoWidth / v.videoHeight;
-              if (this.active === index) v.play().catch(() => {});
-            }, { once: true });
-            v.load();
-          }
+          if (p.work.video && (index === this.active || !this.lowPower)) this.ensureVideo(index);
         } catch {
           p.glass.uniforms.uReveal.value = 1;
         } finally {
@@ -870,6 +862,7 @@ import { works } from "../data/works";
       addEventListener("wheel", this.onWheel as EventListener, { passive: true });
       addEventListener("keydown", this.onKey);
       addEventListener("pointerup", this.onUp);
+      addEventListener("pointercancel", this.onCancel);
       addEventListener("pageshow", this.onPageShow);
       document.addEventListener("visibilitychange", this.onVis);
       document.querySelector("[data-exit]")?.addEventListener("click", this.exit);
@@ -916,16 +909,24 @@ import { works } from "../data/works";
         this.dragX = e.clientX;
         this.dragY = e.clientY;
         this.dragDistance += Math.abs(dx) + Math.abs(dy);
-        this.laneTarget.x = THREE.MathUtils.clamp(this.laneTarget.x - dx * 0.012, -4.8, 4.8);
-        this.laneTarget.y = THREE.MathUtils.clamp(this.laneTarget.y + dy * 0.01, -3.2, 3.2);
+        const depthGesture = this.lowPower || this.dragPointerType === "touch" || this.dragPointerType === "pen";
+        if (depthGesture) {
+          this.targetProgress = THREE.MathUtils.clamp(this.targetProgress - dy * 0.00085, 0, 1);
+          this.laneTarget.x = THREE.MathUtils.clamp(this.laneTarget.x - dx * 0.0065, -3.4, 3.4);
+        } else {
+          this.laneTarget.x = THREE.MathUtils.clamp(this.laneTarget.x - dx * 0.012, -4.8, 4.8);
+          this.laneTarget.y = THREE.MathUtils.clamp(this.laneTarget.y + dy * 0.01, -3.2, 3.2);
+        }
       }
     };
     private onDown = (e: PointerEvent) => {
-      if (this.inside || this.busy || (e.target as HTMLElement)?.closest("header, [data-hud], [data-tunnel-root]")) return;
+      const target = e.target instanceof Element ? e.target : null;
+      if (this.inside || this.busy || target?.closest("header, [data-hud], [data-tunnel-root]")) return;
       this.dragging = true;
       this.dragX = e.clientX;
       this.dragY = e.clientY;
       this.dragDistance = 0;
+      this.dragPointerType = e.pointerType;
       document.body.classList.add("is-space-dragging");
     };
     private onWheel = (e: WheelEvent) => {
@@ -947,6 +948,7 @@ import { works } from "../data/works";
       if (this.inside || this.busy) return;
       const wasDragging = this.dragging && this.dragDistance > 10;
       this.dragging = false;
+      this.dragPointerType = "";
       document.body.classList.remove("is-space-dragging");
       if (wasDragging) return;
       // ignore clicks on the chrome (header, HUD, tunnel) — only the 3D counts
@@ -955,6 +957,11 @@ import { works } from "../data/works";
       const hit = this.raycaster.intersectObjects(this.portals.map((p) => p.group), true)[0];
       const idx = hit?.object.userData.portal;
       if (typeof idx === "number") this.enter(idx);
+    };
+    private onCancel = () => {
+      this.dragging = false;
+      this.dragPointerType = "";
+      document.body.classList.remove("is-space-dragging");
     };
 
     // ── camera fly-THROUGH + GLSL transition + project world ────────────────
@@ -1053,6 +1060,7 @@ import { works } from "../data/works";
       if (i === this.active || i < 0) return;
       this.active = i;
       const w = this.portals[i].work;
+      if (w.video) this.ensureVideo(i);
       this.portals.forEach((portal, index) => {
         if (!portal.video) return;
         if (index === i) portal.video.play().catch(() => {});
@@ -1079,6 +1087,35 @@ import { works } from "../data/works";
       });
     }
 
+    private ensureVideo(index: number) {
+      const portal = this.portals[index];
+      if (!portal?.work.video || portal.video || portal.videoLoading) return;
+      portal.videoLoading = true;
+      const video = document.createElement("video");
+      video.src = portal.work.video;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = this.lowPower ? "metadata" : "auto";
+      portal.video = video;
+      video.addEventListener("canplay", () => {
+        portal.videoLoading = false;
+        const texture = new THREE.VideoTexture(video);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        portal.videoTexture = texture;
+        portal.glass.uniforms.uTex.value = texture;
+        if (video.videoWidth) portal.glass.uniforms.uImgAspect.value = video.videoWidth / video.videoHeight;
+        if (this.active === index) video.play().catch(() => {});
+      }, { once: true });
+      video.addEventListener("error", () => {
+        portal.videoLoading = false;
+        portal.video = undefined;
+      }, { once: true });
+      video.load();
+    }
+
     private decode(el: Element | null, final: string) {
       if (!el) return;
       const start = performance.now();
@@ -1100,7 +1137,7 @@ import { works } from "../data/works";
     // ── loop ────────────────────────────────────────────────────────────────
     private render(t: number) {
       if (this.paused) return;
-      if (this.lowPower && t - this.lastFrame < 1 / 45) return;
+      if (this.lowPower && t - this.lastFrame < 1 / 30) return;
       this.lastFrame = t;
       this.comp.uniforms.uTime.value = t;
 
@@ -1187,7 +1224,7 @@ import { works } from "../data/works";
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
       const dpr = this.lowPower ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.35);
-      const targetScale = this.lowPower ? .74 : 1;
+      const targetScale = this.lowPower ? .84 : 1;
       this.renderer.setPixelRatio(dpr);
       this.renderer.setSize(w, h, true);
       this.rt.setSize(Math.round(w * dpr * targetScale), Math.round(h * dpr * targetScale));

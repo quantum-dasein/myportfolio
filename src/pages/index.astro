@@ -1431,12 +1431,25 @@ const selectedWork = [
 
   @media (max-width: 560px) {
     .work-intro .s-title { font-size: 3rem; }
-    .work-stage { min-height: 0; padding-top: 7rem; }
-    .work-grid { position: relative; }
-    .work-core { width: 19rem; top: 2rem; opacity: 0.72; }
-    .work-terrain { display: none; }
-    .work-card { width: 100%; height: auto; min-height: 0; }
-    .work-card figure { aspect-ratio: 1.22; }
+    .work-stage { min-height: 61rem; padding-top: 0; }
+    .work-grid { position: absolute; inset: 0; display: block; }
+    .work-core { width: 20rem; top: 42%; opacity: 0.8; }
+    .work-terrain { display: block; left: -42%; right: -42%; bottom: -2%; opacity: .28; }
+    .work-orbits { display: block; inset: 4% -42% 8%; }
+    .work-card { width: 88%; height: 28rem; min-height: 0; }
+    .work-card:nth-child(1) {
+      left: -1% !important;
+      right: auto !important;
+      top: 3rem !important;
+      transform: perspective(900px) rotateY(5deg) rotateZ(-1.5deg) !important;
+    }
+    .work-card:nth-child(2) {
+      left: auto !important;
+      right: -1% !important;
+      top: 31rem !important;
+      transform: perspective(900px) rotateY(-5deg) rotateZ(1.5deg) !important;
+    }
+    .work-card figure { position: absolute; aspect-ratio: auto; }
   }
 
   @media (pointer: coarse) {
