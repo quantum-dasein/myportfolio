@@ -34,14 +34,16 @@ const { texts, direction, class: className = "" } = Astro.props;
 
   .outer {
     display: flex;
+    width: max-content;
     transform: translateX(var(--x));
     will-change: transform;
   }
 
   .inner {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
-    width: fit-content;
+    width: max-content;
   }
 
   .text {
@@ -73,6 +75,13 @@ const { texts, direction, class: className = "" } = Astro.props;
       -webkit-text-fill-color: unset;
     }
   }
+
+  @media (max-width: 700px) {
+    .text {
+      --fs: 2.15rem;
+      -webkit-text-stroke-width: 1px;
+    }
+  }
 </style>
 
 <script>
@@ -92,8 +101,6 @@ const { texts, direction, class: className = "" } = Astro.props;
       this.direction = Number(this.dataset.dir) || 1;
       this.outerEl = this.querySelector(".outer") as HTMLElement;
       this.html = this.outerEl.innerHTML;
-      this.x = Math.round(1000 * -this.direction * Math.random());
-
       addResizeObserver(this);
       addIntersectingTicker(this);
     }
@@ -114,14 +121,17 @@ const { texts, direction, class: className = "" } = Astro.props;
 
       outerEl.innerHTML = html;
 
-      const bcr = outerEl.firstElementChild!.getBoundingClientRect();
-      const width = window.innerWidth;
+      const group = outerEl.firstElementChild as HTMLElement | null;
+      const groupWidth = group?.getBoundingClientRect().width || 0;
+      const width = this.getBoundingClientRect().width || window.innerWidth;
 
-      if (!bcr.width) {
+      if (!groupWidth) {
         return;
       }
 
-      const repeats = Math.ceil(width / bcr.width) * 2;
+      // Keep one complete group beyond either edge. Wrapping by the width of
+      // that group makes the loop seamless regardless of viewport size.
+      const repeats = Math.max(2, Math.ceil(width / groupWidth) + 2);
 
       outerEl.innerHTML += html.repeat(repeats - 1);
 
@@ -131,29 +141,34 @@ const { texts, direction, class: className = "" } = Astro.props;
         }
       });
 
-      this.textWidth = Math.round(outerEl.scrollWidth / 2);
+      const firstFill = this.textWidth <= 0;
+      this.textWidth = groupWidth;
+      this.x = firstFill ? -(Math.random() * groupWidth) : -(Math.abs(this.x) % groupWidth);
+      this.style.setProperty("--x", `${this.x}px`);
     }
 
     tick() {
       const txtWidth = this.textWidth;
+      if (txtWidth <= 0) return;
       let x = this.x;
 
       const dir = this.direction;
+      const velocity = Number(window.scrollVelocity) || 0;
+      const scrollDirection = Number(window.scrollDirection) || 1;
       x -=
-        (Math.min(Math.abs(window.scrollVelocity) * 0.4, 10) + 0.5) *
-        (window.scrollDirection || 1) *
+        (Math.min(Math.abs(velocity) * 0.4, 10) + 0.5) *
+        scrollDirection *
         dir;
 
-      if (x <= -txtWidth) {
-        x = 0;
-      } else if (x > 0) {
-        x = -txtWidth;
-      }
+      while (x <= -txtWidth) x += txtWidth;
+      while (x > 0) x -= txtWidth;
 
       this.style.setProperty("--x", `${x}px`);
       this.x = x;
     }
   }
 
-  customElements.define("sy-text-marquee", TextMarquee);
+  if (!customElements.get("sy-text-marquee")) {
+    customElements.define("sy-text-marquee", TextMarquee);
+  }
 </script>

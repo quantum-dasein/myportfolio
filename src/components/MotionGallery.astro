@@ -50,7 +50,7 @@ const tiles = [
       <span class="s-idx">05 - <span data-i18n="gallery.label">{t("gallery.label")}</span></span>
       <h2 class="motion-title" data-sy-reveal="words" data-i18n="gallery.title">{t("gallery.title")}</h2>
       <p class="motion-lead" data-reveal data-i18n="gallery.text">{t("gallery.text")}</p>
-      <p class="motion-tools" data-reveal>Cinema 4D · Redshift · After Effects · Premiere Pro · Photoshop</p>
+      <p class="motion-tools" data-reveal>Cinema 4D / Redshift / After Effects / Premiere Pro / Photoshop</p>
       <a class="gallery-link" href={BEHANCE} target="_blank" rel="noopener" data-reveal data-cursor="VIEW">
         <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow--plain" aria-hidden="true"></span>
       </a>
@@ -402,8 +402,10 @@ const tiles = [
       position: absolute;
       height: auto;
       aspect-ratio: .88;
+      translate: 0 var(--gallery-drift, 0px);
       box-shadow: 0 1.5rem 3.2rem rgba(0, 0, 0, .52);
     }
+    .archive-sculpture { translate: 0 var(--gallery-core-drift, 0px); }
     .tile-1 { left: -2%; top: 22rem; width: 58%; }
     .tile-2 { right: -1%; left: auto; top: 24rem; width: 41%; z-index: 6; }
     .tile-3 { left: 5%; top: 1.5rem; width: 38%; z-index: 3; }
@@ -426,3 +428,46 @@ const tiles = [
     .archive-sculpture span { animation: none; }
   }
 </style>
+
+<script>
+  const galleryScene = document.querySelector<HTMLElement>("[data-gallery-scene]");
+  const galleryStage = galleryScene?.querySelector<HTMLElement>(".gallery-stage");
+  const galleryItems = galleryScene
+    ? [...galleryScene.querySelectorAll<HTMLElement>("[data-gallery-depth]")]
+    : [];
+  const mobileGallery = matchMedia("(max-width: 700px)");
+  const reducedGalleryMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (galleryScene && galleryStage && mobileGallery.matches && !reducedGalleryMotion) {
+    let visible = false;
+    let frame = 0;
+
+    const renderGalleryDepth = () => {
+      frame = 0;
+      if (!visible) return;
+      const rect = galleryStage.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
+      const travel = progress - 0.5;
+
+      galleryItems.forEach((item, index) => {
+        const depth = Number(item.dataset.galleryDepth || 0.5);
+        const amount = travel * 72 * depth * (index % 2 === 0 ? -1 : 1);
+        const property = item.classList.contains("archive-sculpture") ? "--gallery-core-drift" : "--gallery-drift";
+        item.style.setProperty(property, `${amount.toFixed(2)}px`);
+      });
+    };
+
+    const requestGalleryDepth = () => {
+      if (!frame) frame = requestAnimationFrame(renderGalleryDepth);
+    };
+
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) requestGalleryDepth();
+    }, { rootMargin: "20% 0px" });
+
+    observer.observe(galleryStage);
+    addEventListener("scroll", requestGalleryDepth, { passive: true });
+    addEventListener("resize", requestGalleryDepth, { passive: true });
+  }
+</script>

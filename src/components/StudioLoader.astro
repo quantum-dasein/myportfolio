@@ -336,14 +336,30 @@
     .loader-topline span:last-child,
     .loader-meta span:nth-child(2) { display: none; }
     .loader-meta { grid-template-columns: repeat(2, max-content); }
-    .loader-stage { width: 88vw; top: 39%; }
-    .loader-cube { width: 5.6rem; height: 5.6rem; }
-    .cube-front { transform: translateZ(2.8rem); }
-    .cube-back { transform: rotateY(180deg) translateZ(2.8rem); }
-    .cube-left { transform: rotateY(-90deg) translateZ(2.8rem); }
-    .cube-right { transform: rotateY(90deg) translateZ(2.8rem); }
-    .cube-top { transform: rotateX(90deg) translateZ(2.8rem); }
-    .cube-bottom { transform: rotateX(-90deg) translateZ(2.8rem); }
+    .loader-stage { width: 96vw; top: 40%; }
+    .loader-stage::after {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 50%;
+      box-shadow: 0 0 4rem rgba(255,255,255,.07), inset 0 0 3rem rgba(255,255,255,.035);
+      animation: loader-mobile-scan 4.8s ease-in-out infinite;
+    }
+    .loader-cube { width: 6.6rem; height: 6.6rem; }
+    .cube-front { transform: translateZ(3.3rem); }
+    .cube-back { transform: rotateY(180deg) translateZ(3.3rem); }
+    .cube-left { transform: rotateY(-90deg) translateZ(3.3rem); }
+    .cube-right { transform: rotateY(90deg) translateZ(3.3rem); }
+    .cube-top { transform: rotateX(90deg) translateZ(3.3rem); }
+    .cube-bottom { transform: rotateX(-90deg) translateZ(3.3rem); }
+    .loader-count strong { font-size: clamp(5rem, 27vw, 7.2rem); }
+    [data-loader-phase] { max-width: 13ch; line-height: 1.45; }
+  }
+
+  @keyframes loader-mobile-scan {
+    0%, 100% { transform: scale(.82) rotate(0deg); opacity: .22; }
+    50% { transform: scale(1.06) rotate(90deg); opacity: .7; }
   }
 
   @media (pointer: coarse) {

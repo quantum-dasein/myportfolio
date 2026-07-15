@@ -1431,25 +1431,88 @@ const selectedWork = [
 
   @media (max-width: 560px) {
     .work-intro .s-title { font-size: 3rem; }
-    .work-stage { min-height: 61rem; padding-top: 0; }
+    .work-stage { min-height: 52rem; padding-top: 0; }
     .work-grid { position: absolute; inset: 0; display: block; }
-    .work-core { width: 20rem; top: 42%; opacity: 0.8; }
+    .work-core { width: 18rem; top: 45%; opacity: 0.88; }
     .work-terrain { display: block; left: -42%; right: -42%; bottom: -2%; opacity: .28; }
     .work-orbits { display: block; inset: 4% -42% 8%; }
-    .work-card { width: 88%; height: 28rem; min-height: 0; }
+    .work-card {
+      width: 84%;
+      height: 24.5rem;
+      min-height: 0;
+      translate: var(--mobile-card-x, 0) var(--mobile-card-y, 0);
+    }
     .work-card:nth-child(1) {
-      left: -1% !important;
+      left: -3% !important;
       right: auto !important;
-      top: 3rem !important;
+      top: 2rem !important;
       transform: perspective(900px) rotateY(5deg) rotateZ(-1.5deg) !important;
     }
     .work-card:nth-child(2) {
       left: auto !important;
-      right: -1% !important;
-      top: 31rem !important;
+      right: -3% !important;
+      top: 25.5rem !important;
       transform: perspective(900px) rotateY(-5deg) rotateZ(1.5deg) !important;
     }
     .work-card figure { position: absolute; aspect-ratio: auto; }
+    .work-copy { padding: 1.05rem; }
+    .work-card h3 { font-size: 1.42rem; }
+    .work-card p { font-size: .76rem; line-height: 1.42; }
+    .work-role { margin-block: .35rem .55rem; }
+    .work-cta { padding-top: .8rem; }
+  }
+
+  @media (max-width: 760px) {
+    .signal-marquee {
+      padding: .72rem 0;
+      backdrop-filter: none;
+      box-shadow: 0 0 2rem rgba(255,255,255,.025);
+    }
+
+    .signal-marquee :global(.text) {
+      --fs: 1.28rem;
+      font-weight: 500;
+      -webkit-text-stroke-width: 1px;
+    }
+
+    .section { padding: 5.4rem 0; }
+    .section::before { height: 22rem; opacity: .58; }
+    .section-grid,
+    .contact-grid { gap: .7rem; }
+    .s-idx { margin-bottom: 1.15rem; font-size: .6rem; }
+    .s-title,
+    .contact-title {
+      max-width: 100%;
+      font-size: clamp(2.55rem, 12vw, 3.45rem);
+      line-height: .98;
+    }
+    .s-lead { margin-top: 1.25rem; font-size: .98rem; line-height: 1.55; }
+
+    .pillars { gap: .8rem; margin-top: 2.5rem; }
+    .pillar { min-height: 15rem; padding: 1.25rem; backdrop-filter: none; }
+    .pillar:nth-child(2) { margin-left: .85rem; }
+    .pillar:nth-child(3) { margin-right: .85rem; }
+    .pillar p { margin-top: .85rem; font-size: .9rem; line-height: 1.5; }
+
+    .jobs { gap: .7rem; margin-top: 2.4rem; padding-left: 1.1rem; }
+    .jobs::before { left: .12rem; }
+    .job {
+      gap: .55rem;
+      padding: 1.15rem;
+      border-radius: 6px;
+      backdrop-filter: none;
+    }
+    .job::before { left: -.98rem; }
+    .job h3 { padding-right: 1.1rem; font-size: 1.4rem; }
+    .job-text { font-size: .88rem; line-height: 1.5; }
+
+    .edu-list { margin-top: 2.4rem; backdrop-filter: none; }
+    .edu-row { padding: 1rem .15rem; }
+    .edu-row:hover { padding-left: .15rem; }
+    .facts { margin-top: 2rem; backdrop-filter: none; }
+    .facts article { padding: 1rem; }
+    .work-signals { gap: .7rem 1rem; margin-top: 1.4rem; }
+    .portal { backdrop-filter: none; }
   }
 
   @media (pointer: coarse) {
@@ -1602,6 +1665,7 @@ const selectedWork = [
   const workStage = document.querySelector<HTMLElement>(".work-stage");
   const caseCards = gsap.utils.toArray<HTMLElement>(".work-card");
   const workOrbits = document.querySelector<HTMLElement>(".work-orbits");
+  const workCore = document.querySelector<HTMLElement>(".work-core");
 
   if (finePointer) workStage?.addEventListener("pointermove", (event) => {
     if (reduced || innerWidth < 760) return;
@@ -1625,5 +1689,39 @@ const selectedWork = [
     gsap.to(caseCards, { x: 0, y: 0, duration: 0.9, ease: "power3.out", overwrite: "auto" });
     if (workOrbits) gsap.to(workOrbits, { x: 0, y: 0, duration: 1.1, ease: "power3.out" });
   });
+
+  if (workStage && innerWidth <= 760 && !reduced) {
+    let workVisible = false;
+    let workFrame = 0;
+
+    const renderMobileWork = () => {
+      workFrame = 0;
+      if (!workVisible) return;
+      const rect = workStage.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
+      const travel = progress - 0.5;
+
+      caseCards.forEach((card, index) => {
+        const direction = index === 0 ? -1 : 1;
+        card.style.setProperty("--mobile-card-x", `${direction * 4}px`);
+        card.style.setProperty("--mobile-card-y", `${travel * 34 * direction}px`);
+      });
+      if (workCore) workCore.style.translate = `0 ${travel * -18}px`;
+      if (workOrbits) workOrbits.style.translate = `0 ${travel * 11}px`;
+    };
+
+    const requestMobileWork = () => {
+      if (!workFrame) workFrame = requestAnimationFrame(renderMobileWork);
+    };
+
+    const workObserver = new IntersectionObserver(([entry]) => {
+      workVisible = entry.isIntersecting;
+      if (workVisible) requestMobileWork();
+    }, { rootMargin: "20% 0px" });
+
+    workObserver.observe(workStage);
+    addEventListener("scroll", requestMobileWork, { passive: true });
+    addEventListener("resize", requestMobileWork, { passive: true });
+  }
 
 </script>
