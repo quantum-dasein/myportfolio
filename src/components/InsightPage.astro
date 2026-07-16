@@ -17,18 +17,109 @@ const og: Record<string, { image: string; alt: string }> = {
 const ogEntry = og[insight.key];
 ---
 <Layout lang={lang} alternateUrls={alternates} lockLang title={pick(insight.title, lang)} description={pick(insight.description, lang)} image={ogEntry?.image} imageAlt={ogEntry?.alt} pageType="article" structuredData={articleSchema}>
+  <div class="read-progress" aria-hidden="true"><span data-read-bar></span></div>
+
   <article class="insight">
-    <header data-hero><div class="u-container"><span>RESEARCH / 2026</span><h1>{pick(insight.title, lang)}</h1><p>{pick(insight.dek, lang)}</p></div></header>
+    <a class="back-link" href="/services" data-cursor="BACK" data-magnetic>
+      <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
+      <span>{de ? "Leistungen & Research" : "Services & Research"}</span>
+    </a>
+
+    <header data-hero>
+      <div class="u-container">
+        <span data-reveal>RESEARCH / 2026</span>
+        <h1 data-sy-reveal="words">{pick(insight.title, lang)}</h1>
+        <p data-sy-reveal="lines">{pick(insight.dek, lang)}</p>
+      </div>
+    </header>
+
     <div class="u-container article-grid">
-      <aside><span>{de ? "VON" : "BY"}</span><strong>Rodion Belousov</strong><span>{de ? "FOKUS" : "FOCUS"}</span><strong>Marketing / Search / Web</strong></aside>
+      <aside data-reveal><span>{de ? "VON" : "BY"}</span><strong>Rodion Belousov</strong><span>{de ? "FOKUS" : "FOCUS"}</span><strong>Marketing / Search / Web</strong></aside>
       <div class="body">
-        {insight.sections.map((section, index) => <section><span>0{index + 1}</span><h2>{pick(section.title, lang)}</h2><p>{pick(section.text, lang)}</p></section>)}
-        <a class="service-link" href={service.paths[lang]}><span>{de ? "PASSENDE LEISTUNG" : "RELATED SERVICE"}</span><strong>{pick(service.title, lang)}</strong><b class="ui-arrow" aria-hidden="true"></b></a>
-        <div class="case-links"><a href="/work/bridge-consult" data-case-link><span>Bridge Consult</span><i class="ui-arrow" aria-hidden="true"></i></a><a href="/work/fidic" data-case-link><span>FIDIC.uz</span><i class="ui-arrow" aria-hidden="true"></i></a></div>
+        {insight.sections.map((section, index) => (
+          <section data-reveal>
+            <span>0{index + 1}</span>
+            <h2 data-sy-reveal="words">{pick(section.title, lang)}</h2>
+            <p>{pick(section.text, lang)}</p>
+          </section>
+        ))}
+        <a class="service-link" href={service.paths[lang]} data-reveal data-cursor="OPEN" data-magnetic><span>{de ? "PASSENDE LEISTUNG" : "RELATED SERVICE"}</span><strong>{pick(service.title, lang)}</strong><b class="ui-arrow" aria-hidden="true"></b></a>
+        <div class="case-links"><a href="/work/bridge-consult" data-case-link data-reveal data-cursor="OPEN"><span>Bridge Consult</span><i class="ui-arrow" aria-hidden="true"></i></a><a href="/work/fidic" data-case-link data-reveal data-cursor="OPEN"><span>FIDIC.uz</span><i class="ui-arrow" aria-hidden="true"></i></a></div>
       </div>
     </div>
   </article>
 </Layout>
 <style>
   .insight{position:relative;z-index:1;background:#030405}.insight header{min-height:82svh;display:grid;align-items:end;padding:10rem 0 6rem;background:radial-gradient(circle at 74% 30%,rgba(255,255,255,.09),transparent 26rem);border-bottom:1px solid rgba(255,255,255,.09)}.insight header span,.article-grid aside span,.body section>span,.service-link span{font:.62rem var(--font-inter);letter-spacing:.2em;color:rgba(var(--rgb-text),.47)}.insight h1{max-width:13ch;margin:1.6rem 0;font:500 clamp(3.8rem,7.3vw,7.5rem)/.92 var(--font-display);letter-spacing:0;overflow-wrap:anywhere}.insight header p{max-width:48rem;color:rgba(var(--rgb-text),.73);font-size:clamp(1.2rem,2vw,1.65rem);line-height:1.55}.article-grid{display:grid;grid-template-columns:15rem minmax(0,48rem);gap:clamp(3rem,9vw,10rem);padding-block:clamp(5rem,10vw,10rem)}.article-grid aside{display:flex;flex-direction:column;gap:.5rem;position:sticky;top:8rem;height:max-content}.article-grid aside span:not(:first-child){margin-top:1.4rem}.article-grid aside strong{font:.75rem var(--font-inter);letter-spacing:.09em}.body section{padding:0 0 5rem;margin-bottom:5rem;border-bottom:1px solid rgba(255,255,255,.13)}.body h2{margin:1rem 0 1.5rem;font:500 clamp(2.3rem,4.5vw,4.6rem)/.98 var(--font-display);overflow-wrap:anywhere}.body p{color:rgba(var(--rgb-text),.76);font-size:clamp(1.15rem,1.7vw,1.45rem);line-height:1.72}.service-link{display:grid;grid-template-columns:1fr auto;gap:1rem;padding:1.7rem;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03)}.service-link span{grid-column:1/-1}.service-link strong{font:500 clamp(1.6rem,3vw,2.7rem)/1 var(--font-display);overflow-wrap:anywhere}.case-links{display:flex;gap:1rem;margin-top:1rem}.case-links a{flex:1;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.2rem;border:1px solid rgba(255,255,255,.12)}@media(max-width:800px){.article-grid{grid-template-columns:1fr}.article-grid aside{position:static}.insight header{min-height:72svh;padding:8rem 0 4rem}.insight h1{max-width:100%;font-size:clamp(2.7rem,12vw,5.2rem);line-height:.94}.body section{padding-bottom:3rem;margin-bottom:3rem}.service-link{padding:1.25rem}.case-links{flex-direction:column}.case-links a{width:100%}}@media(pointer:coarse){.service-link{background:rgba(10,11,12,.9)}}
+
+  /* ── Reading progress ──────────────────────────────────────────────────── */
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 45; background: rgba(255, 255, 255, .07); }
+  .read-progress span { display: block; width: 0%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,.5), #fff); box-shadow: 0 0 .7rem rgba(255,255,255,.5); }
+
+  /* ── Back to the hub ───────────────────────────────────────────────────── */
+  .back-link {
+    position: fixed;
+    top: 5.6rem;
+    left: clamp(1rem, 5vw, 5rem);
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .6rem 1rem;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 100px;
+    background: rgba(6, 7, 8, .82);
+    backdrop-filter: blur(12px);
+    color: rgba(var(--rgb-text), .82);
+    font: 600 .62rem var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color .35s var(--ease-out-expo), border-color .35s var(--ease-out-expo), background .35s var(--ease-out-expo);
+  }
+  .back-link:hover { color: #fff; border-color: rgba(255, 255, 255, .34); background: rgba(16, 18, 20, .92); }
+  .ui-arrow-back { display: inline-block; width: .5rem; height: .5rem; border-left: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg); transition: transform .35s var(--ease-out-expo); }
+  .back-link:hover .ui-arrow-back { transform: rotate(45deg) translate(-2px, 2px); }
+
+  @media (pointer: coarse) {
+    .back-link { backdrop-filter: none; background: rgba(6, 7, 8, .96); top: 4.6rem; }
+  }
+
+  /* ── Reveal base ───────────────────────────────────────────────────────── */
+  [data-reveal] { opacity: 0; transform: translateY(26px); will-change: transform, opacity; }
+  @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1; transform: none; } }
 </style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+
+  if (reduced) {
+    gsap.set(items, { opacity: 1, y: 0 });
+  } else {
+    ScrollTrigger.batch(items, {
+      start: "top 88%",
+      once: true,
+      onEnter: (batch) =>
+        gsap.to(batch, { opacity: 1, y: 0, duration: .9, ease: "power3.out", stagger: .08, overwrite: true }),
+    });
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }
+
+  // Reading progress — drives off the article body, not the whole document.
+  const bar = document.querySelector<HTMLElement>("[data-read-bar]");
+  const article = document.querySelector<HTMLElement>(".insight");
+  if (bar && article) {
+    ScrollTrigger.create({
+      trigger: article,
+      start: "top top",
+      end: "bottom bottom",
+      onUpdate: (self) => (bar.style.width = `${(self.progress * 100).toFixed(2)}%`),
+    });
+  }
+</script>
