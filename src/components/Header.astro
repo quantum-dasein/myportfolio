@@ -40,6 +40,11 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
         }
 
         <div class="buttons">
+          <!-- Motion mode: Full ⇄ Calm (keeps the composition, mutes the noise) -->
+          <button type="button" class="calm-toggle" data-calm-toggle aria-pressed="false" title="Calm mode — reduce motion & effects">
+            CALM
+          </button>
+
           <!-- Language switcher -->
           <div class="lang" role="group" aria-label="Language">
             {localeLinks ? (
@@ -165,13 +170,14 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
   }
 
   /* ── Center nav ────────────────────────────────────────────────────────── */
+  /* In normal flow (not absolutely centred) so it can never overlap the
+     wordmark or the right cluster, and never wraps a long label like
+     "Services & Research" onto two lines. */
   .menu {
     display: flex;
-    position: absolute;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    width: min-content;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
 
     @media (--mq-tablet) {
       align-items: center;
@@ -201,7 +207,8 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
       padding: 0;
       margin: 0;
       align-items: center;
-      gap: 2rem;
+      flex-wrap: nowrap;
+      gap: clamp(0.85rem, 1.9vw, 2rem);
 
       @media (--mq-tablet) {
         flex-direction: column;
@@ -215,6 +222,7 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
       text-decoration: none;
       position: relative;
       color: var(--color-text);
+      white-space: nowrap;
       transition: color 0.3s var(--ease-out-expo);
 
       &::before {
@@ -283,6 +291,28 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
         color: var(--color-text);
       }
     }
+  }
+
+  .calm-toggle {
+    cursor: pointer;
+    padding: 0.42rem 0.7rem;
+    border: 1px solid var(--color-line);
+    border-radius: 100px;
+    background: none;
+    color: var(--color-text-alt);
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    transition: color 0.3s var(--ease-out-expo), background 0.3s var(--ease-out-expo), border-color 0.3s var(--ease-out-expo);
+  }
+
+  .calm-toggle:hover { color: var(--color-text); }
+
+  .calm-toggle[aria-pressed="true"] {
+    color: var(--color-black);
+    background: var(--color-text);
+    border-color: var(--color-text);
   }
 
   .nav-cta {
@@ -367,6 +397,7 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
     .wrapper { gap: .65rem; }
     .logo { font-size: .9rem; }
     .buttons { gap: .5rem; }
+    .calm-toggle { padding: .3rem .5rem; font-size: .62rem; }
     .lang button,
     .lang a { padding: .27rem .45rem; font-size: .68rem; }
     .toggle > span:last-child { width:1.65rem; height:1.05rem; }
@@ -406,8 +437,28 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
 
       // (Wordmark + CTA carry [data-tunnel]; the Tunnel component handles them.)
 
+      this.initCalmToggle();
       this.onResize();
       this.onScroll(window.scrollY);
+    }
+
+    // Full ⇄ Calm: html.rb-calm mutes grain/scan and heavy motion via CSS and
+    // broadcasts rb:calmchange so the WebGL layers can drop their frame rate.
+    initCalmToggle() {
+      const toggle = this.querySelector<HTMLButtonElement>("[data-calm-toggle]");
+      if (!toggle) return;
+      const apply = (calm: boolean, persist: boolean) => {
+        document.documentElement.classList.toggle("rb-calm", calm);
+        toggle.setAttribute("aria-pressed", String(calm));
+        if (persist) {
+          try { localStorage.setItem("rb-motion", calm ? "calm" : "full"); } catch { /* private mode */ }
+        }
+        window.dispatchEvent(new CustomEvent("rb:calmchange", { detail: { calm } }));
+      };
+      apply(document.documentElement.classList.contains("rb-calm"), false);
+      toggle.addEventListener("click", () => {
+        apply(!document.documentElement.classList.contains("rb-calm"), true);
+      });
     }
 
     onScroll(y: number) {

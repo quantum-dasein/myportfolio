@@ -505,8 +505,11 @@
     };
     if (reduced) { gsap.to(veil, { opacity: 1, duration: .2, onComplete: finish }); return; }
 
-    safetyTimer = window.setTimeout(finish, returning ? 2100 : (kind === "bridge" ? 2750 : 2350));
+    // Mobile keeps the story but plays it ~1.5x faster (≈1.4–1.8s total).
+    const speed = lowPower ? 1.5 : 1;
+    safetyTimer = window.setTimeout(finish, Math.round((returning ? 2100 : (kind === "bridge" ? 2750 : 2350)) / speed) + 250);
     const tl = gsap.timeline({ defaults: { ease: "power3.inOut" }, onComplete: finish });
+    tl.timeScale(speed);
 
     if (!returning) {
       tl.to(hud, { opacity: 1, duration: .3 }, 0)

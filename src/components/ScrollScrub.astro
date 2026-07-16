@@ -1,0 +1,220 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ScrollScrub.astro — Apple-style scroll-scrubbed product film.
+//
+//  A tall section with a sticky viewport; scroll progress is mapped straight
+//  onto video.currentTime, so Rodion's 3D product animation turns under the
+//  visitor's own scroll instead of autoplaying past them.
+//
+//  Sticky (CSS) rather than a GSAP pin: no pin-spacer to fight with Lenis.
+//  On touch / reduced-motion it degrades to a normal looping autoplay clip.
+// ─────────────────────────────────────────────────────────────────────────────
+interface Props {
+  video: string;
+  poster: string;
+  eyebrowKey?: string;
+  titleKey?: string;
+  textKey?: string;
+  eyebrow?: string;
+  title?: string;
+  text?: string;
+}
+
+const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = Astro.props;
+---
+
+<section class="scrub" data-scrub>
+  <div class="scrub-sticky">
+    <video
+      class="scrub-vid"
+      src={video}
+      poster={poster}
+      muted
+      playsinline
+      preload="auto"
+      aria-hidden="true"
+      data-scrub-video></video>
+
+    <div class="scrub-veil" aria-hidden="true"></div>
+
+    <div class="scrub-copy">
+      <span class="scrub-eyebrow" data-i18n={eyebrowKey}>{eyebrow}</span>
+      <h2 class="scrub-title" data-i18n={titleKey}>{title}</h2>
+      <p class="scrub-text" data-i18n={textKey}>{text}</p>
+    </div>
+
+    <div class="scrub-hud" aria-hidden="true">
+      <span class="scrub-bar"><i data-scrub-bar></i></span>
+      <span class="scrub-frame" data-scrub-frame>00%</span>
+    </div>
+  </div>
+</section>
+
+<style>
+  .scrub {
+    position: relative;
+    /* the scroll distance that drives the film */
+    height: 300vh;
+  }
+
+  .scrub-sticky {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+    isolation: isolate;
+    background: #050505;
+  }
+
+  .scrub-vid {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: contrast(1.08) brightness(0.96);
+  }
+
+  .scrub-veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(5, 5, 5, 0.82), rgba(5, 5, 5, 0.25) 46%, transparent 70%),
+      linear-gradient(0deg, rgba(5, 5, 5, 0.7), transparent 42%);
+  }
+
+  .scrub-copy {
+    position: absolute;
+    left: clamp(1.5rem, 5vw, 5rem);
+    bottom: clamp(4.5rem, 10vw, 8rem);
+    max-width: 34rem;
+  }
+
+  .scrub-eyebrow {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .scrub-title {
+    margin: 1rem 0 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 5.5vw, 4.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    color: #fff;
+  }
+
+  .scrub-text {
+    margin: 1.1rem 0 0;
+    max-width: 42ch;
+    color: rgba(var(--rgb-text), 0.66);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+  }
+
+  .scrub-hud {
+    position: absolute;
+    right: clamp(1.5rem, 5vw, 5rem);
+    bottom: clamp(4.5rem, 10vw, 8rem);
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    color: rgba(var(--rgb-text), 0.6);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scrub-bar {
+    display: block;
+    width: clamp(5rem, 12vw, 11rem);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .scrub-bar i {
+    display: block;
+    width: 0%;
+    height: 100%;
+    background: #fff;
+    box-shadow: 0 0 0.8rem rgba(255, 255, 255, 0.5);
+  }
+
+  /* Touch + reduced motion: scrubbing an mp4 by finger is unreliable, so the
+     film simply plays itself and the section collapses to one screen. */
+  @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+    .scrub { height: auto; }
+    .scrub-sticky { position: relative; height: 78svh; }
+    .scrub-hud { display: none; }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const section = document.querySelector<HTMLElement>("[data-scrub]");
+  const video = document.querySelector<HTMLVideoElement>("[data-scrub-video]");
+  const bar = document.querySelector<HTMLElement>("[data-scrub-bar]");
+  const frame = document.querySelector<HTMLElement>("[data-scrub-frame]");
+
+  if (section && video) {
+    const coarse = matchMedia("(pointer: coarse)").matches;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (coarse || reduced) {
+      // fallback: just play it
+      video.loop = true;
+      const io = new IntersectionObserver(
+        ([e]) => (e.isIntersecting ? video.play().catch(() => {}) : video.pause()),
+        { threshold: 0.2 },
+      );
+      io.observe(section);
+    } else {
+      let duration = 0;
+      const ready = () => {
+        duration = video.duration || 0;
+        ScrollTrigger.refresh();
+      };
+      if (video.readyState >= 1) ready();
+      else video.addEventListener("loadedmetadata", ready, { once: true });
+
+      // Seeking every frame thrashes the decoder; throttle to the target frame
+      // and let the browser settle between seeks.
+      let target = 0;
+      let seeking = false;
+      const apply = () => {
+        if (!duration || seeking) return;
+        if (Math.abs(video.currentTime - target) < 0.02) return;
+        seeking = true;
+        video.currentTime = target;
+      };
+      video.addEventListener("seeked", () => {
+        seeking = false;
+        apply();
+      });
+
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          const p = self.progress;
+          target = p * duration;
+          apply();
+          if (bar) bar.style.width = `${(p * 100).toFixed(1)}%`;
+          if (frame) frame.textContent = `${String(Math.round(p * 100)).padStart(2, "0")}%`;
+        },
+      });
+    }
+  }
+</script>

@@ -1,0 +1,413 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  /services — the Services & Research hub.
+//
+//  A real, site-native destination (NOT a locale root). It has its own hero —
+//  deliberately different from the homepage — and lists the three disciplines
+//  plus the research behind them. Every card's href lives in the dictionary, so
+//  the EN/DE switcher points each one at the matching localized deep-dive
+//  without touching the route of this page. Back is always the wordmark → /.
+// ─────────────────────────────────────────────────────────────────────────────
+import Layout from "../layouts/Layout.astro";
+import { useTranslations, type UIKey } from "../i18n/utils";
+
+const lang = "en";
+const t = useTranslations(lang);
+const tk = (key: string) => t(key as UIKey);
+
+const services = [1, 2, 3].map((n) => ({
+  n,
+  title: `services.${n}.title`,
+  text: `services.${n}.text`,
+  href: `services.${n}.href`,
+}));
+
+const research = [1, 2, 3, 4].map((n) => ({
+  n,
+  title: `research.${n}.title`,
+  text: `research.${n}.text`,
+  href: `research.${n}.href`,
+}));
+---
+
+<Layout
+  title="Services & Research | Digital Marketing, Technical SEO & Creative Development"
+  description="Digital marketing, technical SEO and creative development in Vienna by Rodion Belousov — delivered as one launch system, with the research and results behind it."
+  keywords={[
+    "Digital Marketing Vienna",
+    "Technical SEO Vienna",
+    "Creative Development Vienna",
+    "Marketing Research",
+    "Rodion Belousov Services",
+  ]}
+  structuredData={{
+    "@type": "CollectionPage",
+    name: "Services & Research",
+    description:
+      "Digital marketing, technical SEO and creative development services plus supporting research by Rodion Belousov.",
+    creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+  }}
+>
+  <!-- ── Hero (deliberately distinct from the homepage) ───────────────────── -->
+  <section class="svc-hero" data-hero>
+    <div class="u-container">
+      <span class="svc-eyebrow" data-i18n="services.eyebrow">{t("services.eyebrow")}</span>
+      <h1 class="svc-title" data-sy-reveal="words" data-i18n="services.title">
+        {t("services.title")}
+      </h1>
+      <p class="svc-lead" data-sy-reveal="lines" data-i18n="services.lead">{t("services.lead")}</p>
+    </div>
+  </section>
+
+  <!-- ── Services ─────────────────────────────────────────────────────────── -->
+  <section class="svc-section" id="services">
+    <div class="u-container">
+      <span class="svc-idx">01 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+
+      <div class="cards">
+        {
+          services.map((s) => (
+            <a
+              class="card"
+              href={tk(s.href)}
+              data-i18n-attr={`href:${s.href}`}
+              data-reveal
+              data-cursor="OPEN"
+            >
+              <span class="card-glint" aria-hidden="true" />
+              <span class="card-n">{String(s.n).padStart(2, "0")}</span>
+              <h2 class="card-title" data-i18n={s.title}>
+                {tk(s.title)}
+              </h2>
+              <p class="card-text" data-i18n={s.text}>
+                {tk(s.text)}
+              </p>
+              <span class="card-open">
+                <span data-i18n="services.open">{t("services.open")}</span>
+                <i aria-hidden="true">→</i>
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Research ─────────────────────────────────────────────────────────── -->
+  <section class="svc-section" id="research">
+    <div class="u-container">
+      <span class="svc-idx">02 - <span data-i18n="research.label">{t("research.label")}</span></span>
+      <h2 class="svc-h2" data-sy-reveal="words" data-i18n="research.title">
+        {t("research.title")}
+      </h2>
+
+      <div class="rows">
+        {
+          research.map((r) => (
+            <a
+              class="row"
+              href={tk(r.href)}
+              data-i18n-attr={`href:${r.href}`}
+              data-reveal
+              data-cursor="READ"
+            >
+              <span class="row-n">{String(r.n).padStart(2, "0")}</span>
+              <span class="row-main">
+                <span class="row-title" data-i18n={r.title}>
+                  {tk(r.title)}
+                </span>
+                <span class="row-text" data-i18n={r.text}>
+                  {tk(r.text)}
+                </span>
+              </span>
+              <i class="row-arrow" aria-hidden="true">→</i>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .svc-hero {
+    min-height: 82svh;
+    display: flex;
+    align-items: center;
+    padding: 9rem 0 5rem;
+  }
+
+  .svc-eyebrow {
+    display: inline-block;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .svc-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.8rem, 8.5vw, 8rem);
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+    margin: 1.4rem 0 0;
+    max-width: 14ch;
+  }
+
+  .svc-lead {
+    margin: 2rem 0 0;
+    max-width: 52ch;
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    line-height: 1.6;
+    color: var(--color-text-alt);
+  }
+
+  /* ── Section shell ─────────────────────────────────────────────────────── */
+  .svc-section {
+    padding: clamp(4.5rem, 10vw, 9rem) 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .svc-idx {
+    display: inline-block;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-text-alt);
+    margin-bottom: 2.5rem;
+  }
+
+  .svc-h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.9rem, 4.5vw, 3.6rem);
+    line-height: 1;
+    letter-spacing: -0.035em;
+    margin: 0 0 2.5rem;
+    max-width: 18ch;
+  }
+
+  /* ── Service cards ─────────────────────────────────────────────────────── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+
+    @media (--mq-tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 2rem 1.75rem 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.022);
+    color: var(--color-text);
+    transition:
+      border-color 0.45s var(--ease-out-expo),
+      background 0.45s var(--ease-out-expo),
+      transform 0.45s var(--ease-out-expo);
+
+    &:hover,
+    &:focus-visible {
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-4px);
+    }
+  }
+
+  /* chrome sheen sweeping across on hover */
+  .card-glint {
+    position: absolute;
+    inset: -40% -60%;
+    background: linear-gradient(
+      100deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.11) 50%,
+      transparent 65%
+    );
+    transform: translateX(-60%);
+    opacity: 0;
+    transition: transform 0.9s var(--ease-out-expo), opacity 0.5s;
+    pointer-events: none;
+  }
+  .card:hover .card-glint {
+    transform: translateX(60%);
+    opacity: 1;
+  }
+
+  .card-n {
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.2em;
+    color: var(--color-accent);
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+    letter-spacing: -0.025em;
+    margin: 0;
+  }
+
+  .card-text {
+    margin: 0;
+    color: var(--color-text-alt);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .card-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-alt);
+    transition: color 0.35s var(--ease-out-expo);
+
+    i {
+      font-style: normal;
+      transition: transform 0.4s var(--ease-out-expo);
+    }
+  }
+  .card:hover .card-open {
+    color: #fff;
+  }
+  .card:hover .card-open i {
+    transform: translateX(5px);
+  }
+
+  /* ── Research rows ─────────────────────────────────────────────────────── */
+  .rows {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 3.5rem 1fr auto;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--color-line);
+    color: var(--color-text);
+    transition: padding-left 0.45s var(--ease-out-expo);
+
+    &:last-child {
+      border-bottom: 1px solid var(--color-line);
+    }
+
+    &:hover,
+    &:focus-visible {
+      padding-left: 0.75rem;
+    }
+
+    @media (--mq-tablet-sm) {
+      grid-template-columns: 2.5rem 1fr;
+      gap: 1rem;
+    }
+  }
+
+  .row-n {
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.2em;
+    color: var(--color-accent);
+  }
+
+  .row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .row-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.15rem, 2vw, 1.6rem);
+    letter-spacing: -0.02em;
+    transition: color 0.35s var(--ease-out-expo);
+  }
+
+  .row-text {
+    color: var(--color-text-alt);
+    font-size: var(--font-size-sm);
+  }
+
+  .row-arrow {
+    font-style: normal;
+    color: var(--color-text-alt);
+    transition: transform 0.4s var(--ease-out-expo), color 0.35s;
+
+    @media (--mq-tablet-sm) {
+      display: none;
+    }
+  }
+
+  .row:hover .row-title {
+    color: var(--color-accent);
+  }
+  .row:hover .row-arrow {
+    transform: translateX(6px);
+    color: #fff;
+  }
+
+  /* reveal base — ScrollTrigger batch below lifts these in */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(26px);
+    will-change: transform, opacity;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+
+  if (reduced) {
+    gsap.set(items, { opacity: 1, y: 0 });
+  } else {
+    ScrollTrigger.batch(items, {
+      start: "top 88%",
+      once: true,
+      onEnter: (batch) =>
+        gsap.to(batch, {
+          opacity: 1,
+          y: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: 0.08,
+          overwrite: true,
+        }),
+    });
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }
+</script>

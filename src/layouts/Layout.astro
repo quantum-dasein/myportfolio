@@ -25,7 +25,17 @@ interface Props {
   mode?: "scroll" | "deck";
   theme?: "bridge" | "fidic";
   lang?: Lang;
+  /**
+   * hreflang alternates for search engines. Passing these does NOT change how
+   * the language switcher behaves — set `lockLang` for that.
+   */
   alternateUrls?: Partial<Record<Lang | "x-default", string>>;
+  /**
+   * true = this page is a hard-localized route (/en/…, /de/…): the switcher
+   * navigates between locale URLs. false (default) = the switcher swaps copy
+   * in place on the current page and never changes the route.
+   */
+  lockLang?: boolean;
 }
 
 const {
@@ -41,6 +51,7 @@ const {
   theme,
   lang = defaultLang,
   alternateUrls,
+  lockLang = false,
 } = Astro.props;
 const t = useTranslations(lang);
 const isDeck = mode === "deck";
@@ -138,6 +149,10 @@ const nav: Link[] = isDeck
   : [
       { title: t("nav.about"), url: `${homePrefix}#about`, i18n: "nav.about" },
       { title: t("nav.work"), url: `${homePrefix}#work`, i18n: "nav.work" },
+      // Services & Research is its own destination (/services) — a real page,
+      // completely independent of the language system. It must never resolve to
+      // a locale root (/en/, /de/), which is what trapped visitors before.
+      { title: t("nav.services"), url: "/services", i18n: "nav.services" },
       { title: t("nav.contact"), url: `${homePrefix}#contact-cta`, i18n: "nav.contact" },
     ];
 const cta = isDeck
@@ -148,7 +163,7 @@ const cta = isDeck
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
 const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
   defaultLang,
-)};window.__LOCKED_LANG__=${JSON.stringify(alternateUrls ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';if(locked)localStorage.setItem('rb-lang',locked);}}catch(e){}try{if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving')}catch(e){}`;
+)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';if(locked)localStorage.setItem('rb-lang',locked);}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving')}catch(e){}`;
 ---
 
 <html lang={lang === "de" ? "de-AT" : "en"}>
@@ -223,7 +238,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       links={nav}
       cta={cta}
       lang={lang}
-      localeLinks={alternateUrls ? { en: alternateUrls.en ?? "/en/", de: alternateUrls.de ?? "/de/" } : undefined}
+      localeLinks={lockLang && alternateUrls ? { en: alternateUrls.en ?? "/en/", de: alternateUrls.de ?? "/de/" } : undefined}
       logoTunnel={isDeck}
     />
 
@@ -351,6 +366,17 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     100% { transform: translate3d(-2rem, 1.4rem, 0); }
   }
 
+  /* ── Calm mode: keep the composition, mute the noise ───────────────────── */
+  :global(html.rb-calm) .site-fx__grain,
+  :global(html.rb-calm) .site-fx__scan {
+    display: none;
+  }
+
+  :global(html.rb-calm) .site-fx__stars {
+    animation: none;
+    opacity: 0.18;
+  }
+
   @media (max-width: 760px), (pointer: coarse) {
     .site-fx__stars {
       opacity: .27;
@@ -370,4 +396,20 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 
 <script>
   import "../utils/reveals";
+  import "../utils/vitals";
+
+  // Warm up the archive before the likely click: prefetch the /gallery route
+  // (and its hashed three.js chunk via the browser's speculative parse) once
+  // the main thread is idle. Skipped on the gallery itself and on save-data.
+  const idle = (window as any).requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 2500));
+  const saveData = (navigator as any).connection?.saveData;
+  if (location.pathname !== "/gallery" && !saveData) {
+    idle(() => {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.href = "/gallery";
+      link.as = "document";
+      document.head.appendChild(link);
+    });
+  }
 </script>

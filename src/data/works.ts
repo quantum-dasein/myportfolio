@@ -57,6 +57,11 @@ export const works: Work[] = [
     kCat: "gallery.1.cat",
     href: BEHANCE,
     hrefLabel: "Behance ↗",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT",
+      en: "A noir interior study built around a single warm light source — dark stone, soft shadow falloff and furniture staged like sculpture in a quiet, cinematic room.",
+      de: "Eine Noir-Interieurstudie um eine einzige warme Lichtquelle — dunkler Stein, weiche Schattenverläufe und Möbel, inszeniert wie Skulpturen in einem ruhigen, filmischen Raum.",
+    },
   },
   {
     id: "modular-lounge",
@@ -66,6 +71,11 @@ export const works: Work[] = [
     kCat: "gallery.4.cat",
     href: BEHANCE,
     hrefLabel: "Behance ↗",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT",
+      en: "A sectional sofa rendered as a product hero: fabric shading, daylight balance and composition tuned so the piece reads instantly in a furniture-catalogue context.",
+      de: "Ein Ecksofa als Produkt-Hero gerendert: Stoff-Shading, Tageslichtbalance und Komposition so abgestimmt, dass das Objekt im Katalogkontext sofort lesbar ist.",
+    },
   },
   {
     id: "media-wall",
@@ -75,6 +85,11 @@ export const works: Work[] = [
     kCat: "gallery.1.cat",
     href: BEHANCE,
     hrefLabel: "Behance ↗",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT",
+      en: "A custom wood-and-black media wall visualized for a real interior decision: true material contrast, correct proportions and lighting that sells the built result before it exists.",
+      de: "Eine maßgefertigte Media Wall in Holz und Schwarz, visualisiert für eine reale Einrichtungsentscheidung: echte Materialkontraste, korrekte Proportionen und Licht, das das Ergebnis vorab verkauft.",
+    },
   },
   {
     id: "olive-still-life",
@@ -84,6 +99,11 @@ export const works: Work[] = [
     kCat: "gallery.4.cat",
     href: BEHANCE,
     hrefLabel: "Behance ↗",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT",
+      en: "An art-direction still life in olive and brass: console styling, controlled color palette and prop rhythm composed like an editorial photograph, entirely in 3D.",
+      de: "Ein Art-Direction-Stillleben in Oliv und Messing: Konsolen-Styling, kontrollierte Farbpalette und Prop-Rhythmus — komponiert wie eine Editorial-Fotografie, komplett in 3D.",
+    },
   },
   {
     id: "classical-facade",
@@ -93,6 +113,11 @@ export const works: Work[] = [
     kCat: "gallery.5.cat",
     href: BEHANCE,
     hrefLabel: "Behance ↗",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT",
+      en: "An architectural exterior study of a classical residential facade — ornament, stone and daylight handled with restraint so the building's proportions carry the image.",
+      de: "Eine architektonische Außenstudie einer klassischen Wohnfassade — Ornament, Stein und Tageslicht zurückhaltend geführt, damit die Proportionen des Gebäudes das Bild tragen.",
+    },
   },
   {
     id: "nocturne-ceremony",
@@ -102,6 +127,11 @@ export const works: Work[] = [
     kCat: "gallery.4.cat",
     href: BEHANCE,
     hrefLabel: "Behance ↗",
+    detail: {
+      tools: "CINEMA 4D / REDSHIFT",
+      en: "A candlelit wedding pergola staged at night: event design previsualized with real lighting logic, so the atmosphere can be approved long before the first candle is lit.",
+      de: "Eine kerzenbeleuchtete Hochzeitspergola bei Nacht: Eventdesign mit realer Lichtlogik previsualisiert, damit die Atmosphäre lange vor der ersten Kerze freigegeben werden kann.",
+    },
   },
   {
     id: "squidz-pos-display",

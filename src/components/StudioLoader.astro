@@ -106,7 +106,8 @@
     width: min(58vw, 36rem);
     aspect-ratio: 1;
     perspective: 900px;
-    transform: translate(-50%, -50%);
+    /* the object grows into place as real assets resolve (--loader-progress) */
+    transform: translate(-50%, -50%) scale(calc(0.86 + var(--loader-progress, 0) * 0.14));
   }
 
   .loader-stage::before {
@@ -194,6 +195,8 @@
     border-radius: 50%;
     background: #eef2f3;
     box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.72);
+    /* nodes light up one by one as progress climbs */
+    opacity: calc(0.25 + var(--loader-progress, 0) * 0.75);
   }
 
   .loader-node::after {
@@ -362,12 +365,25 @@
     50% { transform: scale(1.06) rotate(90deg); opacity: .7; }
   }
 
+  /* Touch devices drop backdrop-filter for performance. The glass faces were
+     built on that blur, so without compensation the object vanished and the
+     loader read as "just a counter". Paint the glass explicitly instead. */
   @media (pointer: coarse) {
-    .cube-face { backdrop-filter: none; }
-    .loader-orbit,
+    .cube-face {
+      backdrop-filter: none;
+      border-color: rgba(255, 255, 255, 0.42);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.035));
+      box-shadow: inset 0 0 2.2rem rgba(255, 255, 255, 0.12), 0 0 1.4rem rgba(255, 255, 255, 0.1);
+    }
+    .loader-orbit {
+      filter: none;
+      border-color: rgba(216, 232, 237, 0.26);
+      border-top-color: #ffffff;
+    }
     .loader-count strong { filter: none; }
-    .loader-grid { opacity: 0.25; animation-duration: 4.4s; }
+    .loader-grid { opacity: 0.34; animation-duration: 4.4s; }
     .loader-node::after { animation-duration: 3.6s; }
+    .loader-node { box-shadow: 0 0 1.2rem rgba(255, 255, 255, 0.8); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -409,23 +425,64 @@
       const phase = this.querySelector<HTMLElement>("[data-loader-phase]")!;
       const pass = this.querySelector<HTMLElement>("[data-loader-pass]")!;
       const cube = this.querySelector<HTMLElement>("[data-loader-cube]");
-      const state = { value: 0 };
 
-      gsap.to(state, {
-        value: 100,
-        duration: 3.1,
-        ease: "power2.inOut",
-        onUpdate: () => {
-          const value = Math.round(state.value);
-          const phaseIndex = Math.min(3, Math.floor(value / 25.1));
-          line.style.width = `${value}%`;
-          count.textContent = String(value).padStart(3, "0");
-          phase.textContent = phases[phaseIndex];
-          pass.textContent = `${String(phaseIndex + 1).padStart(2, "0")}/04`;
-          if (cube) cube.style.setProperty("--loader-progress", String(value / 100));
-        },
-        onComplete: () => this.dismiss(),
+      // ── Asset-driven calibration ──────────────────────────────────────────
+      // The theatre stays, but progress now tracks what is actually loading:
+      // fonts (20%), full document (20%), first WebGL frame (25%), eager
+      // images (35%). A slow time floor keeps it moving; 7s is the failsafe.
+      let fontsDone = 0;
+      let domDone = document.readyState === "complete" ? 1 : 0;
+      let webglDone = document.querySelector("rb-hero-gl") ? 0 : 1;
+      let imagesDone = 0;
+
+      document.fonts?.ready.then(() => (fontsDone = 1));
+      if (!domDone) addEventListener("load", () => (domDone = 1), { once: true });
+      addEventListener("rb:webgl-ready", () => (webglDone = 1), { once: true });
+      setTimeout(() => (webglDone = 1), 4200); // WebGL fallback (blocked/very slow GPU)
+
+      const eager = [...document.images].filter((img) => img.loading !== "lazy");
+      const pending = eager.filter((img) => !img.complete);
+      const imgTotal = Math.max(1, eager.length);
+      let imgLoaded = eager.length - pending.length;
+      imagesDone = pending.length ? imgLoaded / imgTotal : 1;
+      pending.forEach((img) => {
+        const bump = () => (imagesDone = ++imgLoaded / imgTotal);
+        img.addEventListener("load", bump, { once: true });
+        img.addEventListener("error", bump, { once: true });
       });
+
+      const real = () => fontsDone * 0.2 + domDone * 0.2 + webglDone * 0.25 + imagesDone * 0.35;
+
+      const start = performance.now();
+      let displayed = 0;
+      let finished = false;
+
+      const tick = () => {
+        if (finished) return;
+        const elapsed = (performance.now() - start) / 1000;
+        const floor = Math.min(0.92, elapsed / 6.5); // never looks frozen
+        const target = Math.max(real(), floor) * 100;
+        displayed += (target - displayed) * 0.085;
+        if (elapsed > 7) displayed = 100; // failsafe
+        const value = Math.min(100, Math.round(displayed));
+        const phaseIndex = Math.min(3, Math.floor(value / 25.1));
+        line.style.width = `${value}%`;
+        count.textContent = String(value).padStart(3, "0");
+        phase.textContent = phases[phaseIndex];
+        pass.textContent = `${String(phaseIndex + 1).padStart(2, "0")}/04`;
+        // Publish progress on the host so the whole stage can react to it —
+        // the object materialises as the assets land instead of just spinning.
+        this.style.setProperty("--loader-progress", String(value / 100));
+        if (cube) cube.style.setProperty("--loader-progress", String(value / 100));
+
+        if (value >= 100 && elapsed > 1.2) {
+          finished = true;
+          this.dismiss();
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
     }
 
     private dismiss() {

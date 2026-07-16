@@ -34,6 +34,15 @@ const { sculpture = true } = Astro.props;
     private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
     private visible = true;
     private lastFrame = 0;
+    // Adaptive FPS: start at 60 (45 on low power), step 60→45→30 when the real
+    // render cost climbs, step back up when there is headroom again.
+    private fpsTiers = [60, 45, 30];
+    private tier = this.lowPower ? 1 : 0;
+    private baseTier = this.tier;
+    private renderCost = 6; // EMA of renderer.render() in ms
+    private tierFrames = 0;
+    private announcedReady = false;
+    private calm = document.documentElement.classList.contains("rb-calm");
 
     connectedCallback() {
       this.renderer = new THREE.WebGLRenderer({
@@ -65,6 +74,7 @@ const { sculpture = true } = Astro.props;
       addEventListener("pointermove", this.onPointerMove, { passive: true });
       addEventListener("scroll", this.updateScroll, { passive: true });
       document.addEventListener("visibilitychange", this.onVisibility);
+      addEventListener("rb:calmchange", this.onCalmChange as EventListener);
       this.raf = requestAnimationFrame(this.render);
     }
 
@@ -74,6 +84,7 @@ const { sculpture = true } = Astro.props;
       removeEventListener("pointermove", this.onPointerMove);
       removeEventListener("scroll", this.updateScroll);
       document.removeEventListener("visibilitychange", this.onVisibility);
+      removeEventListener("rb:calmchange", this.onCalmChange as EventListener);
       this.starLayers.forEach((layer) => {
         layer.geometry.dispose();
         (layer.material as THREE.Material).dispose();
@@ -254,6 +265,10 @@ const { sculpture = true } = Astro.props;
       if (this.visible && !this.raf) this.raf = requestAnimationFrame(this.render);
     };
 
+    private onCalmChange = (event: CustomEvent<{ calm: boolean }>) => {
+      this.calm = Boolean(event.detail?.calm);
+    };
+
     private resize = () => {
       if (!this.renderer) return;
       this.renderer.setSize(innerWidth, innerHeight, false);
@@ -269,7 +284,8 @@ const { sculpture = true } = Astro.props;
     private render = (now = performance.now()) => {
       this.raf = 0;
       if (!this.renderer || !this.visible) return;
-      if (this.lowPower && now - this.lastFrame < 1000 / 30) {
+      const targetFps = this.calm ? 30 : this.fpsTiers[this.tier];
+      if (now - this.lastFrame < 1000 / targetFps) {
         this.raf = requestAnimationFrame(this.render);
         return;
       }
@@ -310,7 +326,22 @@ const { sculpture = true } = Astro.props;
       if (this.keyLight) this.keyLight.position.x = -4.5 + this.mouse.x * 3;
       if (this.rimLight) this.rimLight.position.y = 2.2 + this.mouse.y * 2;
 
+      const renderStart = performance.now();
       this.renderer.render(this.scene, this.camera);
+      this.renderCost += (performance.now() - renderStart - this.renderCost) * 0.05;
+
+      // Retier every ~90 frames based on the measured render cost.
+      if (++this.tierFrames >= 90) {
+        this.tierFrames = 0;
+        if (this.renderCost > 12 && this.tier < this.fpsTiers.length - 1) this.tier += 1;
+        else if (this.renderCost < 5 && this.tier > this.baseTier) this.tier -= 1;
+      }
+
+      if (!this.announcedReady) {
+        this.announcedReady = true;
+        window.dispatchEvent(new CustomEvent("rb:webgl-ready"));
+      }
+
       this.raf = requestAnimationFrame(this.render);
     };
   }

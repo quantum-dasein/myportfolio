@@ -22,3 +22,12 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+.vercel
+.env*
+
+# local deploy/build scratch — logs can contain deploy tokens, never commit
+.vite/
+*-log.txt
+vercel-*.bat
+build-site.bat

@@ -30,6 +30,7 @@ export const ui = {
     "nav.reel": "Reel",
     "nav.gallery": "Archive",
     "nav.studio": "Studio",
+    "nav.services": "Services & Research",
     "nav.contact": "Contact",
     "nav.cta": "Start a project",
     "lang.en": "EN",
@@ -68,19 +69,21 @@ export const ui = {
     "exp.title": "Where I've built.",
     "exp.1.company": "Bridge Consult — Remote",
     "exp.1.role": "Marketing, Research & Web",
-    "exp.1.period": "Dec 2024 — Oct 2025",
+    "exp.1.period": "Dec 2024 — Present",
     "exp.1.text":
-      "Translated complex infrastructure and FIDIC contract expertise into a premium digital presence — researching international construction projects, shaping feasibility studies and market analysis, then designing and building the Bridge Consult and fidic.uz sites on Astro + Three.js.",
+      "Translated complex infrastructure and FIDIC contract expertise into a premium digital presence — researching international construction projects, shaping feasibility studies and market analysis, then designing and building the Bridge Consult and fidic.uz sites on Astro + Three.js. The collaboration is ongoing.",
     "exp.2.company": "Siemens — Eisenstadt, AT",
     "exp.2.role": "Marketing & Knowledge Management",
     "exp.2.period": "2023 — 2024",
     "exp.2.text":
-      "Produced videos and motion graphics across marketing channels and aligned internal and external communication — reports, presentations and campaign assets — inside a global engineering brand.",
+      "Produced 2D tutorial videos and safety-guideline explainers for SIMATIC WinCC Open Architecture — Siemens' scalable SCADA platform for large, complex control systems — turning high-tech engineering software into clear, watchable learning material for a global audience.",
+    "exp.2.link": "Watch the WinCC OA video series",
     "exp.3.company": "Awaken Trees — Vienna",
     "exp.3.role": "Motion & Content, Volunteer",
     "exp.3.period": "2022",
     "exp.3.text":
       "Created an animated explainer for the FMNR reforestation method and a stream of social content — proof that premium visual storytelling can move people toward real-world impact.",
+    "exp.3.link": "Watch the film",
 
     // ── Education ───────────────────────────────────────────────────────────
     "edu.label": "Education",
@@ -242,6 +245,49 @@ export const ui = {
     "gallery.5.cat": "Generative",
     "gallery.6.cat": "Motion",
 
+    // ── Services & Research hub (/services) ─────────────────────────────────
+    // hrefs live in the dictionary too, so the language switcher points each
+    // card at the matching localized deep-dive without any routing hacks.
+    "services.eyebrow": "Services & Research / Vienna",
+    "services.title": "Systems, not deliverables.",
+    "services.lead":
+      "Three disciplines that ship as one launch system — and the research behind why it works. Strategy that survives contact with production, search that survives the design, code that survives the metrics.",
+    "services.open": "Open",
+    "services.1.title": "Digital Marketing",
+    "services.1.text":
+      "Positioning, research, content architecture and distribution — built to be measured, maintained and expanded, not to end at a mockup.",
+    "services.1.href": "/en/digital-marketing-vienna/",
+    "services.2.title": "Technical SEO",
+    "services.2.text":
+      "Crawlable architecture, multilingual routing, structured data and performance budgets — so visual ambition never becomes an indexing problem.",
+    "services.2.href": "/en/technical-seo-vienna/",
+    "services.3.title": "Creative Development",
+    "services.3.text":
+      "Astro, Three.js, GSAP and hand-written GLSL. Real-time 3D and motion that carry the brand without costing the Core Web Vitals.",
+    "services.3.href": "/en/creative-development-vienna/",
+
+    "research.label": "Research",
+    "research.title": "Receipts, not opinions.",
+    "research.1.title": "Bridge Consult — +780% organic",
+    "research.1.text": "What a multilingual launch system did to search visibility.",
+    "research.1.href": "/en/insights/bridge-consult-seo-growth/",
+    "research.2.title": "FIDIC — a knowledge platform",
+    "research.2.text": "109 routes and 105 expert articles, structured to be found.",
+    "research.2.href": "/en/insights/fidic-knowledge-platform/",
+    "research.3.title": "Three.js for marketing sites",
+    "research.3.text": "When real-time 3D lifts conversion — and when it quietly kills it.",
+    "research.3.href": "/en/insights/threejs-marketing-websites/",
+    "research.4.title": "AI-assisted development",
+    "research.4.text": "Using AI for velocity without outsourcing creative direction.",
+    "research.4.href": "/en/insights/ai-assisted-creative-development/",
+
+    // ── Video bands (type knockout + scroll-scrubbed product film) ──────────
+    "reel.type.label": "Cinema 4D / Redshift — product film, rendered in-house",
+    "scrub.eyebrow": "Product film / scroll to turn",
+    "scrub.title": "Rendered to sell, not to decorate.",
+    "scrub.text":
+      "Cinema 4D and Redshift product animation — lighting, materials and camera built so the object reads in a second. Scroll to turn it.",
+
     // ── Portal to the 3D archive ────────────────────────────────────────────
     "portal.eyebrow": "The Archive",
     "portal.title": "Enter the archive.",
@@ -265,6 +311,7 @@ export const ui = {
     "footer.cta.title": "Marketing, content, SEO and web - built as one system.",
     "footer.cta.button": "Start a project",
     "footer.tagline": "Digital Marketer · Creative Developer · Vienna",
+    "footer.status": "Available for projects",
     "footer.rights": "All rights reserved.",
   },
 
@@ -283,6 +330,7 @@ export const ui = {
     "nav.reel": "Reel",
     "nav.gallery": "Archiv",
     "nav.studio": "Studio",
+    "nav.services": "Leistungen & Research",
     "nav.contact": "Kontakt",
     "nav.cta": "Projekt starten",
     "lang.en": "EN",
@@ -320,19 +368,21 @@ export const ui = {
     "exp.title": "Wo ich gebaut habe.",
     "exp.1.company": "Bridge Consult — Remote",
     "exp.1.role": "Marketing, Research & Web",
-    "exp.1.period": "Dez 2024 — Okt 2025",
+    "exp.1.period": "Dez 2024 — heute",
     "exp.1.text":
-      "Komplexe Infrastruktur- und FIDIC-Vertragsexpertise in eine erstklassige digitale Präsenz übersetzt — Recherche zu internationalen Bauprojekten, Aufbau von Feasibility Studies und Marktanalysen, dann Design und Umsetzung der Websites Bridge Consult und fidic.uz auf Astro + Three.js.",
+      "Komplexe Infrastruktur- und FIDIC-Vertragsexpertise in eine erstklassige digitale Präsenz übersetzt — Recherche zu internationalen Bauprojekten, Aufbau von Feasibility Studies und Marktanalysen, dann Design und Umsetzung der Websites Bridge Consult und fidic.uz auf Astro + Three.js. Die Zusammenarbeit läuft weiter.",
     "exp.2.company": "Siemens — Eisenstadt, AT",
     "exp.2.role": "Marketing & Wissensmanagement",
     "exp.2.period": "2023 — 2024",
     "exp.2.text":
-      "Videos und Motion Graphics für verschiedene Marketingkanäle produziert und interne wie externe Kommunikation abgestimmt — Berichte, Präsentationen und Kampagnen-Assets — innerhalb einer globalen Engineering-Marke.",
+      "2D-Tutorial-Videos und Safety-Explainer für SIMATIC WinCC Open Architecture produziert — die skalierbare SCADA-Plattform von Siemens für große, komplexe Leitsysteme — und damit hochtechnische Engineering-Software in klares, verständliches Lernmaterial für ein globales Publikum übersetzt.",
+    "exp.2.link": "WinCC-OA-Videoserie ansehen",
     "exp.3.company": "Awaken Trees — Wien",
     "exp.3.role": "Motion & Content, ehrenamtlich",
     "exp.3.period": "2022",
     "exp.3.text":
       "Ein animiertes Erklärvideo zur FMNR-Aufforstungsmethode und laufend Social-Content erstellt — der Beweis, dass erstklassiges visuelles Storytelling Menschen zu echter Wirkung bewegt.",
+    "exp.3.link": "Film ansehen",
 
     // ── Education ───────────────────────────────────────────────────────────
     "edu.label": "Ausbildung",
@@ -494,6 +544,47 @@ export const ui = {
     "gallery.5.cat": "Generativ",
     "gallery.6.cat": "Motion",
 
+    // ── Services & Research hub (/services) ─────────────────────────────────
+    "services.eyebrow": "Leistungen & Research / Wien",
+    "services.title": "Systeme, keine Deliverables.",
+    "services.lead":
+      "Drei Disziplinen, die als ein Launch-System ausgeliefert werden — und die Research dahinter. Strategie, die die Produktion überlebt, Search, das das Design überlebt, Code, der die Metriken überlebt.",
+    "services.open": "Öffnen",
+    "services.1.title": "Digital Marketing",
+    "services.1.text":
+      "Positionierung, Research, Content-Architektur und Distribution — messbar, wartbar und ausbaufähig gebaut, statt beim Mockup zu enden.",
+    "services.1.href": "/de/digital-marketing-wien/",
+    "services.2.title": "Technical SEO",
+    "services.2.text":
+      "Crawlbare Architektur, mehrsprachiges Routing, strukturierte Daten und Performance-Budgets — damit gestalterischer Anspruch kein Indexierungsproblem wird.",
+    "services.2.href": "/de/technical-seo-wien/",
+    "services.3.title": "Creative Development",
+    "services.3.text":
+      "Astro, Three.js, GSAP und handgeschriebenes GLSL. Echtzeit-3D und Motion, die die Marke tragen, ohne die Core Web Vitals zu kosten.",
+    "services.3.href": "/de/creative-development-wien/",
+
+    "research.label": "Research",
+    "research.title": "Belege statt Meinungen.",
+    "research.1.title": "Bridge Consult — +780% organisch",
+    "research.1.text": "Was ein mehrsprachiges Launch-System mit der Sichtbarkeit gemacht hat.",
+    "research.1.href": "/de/insights/bridge-consult-seo-wachstum/",
+    "research.2.title": "FIDIC — eine Wissensplattform",
+    "research.2.text": "109 Routen und 105 Fachartikel, strukturiert zum Gefundenwerden.",
+    "research.2.href": "/de/insights/fidic-wissensplattform/",
+    "research.3.title": "Three.js für Marketing-Websites",
+    "research.3.text": "Wann Echtzeit-3D die Conversion hebt — und wann es sie leise killt.",
+    "research.3.href": "/de/insights/threejs-marketing-websites/",
+    "research.4.title": "AI-assisted Development",
+    "research.4.text": "AI für Tempo nutzen, ohne die Creative Direction auszulagern.",
+    "research.4.href": "/de/insights/ai-assisted-creative-development/",
+
+    // ── Video bands (type knockout + scroll-scrubbed product film) ──────────
+    "reel.type.label": "Cinema 4D / Redshift — Produktfilm, im Haus gerendert",
+    "scrub.eyebrow": "Produktfilm / Scrollen zum Drehen",
+    "scrub.title": "Gerendert zum Verkaufen, nicht zum Dekorieren.",
+    "scrub.text":
+      "Cinema 4D- und Redshift-Produktanimation — Licht, Materialien und Kamera so gebaut, dass das Objekt in einer Sekunde liest. Scrolle, um es zu drehen.",
+
     // ── Portal to the 3D archive ────────────────────────────────────────────
     "portal.eyebrow": "Das Archiv",
     "portal.title": "Betritt das Archiv.",
@@ -517,6 +608,7 @@ export const ui = {
     "footer.cta.title": "Marketing, Content, SEO und Web - als ein System gebaut.",
     "footer.cta.button": "Projekt starten",
     "footer.tagline": "Digital Marketer · Creative Developer · Wien",
+    "footer.status": "Verfügbar für Projekte",
     "footer.rights": "Alle Rechte vorbehalten.",
   },
 } as const;

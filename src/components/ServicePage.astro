@@ -10,9 +10,15 @@ const relatedInsights = Object.values(insightContent).filter((item) => item.rela
 const alternates = { en: service.paths.en, de: service.paths.de, "x-default": service.paths.en };
 const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({ "@type": "Question", name: pick(item.question, lang), acceptedAnswer: { "@type": "Answer", text: pick(item.answer, lang) } })) };
 const serviceSchema = { "@type": "Service", name: pick(service.title, lang), description: pick(service.description, lang), provider: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, areaServed: [{ "@type": "City", name: "Vienna" }, { "@type": "Country", name: "Austria" }] };
+// Unique OG image per service — real case evidence instead of the generic card.
+const og: Record<ServiceKey, { image: string; alt: string }> = {
+  "digital-marketing": { image: "/cases/bridge-consult-google-analytics-organic-search-growth-780-percent.jpg", alt: "Google Analytics chart: 780% organic search growth for Bridge Consult" },
+  "technical-seo": { image: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.png", alt: "FIDIC.uz multilingual contract knowledge platform by Rodion Belousov" },
+  "creative-development": { image: "/cases/bridge-consult-threejs-project-experience-webgl.png", alt: "Bridge Consult interactive Three.js project universe by Rodion Belousov" },
+};
 ---
 
-<Layout lang={lang} alternateUrls={alternates} title={pick(service.title, lang)} description={pick(service.description, lang)} pageType="article" structuredData={[serviceSchema, faqSchema]}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(service.title, lang)} description={pick(service.description, lang)} image={og[serviceKey].image} imageAlt={og[serviceKey].alt} pageType="article" structuredData={[serviceSchema, faqSchema]}>
   <article class="service-page">
     <header class="service-hero" data-hero>
       <div class="u-container">

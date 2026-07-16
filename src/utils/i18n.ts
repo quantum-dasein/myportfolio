@@ -60,6 +60,16 @@ function syncSwitcher(lang: string) {
 
 function syncLocaleLinks(lang: string) {
   const home = `/${lang}/`;
+
+  // NOTE: Services & Research lives at /services and is intentionally NOT a
+  // localized route. The switcher must never rewrite it — doing so is what sent
+  // visitors to /en/ and stranded them there.
+
+  // Home + section links may only be rewritten to /en/ | /de/ on hard-localized
+  // (locked) pages. On the live one-page site the switcher must never reroute
+  // the logo or the menu away from the current scene.
+  if (!LOCKED_LANG) return;
+
   document.querySelectorAll<HTMLAnchorElement>("[data-locale-home]").forEach((link) => {
     link.href = home;
   });

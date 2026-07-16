@@ -7,8 +7,16 @@ const de = lang === "de";
 const service = serviceContent[insight.relatedService];
 const alternates = { en: insight.paths.en, de: insight.paths.de, "x-default": insight.paths.en };
 const articleSchema = { "@type": "Article", headline: pick(insight.title, lang), description: pick(insight.description, lang), author: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, datePublished: "2026-07-14", dateModified: "2026-07-14" };
+// Unique OG image per insight — the artifact the article is actually about.
+const og: Record<string, { image: string; alt: string }> = {
+  "bridge-growth": { image: "/cases/bridge-consult-google-analytics-organic-search-growth-780-percent.jpg", alt: "Google Analytics chart: 780% organic search growth for Bridge Consult" },
+  "fidic-platform": { image: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.png", alt: "FIDIC.uz multilingual contract knowledge platform by Rodion Belousov" },
+  "threejs-marketing": { image: "/cases/bridge-consult-threejs-project-experience-webgl.png", alt: "Bridge Consult interactive Three.js project universe" },
+  "ai-development": { image: "/cases/bridge-consult-open-source-astro-threejs-github-repository.png", alt: "Open-source Astro and Three.js repository behind Bridge Consult" },
+};
+const ogEntry = og[insight.key];
 ---
-<Layout lang={lang} alternateUrls={alternates} title={pick(insight.title, lang)} description={pick(insight.description, lang)} pageType="article" structuredData={articleSchema}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(insight.title, lang)} description={pick(insight.description, lang)} image={ogEntry?.image} imageAlt={ogEntry?.alt} pageType="article" structuredData={articleSchema}>
   <article class="insight">
     <header data-hero><div class="u-container"><span>RESEARCH / 2026</span><h1>{pick(insight.title, lang)}</h1><p>{pick(insight.dek, lang)}</p></div></header>
     <div class="u-container article-grid">

@@ -3,6 +3,8 @@ import Layout from "../layouts/Layout.astro";
 import HeroHome from "../components/HeroHome.astro";
 import MotionGallery from "../components/MotionGallery.astro";
 import TextMarquee from "../components/TextMarquee.astro";
+import VideoType from "../components/VideoType.astro";
+import ScrollScrub from "../components/ScrollScrub.astro";
 import { useTranslations, type UIKey } from "../i18n/utils";
 
 const lang = "en";
@@ -14,12 +16,20 @@ const pillars = [1, 2, 3].map((n) => ({
   text: `about.pillar.${n}.text`,
 }));
 
+// Real proof links: the WinCC OA training series and the Awaken Trees film
+// were produced by Rodion — they anchor the career cards in verifiable work.
+const jobLinks: Record<number, { href: string; i18n: string }> = {
+  2: { href: "https://www.youtube.com/@WinCCOA/playlists", i18n: "exp.2.link" },
+  3: { href: "https://www.youtube.com/watch?v=cC-eCQHxzyA", i18n: "exp.3.link" },
+};
+
 const jobs = [1, 2, 3].map((n) => ({
   n,
   company: `exp.${n}.company`,
   role: `exp.${n}.role`,
   period: `exp.${n}.period`,
   text: `exp.${n}.text`,
+  link: jobLinks[n],
 }));
 
 const edu = [1, 2, 3].map((n) => ({
@@ -64,6 +74,31 @@ const selectedWork = [
     "Content Marketing Austria",
     "WebGL Portfolio",
     "Rodion Belousov",
+  ]}
+  structuredData={[
+    {
+      "@type": "VideoObject",
+      "@id": "https://rodionbelousov.studio/#awaken-trees-film",
+      name: "Awaken Trees — FMNR Reforestation Explainer Film",
+      description:
+        "Animated explainer film about the FMNR (Farmer Managed Natural Regeneration) reforestation method, created by Rodion Belousov for the Vienna-based initiative Awaken Trees.",
+      contentUrl: "https://www.youtube.com/watch?v=cC-eCQHxzyA",
+      embedUrl: "https://www.youtube.com/embed/cC-eCQHxzyA",
+      thumbnailUrl: "https://i.ytimg.com/vi/cC-eCQHxzyA/hqdefault.jpg",
+      uploadDate: "2022-01-01",
+      inLanguage: "en",
+      creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+    },
+    {
+      "@type": "CreativeWorkSeries",
+      "@id": "https://rodionbelousov.studio/#wincc-oa-video-series",
+      name: "SIMATIC WinCC Open Architecture — Tutorial & Safety Video Series",
+      description:
+        "2D tutorial videos and safety-guideline explainers for SIMATIC WinCC Open Architecture, Siemens' scalable SCADA platform, produced by Rodion Belousov at Siemens Eisenstadt.",
+      url: "https://www.youtube.com/@WinCCOA/playlists",
+      creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+      publisher: { "@type": "Organization", name: "Siemens" },
+    },
   ]}
 >
   <HeroHome />
@@ -112,6 +147,12 @@ const selectedWork = [
                 </div>
                 <span class="job-period" data-i18n={job.period}>{tk(job.period)}</span>
                 <p class="job-text" data-i18n={job.text}>{tk(job.text)}</p>
+                {job.link ? (
+                  <a class="job-link" href={job.link.href} target="_blank" rel="noopener" data-cursor="VIEW">
+                    <span data-i18n={job.link.i18n}>{tk(job.link.i18n)}</span>
+                    <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
+                  </a>
+                ) : null}
               </article>
             ))
           }
@@ -220,7 +261,68 @@ const selectedWork = [
     </div>
   </section>
 
+  <!-- Services & Research existed only in the header until now. This is the
+       on-page entry: a teaser that reads as part of the story and hands off to
+       the /services hub. Card hrefs come from the dictionary, so they follow
+       the active language to the matching localized deep-dive. -->
+  <section class="section services-teaser" id="services">
+    <div class="u-container section-grid">
+      <span class="s-idx">05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+      <div>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="services.title">{t("services.title")}</h2>
+        <p class="s-lead" data-reveal data-i18n="services.lead">{t("services.lead")}</p>
+
+        <div class="svc-list">
+          {
+            [1, 2, 3].map((n) => (
+              <a
+                class="svc-item"
+                href={tk(`services.${n}.href`)}
+                data-i18n-attr={`href:services.${n}.href`}
+                data-reveal
+                data-cursor="OPEN"
+              >
+                <span class="svc-item-n">{String(n).padStart(2, "0")}</span>
+                <span class="svc-item-body">
+                  <span class="svc-item-title" data-i18n={`services.${n}.title`}>{tk(`services.${n}.title`)}</span>
+                  <span class="svc-item-text" data-i18n={`services.${n}.text`}>{tk(`services.${n}.text`)}</span>
+                </span>
+                <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
+              </a>
+            ))
+          }
+        </div>
+
+        <a class="svc-all" href="/services" data-reveal data-cursor="OPEN">
+          <span data-i18n="nav.services">{t("nav.services")}</span>
+          <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rodion's own Redshift render playing inside the word -->
+  <VideoType
+    text="MOTION"
+    video="/portfolio/video/rodion-belousov-squidz-pos-display-3d-animation.mp4"
+    poster="/portfolio/rodion-belousov-squidz-pos-display-3d-animation-poster.webp"
+    labelKey="reel.type.label"
+    label={t("reel.type.label")}
+  />
+
   <MotionGallery />
+
+  <!-- Apple-style: the product film turns under the visitor's scroll -->
+  <ScrollScrub
+    video="/portfolio/video/rodion-belousov-ski-snowboard-equipment-3d-product-animation.mp4"
+    poster="/portfolio/rodion-belousov-ski-snowboard-equipment-3d-product-animation-poster.jpg"
+    eyebrowKey="scrub.eyebrow"
+    eyebrow={t("scrub.eyebrow")}
+    titleKey="scrub.title"
+    title={t("scrub.title")}
+    textKey="scrub.text"
+    text={t("scrub.text")}
+  />
 
   <section class="portal" id="archive">
     <div class="u-container portal-inner">
@@ -356,6 +458,112 @@ const selectedWork = [
     text-shadow: 0 1px 18px rgba(0, 0, 0, 0.45);
   }
 
+  /* ── Services & Research teaser (hands off to /services) ───────────────── */
+  .svc-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 3rem;
+  }
+
+  .svc-item {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 1.5rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--color-text);
+    transition: padding-left 0.45s var(--ease-out-expo);
+
+    &:last-of-type {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    &:hover,
+    &:focus-visible {
+      padding-left: 0.7rem;
+    }
+
+    @media (--mq-tablet-sm) {
+      grid-template-columns: 2.2rem 1fr;
+      gap: 0.9rem;
+    }
+  }
+
+  .svc-item-n {
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.2em;
+    color: var(--color-accent);
+  }
+
+  .svc-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .svc-item-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.2rem, 2vw, 1.7rem);
+    letter-spacing: -0.02em;
+    transition: color 0.35s var(--ease-out-expo);
+  }
+
+  .svc-item-text {
+    color: rgba(var(--rgb-text), 0.6);
+    font-size: var(--font-size-sm);
+    line-height: 1.55;
+    max-width: 58ch;
+  }
+
+  .svc-item:hover .svc-item-title,
+  .svc-item:focus-visible .svc-item-title {
+    color: #fff;
+  }
+
+  .svc-item .css-arrow {
+    opacity: 0.45;
+    transition: opacity 0.35s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+
+    @media (--mq-tablet-sm) {
+      display: none;
+    }
+  }
+
+  .svc-item:hover .css-arrow {
+    opacity: 1;
+    transform: translate(3px, -3px);
+  }
+
+  .svc-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 2.5rem;
+    padding: 0.8em 1.4em;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.85);
+    transition:
+      color 0.35s var(--ease-out-expo),
+      border-color 0.35s var(--ease-out-expo),
+      background 0.35s var(--ease-out-expo);
+
+    &:hover,
+    &:focus-visible {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
   .pillars {
     --tilt-x: 0deg;
     --tilt-y: 0deg;
@@ -483,6 +691,9 @@ const selectedWork = [
     font-size: clamp(1.4rem, 2.4vw, 2.1rem);
     line-height: 1.05;
     letter-spacing: -0.02em;
+    /* survive 90% browser zoom / odd widths without clipping long titles */
+    overflow-wrap: break-word;
+    text-wrap: balance;
   }
 
   .pillar p,
@@ -658,6 +869,29 @@ const selectedWork = [
     transition: color 0.4s ease, transform 0.55s var(--ease-out-expo);
   }
 
+  /* Proof link: the actual published work behind the career card. */
+  .job-link {
+    grid-column: 2 / -1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    margin-top: 0.35rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.26);
+    color: rgba(var(--rgb-text), 0.82);
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    transition: color 0.35s ease, border-color 0.35s ease, gap 0.45s var(--ease-out-expo);
+  }
+
+  .job-link:hover,
+  .job-link:focus-visible {
+    color: #fff;
+    border-color: #fff;
+    gap: 0.95rem;
+  }
+
   .job:hover .job-text,
   .job:focus-visible .job-text {
     color: rgba(var(--rgb-text), 0.92);
@@ -672,6 +906,7 @@ const selectedWork = [
     .job:focus-visible { transform: translateX(0.25rem); }
     .job { grid-template-columns: 1fr; }
     .job-text { grid-column: auto; }
+    .job-link { grid-column: auto; font-size: .78rem; }
   }
 
   .edu-row {
@@ -1558,6 +1793,7 @@ const selectedWork = [
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const calm = () => document.documentElement.classList.contains("rb-calm");
   let motionStarted = false;
 
   const initReveals = async () => {
@@ -1622,7 +1858,7 @@ const selectedWork = [
     };
 
     card.addEventListener("pointermove", (event) => {
-      if (reduced) return;
+      if (reduced || calm()) return;
       const rect = card.getBoundingClientRect();
       const px = (event.clientX - rect.left) / rect.width;
       const py = (event.clientY - rect.top) / rect.height;
@@ -1648,7 +1884,7 @@ const selectedWork = [
   const jobCards = gsap.utils.toArray<HTMLElement>("[data-job-card]");
   if (finePointer) jobCards.forEach((card) => {
     card.addEventListener("pointermove", (event) => {
-      if (reduced) return;
+      if (reduced || calm()) return;
       const rect = card.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 100;
       const y = ((event.clientY - rect.top) / rect.height) * 100;
@@ -1668,7 +1904,7 @@ const selectedWork = [
   const workCore = document.querySelector<HTMLElement>(".work-core");
 
   if (finePointer) workStage?.addEventListener("pointermove", (event) => {
-    if (reduced || innerWidth < 760) return;
+    if (reduced || calm() || innerWidth < 760) return;
     const rect = workStage.getBoundingClientRect();
     const nx = (event.clientX - rect.left) / rect.width - 0.5;
     const ny = (event.clientY - rect.top) / rect.height - 0.5;

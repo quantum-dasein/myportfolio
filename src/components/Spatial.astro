@@ -602,6 +602,8 @@ import { works } from "../data/works";
     private dragY = 0;
     private dragDistance = 0;
     private dragPointerType = "";
+    private flickDy = 0;
+    private flickT = 0;
 
     private progress = 0;
     private targetProgress = 0;
@@ -612,6 +614,12 @@ import { works } from "../data/works";
     private paused = false;
     private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
     private lastFrame = -Infinity;
+    // Adaptive FPS driven by measured render cost (ms): 60 → 45 → 30.
+    private fpsTiers = [60, 45, 30];
+    private tier = this.lowPower ? 2 : 0;
+    private baseTier = this.lowPower ? 1 : 0;
+    private renderCost = 6;
+    private tierFrames = 0;
     private _v = new THREE.Vector3();
     private decodeTokens = new WeakMap<Element, number>();
     private caseDeparture?: {
@@ -914,8 +922,10 @@ import { works } from "../data/works";
         this.dragDistance += Math.abs(dx) + Math.abs(dy);
         const depthGesture = this.lowPower || this.dragPointerType === "touch" || this.dragPointerType === "pen";
         if (depthGesture) {
-          this.targetProgress = THREE.MathUtils.clamp(this.targetProgress - dy * 0.00085, 0, 1);
+          this.targetProgress = THREE.MathUtils.clamp(this.targetProgress - dy * 0.00115, 0, 1);
           this.laneTarget.x = THREE.MathUtils.clamp(this.laneTarget.x - dx * 0.0065, -3.4, 3.4);
+          this.flickDy = dy;
+          this.flickT = performance.now();
         } else {
           this.laneTarget.x = THREE.MathUtils.clamp(this.laneTarget.x - dx * 0.012, -4.8, 4.8);
           this.laneTarget.y = THREE.MathUtils.clamp(this.laneTarget.y + dy * 0.01, -3.2, 3.2);
@@ -950,10 +960,19 @@ import { works } from "../data/works";
     private onUp = (e: PointerEvent) => {
       if (this.inside || this.busy) return;
       const wasDragging = this.dragging && this.dragDistance > 10;
+      const wasDepthGesture = this.dragPointerType === "touch" || this.dragPointerType === "pen";
       this.dragging = false;
       this.dragPointerType = "";
       document.body.classList.remove("is-space-dragging");
-      if (wasDragging) return;
+      if (wasDragging) {
+        // Flick momentum: a fast swipe keeps carrying the camera through depth.
+        if (wasDepthGesture && performance.now() - this.flickT < 90 && Math.abs(this.flickDy) > 6) {
+          this.targetProgress = THREE.MathUtils.clamp(this.targetProgress - this.flickDy * 0.007, 0, 1);
+        }
+        this.flickDy = 0;
+        return;
+      }
+      this.flickDy = 0;
       // ignore clicks on the chrome (header, HUD, tunnel) — only the 3D counts
       if ((e.target as HTMLElement)?.closest("header, [data-hud], [data-tunnel-root]")) return;
       this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -1004,7 +1023,8 @@ import { works } from "../data/works";
           this.busy = false;
           this.inside = true;
           document.body.classList.add("is-inside");
-          document.body.classList.toggle("has-film-note", Boolean(p.work.video && p.work.detail));
+          // Every archive work with a description gets the note — stills included.
+          document.body.classList.toggle("has-film-note", Boolean(p.work.detail));
         },
       });
       // dip to black while the camera surges through the gate
@@ -1143,7 +1163,7 @@ import { works } from "../data/works";
     // ── loop ────────────────────────────────────────────────────────────────
     private render(t: number) {
       if (this.paused) return;
-      if (this.lowPower && t - this.lastFrame < 1 / 30) return;
+      if (t - this.lastFrame < 1 / this.fpsTiers[this.tier]) return;
       this.lastFrame = t;
       this.comp.uniforms.uTime.value = t;
 
@@ -1219,10 +1239,19 @@ import { works } from "../data/works";
       const hint = document.querySelector<HTMLElement>("[data-scrollhint]");
       if (hint) hint.style.opacity = this.progress > 0.02 ? "0" : "";
 
+      const renderStart = performance.now();
       this.renderer.setRenderTarget(this.rt);
       this.renderer.render(this.scene, this.camera);
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.compScene, this.compCam);
+      this.renderCost += (performance.now() - renderStart - this.renderCost) * 0.05;
+
+      // Step down under sustained load, step back up when there is headroom.
+      if (++this.tierFrames >= 90) {
+        this.tierFrames = 0;
+        if (this.renderCost > 13 && this.tier < this.fpsTiers.length - 1) this.tier += 1;
+        else if (this.renderCost < 5.5 && this.tier > this.baseTier) this.tier -= 1;
+      }
     }
 
     private resize() {

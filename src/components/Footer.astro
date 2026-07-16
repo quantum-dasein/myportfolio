@@ -65,6 +65,29 @@ const year = new Date().getFullYear();
       </a>
     </div>
 
+    <!-- ── Machine room: live telemetry strip ──────────────────────────────── -->
+    <div class="machine" aria-hidden="true">
+      <div class="machine-cell">
+        <span class="machine-key">Status</span>
+        <span class="machine-val"><i class="pulse"></i><span data-i18n="footer.status">{t("footer.status")}</span></span>
+      </div>
+      <div class="machine-cell">
+        <span class="machine-key">Vienna</span>
+        <span class="machine-val"><b data-vienna-clock>--:--:--</b> CET</span>
+      </div>
+      <div class="machine-cell">
+        <span class="machine-key">Coord</span>
+        <span class="machine-val">48.2082° N / 16.3738° E</span>
+      </div>
+      <div class="machine-cell">
+        <span class="machine-key">Build</span>
+        <span class="machine-val">ASTRO / THREE / GSAP</span>
+      </div>
+    </div>
+
+    <!-- ── Giant wordmark ──────────────────────────────────────────────────── -->
+    <div class="wordmark" aria-hidden="true"><span>RODION BELOUSOV</span></div>
+
     <div class="footer-base">
       <p>© {year} Rodion Belousov · <span data-i18n="footer.rights">{t("footer.rights")}</span></p>
     </div>
@@ -280,6 +303,76 @@ const year = new Date().getFullYear();
     box-shadow: 0 0 2rem rgba(255,255,255,.05);
   }
 
+  /* ── Machine room ──────────────────────────────────────────────────────── */
+  .machine {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid rgba(255, 255, 255, .1);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .machine-cell {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding: 1.15rem clamp(1.5rem, 5vw, 5rem);
+  }
+  .machine-cell + .machine-cell { border-left: 1px solid rgba(255, 255, 255, .1); }
+
+  .machine-key {
+    color: rgba(var(--rgb-text), .34);
+    font-size: .54rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+  }
+
+  .machine-val {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    color: rgba(var(--rgb-text), .78);
+    font-size: .68rem;
+    letter-spacing: .08em;
+    font-variant-numeric: tabular-nums;
+  }
+  .machine-val b { color: #fff; font-weight: 400; }
+
+  .pulse {
+    width: .4rem;
+    height: .4rem;
+    border-radius: 50%;
+    background: #7dffa4;
+    box-shadow: 0 0 .6rem #7dffa4;
+    animation: machine-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes machine-pulse {
+    0%, 100% { opacity: .35; }
+    50% { opacity: 1; }
+  }
+
+  /* ── Giant wordmark ────────────────────────────────────────────────────── */
+  .wordmark {
+    overflow: hidden;
+    padding: clamp(1.5rem, 3vw, 2.5rem) 0 0;
+    line-height: .78;
+    text-align: center;
+  }
+
+  .wordmark span {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.6rem, 12.4vw, 12rem);
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+    color: transparent;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .045) 62%, transparent);
+    background-clip: text;
+    -webkit-background-clip: text;
+    transform: translateY(12%);
+  }
+
   .footer-base {
     display: flex;
     justify-content: space-between;
@@ -299,6 +392,10 @@ const year = new Date().getFullYear();
     .footer-main > * + * { border-left: 0; border-top: 1px solid rgba(255,255,255,.1); }
     .footer-nav { flex-wrap: wrap; }
     .archive-control { margin-block: 1.2rem; }
+
+    .machine { grid-template-columns: repeat(2, 1fr); }
+    .machine-cell:nth-child(3) { border-left: 0; }
+    .machine-cell:nth-child(n + 3) { border-top: 1px solid rgba(255,255,255,.1); }
   }
 
   @media (max-width: 600px) {
@@ -322,5 +419,23 @@ const year = new Date().getFullYear();
 
   @media (prefers-reduced-motion: reduce) {
     .terrain, .final-orb { animation: none; }
+    .pulse { animation: none; opacity: 1; }
   }
 </style>
+
+<script>
+  // Live Vienna clock — setInterval (not rAF) so it keeps ticking reliably.
+  const clock = document.querySelector<HTMLElement>("[data-vienna-clock]");
+  if (clock) {
+    const fmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const tick = () => (clock.textContent = fmt.format(new Date()));
+    tick();
+    setInterval(tick, 1000);
+  }
+</script>
