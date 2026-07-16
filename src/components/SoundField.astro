@@ -1,0 +1,148 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  SoundField — the studio's ambience.
+//
+//  Everything is synthesised with the Web Audio API: a low ambient drone (three
+//  detuned oscillators through a slow filter sweep) plus soft UI ticks on hover
+//  and click. No audio files ship, so this costs a few hundred bytes instead of
+//  a megabyte of mp3, and it can never be out of tune with the visuals.
+//
+//  Rules it respects:
+//   • OFF by default and never autoplays — browsers block it and visitors hate it.
+//   • The AudioContext is only created on the first real user gesture.
+//   • Choice persists in localStorage.
+//   • Muted when the tab is hidden, and when Calm mode is on.
+// ─────────────────────────────────────────────────────────────────────────────
+---
+
+<script>
+  const STORE = "rb-sound";
+
+  let ctx: AudioContext | null = null;
+  let master: GainNode | null = null;
+  let drone: { stop: () => void } | null = null;
+  let enabled = false;
+
+  const isCalm = () => document.documentElement.classList.contains("rb-calm");
+
+  function build() {
+    if (ctx) return;
+    const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctor) return;
+    ctx = new Ctor();
+
+    master = ctx.createGain();
+    master.gain.value = 0;
+    master.connect(ctx.destination);
+
+    // ── Ambient drone: detuned sines under a slowly breathing low-pass ──────
+    const bus = ctx.createGain();
+    bus.gain.value = 0.5;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 420;
+    filter.Q.value = 0.7;
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 0.05; // one slow breath every 20s
+    lfoGain.gain.value = 180;
+    lfo.connect(lfoGain).connect(filter.frequency);
+    lfo.start();
+
+    const oscs = [55, 82.5, 110.3].map((freq, i) => {
+      const osc = ctx!.createOscillator();
+      osc.type = i === 2 ? "triangle" : "sine";
+      osc.frequency.value = freq;
+      osc.detune.value = (i - 1) * 6;
+      const g = ctx!.createGain();
+      g.gain.value = i === 2 ? 0.12 : 0.3;
+      osc.connect(g).connect(bus);
+      osc.start();
+      return osc;
+    });
+
+    bus.connect(filter).connect(master);
+    drone = { stop: () => { oscs.forEach((o) => o.stop()); lfo.stop(); } };
+  }
+
+  /** Short filtered blip — used for hover / click feedback. */
+  function tick(freq: number, gain: number, dur = 0.05) {
+    if (!ctx || !master || !enabled || isCalm()) return;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, ctx.currentTime + dur);
+    g.gain.setValueAtTime(0, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    osc.connect(g).connect(master);
+    osc.start();
+    osc.stop(ctx.currentTime + dur + 0.02);
+  }
+
+  function fade(to: number, time = 0.6) {
+    if (!ctx || !master) return;
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(to, ctx.currentTime + time);
+  }
+
+  const level = () => (enabled && !isCalm() && !document.hidden ? 0.06 : 0);
+
+  function apply(on: boolean, persist = true) {
+    enabled = on;
+    if (on) {
+      build();
+      ctx?.resume();
+      fade(level());
+    } else {
+      fade(0, 0.4);
+    }
+    if (persist) {
+      try { localStorage.setItem(STORE, on ? "on" : "off"); } catch { /* private mode */ }
+    }
+    document.querySelectorAll<HTMLElement>("[data-sound-toggle]").forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(on));
+    });
+    document.documentElement.classList.toggle("rb-sound", on);
+  }
+
+  // ── Wiring ────────────────────────────────────────────────────────────────
+  document.addEventListener("click", (e) => {
+    const toggle = (e.target as HTMLElement)?.closest("[data-sound-toggle]");
+    if (toggle) {
+      apply(!enabled);
+      if (enabled) tick(660, 0.16);
+      return;
+    }
+    // click feedback on real controls
+    if ((e.target as HTMLElement)?.closest("a, button")) tick(520, 0.1, 0.06);
+  });
+
+  let lastHover: Element | null = null;
+  addEventListener("pointerover", (e) => {
+    const el = (e.target as HTMLElement)?.closest("a, button, [data-cursor]");
+    if (!el || el === lastHover) return;
+    lastHover = el;
+    tick(1180, 0.045, 0.035);
+  }, { passive: true });
+
+  // Calm mode and tab visibility both duck the ambience.
+  addEventListener("rb:calmchange", () => fade(level(), 0.35));
+  document.addEventListener("visibilitychange", () => fade(level(), 0.25));
+
+  // Restore the stored choice, but only arm audio on the first gesture —
+  // an AudioContext created before that is born suspended.
+  let stored = "off";
+  try { stored = localStorage.getItem(STORE) || "off"; } catch { /* private mode */ }
+  if (stored === "on") {
+    const arm = () => apply(true, false);
+    addEventListener("pointerdown", arm, { once: true });
+    addEventListener("keydown", arm, { once: true });
+    document.querySelectorAll<HTMLElement>("[data-sound-toggle]").forEach((b) => b.setAttribute("aria-pressed", "true"));
+    document.documentElement.classList.add("rb-sound");
+  }
+</script>

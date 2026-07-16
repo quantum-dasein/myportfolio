@@ -248,6 +248,9 @@ export const ui = {
     // ── Services & Research hub (/services) ─────────────────────────────────
     // hrefs live in the dictionary too, so the language switcher points each
     // card at the matching localized deep-dive without any routing hacks.
+    "hero.trust.label": "Proven with",
+    "hero.trust.metric": "organic growth",
+
     "services.eyebrow": "Services & Research / Vienna",
     "services.title": "Systems, not deliverables.",
     "services.lead":
@@ -545,6 +548,9 @@ export const ui = {
     "gallery.6.cat": "Motion",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
+    "hero.trust.label": "Bewährt bei",
+    "hero.trust.metric": "organisches Wachstum",
+
     "services.eyebrow": "Leistungen & Research / Wien",
     "services.title": "Systeme, keine Deliverables.",
     "services.lead":

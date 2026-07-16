@@ -6,6 +6,7 @@ import Tunnel from "../components/Tunnel.astro";
 import Webgl from "../components/Webgl.astro";
 import StudioLoader from "../components/StudioLoader.astro";
 import CursorField from "../components/CursorField.astro";
+import SoundField from "../components/SoundField.astro";
 import CaseTransition from "../components/CaseTransition.astro";
 import { ui, defaultLang } from "../i18n/ui";
 import { useTranslations, type Lang } from "../i18n/utils";
@@ -217,6 +218,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
   <body class:list={[{ "is-deck": isDeck }, theme && `case-theme-${theme}`]}>
     <StudioLoader />
     <CursorField />
+    <SoundField />
 
     {!isDeck && (
       <div class="cosmic-backdrop" aria-hidden="true">

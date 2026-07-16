@@ -27,6 +27,21 @@ const t = useTranslations();
         <a class="primary" href="#work" data-i18n="hero.cta.primary" data-magnetic>{t("hero.cta.primary")}</a>
         <a class="secondary" href="#contact-cta" data-i18n="hero.cta.secondary" data-magnetic>{t("hero.cta.secondary")}</a>
       </div>
+
+      <!-- Trust bar: the decision to trust happens in the first seconds, so the
+           evidence belongs on the first screen, not buried five sections down. -->
+      <div class="hero-trust" data-intro>
+        <span class="trust-label" data-i18n="hero.trust.label">{t("hero.trust.label")}</span>
+        <ul class="trust-names">
+          <li>Siemens</li>
+          <li>Bridge Consult</li>
+          <li>FIDIC.uz</li>
+        </ul>
+        <span class="trust-metric">
+          <b data-trust-count="780">+780%</b>
+          <span data-i18n="hero.trust.metric">{t("hero.trust.metric")}</span>
+        </span>
+      </div>
     </div>
 
     <aside class="hero-readout" data-intro aria-label="Studio capabilities">
@@ -192,6 +207,67 @@ const t = useTranslations();
     border-color: rgba(255, 255, 255, 0.24);
   }
 
+  /* ── Trust bar ─────────────────────────────────────────────────────────── */
+  .hero-trust {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.4rem;
+    margin-top: 2.4rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .trust-label { color: rgba(var(--rgb-text), 0.34); }
+
+  .trust-names {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .trust-names li {
+    color: rgba(var(--rgb-text), 0.78);
+    font-weight: 500;
+  }
+
+  .trust-names li + li::before {
+    content: "·";
+    margin-right: 0.9rem;
+    color: rgba(var(--rgb-text), 0.28);
+  }
+
+  .trust-metric {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin-left: auto;
+    color: rgba(var(--rgb-text), 0.4);
+    white-space: nowrap;
+  }
+
+  .trust-metric b {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 700px) {
+    .hero-trust { gap: 0.6rem 1rem; font-size: 0.56rem; }
+    .trust-metric { margin-left: 0; }
+  }
+
   .hero-readout {
     display: grid;
     gap: 1rem;
@@ -338,6 +414,22 @@ const t = useTranslations();
   const hero = document.querySelector<HTMLElement>("[data-hero]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // The proof number lands rather than just sitting there.
+  const countTrustMetric = () => {
+    const el = hero?.querySelector<HTMLElement>("[data-trust-count]");
+    if (!el) return;
+    const end = Number(el.dataset.trustCount || 0);
+    if (reduced) { el.textContent = `+${end}%`; return; }
+    const value = { v: 0 };
+    gsap.to(value, {
+      v: end,
+      duration: 1.6,
+      delay: 0.9,
+      ease: "power2.out",
+      onUpdate: () => (el.textContent = `+${Math.round(value.v)}%`),
+    });
+  };
+
   const revealHero = () => {
     if (!hero || hero.dataset.introPlayed === "true") return;
     hero.dataset.introPlayed = "true";
@@ -351,6 +443,7 @@ const t = useTranslations();
       ease: "power3.out",
       overwrite: true,
     });
+    countTrustMetric();
   };
 
   if (document.body.classList.contains("is-loaded") || !document.querySelector("rb-studio-loader")) {
