@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
-      "comment": "The /en/ and /de/ landings were clones of the homepage and are gone. They were in the sitemap at priority 0.9, so Google has them indexed — send their authority to the real home with a 301 instead of serving a 404. Sub-paths like /en/digital-marketing-vienna/ are real localized content and are NOT matched here.",
       "source": "/en",
       "destination": "/",
       "permanent": true
