@@ -1,0 +1,365 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  /work/studio — the meta case: this site.
+//
+//  Deliberately NOT built on CaseStudy.astro: that component is hard-wired to
+//  exactly two projects (id: "bridge" | "fidic", every branch keyed off isBridge,
+//  its own bespoke 3D scene and theme). Forcing a third case through it would
+//  mean either breaking a working component or bolting on a hack — so this is a
+//  standalone page in the same language as /services.
+//
+//  Every number on this page was measured from the real production build, not
+//  invented. No Lighthouse score is claimed, because I have not run one here.
+// ─────────────────────────────────────────────────────────────────────────────
+import Layout from "../../layouts/Layout.astro";
+import { useTranslations, type UIKey } from "../../i18n/utils";
+
+const t = useTranslations("en");
+const tk = (key: string) => t(key as UIKey);
+
+const metrics = [1, 2, 3, 4].map((n) => ({
+  v: `studio.metric.${n}.v`,
+  l: `studio.metric.${n}.l`,
+}));
+
+const systems = [1, 2, 3, 4, 5, 6].map((n) => ({
+  n,
+  title: `studio.sys.${n}.title`,
+  text: `studio.sys.${n}.text`,
+}));
+
+const notes = [1, 2, 3].map((n) => ({
+  n,
+  title: `studio.notes.${n}.title`,
+  text: `studio.notes.${n}.text`,
+}));
+---
+
+<Layout
+  title="How this site is built | Astro, Three.js & GLSL — Rodion Belousov"
+  description="A meta case study of rodionbelousov.studio: raymarched GLSL, a warp transition, onyx-glass portals, synthesised Web Audio ambience, and the engineering mistakes fixed along the way."
+  pageType="article"
+  keywords={[
+    "Three.js case study",
+    "Astro portfolio build",
+    "GLSL raymarching website",
+    "WebGL creative development",
+    "Rodion Belousov",
+  ]}
+  structuredData={{
+    "@type": "CreativeWork",
+    "@id": "https://rodionbelousov.studio/work/studio#project",
+    name: "rodionbelousov.studio — the site itself",
+    headline: "How this site is built",
+    description:
+      "Meta case study of rodionbelousov.studio: raymarched GLSL sculpture, warp tunnel transition, onyx-glass portal archive, synthesised Web Audio ambience and a dictionary-based language system.",
+    dateCreated: "2026",
+    inLanguage: ["en", "de-AT"],
+    creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+    about: ["Astro", "Three.js", "GLSL", "WebGL", "GSAP", "Web Audio API"],
+  }}
+>
+  <a class="back-link" href="/#work" data-cursor="BACK" data-magnetic>
+    <i class="arrow-back" aria-hidden="true"></i>
+    <span data-i18n="case.back">{t("case.back")}</span>
+  </a>
+
+  <article class="studio">
+    <!-- ── Hero ───────────────────────────────────────────────────────────── -->
+    <header class="st-hero" data-hero>
+      <div class="u-container">
+        <span class="st-eyebrow" data-reveal data-i18n="studio.eyebrow">{t("studio.eyebrow")}</span>
+        <h1 class="st-title" data-sy-reveal="words" data-i18n="studio.title">{t("studio.title")}</h1>
+        <p class="st-lead" data-sy-reveal="lines" data-i18n="studio.lead">{t("studio.lead")}</p>
+      </div>
+    </header>
+
+    <!-- ── Measured metrics ───────────────────────────────────────────────── -->
+    <section class="st-section">
+      <div class="u-container st-metrics">
+        {
+          metrics.map((m) => (
+            <div class="st-metric" data-reveal>
+              <strong data-count-up data-i18n={m.v}>{tk(m.v)}</strong>
+              <span data-i18n={m.l}>{tk(m.l)}</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ── Systems ────────────────────────────────────────────────────────── -->
+    <section class="st-section">
+      <div class="u-container">
+        <span class="st-idx" data-reveal>01 - <span data-i18n="studio.sys.label">{t("studio.sys.label")}</span></span>
+        <h2 class="st-h2" data-sy-reveal="words" data-i18n="studio.sys.title">{t("studio.sys.title")}</h2>
+
+        <div class="st-grid">
+          {
+            systems.map((s) => (
+              <article class="st-card" data-reveal>
+                <span class="st-card-n">{String(s.n).padStart(2, "0")}</span>
+                <h3 data-i18n={s.title}>{tk(s.title)}</h3>
+                <p data-i18n={s.text}>{tk(s.text)}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Engineering notes: the honest part ─────────────────────────────── -->
+    <section class="st-section st-notes">
+      <div class="u-container">
+        <span class="st-idx" data-reveal>02 - <span data-i18n="studio.notes.label">{t("studio.notes.label")}</span></span>
+        <h2 class="st-h2" data-sy-reveal="words" data-i18n="studio.notes.title">{t("studio.notes.title")}</h2>
+        <p class="st-lead compact" data-reveal data-i18n="studio.notes.lead">{t("studio.notes.lead")}</p>
+
+        <div class="st-notes-list">
+          {
+            notes.map((note) => (
+              <article class="st-note" data-reveal>
+                <span class="st-note-n">{String(note.n).padStart(2, "0")}</span>
+                <div>
+                  <h3 data-i18n={note.title}>{tk(note.title)}</h3>
+                  <p data-i18n={note.text}>{tk(note.text)}</p>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Outro ──────────────────────────────────────────────────────────── -->
+    <section class="st-section st-outro">
+      <div class="u-container st-outro-inner">
+        <a class="st-cta" href="/en/insights/ai-assisted-creative-development/" data-reveal data-cursor="READ" data-magnetic>
+          <span data-i18n="studio.cta.insight">{t("studio.cta.insight")}</span>
+          <i class="arrow" aria-hidden="true"></i>
+        </a>
+        <a class="st-cta ghost" href="/gallery" data-tunnel data-reveal data-cursor="ENTER" data-magnetic>
+          <span data-i18n="studio.cta.live">{t("studio.cta.live")}</span>
+          <i class="arrow" aria-hidden="true"></i>
+        </a>
+      </div>
+    </section>
+  </article>
+</Layout>
+
+<style>
+  .studio { position: relative; z-index: 1; background: #030405; }
+
+  /* ── Back ──────────────────────────────────────────────────────────────── */
+  .back-link {
+    position: fixed;
+    top: 5.6rem;
+    left: clamp(1rem, 5vw, 5rem);
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .6rem 1rem;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 100px;
+    background: rgba(6, 7, 8, .82);
+    backdrop-filter: blur(12px);
+    color: rgba(var(--rgb-text), .82);
+    font: 600 .62rem var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color .35s var(--ease-out-expo), border-color .35s var(--ease-out-expo);
+  }
+  .back-link:hover { color: #fff; border-color: rgba(255, 255, 255, .34); }
+  .arrow-back { width: .5rem; height: .5rem; border-left: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg); }
+  @media (pointer: coarse) { .back-link { backdrop-filter: none; background: rgba(6, 7, 8, .96); top: 4.6rem; } }
+
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .st-hero {
+    min-height: 86svh;
+    display: grid;
+    align-items: end;
+    padding: 10rem 0 6rem;
+    background: radial-gradient(circle at 76% 28%, rgba(255, 255, 255, .09), transparent 26rem);
+    border-bottom: 1px solid rgba(255, 255, 255, .09);
+  }
+
+  .st-eyebrow, .st-idx {
+    display: inline-block;
+    font-family: var(--font-inter);
+    font-size: .64rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .st-idx { color: rgba(var(--rgb-text), .45); margin-bottom: 2rem; }
+
+  .st-title {
+    max-width: 15ch;
+    margin: 1.5rem 0;
+    font: 500 clamp(2.9rem, 7vw, 7rem)/.94 var(--font-display);
+    letter-spacing: -.035em;
+  }
+
+  .st-lead {
+    max-width: 52rem;
+    color: rgba(var(--rgb-text), .74);
+    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+    line-height: 1.6;
+  }
+  .st-lead.compact { font-size: var(--font-size-lg); max-width: 46rem; margin-top: 1.5rem; }
+
+  .st-section { padding: clamp(4.5rem, 9vw, 8rem) 0; border-top: 1px solid rgba(255, 255, 255, .08); }
+  .st-section:first-of-type { border-top: 0; }
+
+  .st-h2 {
+    max-width: 18ch;
+    margin: 0 0 1rem;
+    font: 500 clamp(1.9rem, 4.4vw, 3.6rem)/1 var(--font-display);
+    letter-spacing: -.035em;
+  }
+
+  /* ── Metrics ───────────────────────────────────────────────────────────── */
+  .st-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+
+    @media (--mq-tablet) { grid-template-columns: repeat(2, 1fr); }
+    @media (--mq-phone-md) { grid-template-columns: 1fr; }
+  }
+
+  .st-metric {
+    padding: 1.6rem 0 0;
+    border-top: 1px solid rgba(255, 255, 255, .28);
+  }
+  .st-metric strong {
+    display: block;
+    font: 500 clamp(2.6rem, 5.5vw, 5rem)/1 var(--font-display);
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .st-metric span {
+    display: block;
+    margin-top: .7rem;
+    max-width: 22ch;
+    color: rgba(var(--rgb-text), .5);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+
+  /* ── Systems ───────────────────────────────────────────────────────────── */
+  .st-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 3rem;
+
+    @media (--mq-tablet) { grid-template-columns: 1fr; }
+  }
+
+  .st-card {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    padding: 1.8rem;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .022);
+    transition: border-color .45s var(--ease-out-expo), background .45s var(--ease-out-expo);
+  }
+  .st-card:hover { border-color: rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .045); }
+  .st-card-n { font: .62rem var(--font-inter); letter-spacing: .2em; color: var(--color-accent); }
+  .st-card h3 { margin: 0; font: 500 1.45rem var(--font-display); letter-spacing: -.02em; }
+  .st-card p { margin: 0; color: rgba(var(--rgb-text), .62); font-size: var(--font-size-sm); line-height: 1.6; }
+
+  /* ── Notes ─────────────────────────────────────────────────────────────── */
+  .st-notes-list { margin-top: 3rem; }
+
+  .st-note {
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: 1.5rem;
+    padding: 2rem 0;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+
+    &:last-child { border-bottom: 1px solid rgba(255, 255, 255, .1); }
+    @media (--mq-tablet-sm) { grid-template-columns: 1fr; gap: .6rem; }
+  }
+  .st-note-n { font: .62rem var(--font-inter); letter-spacing: .2em; color: var(--color-accent); padding-top: .5rem; }
+  .st-note h3 { margin: 0 0 .7rem; font: 500 clamp(1.3rem, 2.2vw, 1.9rem) var(--font-display); letter-spacing: -.02em; }
+  .st-note p { margin: 0; max-width: 62ch; color: rgba(var(--rgb-text), .62); line-height: 1.65; }
+
+  /* ── Outro ─────────────────────────────────────────────────────────────── */
+  .st-outro-inner { display: flex; flex-wrap: wrap; gap: 1rem; }
+  .st-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: .8rem;
+    padding: 1.1rem 1.6rem;
+    border-radius: 6px;
+    background: var(--color-text);
+    color: var(--color-black);
+    font: 600 .68rem var(--font-inter);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    transition: background .35s var(--ease-out-expo), transform .35s var(--ease-out-expo);
+  }
+  .st-cta:hover { background: var(--color-accent); transform: translateY(-2px); }
+  .st-cta.ghost {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: rgba(var(--rgb-text), .85);
+  }
+  .st-cta.ghost:hover { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .32); color: #fff; }
+  .arrow { width: .45rem; height: .45rem; border-top: 1px solid currentColor; border-right: 1px solid currentColor; transform: rotate(45deg); }
+
+  /* ── Reveal base ───────────────────────────────────────────────────────── */
+  [data-reveal] { opacity: 0; transform: translateY(26px); will-change: transform, opacity; }
+  @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1; transform: none; } }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+
+  if (reduced) {
+    gsap.set(items, { opacity: 1, y: 0 });
+  } else {
+    ScrollTrigger.batch(items, {
+      start: "top 88%",
+      once: true,
+      onEnter: (batch) =>
+        gsap.to(batch, { opacity: 1, y: 0, duration: .9, ease: "power3.out", stagger: .08, overwrite: true }),
+    });
+
+    // Measured numbers count up — they keep their zero padding ("02" not "2").
+    gsap.utils.toArray<HTMLElement>("[data-count-up]").forEach((el) => {
+      const raw = (el.textContent || "").trim();
+      if (!/^\d+$/.test(raw)) return;
+      const end = Number(raw);
+      const pad = raw.length;
+      const obj = { v: 0 };
+      ScrollTrigger.create({
+        trigger: el,
+        start: "top 88%",
+        once: true,
+        onEnter: () =>
+          gsap.to(obj, {
+            v: end,
+            duration: 1.4,
+            ease: "power2.out",
+            onUpdate: () => (el.textContent = String(Math.round(obj.v)).padStart(pad, "0")),
+          }),
+      });
+    });
+
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }
+</script>

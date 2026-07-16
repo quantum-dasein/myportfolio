@@ -204,6 +204,12 @@ const selectedWork = [
         <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
           <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
+
+        <!-- The third case is this site itself. It is a text link rather than a
+             card: the stage above is art-directed around exactly two cards. -->
+        <a class="work-archive-link meta" href="/work/studio" data-cursor="READ" data-magnetic>
+          <span data-i18n="studio.eyebrow">{t("studio.eyebrow")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
+        </a>
         <div class="work-signals" aria-label="Solo AI workflow">
           <span>Solo Build</span><span>Claude</span><span>Cursor</span><span>Codex</span>
         </div>

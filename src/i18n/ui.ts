@@ -251,6 +251,58 @@ export const ui = {
     "hero.trust.label": "Proven with",
     "hero.trust.metric": "organic growth",
 
+    // ── Meta case: this very site (/work/studio) ────────────────────────────
+    "studio.eyebrow": "Case / 03 — This site",
+    "studio.title": "The proof is the page you're on.",
+    "studio.lead":
+      "Every claim here is testable by scrolling it. No template, no page builder — a hand-built Astro site with five bespoke real-time scenes, two languages, and an ambience that ships as code instead of audio.",
+    "studio.metric.1.v": "19",
+    "studio.metric.1.l": "production routes",
+    "studio.metric.2.v": "02",
+    "studio.metric.2.l": "languages, zero routing hacks",
+    "studio.metric.3.v": "05",
+    "studio.metric.3.l": "bespoke real-time scenes",
+    "studio.metric.4.v": "00",
+    "studio.metric.4.l": "audio files — the ambience is synthesised",
+
+    "studio.sys.label": "What is actually running",
+    "studio.sys.title": "Five scenes, none of them decoration.",
+    "studio.sys.1.title": "The sculpture",
+    "studio.sys.1.text":
+      "The dark-glass form behind the type is raymarched in hand-written GLSL — refraction with per-channel dispersion, a brass fresnel rim, driven by scroll and an inertial cursor.",
+    "studio.sys.2.title": "The warp",
+    "studio.sys.2.text":
+      "Going to the archive isn't a page load, it's a flight. A hyperspace tunnel accelerates into black, navigates, then decelerates out of it on the other side — so the trip reads as one continuous move.",
+    "studio.sys.3.title": "The archive",
+    "studio.sys.3.text":
+      "Onyx-glass portal frames at increasing depth. Scroll flies the camera through them; each project is refracted through the glass until you fly into it and land inside its own world.",
+    "studio.sys.4.title": "The case worlds",
+    "studio.sys.4.text":
+      "Opening Bridge Consult assembles a bridge — deck slabs, pylons and cables in sequence. Opening FIDIC unfolds a contract atlas and turns its pages. Neither one is a modal.",
+    "studio.sys.5.title": "The ambience",
+    "studio.sys.5.text":
+      "The drone and the interface ticks are synthesised with the Web Audio API — three detuned oscillators under a filter that breathes once every twenty seconds. Zero audio files ship.",
+    "studio.sys.6.title": "The language system",
+    "studio.sys.6.text":
+      "Two languages, one home. Copy swaps in place from a dictionary; only genuinely localized content earns its own URL. No locale roots, no redirect traps, no duplicate homepages.",
+
+    "studio.notes.label": "Engineering notes",
+    "studio.notes.title": "The parts that were wrong first.",
+    "studio.notes.lead":
+      "Anyone can show the finished surface. These are the failures underneath it — because knowing why something broke is the actual skill being sold.",
+    "studio.notes.1.title": "Mobile pays a different price",
+    "studio.notes.1.text":
+      "The archive rendered every frame twice: the scene into a render target, then a fullscreen composite for grain and vignette. On a phone GPU that memory bandwidth is the entire budget. It now draws straight to the screen and only spins the composite up while a transition wipe is running.",
+    "studio.notes.2.title": "Reduce Motion is not an off switch",
+    "studio.notes.2.text":
+      "The preloader froze its object with animation-play-state: paused. On any phone with Reduce Motion enabled that read as a broken page — a cube standing still. It now turns slowly instead of dying.",
+    "studio.notes.3.title": "The locale trap",
+    "studio.notes.3.text":
+      "Localized clones of the homepage lived at /en/ and /de/, and the wordmark pointed at them. Switching language on a service page stranded you on a duplicate with no way back. The clones are gone, 301'd to the real home, and locale now applies only to real localized content.",
+
+    "studio.cta.insight": "How the AI-assisted workflow actually works",
+    "studio.cta.live": "Open the archive",
+
     "services.eyebrow": "Services & Research / Vienna",
     "services.title": "Systems, not deliverables.",
     "services.lead":
@@ -550,6 +602,58 @@ export const ui = {
     // ── Services & Research hub (/services) ─────────────────────────────────
     "hero.trust.label": "Bewährt bei",
     "hero.trust.metric": "organisches Wachstum",
+
+    // ── Meta case: this very site (/work/studio) ────────────────────────────
+    "studio.eyebrow": "Case / 03 — Diese Website",
+    "studio.title": "Der Beweis ist die Seite, auf der du gerade bist.",
+    "studio.lead":
+      "Jede Behauptung hier lässt sich durch Scrollen überprüfen. Kein Template, kein Baukasten — eine handgebaute Astro-Website mit fünf eigenen Echtzeit-Szenen, zwei Sprachen und einer Klangkulisse, die als Code statt als Audio ausgeliefert wird.",
+    "studio.metric.1.v": "19",
+    "studio.metric.1.l": "produktive Routen",
+    "studio.metric.2.v": "02",
+    "studio.metric.2.l": "Sprachen, null Routing-Hacks",
+    "studio.metric.3.v": "05",
+    "studio.metric.3.l": "eigene Echtzeit-Szenen",
+    "studio.metric.4.v": "00",
+    "studio.metric.4.l": "Audiodateien — die Klangkulisse ist synthetisiert",
+
+    "studio.sys.label": "Was hier tatsächlich läuft",
+    "studio.sys.title": "Fünf Szenen, keine davon Dekoration.",
+    "studio.sys.1.title": "Die Skulptur",
+    "studio.sys.1.text":
+      "Die dunkle Glasform hinter der Typografie ist Raymarching in handgeschriebenem GLSL — Refraktion mit Dispersion pro Farbkanal, Messing-Fresnel-Kante, gesteuert von Scroll und einem trägen Cursor.",
+    "studio.sys.2.title": "Der Warp",
+    "studio.sys.2.text":
+      "Der Weg ins Archiv ist kein Seitenaufruf, sondern ein Flug. Ein Hyperraum-Tunnel beschleunigt ins Schwarz, navigiert und bremst auf der anderen Seite wieder heraus — die Reise liest sich als eine durchgehende Bewegung.",
+    "studio.sys.3.title": "Das Archiv",
+    "studio.sys.3.text":
+      "Portalrahmen aus Onyxglas in zunehmender Tiefe. Scrollen fliegt die Kamera hindurch; jedes Projekt wird durchs Glas gebrochen, bis du hineinfliegst und in seiner eigenen Welt landest.",
+    "studio.sys.4.title": "Die Case-Welten",
+    "studio.sys.4.text":
+      "Bridge Consult zu öffnen baut eine Brücke — Fahrbahnplatten, Pylone und Seile der Reihe nach. FIDIC zu öffnen klappt einen Vertragsatlas auf und blättert seine Seiten. Beides ist kein Modal.",
+    "studio.sys.5.title": "Die Klangkulisse",
+    "studio.sys.5.text":
+      "Der Drone-Ton und die Interface-Ticks sind mit der Web Audio API synthetisiert — drei verstimmte Oszillatoren unter einem Filter, der alle zwanzig Sekunden einmal atmet. Es wird keine einzige Audiodatei ausgeliefert.",
+    "studio.sys.6.title": "Das Sprachsystem",
+    "studio.sys.6.text":
+      "Zwei Sprachen, ein Zuhause. Texte werden aus einem Wörterbuch an Ort und Stelle getauscht; nur echt lokalisierte Inhalte bekommen eine eigene URL. Keine Locale-Roots, keine Redirect-Fallen, keine doppelten Startseiten.",
+
+    "studio.notes.label": "Engineering-Notizen",
+    "studio.notes.title": "Die Stellen, die zuerst falsch waren.",
+    "studio.notes.lead":
+      "Die fertige Oberfläche kann jeder zeigen. Das hier sind die Fehler darunter — denn zu wissen, warum etwas kaputtging, ist die eigentliche Fähigkeit, die hier verkauft wird.",
+    "studio.notes.1.title": "Mobil zahlt einen anderen Preis",
+    "studio.notes.1.text":
+      "Das Archiv renderte jeden Frame doppelt: die Szene in ein Render-Target, danach ein Vollbild-Composite für Korn und Vignette. Auf einer Handy-GPU ist diese Speicherbandbreite das gesamte Budget. Jetzt wird direkt auf den Bildschirm gezeichnet, und das Composite läuft nur während eines Übergangs.",
+    "studio.notes.2.title": "Reduce Motion ist kein Ausschalter",
+    "studio.notes.2.text":
+      "Der Preloader fror sein Objekt mit animation-play-state: paused ein. Auf jedem Handy mit aktiviertem Reduce Motion las sich das als kaputte Seite — ein Würfel, der stillsteht. Jetzt dreht er sich langsam, statt zu sterben.",
+    "studio.notes.3.title": "Die Locale-Falle",
+    "studio.notes.3.text":
+      "Unter /en/ und /de/ lagen Klone der Startseite, und die Wortmarke zeigte darauf. Ein Sprachwechsel auf einer Leistungsseite strandete dich auf einem Duplikat ohne Rückweg. Die Klone sind weg, per 301 auf das echte Zuhause umgeleitet, und Locale gilt nur noch für echt lokalisierte Inhalte.",
+
+    "studio.cta.insight": "Wie der AI-assisted Workflow wirklich funktioniert",
+    "studio.cta.live": "Archiv öffnen",
 
     "services.eyebrow": "Leistungen & Research / Wien",
     "services.title": "Systeme, keine Deliverables.",
