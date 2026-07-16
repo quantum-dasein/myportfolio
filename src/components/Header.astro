@@ -403,9 +403,21 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
     .toggle > span:last-child { width:1.65rem; height:1.05rem; }
   }
 
+  /* Touch devices drop backdrop-filter for performance — but the plate was only
+     64% opaque and relied on that blur, so page content bled straight through
+     the header. Without the blur it has to be genuinely opaque. */
   @media (pointer: coarse) {
     sy-head::after,
     .nav-cta { backdrop-filter: none; }
+
+    sy-head::after {
+      background: linear-gradient(180deg, #050506 62%, rgba(5, 5, 6, 0.94));
+    }
+
+    .nav-cta { background: rgba(24, 25, 28, 0.96); }
+
+    /* the mobile menu overlay must fully cover the scene behind it */
+    .menu { background: #050506; }
   }
 </style>
 

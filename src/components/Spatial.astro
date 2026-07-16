@@ -1240,10 +1240,19 @@ import { works } from "../data/works";
       if (hint) hint.style.opacity = this.progress > 0.02 ? "0" : "";
 
       const renderStart = performance.now();
-      this.renderer.setRenderTarget(this.rt);
-      this.renderer.render(this.scene, this.camera);
-      this.renderer.setRenderTarget(null);
-      this.renderer.render(this.compScene, this.compCam);
+      // The composite (grain/vignette/aberration + transition wipe) costs a full
+      // extra fullscreen pass plus render-target bandwidth — the single biggest
+      // cost on mobile GPUs. On low-power devices we render straight to the
+      // screen and only spin the composite up while a wipe is actually running.
+      const needsComposite = !this.lowPower || this.comp.uniforms.uWipe.value > 0.001;
+      if (needsComposite) {
+        this.renderer.setRenderTarget(this.rt);
+        this.renderer.render(this.scene, this.camera);
+        this.renderer.setRenderTarget(null);
+        this.renderer.render(this.compScene, this.compCam);
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
       this.renderCost += (performance.now() - renderStart - this.renderCost) * 0.05;
 
       // Step down under sustained load, step back up when there is headroom.

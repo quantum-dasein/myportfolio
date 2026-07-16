@@ -281,8 +281,8 @@ const year = new Date().getFullYear();
   .logo .dot { color: rgba(var(--rgb-text), .52); }
   .brand-cell p { margin: .5rem 0 0; color: rgba(var(--rgb-text),.48); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; }
 
-  .footer-nav { display: flex; align-items: center; justify-content: center; gap: clamp(1.2rem, 2.8vw, 2.8rem); }
-  .footer-nav a { color: rgba(var(--rgb-text), .64); font-size: .82rem; transition: color .3s ease; }
+  .footer-nav { display: flex; align-items: center; justify-content: center; gap: clamp(1rem, 2.2vw, 2.2rem); flex-wrap: wrap; }
+  .footer-nav a { color: rgba(var(--rgb-text), .64); font-size: .82rem; white-space: nowrap; transition: color .3s ease; }
   .footer-nav a:hover { color: #fff; }
 
   .archive-control {
@@ -363,7 +363,9 @@ const year = new Date().getFullYear();
     display: block;
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: clamp(2.6rem, 12.4vw, 12rem);
+    /* sized so the full 15-character wordmark always fits the viewport —
+       a rem cap let it outgrow the screen and clipped the final letters */
+    font-size: clamp(1.5rem, 11.4vw, 13rem);
     letter-spacing: -0.04em;
     white-space: nowrap;
     color: transparent;

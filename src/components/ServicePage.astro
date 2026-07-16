@@ -20,50 +20,163 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
 <Layout lang={lang} alternateUrls={alternates} lockLang title={pick(service.title, lang)} description={pick(service.description, lang)} image={og[serviceKey].image} imageAlt={og[serviceKey].alt} pageType="article" structuredData={[serviceSchema, faqSchema]}>
   <article class="service-page">
+    <!-- Always give a way out: back to the Services & Research hub. -->
+    <a class="back-link" href="/services" data-cursor="BACK" data-magnetic>
+      <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
+      <span>{de ? "Leistungen & Research" : "Services & Research"}</span>
+    </a>
+
     <header class="service-hero" data-hero>
       <div class="u-container">
-        <span class="eyebrow">{pick(service.eyebrow, lang)}</span>
-        <h1>{pick(service.title, lang)}</h1>
-        <p>{pick(service.lead, lang)}</p>
-        <a href="#evidence">{de ? "Belege ansehen" : "View evidence"} <i class="ui-arrow ui-arrow-down" aria-hidden="true"></i></a>
+        <span class="eyebrow" data-reveal>{pick(service.eyebrow, lang)}</span>
+        <h1 data-sy-reveal="words">{pick(service.title, lang)}</h1>
+        <p data-sy-reveal="lines">{pick(service.lead, lang)}</p>
+        <a href="#evidence" data-reveal data-cursor="VIEW">{de ? "Belege ansehen" : "View evidence"} <i class="ui-arrow ui-arrow-down" aria-hidden="true"></i></a>
       </div>
     </header>
 
     <section class="capabilities">
       <div class="u-container capability-grid">
         {service.capabilities.map((item, index) => (
-          <div><span>0{index + 1}</span><h2>{pick(item.title, lang)}</h2><p>{pick(item.text, lang)}</p></div>
+          <div data-reveal><span>0{index + 1}</span><h2 data-sy-reveal="words">{pick(item.title, lang)}</h2><p>{pick(item.text, lang)}</p></div>
         ))}
       </div>
     </section>
 
     <section class="evidence" id="evidence">
       <div class="u-container">
-        <span class="eyebrow">{de ? "BELEGE AUS ECHTEN LAUNCHES" : "EVIDENCE FROM REAL LAUNCHES"}</span>
+        <span class="eyebrow" data-reveal>{de ? "BELEGE AUS ECHTEN LAUNCHES" : "EVIDENCE FROM REAL LAUNCHES"}</span>
         <div class="metrics">
-          {service.proof.map((item) => <div><strong>{item.value}</strong><p>{pick(item.label, lang)}</p></div>)}
+          {service.proof.map((item) => <div data-reveal><strong data-count-up>{item.value}</strong><p>{pick(item.label, lang)}</p></div>)}
         </div>
         <div class="case-links">
-          <a href="/work/bridge-consult" data-case-link><span>CASE / 01</span><strong>Bridge Consult</strong><b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b></a>
-          <a href="/work/fidic" data-case-link><span>CASE / 02</span><strong>FIDIC.uz</strong><b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b></a>
+          <a href="/work/bridge-consult" data-case-link data-reveal data-cursor="OPEN"><span>CASE / 01</span><strong>Bridge Consult</strong><b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b></a>
+          <a href="/work/fidic" data-case-link data-reveal data-cursor="OPEN"><span>CASE / 02</span><strong>FIDIC.uz</strong><b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b></a>
         </div>
       </div>
     </section>
 
     <section class="research">
       <div class="u-container research-grid">
-        <div><span class="eyebrow">RESEARCH</span><h2>{de ? "Die Logik hinter der Arbeit." : "The logic behind the work."}</h2></div>
-        <div>{relatedInsights.map((item) => <a href={item.paths[lang]}><strong>{pick(item.title, lang)}</strong><span class="ui-arrow" aria-hidden="true"></span></a>)}</div>
+        <div><span class="eyebrow" data-reveal>RESEARCH</span><h2 data-sy-reveal="words">{de ? "Die Logik hinter der Arbeit." : "The logic behind the work."}</h2></div>
+        <div>{relatedInsights.map((item) => <a href={item.paths[lang]} data-reveal data-cursor="READ"><strong>{pick(item.title, lang)}</strong><span class="ui-arrow" aria-hidden="true"></span></a>)}</div>
       </div>
     </section>
 
     <section class="faq">
-      <div class="u-container"><span class="eyebrow">FAQ</span>{service.faq.map((item) => <details><summary>{pick(item.question, lang)}</summary><p>{pick(item.answer, lang)}</p></details>)}</div>
+      <div class="u-container"><span class="eyebrow" data-reveal>FAQ</span>{service.faq.map((item) => <details data-reveal><summary>{pick(item.question, lang)}</summary><p>{pick(item.answer, lang)}</p></details>)}</div>
     </section>
+
+    <div class="service-outro">
+      <div class="u-container">
+        <a class="outro-link" href="/services" data-cursor="OPEN" data-magnetic>
+          <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
+          <span>{de ? "Alle Leistungen & Research" : "All services & research"}</span>
+        </a>
+      </div>
+    </div>
   </article>
 </Layout>
 
 <style>
   .service-page{position:relative;z-index:1;background:#030405}.service-hero{min-height:88svh;display:grid;align-items:end;padding:10rem 0 6rem;background:radial-gradient(circle at 74% 26%,rgba(255,255,255,.1),transparent 24rem)}.eyebrow{display:block;color:rgba(var(--rgb-text),.53);font:.64rem var(--font-inter);letter-spacing:.22em;text-transform:uppercase}.service-hero h1{max-width:12ch;margin:1.5rem 0;font:500 clamp(4rem,8vw,8rem)/.9 var(--font-display);letter-spacing:0}.service-hero p{max-width:48rem;color:rgba(var(--rgb-text),.76);font-size:clamp(1.2rem,2vw,1.65rem);line-height:1.55}.service-hero a{display:inline-block;margin-top:2rem;padding-bottom:.4rem;border-bottom:1px solid rgba(255,255,255,.35)}section{padding:clamp(5rem,9vw,9rem) 0;border-top:1px solid rgba(255,255,255,.08)}.capability-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.capability-grid>div{min-height:22rem;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.008))}.capability-grid span,.case-links span{font:.62rem var(--font-inter);letter-spacing:.16em;color:rgba(var(--rgb-text),.45)}.capability-grid h2{margin:7rem 0 1rem;font:500 clamp(1.8rem,2.7vw,3rem)/1 var(--font-display)}.capability-grid p,.metrics p{color:rgba(var(--rgb-text),.65);line-height:1.55}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2rem 0 4rem}.metrics>div{padding:2rem;border-top:1px solid rgba(255,255,255,.28)}.metrics strong{font:500 clamp(3rem,6vw,6rem)/1 var(--font-display)}.case-links{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.case-links a{min-height:17rem;display:flex;flex-direction:column;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.025)}.case-links strong{margin:auto 0;font:500 clamp(2rem,4vw,4rem)/1 var(--font-display)}.case-links b{font:.65rem var(--font-inter);letter-spacing:.12em;text-transform:uppercase}.research-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:5rem}.research h2{max-width:9ch;font:500 clamp(3rem,5vw,5.5rem)/.95 var(--font-display)}.research-grid>div:last-child{border-top:1px solid rgba(255,255,255,.14)}.research-grid a{display:flex;justify-content:space-between;gap:2rem;padding:1.5rem 0;border-bottom:1px solid rgba(255,255,255,.14);font:500 clamp(1.2rem,2vw,1.8rem)/1.2 var(--font-display)}.faq .u-container{max-width:70rem}.faq details{border-bottom:1px solid rgba(255,255,255,.14)}.faq summary{cursor:pointer;padding:1.5rem 0;font:500 clamp(1.2rem,2vw,1.7rem) var(--font-display)}.faq details p{max-width:50rem;padding:0 0 1.7rem;color:rgba(var(--rgb-text),.68);line-height:1.6}
   @media(max-width:800px){.capability-grid,.metrics,.case-links,.research-grid{grid-template-columns:1fr}.capability-grid h2{margin-top:4rem}.service-hero{min-height:72svh;padding:8rem 0 4rem}.service-hero h1{max-width:100%;font-size:clamp(2.9rem,13vw,5.6rem);line-height:.93;overflow-wrap:anywhere}.capability-grid>div{min-height:18rem}.metrics strong{font-size:clamp(2.7rem,14vw,5rem);overflow-wrap:anywhere}.research h2{max-width:100%;overflow-wrap:anywhere}.research-grid a strong{min-width:0;overflow-wrap:anywhere}}@media(pointer:coarse){.capability-grid>div,.case-links a{background:rgba(9,10,11,.92)}}
+
+  /* ── Back to the hub ───────────────────────────────────────────────────── */
+  .back-link {
+    position: fixed;
+    top: 5.6rem;
+    left: clamp(1rem, 5vw, 5rem);
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .6rem 1rem;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 100px;
+    background: rgba(6, 7, 8, .82);
+    backdrop-filter: blur(12px);
+    color: rgba(var(--rgb-text), .82);
+    font: 600 .62rem var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color .35s var(--ease-out-expo), border-color .35s var(--ease-out-expo), background .35s var(--ease-out-expo);
+  }
+  .back-link:hover { color: #fff; border-color: rgba(255, 255, 255, .34); background: rgba(16, 18, 20, .92); }
+  .back-link .ui-arrow-back { transition: transform .35s var(--ease-out-expo); }
+  .back-link:hover .ui-arrow-back { transform: translateX(-3px); }
+
+  .ui-arrow-back { display: inline-block; width: .5rem; height: .5rem; border-left: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg); }
+
+  @media (pointer: coarse) {
+    .back-link { backdrop-filter: none; background: rgba(6, 7, 8, .96); top: 4.6rem; }
+  }
+
+  /* ── Outro ─────────────────────────────────────────────────────────────── */
+  .service-outro { padding: clamp(3rem, 6vw, 5rem) 0 clamp(4rem, 8vw, 7rem); border-top: 1px solid rgba(255, 255, 255, .08); }
+  .outro-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .8rem;
+    padding: 1rem 1.6rem;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 6px;
+    color: rgba(var(--rgb-text), .85);
+    font: 600 .68rem var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    transition: color .35s var(--ease-out-expo), border-color .35s var(--ease-out-expo), background .35s var(--ease-out-expo);
+  }
+  .outro-link:hover { color: #fff; border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .05); }
+
+  /* ── Reveal base (ScrollTrigger lifts these in) ────────────────────────── */
+  [data-reveal] { opacity: 0; transform: translateY(26px); will-change: transform, opacity; }
+  @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1; transform: none; } }
 </style>
+
+<script>
+  import gsap from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+
+  if (reduced) {
+    gsap.set(items, { opacity: 1, y: 0 });
+  } else {
+    ScrollTrigger.batch(items, {
+      start: "top 88%",
+      once: true,
+      onEnter: (batch) =>
+        gsap.to(batch, { opacity: 1, y: 0, duration: .9, ease: "power3.out", stagger: .08, overwrite: true }),
+    });
+
+    // Metrics count up from zero — the proof numbers should land, not just sit.
+    gsap.utils.toArray<HTMLElement>("[data-count-up]").forEach((el) => {
+      const raw = el.textContent?.trim() ?? "";
+      const match = raw.match(/^([^\d-]*)(-?[\d.]+)(.*)$/);
+      if (!match) return; // non-numeric values (e.g. "RU / EN / UZ") stay as-is
+      const [, prefix, num, suffix] = match;
+      const end = parseFloat(num);
+      const decimals = (num.split(".")[1] || "").length;
+      const obj = { v: 0 };
+      ScrollTrigger.create({
+        trigger: el,
+        start: "top 88%",
+        once: true,
+        onEnter: () =>
+          gsap.to(obj, {
+            v: end,
+            duration: 1.4,
+            ease: "power2.out",
+            onUpdate: () => (el.textContent = `${prefix}${obj.v.toFixed(decimals)}${suffix}`),
+          }),
+      });
+    });
+
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }
+</script>

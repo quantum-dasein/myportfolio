@@ -386,9 +386,16 @@
     .loader-node { box-shadow: 0 0 1.2rem rgba(255, 255, 255, 0.8); }
   }
 
+  /* Reduce Motion previously froze the object dead ("the cube just stands
+     there"). Reduce it instead of killing it: a slow, steady turn with no
+     pulsing or scanning — calm, but alive. */
   @media (prefers-reduced-motion: reduce) {
-    .loader-cube,
-    .loader-orbit { animation-play-state: paused; }
+    .loader-cube { animation-duration: 26s; }
+    .orbit-a { animation-duration: 34s; }
+    .orbit-b { animation-duration: 30s; }
+    .loader-grid,
+    .loader-node::after,
+    .loader-stage::after { animation: none; }
   }
 </style>
 
@@ -401,6 +408,33 @@
     "RESOLVING TYPOGRAPHY",
     "OPENING CASE ARCHIVE",
   ];
+
+  const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789/#*<>·";
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /** Scramble → resolve, so each phase decodes into place. */
+  function decode(el: HTMLElement, final: string) {
+    if (calm) {
+      el.textContent = final;
+      return;
+    }
+    const started = performance.now();
+    const duration = 520;
+    const step = (now: number) => {
+      const t = Math.min((now - started) / duration, 1);
+      const solid = Math.floor(t * final.length);
+      let out = "";
+      for (let i = 0; i < final.length; i++) {
+        out += i < solid || final[i] === " "
+          ? final[i]
+          : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+      }
+      el.textContent = out;
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = final;
+    };
+    requestAnimationFrame(step);
+  }
 
   class StudioLoader extends HTMLElement {
     connectedCallback() {
@@ -456,6 +490,7 @@
       const start = performance.now();
       let displayed = 0;
       let finished = false;
+      let lastPhase = -1;
 
       const tick = () => {
         if (finished) return;
@@ -468,7 +503,11 @@
         const phaseIndex = Math.min(3, Math.floor(value / 25.1));
         line.style.width = `${value}%`;
         count.textContent = String(value).padStart(3, "0");
-        phase.textContent = phases[phaseIndex];
+        // decode each new phase into place instead of hard-swapping the string
+        if (phaseIndex !== lastPhase) {
+          lastPhase = phaseIndex;
+          decode(phase, phases[phaseIndex]);
+        }
         pass.textContent = `${String(phaseIndex + 1).padStart(2, "0")}/04`;
         // Publish progress on the host so the whole stage can react to it —
         // the object materialises as the assets land instead of just spinning.
