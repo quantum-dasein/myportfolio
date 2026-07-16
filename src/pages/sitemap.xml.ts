@@ -23,11 +23,10 @@ export const GET: APIRoute = () => {
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-${localizedUrl("/en/", "/de/", "en", "0.9")}
-${localizedUrl("/de/", "/en/", "de", "0.9")}
 ${Object.values(serviceContent).flatMap((service) => [localizedUrl(service.paths.en, service.paths.de, "en"), localizedUrl(service.paths.de, service.paths.en, "de")]).join("\n")}
 ${Object.values(insightContent).flatMap((insight) => [localizedUrl(insight.paths.en, insight.paths.de, "en", "0.75"), localizedUrl(insight.paths.de, insight.paths.en, "de", "0.75")]).join("\n")}
 ${url("/", "1.0", "weekly", `<image:image><image:loc>${site}/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp</image:loc><image:title>Rodion Belousov Digital Marketer and Creative Developer Vienna</image:title></image:image>`)}
+${url("/services", "0.9", "monthly")}
 ${url("/work/bridge-consult", "0.9", "monthly", `<image:image><image:loc>${site}/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp</image:loc><image:title>Bridge Consult SEO and Astro case study</image:title></image:image>`)}
 ${url("/work/fidic", "0.9", "monthly", `<image:image><image:loc>${site}/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp</image:loc><image:title>FIDIC.uz content platform and technical SEO case study</image:title></image:image>`)}
 ${url("/gallery", "0.8", "monthly", galleryMedia)}

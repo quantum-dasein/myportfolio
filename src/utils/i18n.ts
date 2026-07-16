@@ -58,25 +58,10 @@ function syncSwitcher(lang: string) {
   });
 }
 
-function syncLocaleLinks(lang: string) {
-  const home = `/${lang}/`;
-
-  // NOTE: Services & Research lives at /services and is intentionally NOT a
-  // localized route. The switcher must never rewrite it — doing so is what sent
-  // visitors to /en/ and stranded them there.
-
-  // Home + section links may only be rewritten to /en/ | /de/ on hard-localized
-  // (locked) pages. On the live one-page site the switcher must never reroute
-  // the logo or the menu away from the current scene.
-  if (!LOCKED_LANG) return;
-
-  document.querySelectorAll<HTMLAnchorElement>("[data-locale-home]").forEach((link) => {
-    link.href = home;
-  });
-  document.querySelectorAll<HTMLAnchorElement>("[data-locale-hash]").forEach((link) => {
-    link.href = `${home}${link.dataset.localeHash || ""}`;
-  });
-}
+// The home is always "/" — there is no localized clone of it any more, so no
+// link ever needs rewriting to a locale root. This function used to point the
+// wordmark and menu at /en/ or /de/, which is exactly how visitors ended up on
+// a duplicate homepage with no way back. Kept as a no-op-free deletion.
 
 export function setLang(lang: string, opts: { persist?: boolean } = {}) {
   if (LOCKED_LANG && lang !== LOCKED_LANG) return;
@@ -92,7 +77,6 @@ export function setLang(lang: string, opts: { persist?: boolean } = {}) {
   }
 
   syncSwitcher(lang);
-  syncLocaleLinks(lang);
   if (opts.persist !== false) localStorage.setItem(STORAGE_KEY, lang);
 
   if (changed) {

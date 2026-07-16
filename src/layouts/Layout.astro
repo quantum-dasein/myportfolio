@@ -55,9 +55,12 @@ const {
 } = Astro.props;
 const t = useTranslations(lang);
 const isDeck = mode === "deck";
-const isLocalized = /^\/(de|en)(\/|$)/.test(Astro.url.pathname);
-const localeRoot = isLocalized ? `/${lang}/` : "/";
-const homePrefix = Astro.url.pathname === localeRoot ? "" : localeRoot;
+// There is exactly ONE home: "/". The old /en/ and /de/ landings were clones of
+// it, and treating them as the "locale root" is what sent visitors from a
+// service page to a duplicate homepage they could not get out of. Locale lives
+// only on genuinely localized CONTENT (/en/<service>, /de/<insight>), never on
+// the home, and the wordmark always returns to "/".
+const homePrefix = Astro.url.pathname === "/" ? "" : "/";
 const site = Astro.site ?? new URL("https://rodionbelousov.studio");
 const canonical = new URL(Astro.url.pathname, site).toString();
 const socialImage = new URL(image, site).toString();
@@ -233,12 +236,14 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     </a>
 
     <Header
-      logoUrl={isDeck ? "/en/" : localeRoot}
+      logoUrl="/"
       logoAlt="Rodion Belousov"
       links={nav}
       cta={cta}
       lang={lang}
-      localeLinks={lockLang && alternateUrls ? { en: alternateUrls.en ?? "/en/", de: alternateUrls.de ?? "/de/" } : undefined}
+      localeLinks={lockLang && alternateUrls?.en && alternateUrls?.de
+        ? { en: alternateUrls.en, de: alternateUrls.de }
+        : undefined}
       logoTunnel={isDeck}
     />
 
@@ -246,7 +251,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       <slot />
     </main>
 
-    {!isDeck && <Footer logoUrl={localeRoot} logoAlt="Rodion Belousov" links={nav} lang={lang} />}
+    {!isDeck && <Footer logoUrl="/" logoAlt="Rodion Belousov" links={nav} lang={lang} />}
     {!isDeck && <SmoothScroll />}
     <CaseTransition />
     <Tunnel />
