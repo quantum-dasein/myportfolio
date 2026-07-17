@@ -231,7 +231,7 @@ import Layout from "../layouts/Layout.astro";
 
       if (this.bgImage) {
         // Subtle mouse parallax for the background image
-        this.bgImage.style.transform = \`translate(\${this.mouse.x * 3}%, \${-this.mouse.y * 3}%) scale(1.05)\`;
+        this.bgImage.style.transform = `translate(${this.mouse.x * 3}%, ${-this.mouse.y * 3}%) scale(1.05)`;
       }
 
       this.renderer.render(this.scene, this.camera);
