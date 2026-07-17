@@ -12,7 +12,6 @@ import PageTransition from "../components/PageTransition.astro";
 import { ui, defaultLang } from "../i18n/ui";
 import { useTranslations, type Lang } from "../i18n/utils";
 import type { Link } from "../types";
-import { ClientRouter } from "astro:transitions";
 import "../styles/global.css";
 
 interface Props {
@@ -177,7 +176,6 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 
 <html lang={lang === "de" ? "de-AT" : "en"}>
   <head>
-    <ClientRouter />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />

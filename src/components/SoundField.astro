@@ -295,20 +295,5 @@
   // falls back to waiting for a gesture if the browser refuses to let it start.
   let stored = "off";
   try { stored = localStorage.getItem(STORE) || "off"; } catch { /* private mode */ }
-  
-  if (stored === "on") {
-    // If it's the very first load, we need a gesture.
-    if (!ctx || ctx.state !== "running") {
-      armOnGesture();
-    }
-  }
-
-  // With Astro SPA ViewTransitions, we just need to re-bind our toggles when a new page swaps in.
-  // The AudioContext itself survives, so the drone plays seamlessly!
-  document.addEventListener("astro:page-load", () => {
-    markToggles(enabled);
-    if (enabled && ctx && ctx.state === "running") {
-      fade(level(), RESUME_FADE);
-    }
-  });
+  if (stored === "on") resumeFromNavigation();
 </script>

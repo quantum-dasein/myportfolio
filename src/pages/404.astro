@@ -2,45 +2,48 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title="404 — Signal Lost" description="The page you are looking for has drifted into the void." noindex={true} noWebgl={true}>
+<Layout
+  title="404 — Signal Lost"
+  description="The page you are looking for has drifted into the void."
+  noindex={true}
+  noWebgl={true}
+>
   <section class="not-found" aria-labelledby="not-found-heading">
-    
-    <!-- Top Text Group -->
     <div class="top-text-group">
-      <div class="error-label">ERROR</div>
+      <div class="error-label" data-decode-in>ERROR</div>
       <h1 id="not-found-heading" class="huge-404">404</h1>
-      <p class="subtitle main-subtitle" data-decode>THE ARCHIVE HAS DRIFTED<br/>INTO THE VOID</p>
+      <p class="subtitle" data-decode-in>THE ARCHIVE HAS DRIFTED<br />INTO THE VOID</p>
     </div>
-    
-    <!-- Center Button -->
+
     <div class="center-button-group">
-      <a href="/" class="return-btn">RETURN TO STUDIO <span class="arrow">→</span></a>
+      <a href="/" class="return-btn" data-magnetic data-cursor="HOME">
+        <span data-decode-in>RETURN TO STUDIO</span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
     </div>
-    
-    <!-- HUD -->
+
     <div class="hud-container">
       <div class="hud-item">
-        <div class="hud-label">GRAVITY</div>
-        <div class="hud-value">1.42 &times; 10&sup1;&sup1; m/s&sup2;</div>
+        <div class="hud-label" data-decode-in>GRAVITY</div>
+        <div class="hud-value"><span data-gravity>1.42</span> &times; 10&sup1;&sup1; m/s&sup2;</div>
       </div>
       <div class="hud-item">
-        <div class="hud-label">DISTANCE</div>
+        <div class="hud-label" data-decode-in>DISTANCE</div>
         <div class="hud-value">&infin; LY</div>
       </div>
       <div class="hud-item">
-        <div class="hud-label">EVENT HORIZON</div>
-        <div class="hud-value">UNKNOWN</div>
+        <div class="hud-label" data-decode-in>EVENT HORIZON</div>
+        <div class="hud-value" data-decode-in>UNKNOWN</div>
       </div>
       <div class="hud-item">
-        <div class="hud-label">SIGNAL</div>
-        <div class="hud-value">NONE</div>
+        <div class="hud-label" data-decode-in>SIGNAL</div>
+        <div class="hud-value" data-decode-in>NONE</div>
       </div>
     </div>
 
-    <!-- Scroll Stabilize -->
     <div class="scroll-stabilize">
       <div class="scroll-dot"></div>
-      SCROLL TO STABILIZE
+      <span data-decode-in>SCROLL TO STABILIZE</span>
     </div>
 
     <div class="cosmic-backdrop" aria-hidden="true">
@@ -50,23 +53,223 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <script>
+  // ───────────────────────────────────────────────────────────────────────────
+  //  404 — a Schwarzschild black hole, lensed for real.
+  //
+  //  The disk is NOT a tilted plane with a sphere in front of it. Every pixel
+  //  fires a photon at the hole and integrates its geodesic, so the far side of
+  //  the disk bends up and over the shadow and the near side wraps underneath —
+  //  the light is genuinely curved, which is the only way this reads as gravity
+  //  rather than as a texture. The shadow is where photons were captured; the
+  //  bright rim around it is the photon sphere, and it falls out of the physics
+  //  for free rather than being drawn on.
+  //
+  //  Three passes: the lensed universe is marched into a half-resolution target
+  //  (integrating ~120 geodesic steps for every screen pixel melts a laptop —
+  //  and the result is all soft gas and starlight, which upscales invisibly),
+  //  blitted up, then the asteroid belt is rasterised over it at full crispness
+  //  with a camera matched to the shader's.
+  // ───────────────────────────────────────────────────────────────────────────
   import * as THREE from "three";
   import gsap from "gsap";
-  import { decode } from "../utils/decode";
+  import { decodeText, prefersCalm } from "../utils/decode";
 
-  const subs = document.querySelectorAll(".subtitle, .hud-label, .hud-value, .scroll-stabilize, .error-label");
-  subs.forEach((sub) => {
-    decode(sub as HTMLElement, sub.textContent!, { duration: 800 });
-  });
+  const FOCAL = 1.7;
+  // Rs = 1: horizon at r = 1, photon sphere at 1.5, ISCO (the disk's inner edge) at 3.
+  const CAM = new THREE.Vector3(0, 3.4, 45);
+  const TARGET = new THREE.Vector3(0, 0, 0);
+  /** Pushes the hole below centre so the 404 never sits on top of it. */
+  const SHIFT = 0.075;
 
-  class GlitchGL extends HTMLElement {
+  const VERT = /* glsl */ `
+    void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }
+  `;
+
+  const FRAG = /* glsl */ `
+    precision highp float;
+
+    uniform vec2  uRes;
+    uniform float uTime;
+    uniform vec3  uCamPos;
+    uniform vec3  uCamTarget;
+    uniform float uFocal;
+    uniform float uShift;
+    uniform float uIntensity;
+
+    #define RS       1.0
+    #define DISK_IN  3.0
+    #define DISK_OUT 12.5
+    /** Radius outside which light travels straight enough to fake it. */
+    #define FIELD    16.0
+
+    float hash31(vec3 p) {
+      p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
+      p *= 17.0;
+      return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+    }
+    float hash21(vec2 p) {
+      vec3 q = fract(vec3(p.xyx) * 0.1031);
+      q += dot(q, q.yzx + 33.33);
+      return fract((q.x + q.y) * q.z);
+    }
+    float noise3(vec3 x) {
+      vec3 i = floor(x), f = fract(x);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hash31(i + vec3(0,0,0)), hash31(i + vec3(1,0,0)), f.x),
+                     mix(hash31(i + vec3(0,1,0)), hash31(i + vec3(1,1,0)), f.x), f.y),
+                 mix(mix(hash31(i + vec3(0,0,1)), hash31(i + vec3(1,0,1)), f.x),
+                     mix(hash31(i + vec3(0,1,1)), hash31(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+    float noise2(vec2 x) {
+      vec2 i = floor(x), f = fract(x);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash21(i + vec2(0,0)), hash21(i + vec2(1,0)), f.x),
+                 mix(hash21(i + vec2(0,1)), hash21(i + vec2(1,1)), f.x), f.y);
+    }
+    float fbm3(vec3 p) {
+      float v = 0.0, a = 0.5;
+      for (int i = 0; i < 3; i++) { v += a * noise3(p); p = p * 2.02 + 1.7; a *= 0.5; }
+      return v;
+    }
+    float fbm2(vec2 p) {
+      float v = 0.0, a = 0.5;
+      for (int i = 0; i < 3; i++) { v += a * noise2(p); p = p * 2.03 + 3.1; a *= 0.5; }
+      return v;
+    }
+
+    float starLayer(vec3 d, float thresh, float scale) {
+      vec3 p = d * scale;
+      float h = hash31(floor(p));
+      float on = step(thresh, h);
+      float b = (h - thresh) / max(1e-4, 1.0 - thresh);
+      return on * b * smoothstep(0.36, 0.0, length(fract(p) - 0.5));
+    }
+
+    /** Whatever the photon was looking at when it escaped. */
+    vec3 background(vec3 d) {
+      float n1 = fbm3(d * 1.9 + 4.0);
+      float n2 = fbm3(d * 5.2 - 2.0);
+      vec3 col = mix(vec3(0.006, 0.008, 0.016), vec3(0.045, 0.055, 0.085), n1);
+      col += vec3(0.11, 0.10, 0.14) * pow(smoothstep(0.36, 0.95, n1), 2.2);
+      col += vec3(0.10, 0.055, 0.03) * pow(smoothstep(0.48, 1.0, n2), 3.0);
+      col += vec3(0.85, 0.92, 1.00) * starLayer(d, 0.9900, 190.0) * 1.15;
+      col += vec3(1.00, 0.94, 0.86) * starLayer(d, 0.9972, 74.0) * 1.7;
+      return col;
+    }
+
+    /** Colour and opacity of the disk where a photon punched through it. */
+    vec4 diskSample(vec3 p, vec3 dir) {
+      float r = length(p.xz);
+      float shape = smoothstep(DISK_IN, DISK_IN + 1.1, r) *
+                    (1.0 - smoothstep(DISK_OUT - 5.0, DISK_OUT, r));
+      if (shape <= 0.001) return vec4(0.0);
+
+      // Keplerian shear — the inner disk laps the outer one, so the gas smears
+      // into arcs instead of turning like a solid record.
+      float shear = uTime * 2.4 / pow(r, 1.5);
+      float a = atan(p.z, p.x) + shear;
+      // Back to Cartesian before sampling: noise on (angle, r) tears at ±π.
+      vec2 q = vec2(cos(a), sin(a)) * r;
+
+      float n = fbm2(q * 0.8);
+      float n2 = fbm2(q * 2.5 + 9.0);
+      float density = shape * mix(0.22, 1.0, n) * mix(0.5, 1.4, n2);
+
+      // Temperature falls with radius: white-hot at the ISCO, ember at the rim.
+      float t = 1.0 - smoothstep(DISK_IN, DISK_OUT * 0.8, r);
+      vec3 col = mix(vec3(0.95, 0.28, 0.05), vec3(1.0, 0.70, 0.32), pow(t, 1.4));
+      col = mix(col, vec3(1.0, 0.96, 0.90), pow(t, 4.5));
+
+      // Relativistic beaming: the limb rotating toward us is dramatically
+      // brighter than the one rotating away. This asymmetry is the tell.
+      vec3 vel = normalize(vec3(-p.z, 0.0, p.x)) * (0.52 / sqrt(max(r, 1.0) / RS));
+      float beam = 1.0 / (1.0 - dot(vel, -dir));
+      beam = pow(clamp(beam, 0.0, 3.0), 3.0);
+      col *= beam;
+      density *= clamp(beam * 0.5, 0.12, 1.0);
+
+      return vec4(col, clamp(density, 0.0, 1.0));
+    }
+
+    vec3 grade(vec3 col) {
+      col *= uIntensity;
+      col = col / (1.0 + col);          // filmic-ish rolloff, no clipped highlights
+      return pow(col, vec3(0.4545));
+    }
+
+    void main() {
+      vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+      p.y += uShift;
+
+      vec3 fwd = normalize(uCamTarget - uCamPos);
+      vec3 rgt = normalize(cross(fwd, vec3(0.0, 1.0, 0.0)));
+      vec3 up  = cross(rgt, fwd);
+
+      vec3 pos = uCamPos;
+      vec3 dir = normalize(p.x * rgt + p.y * up + uFocal * fwd);
+
+      // Conserved angular momentum of this photon; it sets how hard it bends.
+      float h2 = dot(cross(pos, dir), cross(pos, dir));
+
+      // Out here spacetime is flat to the eye and the disk is nowhere near, so
+      // stepping the 30 units in from the camera would burn most of the march on
+      // a straight line. Jump to the sphere where gravity starts to matter; rays
+      // that miss it entirely never bend at all and are just sky.
+      float b = dot(pos, dir);
+      float c = dot(pos, pos) - FIELD * FIELD;
+      float disc = b * b - c;
+      if (disc < 0.0) {
+        gl_FragColor = vec4(grade(background(dir)), 1.0);
+        return;
+      }
+      pos += dir * max(0.0, -b - sqrt(disc));
+
+      vec3 col = vec3(0.0);
+      float trans = 1.0;
+      bool captured = false;
+
+      for (int i = 0; i < STEPS; i++) {
+        float r2 = dot(pos, pos);
+        float r = sqrt(r2);
+        if (r < RS * 1.02) { captured = true; break; }
+        if (r > FIELD + 2.0 && dot(pos, dir) > 0.0) break; // escaped for good
+
+        float dt = clamp(r * 0.075, 0.05, 0.9);
+        vec3 prev = pos;
+
+        // Null geodesic, Cartesian form: a = -1.5 h² r⃗ / r⁵.
+        dir = normalize(dir - (1.5 * h2 / (r2 * r2 * r)) * pos * dt);
+        pos += dir * dt;
+
+        // Crossed the disk plane between the last step and this one?
+        if (prev.y * pos.y < 0.0) {
+          vec3 hit = mix(prev, pos, prev.y / (prev.y - pos.y));
+          vec4 d = diskSample(hit, dir);
+          col += d.rgb * d.a * trans;
+          trans *= 1.0 - d.a;
+          if (trans < 0.01) break;
+        }
+      }
+
+      if (!captured) col += background(dir) * trans;
+      gl_FragColor = vec4(grade(col), 1.0);
+    }
+  `;
+
+  /** Fraction of the screen the geodesic march actually runs at. */
+  const MARCH_SCALE = 0.5;
+
+  class BlackHoleGL extends HTMLElement {
     private renderer?: THREE.WebGLRenderer;
+    private bgScene = new THREE.Scene();
+    private bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    private target?: THREE.WebGLRenderTarget;
+    private blitScene = new THREE.Scene();
     private scene = new THREE.Scene();
-    private camera = new THREE.PerspectiveCamera(45, 1, 0.1, 150);
-    private blackHoleGroup = new THREE.Group();
-    private diskMaterial?: THREE.ShaderMaterial;
-    private starLayers: THREE.Points[] = [];
-    private asteroidLayer?: THREE.Points;
+    private camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
+    private material?: THREE.ShaderMaterial;
+    private rocks?: THREE.InstancedMesh;
+    private orbits: { r: number; y: number; phase: number; speed: number; scale: THREE.Vector3; spin: THREE.Vector3 }[] = [];
     private clock = new THREE.Clock();
     private raf = 0;
     private mouse = new THREE.Vector2();
@@ -75,302 +278,118 @@ import Layout from "../layouts/Layout.astro";
     private visible = true;
     private calm = document.documentElement.classList.contains("rb-calm");
     private lastFrame = 0;
+    private dummy = new THREE.Object3D();
 
     connectedCallback() {
-      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !this.lowPower, powerPreference: "high-performance" });
-      this.renderer.setPixelRatio(this.lowPower ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.3));
-      this.renderer.setClearColor(0x000000, 0);
+      this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: "high-performance" });
+      // The march is the whole cost of this page — resolution is the cheapest
+      // dial there is, so it stays modest and the geodesics stay accurate.
+      this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1));
+      this.renderer.setClearColor(0x000000, 1);
+      this.renderer.autoClear = false;
       this.append(this.renderer.domElement);
 
-      this.camera.position.z = 12;
+      this.target = new THREE.WebGLRenderTarget(1, 1, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        depthBuffer: false,
+      });
+      this.blitScene.add(
+        new THREE.Mesh(
+          new THREE.PlaneGeometry(2, 2),
+          new THREE.MeshBasicMaterial({ map: this.target.texture, depthTest: false, depthWrite: false }),
+        ),
+      );
 
-      this.buildStars(this.lowPower ? 2000 : 5000, 1.0, 0.8, 0);
-      this.buildStars(this.lowPower ? 800 : 2000, 1.8, 1.0, 1);
-      this.buildAsteroids(this.lowPower ? 150 : 400);
-      this.buildBlackHole();
+      this.material = new THREE.ShaderMaterial({
+        vertexShader: VERT,
+        fragmentShader: FRAG,
+        depthTest: false,
+        depthWrite: false,
+        defines: { STEPS: this.lowPower ? 48 : 76 },
+        uniforms: {
+          uRes: { value: new THREE.Vector2(1, 1) },
+          uTime: { value: 0 },
+          uCamPos: { value: CAM.clone() },
+          uCamTarget: { value: TARGET.clone() },
+          uFocal: { value: FOCAL },
+          uShift: { value: SHIFT },
+          uIntensity: { value: prefersCalm() ? 1 : 0 },
+        },
+      });
+      this.bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material));
+
+      this.camera.fov = 2 * Math.atan(0.5 / FOCAL) * (180 / Math.PI);
+      this.camera.position.copy(CAM);
+      this.camera.lookAt(TARGET);
+      this.buildAsteroids(this.lowPower ? 70 : 160);
 
       this.resize();
       addEventListener("resize", this.resize, { passive: true });
       addEventListener("pointermove", this.onPointerMove, { passive: true });
       document.addEventListener("visibilitychange", this.onVisibility);
       addEventListener("rb:calmchange", this.onCalmChange as EventListener);
-      
+
       this.lastFrame = performance.now();
       this.raf = requestAnimationFrame(this.render);
 
-      gsap.fromTo(".top-text-group", 
-        { opacity: 0, y: -20 }, 
-        { opacity: 1, y: 0, duration: 1.5, ease: "power3.out", delay: 0.2 }
-      );
-      gsap.fromTo(".center-button-group", 
-        { opacity: 0, y: 20 }, 
-        { opacity: 1, y: 0, duration: 1.5, ease: "power3.out", delay: 0.6 }
-      );
-      gsap.fromTo(".hud-item", 
-        { opacity: 0, y: 15 }, 
-        { opacity: 1, y: 0, duration: 1.0, stagger: 0.1, ease: "power3.out", delay: 0.8 }
-      );
-      gsap.fromTo(".scroll-stabilize", 
-        { opacity: 0 }, 
-        { opacity: 0.5, duration: 1.5, ease: "none", delay: 1.5 }
-      );
+      if (!prefersCalm()) {
+        // The universe fades up rather than snapping on — the hole is the reveal.
+        gsap.to(this.material.uniforms.uIntensity, { value: 1, duration: 2.4, ease: "power2.out" });
+      }
     }
 
     disconnectedCallback() {
       cancelAnimationFrame(this.raf);
+      this.raf = 0;
       removeEventListener("resize", this.resize);
       removeEventListener("pointermove", this.onPointerMove);
       document.removeEventListener("visibilitychange", this.onVisibility);
       removeEventListener("rb:calmchange", this.onCalmChange as EventListener);
-      this.starLayers.forEach(l => { l.geometry.dispose(); (l.material as THREE.Material).dispose(); });
-      if (this.asteroidLayer) {
-        this.asteroidLayer.geometry.dispose();
-        (this.asteroidLayer.material as THREE.Material).dispose();
-      }
+      this.material?.dispose();
+      this.target?.dispose();
+      this.rocks?.geometry.dispose();
+      (this.rocks?.material as THREE.Material | undefined)?.dispose();
+      this.bgScene.clear();
+      this.scene.clear();
       this.renderer?.dispose();
+      this.renderer = undefined;
     }
 
-    private buildStars(count: number, sizeMultiplier: number, opacity: number, layerIndex: number) {
-      const positions = new Float32Array(count * 3);
-      const sizes = new Float32Array(count);
-      const alpha = new Float32Array(count);
-      
-      for (let i = 0; i < count; i += 1) {
-        const i3 = i * 3;
-        positions[i3] = (Math.random() - 0.5) * 80;
-        positions[i3 + 1] = (Math.random() - 0.5) * 50;
-        positions[i3 + 2] = (Math.random() - 0.5) * 60 - 20;
-        sizes[i] = (Math.random() * 2.0 + 0.5) * sizeMultiplier;
-        alpha[i] = (Math.random() * 0.7 + 0.3) * opacity;
-      }
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
-      geometry.setAttribute("aAlpha", new THREE.BufferAttribute(alpha, 1));
-
-      const material = new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: {
-          uPixelRatio: { value: this.renderer!.getPixelRatio() },
-          uTime: { value: 0 }
-        },
-        vertexShader: `
-          attribute float aSize;
-          attribute float aAlpha;
-          uniform float uPixelRatio;
-          uniform float uTime;
-          varying float vAlpha;
-          void main() {
-            vec3 p = position;
-            // Slow rotation around center
-            float angle = uTime * 0.02;
-            float s = sin(angle);
-            float c = cos(angle);
-            p.x = position.x * c - position.z * s;
-            p.z = position.x * s + position.z * c;
-            
-            vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
-            gl_PointSize = aSize * uPixelRatio * (15.0 / -mvPosition.z);
-            vAlpha = aAlpha;
-          }
-        `,
-        fragmentShader: `
-          varying float vAlpha;
-          void main() {
-            float d = length(gl_PointCoord - 0.5);
-            if (d > 0.5) discard;
-            float alpha = smoothstep(0.5, 0.1, d) * vAlpha;
-            gl_FragColor = vec4(vec3(0.8, 0.9, 1.0), alpha);
-          }
-        `
-      });
-
-      const points = new THREE.Points(geometry, material);
-      this.starLayers.push(points);
-      this.scene.add(points);
-    }
-
+    /** Debris that never made it in, lit only by the disk it is falling toward. */
     private buildAsteroids(count: number) {
-      const positions = new Float32Array(count * 3);
-      const randoms = new Float32Array(count);
-      
+      const geometry = new THREE.IcosahedronGeometry(1, 0);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x0a0c0f,
+        roughness: 0.92,
+        metalness: 0.08,
+        flatShading: true,
+      });
+      this.rocks = new THREE.InstancedMesh(geometry, material, count);
+      this.rocks.frustumCulled = false;
+
       for (let i = 0; i < count; i += 1) {
-        const i3 = i * 3;
-        // Distribute asteroids around the black hole in a wide disk
-        const radius = Math.random() * 25 + 4;
-        const angle = Math.random() * Math.PI * 2;
-        positions[i3] = Math.cos(angle) * radius;
-        positions[i3 + 1] = (Math.random() - 0.5) * (radius * 0.15); // thicker further out
-        positions[i3 + 2] = Math.sin(angle) * radius;
-        randoms[i] = Math.random();
+        const r = 13 + Math.random() * 27;
+        this.orbits.push({
+          r,
+          // Hug the disk plane near the hole, drift wider further out.
+          y: (Math.random() - 0.5) * (2 + r * 0.14),
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.55 / Math.pow(r, 1.5),
+          scale: new THREE.Vector3(
+            0.5 + Math.random() * 0.8,
+            0.4 + Math.random() * 0.7,
+            0.5 + Math.random() * 0.9,
+          ).multiplyScalar(0.16 + Math.random() * 0.34),
+          spin: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.4),
+        });
       }
+      this.scene.add(this.rocks);
 
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute("aRandom", new THREE.BufferAttribute(randoms, 1));
-
-      const material = new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        uniforms: {
-          uPixelRatio: { value: this.renderer!.getPixelRatio() },
-          uTime: { value: 0 }
-        },
-        vertexShader: `
-          attribute float aRandom;
-          uniform float uPixelRatio;
-          uniform float uTime;
-          varying float vAlpha;
-          void main() {
-            vec3 p = position;
-            float r = length(p.xz);
-            float angle = atan(p.z, p.x);
-            
-            // Orbital mechanics: closer orbits faster
-            angle += uTime * (0.5 / sqrt(r));
-            
-            p.x = cos(angle) * r;
-            p.z = sin(angle) * r;
-            
-            vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
-            
-            float size = aRandom * 12.0 + 2.0;
-            gl_PointSize = size * uPixelRatio * (15.0 / -mvPosition.z);
-            
-            // Fade out when very close or very far
-            vAlpha = smoothstep(3.0, 5.0, r) * smoothstep(30.0, 20.0, r) * (0.4 + aRandom * 0.6);
-          }
-        `,
-        fragmentShader: `
-          varying float vAlpha;
-          void main() {
-            // Irregular rock shape approximation
-            vec2 p = gl_PointCoord - 0.5;
-            float r = length(p);
-            if (r > 0.5) discard;
-            
-            // Soft shading
-            float shade = smoothstep(0.5, 0.0, r);
-            vec3 rockColor = vec3(0.08, 0.09, 0.1);
-            gl_FragColor = vec4(rockColor * shade, vAlpha * shade);
-          }
-        `
-      });
-
-      this.asteroidLayer = new THREE.Points(geometry, material);
-      // Tilt the asteroid belt
-      this.asteroidLayer.rotation.x = -1.2;
-      this.scene.add(this.asteroidLayer);
-    }
-
-    private buildBlackHole() {
-      // Event Horizon
-      const sphereGeo = new THREE.SphereGeometry(1.5, 64, 64);
-      const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-      const eventHorizon = new THREE.Mesh(sphereGeo, sphereMat);
-      
-      // Accretion Disk
-      const diskGeo = new THREE.PlaneGeometry(16, 16, 64, 64);
-      this.diskMaterial = new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        uniforms: {
-          uTime: { value: 0 }
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          varying vec3 vPos;
-          void main() {
-            vUv = uv;
-            vPos = position;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          varying vec2 vUv;
-          varying vec3 vPos;
-          uniform float uTime;
-          
-          // Noise function
-          vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-          float snoise(vec2 v) {
-            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-            vec2 i  = floor(v + dot(v, C.yy) );
-            vec2 x0 = v -   i + dot(i, C.xx);
-            vec2 i1;
-            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-            vec4 x12 = x0.xyxy + C.xxzz;
-            x12.xy -= i1;
-            i = mod289(i); // Avoid truncation effects in permutation
-            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-            m = m*m ;
-            m = m*m ;
-            vec3 x = 2.0 * fract(p * C.www) - 1.0;
-            vec3 h = abs(x) - 0.5;
-            vec3 ox = floor(x + 0.5);
-            vec3 a0 = x - ox;
-            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-            vec3 g;
-            g.x  = a0.x  * x0.x  + h.x  * x0.y;
-            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-            return 130.0 * dot(m, g);
-          }
-
-          void main() {
-            vec2 center = vec2(0.0);
-            float r = length(vPos.xy);
-            float angle = atan(vPos.y, vPos.x);
-            
-            // Normalize radius relative to event horizon
-            float n = (r - 1.4) / 6.0;
-            if(n < 0.0 || n > 1.0) discard;
-            
-            // Smooth gradient
-            float glow = smoothstep(1.0, 0.0, n) * smoothstep(0.0, 0.08, n);
-            
-            // Swirling details
-            float speed = uTime * 1.5;
-            float swirl1 = snoise(vec2(angle * 4.0 - speed, r * 1.5));
-            float swirl2 = snoise(vec2(angle * 8.0 + speed * 0.5, r * 3.0));
-            
-            glow *= mix(0.4, 1.0, swirl1 * 0.5 + 0.5);
-            glow *= mix(0.7, 1.2, swirl2 * 0.5 + 0.5);
-            
-            // Doppler beaming (brighter on one side due to relativistic speeds)
-            float doppler = sin(angle) * 0.5 + 0.5;
-            glow *= mix(0.5, 2.0, doppler);
-            
-            // Colors: Deep orange, gold, and white hot core
-            vec3 deepSpace = vec3(0.05, 0.1, 0.2);
-            vec3 coreGlow = vec3(1.0, 0.9, 0.7);
-            vec3 outerGlow = vec3(0.8, 0.4, 0.1);
-            
-            vec3 color = mix(outerGlow, coreGlow, pow(smoothstep(0.8, 0.0, n), 2.0));
-            color = mix(deepSpace, color, glow);
-            
-            gl_FragColor = vec4(color, glow * 0.95);
-          }
-        `
-      });
-
-      const disk = new THREE.Mesh(diskGeo, this.diskMaterial);
-      disk.rotation.x = -1.25; // Cinematic tilt
-      disk.position.z = -0.1; // Slightly behind horizon to prevent z-fighting
-      
-      this.blackHoleGroup.add(eventHorizon);
-      this.blackHoleGroup.add(disk);
-      
-      this.scene.add(this.blackHoleGroup);
+      // The disk is the only light source in this scene, so it is the only one here.
+      const glow = new THREE.PointLight(0xff9a4a, 900, 90, 2);
+      this.scene.add(glow);
+      this.scene.add(new THREE.AmbientLight(0x223044, 0.5));
     }
 
     private onPointerMove = (event: PointerEvent) => {
@@ -379,7 +398,10 @@ import Layout from "../layouts/Layout.astro";
 
     private onVisibility = () => {
       this.visible = !document.hidden;
-      if (this.visible && !this.raf) this.raf = requestAnimationFrame(this.render);
+      if (this.visible && !this.raf && !this.calm) {
+        this.lastFrame = performance.now();
+        this.raf = requestAnimationFrame(this.render);
+      }
     };
 
     private onCalmChange = (event: CustomEvent<{ calm: boolean }>) => {
@@ -388,55 +410,106 @@ import Layout from "../layouts/Layout.astro";
         this.lastFrame = performance.now();
         this.raf = requestAnimationFrame(this.render);
       }
+      // Calm still renders — it just stops moving. Draw one last frame.
+      if (this.calm) requestAnimationFrame(() => this.draw(this.clock.getElapsedTime()));
     };
 
     private resize = () => {
-      if (!this.renderer) return;
-      this.renderer.setSize(innerWidth, innerHeight, false);
-      this.camera.aspect = innerWidth / innerHeight;
+      if (!this.renderer || !this.material || !this.target) return;
+      const w = innerWidth;
+      const h = innerHeight;
+      this.renderer.setSize(w, h, false);
+      const dpr = this.renderer.getPixelRatio();
+      const scale = this.lowPower ? MARCH_SCALE * 0.85 : MARCH_SCALE;
+      const mw = Math.max(2, Math.round(w * dpr * scale));
+      const mh = Math.max(2, Math.round(h * dpr * scale));
+      this.target.setSize(mw, mh);
+      this.material.uniforms.uRes.value.set(mw, mh);
+      this.camera.aspect = w / h;
+      // Match the shader's lens shift so the rasterised rocks sit in the same
+      // frame as the raymarched universe behind them.
+      this.camera.setViewOffset(w, h, 0, -SHIFT * h, w, h);
       this.camera.updateProjectionMatrix();
     };
+
+    private draw(elapsed: number) {
+      if (!this.renderer || !this.material) return;
+      this.material.uniforms.uTime.value = elapsed;
+
+      // The camera drifts with the pointer — a slow, heavy parallax.
+      this.mouse.lerp(this.mouseTarget, 0.045);
+      const pos = this.material.uniforms.uCamPos.value as THREE.Vector3;
+      pos.x += (this.mouse.x * 4.5 - pos.x) * 0.04;
+      pos.y += (CAM.y + this.mouse.y * 2.6 - pos.y) * 0.04;
+      this.camera.position.copy(pos);
+      this.camera.lookAt(TARGET);
+
+      if (this.rocks) {
+        this.orbits.forEach((orbit, i) => {
+          const a = orbit.phase + elapsed * orbit.speed * 6;
+          this.dummy.position.set(Math.cos(a) * orbit.r, orbit.y, Math.sin(a) * orbit.r);
+          this.dummy.rotation.set(elapsed * orbit.spin.x, elapsed * orbit.spin.y, elapsed * orbit.spin.z);
+          this.dummy.scale.copy(orbit.scale);
+          this.dummy.updateMatrix();
+          this.rocks!.setMatrixAt(i, this.dummy.matrix);
+        });
+        this.rocks.instanceMatrix.needsUpdate = true;
+      }
+
+      // 1. March the geodesics at half res. 2. Blit up. 3. Rocks on top, sharp.
+      this.renderer.setRenderTarget(this.target!);
+      this.renderer.clear();
+      this.renderer.render(this.bgScene, this.bgCamera);
+      this.renderer.setRenderTarget(null);
+      this.renderer.clear();
+      this.renderer.render(this.blitScene, this.bgCamera);
+      this.renderer.clearDepth();
+      this.renderer.render(this.scene, this.camera);
+    }
 
     private render = (now = performance.now()) => {
       this.raf = 0;
       if (!this.renderer || !this.visible || this.calm) return;
-      
-      const targetFps = this.lowPower ? 45 : 60;
+
+      const targetFps = this.lowPower ? 40 : 60;
       if (now - this.lastFrame < 1000 / targetFps) {
         this.raf = requestAnimationFrame(this.render);
         return;
       }
       this.lastFrame = now;
-      
-      const elapsed = this.clock.getElapsedTime();
-      this.mouse.lerp(this.mouseTarget, 0.05);
-
-      // Camera parallax
-      this.camera.position.x += (this.mouse.x * 1.5 - this.camera.position.x) * 0.03;
-      this.camera.position.y += (this.mouse.y * 1.5 - this.camera.position.y) * 0.03;
-      this.camera.lookAt(0, 0, 0);
-
-      this.starLayers.forEach((layer) => {
-        (layer.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
-      });
-      
-      if (this.asteroidLayer) {
-        (this.asteroidLayer.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
-      }
-
-      if (this.diskMaterial) {
-        this.diskMaterial.uniforms.uTime.value = elapsed;
-        // Subtle tilt interaction based on mouse
-        this.blackHoleGroup.rotation.y = this.mouse.x * 0.15;
-        this.blackHoleGroup.rotation.x = -this.mouse.y * 0.15;
-      }
-
-      this.renderer.render(this.scene, this.camera);
+      this.draw(this.clock.getElapsedTime());
       this.raf = requestAnimationFrame(this.render);
     };
   }
 
-  if (!customElements.get("rb-404-gl")) customElements.define("rb-404-gl", GlitchGL);
+  if (!customElements.get("rb-404-gl")) customElements.define("rb-404-gl", BlackHoleGL);
+
+  // ── Copy choreography ─────────────────────────────────────────────────────
+  const page = document.querySelector(".not-found");
+  if (page) {
+    document.querySelectorAll<HTMLElement>("[data-decode-in]").forEach((el, i) => {
+      // decodeText, not decode(el, el.textContent): the subtitle's <br> has to
+      // survive, or "DRIFTED / INTO" collapses into "DRIFTEDINTO".
+      gsap.delayedCall(0.35 + i * 0.06, () => decodeText(el, { duration: 700 }));
+    });
+
+    if (!prefersCalm()) {
+      gsap.fromTo(".top-text-group", { opacity: 0, y: -18 }, { opacity: 1, y: 0, duration: 1.4, ease: "power3.out", delay: 0.15 });
+      gsap.fromTo(".center-button-group", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.4, ease: "power3.out", delay: 0.6 });
+      gsap.fromTo(".hud-item", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1, stagger: 0.09, ease: "power3.out", delay: 0.8 });
+      gsap.fromTo(".scroll-stabilize", { opacity: 0 }, { opacity: 0.55, duration: 1.4, ease: "none", delay: 1.5 });
+
+      // The gravity readout drifts, because nothing here is stable.
+      const gravity = document.querySelector<HTMLElement>("[data-gravity]");
+      if (gravity) {
+        const jitter = () => {
+          gravity.textContent = (1.38 + Math.random() * 0.09).toFixed(2);
+          gsap.delayedCall(0.9 + Math.random() * 1.6, jitter);
+        };
+        jitter();
+      }
+    }
+  }
 </script>
 
 <style>
@@ -448,17 +521,16 @@ import Layout from "../layouts/Layout.astro";
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 3rem 2rem;
+    padding: 3rem 2rem 2rem;
     overflow: hidden;
   }
 
-  /* Top Group: ERROR, 404, Subtitle */
   .top-text-group {
-    text-align: center;
     position: relative;
     z-index: 2;
+    margin-top: 3vh;
+    text-align: center;
     pointer-events: none;
-    margin-top: 4vh;
   }
 
   .error-label {
@@ -467,41 +539,40 @@ import Layout from "../layouts/Layout.astro";
     font-weight: 500;
     letter-spacing: 0.5em;
     color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
   }
 
+  /* Sized against the viewport HEIGHT, not the width: this number has to clear
+     the black hole underneath it, and that is a vertical relationship. At 18vw
+     it grew straight through the event horizon on wide screens. */
   .huge-404 {
     font-family: var(--font-inter), sans-serif;
-    font-size: clamp(8rem, 18vw, 15rem);
-    font-weight: 300;
+    font-size: clamp(4.5rem, 13vh, 9rem);
+    font-weight: 200;
     line-height: 1;
     margin: 0;
-    color: #ffffff;
-    letter-spacing: -0.01em;
-    text-shadow: 0 0 4rem rgba(255, 255, 255, 0.1);
+    color: #fff;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 5rem rgba(190, 215, 255, 0.25);
   }
 
   .subtitle {
+    margin-top: 1.4rem;
     font-family: var(--font-inter);
     font-size: clamp(0.6rem, 1.2vw, 0.75rem);
     font-weight: 400;
     letter-spacing: 0.35em;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.72);
     text-transform: uppercase;
-    line-height: 1.8;
+    line-height: 2;
   }
 
-  .main-subtitle {
-    margin-top: 1.5rem;
-  }
-
-  /* Center Button */
   .center-button-group {
     position: absolute;
     top: 68%;
     left: 50%;
-    transform: translate(-50%, -50%);
     z-index: 3;
+    transform: translate(-50%, -50%);
   }
 
   .return-btn {
@@ -515,7 +586,7 @@ import Layout from "../layouts/Layout.astro";
     font-weight: 500;
     letter-spacing: 0.15em;
     color: rgba(255, 255, 255, 0.85);
-    background: rgba(5, 5, 5, 0.4);
+    background: rgba(5, 5, 5, 0.35);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 2rem;
     text-decoration: none;
@@ -539,34 +610,29 @@ import Layout from "../layouts/Layout.astro";
     color: #fff;
   }
 
-  .return-btn:hover .arrow {
-    transform: translateX(4px);
-  }
+  .return-btn:hover .arrow { transform: translateX(4px); }
 
-  /* HUD Layout */
   .hud-container {
     width: 100%;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
     display: flex;
     justify-content: space-between;
     z-index: 2;
     pointer-events: none;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    margin-bottom: 2rem;
   }
 
   .hud-item {
+    position: relative;
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    position: relative;
-    flex: 1;
   }
 
-  /* Vertical separators */
   .hud-item:not(:last-child)::after {
-    content: '';
+    content: "";
     position: absolute;
     right: 0;
     top: 10%;
@@ -574,10 +640,8 @@ import Layout from "../layouts/Layout.astro";
     width: 1px;
     background: rgba(255, 255, 255, 0.15);
   }
-  
-  .hud-item:not(:first-child) {
-    padding-left: 2rem;
-  }
+
+  .hud-item:not(:first-child) { padding-left: 2rem; }
 
   .hud-label {
     font-family: var(--font-inter);
@@ -594,24 +658,25 @@ import Layout from "../layouts/Layout.astro";
     font-weight: 400;
     letter-spacing: 0.2em;
     color: rgba(255, 255, 255, 0.7);
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Scroll to stabilize */
   .scroll-stabilize {
     position: absolute;
     bottom: 1.5rem;
     left: 50%;
     transform: translateX(-50%);
-    font-family: var(--font-inter);
-    font-size: 0.55rem;
-    font-weight: 500;
-    letter-spacing: 0.4em;
-    color: rgba(255, 255, 255, 0.4);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
     z-index: 2;
+    font-family: var(--font-inter);
+    font-size: 0.55rem;
+    font-weight: 500;
+    letter-spacing: 0.4em;
+    color: rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
   }
 
   .scroll-dot {
@@ -619,7 +684,7 @@ import Layout from "../layouts/Layout.astro";
     height: 4px;
     background: #fff;
     border-radius: 50%;
-    box-shadow: 0 0 10px 2px rgba(255,255,255,0.8);
+    box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
     animation: pulse 2s infinite ease-in-out;
   }
 
@@ -628,27 +693,18 @@ import Layout from "../layouts/Layout.astro";
     50% { opacity: 1; transform: scale(1.5); }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-dot { animation: none; }
+  }
+
   @media (max-width: 768px) {
-    .huge-404 {
-      font-size: 8rem;
-    }
-    .hud-container {
-      flex-wrap: wrap;
-      gap: 2rem;
-      margin-bottom: 5rem;
-    }
-    .hud-item {
-      min-width: 40%;
-    }
-    .hud-item:not(:last-child)::after {
-      display: none;
-    }
-    .hud-item:not(:first-child) {
-      padding-left: 0;
-    }
-    .center-button-group {
-      top: 60%;
-    }
+    .huge-404 { font-size: clamp(4rem, 11vh, 6rem); }
+    .subtitle { letter-spacing: 0.24em; }
+    .hud-container { flex-wrap: wrap; gap: 1.75rem; margin-bottom: 5rem; }
+    .hud-item { min-width: 40%; }
+    .hud-item:not(:last-child)::after { display: none; }
+    .hud-item:not(:first-child) { padding-left: 0; }
+    .center-button-group { top: 62%; }
   }
 
   rb-404-gl {
@@ -656,10 +712,10 @@ import Layout from "../layouts/Layout.astro";
     inset: 0;
     display: block;
     z-index: 1;
-    background: #040508;
+    background: #000;
     pointer-events: none;
   }
-  
+
   rb-404-gl canvas {
     display: block;
     width: 100%;
@@ -670,6 +726,6 @@ import Layout from "../layouts/Layout.astro";
     position: absolute;
     inset: 0;
     z-index: 1;
-    pointer-events: auto;
+    pointer-events: none;
   }
 </style>
