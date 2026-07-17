@@ -1,0 +1,390 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="404 — Signal Lost" description="The page you are looking for has drifted into the void." noindex={true} noWebgl={true}>
+  <section class="not-found" aria-labelledby="not-found-heading">
+    <div class="not-found__content">
+      <h1 id="not-found-heading">404</h1>
+      <p class="subtitle" data-decode>THE SIGNAL HAS DRIFTED INTO THE VOID</p>
+      <a href="/" class="return-btn">RETURN TO ORIGIN</a>
+    </div>
+
+    <div class="cosmic-backdrop" aria-hidden="true">
+      <rb-404-gl></rb-404-gl>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import * as THREE from "three";
+  import gsap from "gsap";
+  import { decode } from "../utils/decode";
+
+  // Trigger decode on the subtitle
+  const sub = document.querySelector(".subtitle") as HTMLElement;
+  if (sub) {
+    decode(sub, sub.textContent!, { duration: 600 });
+  }
+
+  class GlitchGL extends HTMLElement {
+    private renderer?: THREE.WebGLRenderer;
+    private scene = new THREE.Scene();
+    private camera = new THREE.PerspectiveCamera(58, 1, 0.1, 110);
+    private geometry?: THREE.BufferGeometry;
+    private material?: THREE.ShaderMaterial;
+    private mesh?: THREE.Mesh;
+    private starLayers: THREE.Points[] = [];
+    private clock = new THREE.Clock();
+    private raf = 0;
+    private mouse = new THREE.Vector2();
+    private mouseTarget = new THREE.Vector2();
+    private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+    private visible = true;
+
+    connectedCallback() {
+      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !this.lowPower, powerPreference: "high-performance" });
+      this.renderer.setPixelRatio(this.lowPower ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.3));
+      this.renderer.setClearColor(0x000000, 0);
+      this.append(this.renderer.domElement);
+
+      this.camera.position.z = 7.2;
+
+      // Stars
+      this.buildStars(this.lowPower ? 2200 : 4800, 1.25, 1.0, 0);
+      this.buildStars(this.lowPower ? 780 : 1800, 2.35, 1.0, 1);
+
+      // The shattered anomaly
+      this.buildAnomaly();
+
+      this.resize();
+      addEventListener("resize", this.resize, { passive: true });
+      addEventListener("pointermove", this.onPointerMove, { passive: true });
+      document.addEventListener("visibilitychange", this.onVisibility);
+      this.raf = requestAnimationFrame(this.render);
+
+      gsap.fromTo(".not-found__content", 
+        { opacity: 0, y: 30 }, 
+        { opacity: 1, y: 0, duration: 1.2, ease: "power3.out", delay: 0.2 }
+      );
+    }
+
+    disconnectedCallback() {
+      cancelAnimationFrame(this.raf);
+      removeEventListener("resize", this.resize);
+      removeEventListener("pointermove", this.onPointerMove);
+      document.removeEventListener("visibilitychange", this.onVisibility);
+      if (this.geometry) this.geometry.dispose();
+      if (this.material) this.material.dispose();
+      this.starLayers.forEach(l => { l.geometry.dispose(); (l.material as THREE.Material).dispose(); });
+      this.renderer?.dispose();
+    }
+
+    private buildStars(count: number, sizeMultiplier: number, opacity: number, layerIndex: number) {
+      const positions = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+      const alpha = new Float32Array(count);
+      const phase = new Float32Array(count);
+
+      for (let i = 0; i < count; i += 1) {
+        const i3 = i * 3;
+        const radius = 2.8 + Math.pow(Math.random(), 0.6) * 34;
+        const angle = Math.random() * Math.PI * 2;
+        positions[i3] = Math.cos(angle) * radius;
+        positions[i3 + 1] = Math.sin(angle) * radius * 0.62;
+        positions[i3 + 2] = -Math.random() * 76 + 4;
+        sizes[i] = (0.6 + Math.random() * 2.2) * sizeMultiplier;
+        alpha[i] = (0.28 + Math.random() * 0.72) * opacity;
+        phase[i] = Math.random() * Math.PI * 2;
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+      geometry.setAttribute("aAlpha", new THREE.BufferAttribute(alpha, 1));
+      geometry.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+
+      const material = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+          uPixelRatio: { value: this.lowPower ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.3) },
+          uTime: { value: 0 },
+          uLayer: { value: layerIndex },
+        },
+        vertexShader: `
+          attribute float aSize;
+          attribute float aAlpha;
+          attribute float aPhase;
+          uniform float uPixelRatio;
+          uniform float uTime;
+          uniform float uLayer;
+          varying float vAlpha;
+          varying float vAngle;
+          varying float vLayer;
+
+          void main() {
+            vec3 p = position;
+            float speed = mix(0.12, 0.3, uLayer / 2.0);
+            p.z = mod(p.z + uTime * speed + 80.0, 80.0) - 76.0;
+            p.x += sin(uTime * 0.05 + aPhase) * 0.04;
+            p.y += cos(uTime * 0.045 + aPhase) * 0.03;
+            vec4 mv = modelViewMatrix * vec4(p, 1.0);
+            vec4 projected = projectionMatrix * mv;
+            gl_Position = projected;
+            vec2 ndc = projected.xy / max(projected.w, 0.001);
+            vAngle = atan(ndc.y, ndc.x);
+            vLayer = uLayer;
+            vAlpha = aAlpha * smoothstep(-76.0, -52.0, p.z) * smoothstep(4.0, -1.0, p.z);
+            float perspective = clamp(16.0 / -mv.z, 0.48, 3.6);
+            gl_PointSize = aSize * uPixelRatio * perspective;
+          }
+        `,
+        fragmentShader: `
+          precision highp float;
+          varying float vAlpha;
+          varying float vAngle;
+          varying float vLayer;
+
+          void main() {
+            vec2 p = gl_PointCoord - 0.5;
+            float d = length(p);
+            float core = smoothstep(0.48, 0.018, d);
+            if (core < 0.008) discard;
+            vec3 silver = mix(vec3(0.78, 0.82, 0.85), vec3(1.0), core);
+            gl_FragColor = vec4(silver * core, vAlpha * core);
+          }
+        `,
+      });
+
+      const layer = new THREE.Points(geometry, material);
+      this.starLayers.push(layer);
+      this.scene.add(layer);
+    }
+
+    private buildAnomaly() {
+      // Create a heavily tessellated icosahedron, but non-indexed so every triangle is independent
+      const baseGeo = new THREE.IcosahedronGeometry(2.05, this.lowPower ? 1 : 2);
+      this.geometry = baseGeo.toNonIndexed();
+
+      // Add a random seed per face so they can drift apart
+      const position = this.geometry.attributes.position;
+      const count = position.count;
+      const randoms = new Float32Array(count);
+      const centers = new Float32Array(count * 3);
+      
+      for (let i = 0; i < count; i += 3) {
+        const r = Math.random();
+        randoms[i] = r; randoms[i+1] = r; randoms[i+2] = r;
+
+        // Calculate center of the triangle to push it outward
+        const cx = (position.getX(i) + position.getX(i+1) + position.getX(i+2)) / 3;
+        const cy = (position.getY(i) + position.getY(i+1) + position.getY(i+2)) / 3;
+        const cz = (position.getZ(i) + position.getZ(i+1) + position.getZ(i+2)) / 3;
+        for (let j = 0; j < 3; j++) {
+          centers[(i+j)*3] = cx;
+          centers[(i+j)*3+1] = cy;
+          centers[(i+j)*3+2] = cz;
+        }
+      }
+      this.geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
+      this.geometry.setAttribute('aCenter', new THREE.BufferAttribute(centers, 3));
+
+      this.material = new THREE.ShaderMaterial({
+        transparent: true,
+        wireframe: true,
+        uniforms: {
+          uTime: { value: 0 },
+          uMouse: { value: new THREE.Vector2() }
+        },
+        vertexShader: `
+          uniform float uTime;
+          uniform vec2 uMouse;
+          attribute float aRandom;
+          attribute vec3 aCenter;
+          varying float vIntensity;
+
+          mat3 rotationMatrix(vec3 axis, float angle) {
+            axis = normalize(axis);
+            float s = sin(angle);
+            float c = cos(angle);
+            float oc = 1.0 - c;
+            return mat3(
+              oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,
+              oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,
+              oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c
+            );
+          }
+
+          void main() {
+            vec3 pos = position;
+            
+            // Mouse interaction: push away from mouse
+            float distToMouse = length(aCenter.xy - uMouse * 5.0);
+            float repulsion = smoothstep(3.0, 0.0, distToMouse) * 1.5;
+
+            // Explode / Drift
+            float drift = sin(uTime * 0.5 + aRandom * 10.0) * 0.5 + 0.5;
+            pos += normalize(aCenter) * drift * (0.8 + repulsion);
+
+            // Spin individual triangles
+            vec3 localPos = pos - aCenter;
+            mat3 rot = rotationMatrix(normalize(aCenter), uTime * (aRandom - 0.5) * 4.0 + repulsion);
+            pos = aCenter + rot * localPos;
+
+            // Glitch jump
+            if (mod(uTime + aRandom * 100.0, 3.0) < 0.1) {
+              pos.x += sin(uTime * 50.0) * 0.2;
+            }
+
+            vIntensity = 1.0 - drift * 0.5;
+
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          varying float vIntensity;
+          void main() {
+            gl_FragColor = vec4(vec3(0.8, 0.85, 0.9), vIntensity * 0.6);
+          }
+        `
+      });
+
+      this.mesh = new THREE.Mesh(this.geometry, this.material);
+      this.scene.add(this.mesh);
+    }
+
+    private onPointerMove = (event: PointerEvent) => {
+      this.mouseTarget.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
+    };
+
+    private onVisibility = () => {
+      this.visible = !document.hidden;
+      if (this.visible && !this.raf) this.raf = requestAnimationFrame(this.render);
+    };
+
+    private resize = () => {
+      if (!this.renderer) return;
+      this.renderer.setSize(innerWidth, innerHeight, false);
+      this.camera.aspect = innerWidth / innerHeight;
+      this.camera.updateProjectionMatrix();
+    };
+
+    private render = (now = performance.now()) => {
+      this.raf = 0;
+      if (!this.renderer || !this.visible) return;
+      const elapsed = this.clock.getElapsedTime();
+      this.mouse.lerp(this.mouseTarget, 0.05);
+
+      this.camera.position.x += (this.mouse.x * 0.48 - this.camera.position.x) * 0.03;
+      this.camera.position.y += (this.mouse.y * 0.34 - this.camera.position.y) * 0.03;
+
+      this.starLayers.forEach((layer, index) => {
+        const material = layer.material as THREE.ShaderMaterial;
+        material.uniforms.uTime.value = elapsed;
+        layer.rotation.y = this.mouse.x * (0.018 + index * 0.012);
+        layer.rotation.x = -this.mouse.y * (0.012 + index * 0.008);
+      });
+
+      if (this.mesh && this.material) {
+        this.material.uniforms.uTime.value = elapsed;
+        this.material.uniforms.uMouse.value.copy(this.mouse);
+        this.mesh.rotation.y = elapsed * 0.1 + this.mouse.x * 0.5;
+        this.mesh.rotation.x = elapsed * 0.05 - this.mouse.y * 0.5;
+      }
+
+      this.renderer.render(this.scene, this.camera);
+      this.raf = requestAnimationFrame(this.render);
+    };
+  }
+
+  if (!customElements.get("rb-404-gl")) customElements.define("rb-404-gl", GlitchGL);
+</script>
+
+<style>
+  .not-found {
+    position: relative;
+    z-index: 10;
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    overflow: hidden;
+  }
+
+  .not-found__content {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .not-found__content h1 {
+    font-family: var(--font-display);
+    font-size: clamp(6rem, 18vw, 16rem);
+    font-weight: 500;
+    line-height: 1;
+    margin: 0;
+    color: #f4f7f8;
+    letter-spacing: -0.02em;
+    filter: drop-shadow(0 0 4rem rgba(255, 255, 255, 0.1));
+  }
+
+  .subtitle {
+    font-family: var(--font-inter);
+    font-size: clamp(0.7rem, 2vw, 0.85rem);
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 1rem;
+    margin-bottom: 3.5rem;
+    text-transform: uppercase;
+  }
+
+  .return-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 3.4rem;
+    padding: 0 2.2rem;
+    font-family: var(--font-inter);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: #000;
+    background: #fff;
+    border-radius: 2rem;
+    text-decoration: none;
+    pointer-events: auto;
+    transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo);
+  }
+
+  .return-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.8rem 2rem rgba(255, 255, 255, 0.15);
+  }
+
+  rb-404-gl {
+    position: absolute;
+    inset: 0;
+    display: block;
+    z-index: 1;
+    background: #000;
+    pointer-events: none;
+  }
+  
+  rb-404-gl canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cosmic-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: auto;
+  }
+</style>

@@ -38,6 +38,8 @@ interface Props {
    * in place on the current page and never changes the route.
    */
   lockLang?: boolean;
+  /** Disable the default Webgl component to provide a custom one */
+  noWebgl?: boolean;
 }
 
 const {
@@ -54,6 +56,7 @@ const {
   lang = defaultLang,
   alternateUrls,
   lockLang = false,
+  noWebgl = false,
 } = Astro.props;
 const t = useTranslations(lang);
 const isDeck = mode === "deck";
@@ -221,7 +224,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     <CursorField />
     <SoundField />
 
-    {!isDeck && (
+    {!isDeck && !noWebgl && (
       <div class="cosmic-backdrop" aria-hidden="true">
         <Webgl sculpture={!theme} />
       </div>
