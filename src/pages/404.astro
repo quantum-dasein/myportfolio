@@ -3,21 +3,21 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="404 — Signal Lost" description="The page you are looking for has drifted into the void." noindex={true} noWebgl={true}>
-  <div class="bg-parallax-wrapper">
-    <div class="bg-parallax-image" style="background-image: url('/404-bg.png')"></div>
-  </div>
-
   <section class="not-found" aria-labelledby="not-found-heading">
-    <div class="not-found__content">
+    
+    <!-- Top Text Group -->
+    <div class="top-text-group">
       <div class="error-label">ERROR</div>
-      <h1 id="not-found-heading" class="smooth-text">404</h1>
+      <h1 id="not-found-heading" class="huge-404">404</h1>
       <p class="subtitle main-subtitle" data-decode>THE ARCHIVE HAS DRIFTED<br/>INTO THE VOID</p>
-      
-      <div class="return-btn-wrapper">
-        <a href="/" class="return-btn">RETURN TO STUDIO <span class="arrow">→</span></a>
-      </div>
     </div>
     
+    <!-- Center Button -->
+    <div class="center-button-group">
+      <a href="/" class="return-btn">RETURN TO STUDIO <span class="arrow">→</span></a>
+    </div>
+    
+    <!-- HUD -->
     <div class="hud-container">
       <div class="hud-item">
         <div class="hud-label">GRAVITY</div>
@@ -37,6 +37,7 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
+    <!-- Scroll Stabilize -->
     <div class="scroll-stabilize">
       <div class="scroll-dot"></div>
       SCROLL TO STABILIZE
@@ -53,7 +54,6 @@ import Layout from "../layouts/Layout.astro";
   import gsap from "gsap";
   import { decode } from "../utils/decode";
 
-  // Trigger decode on subtitles
   const subs = document.querySelectorAll(".subtitle, .hud-label, .hud-value, .scroll-stabilize, .error-label");
   subs.forEach((sub) => {
     decode(sub as HTMLElement, sub.textContent!, { duration: 800 });
@@ -62,15 +62,17 @@ import Layout from "../layouts/Layout.astro";
   class GlitchGL extends HTMLElement {
     private renderer?: THREE.WebGLRenderer;
     private scene = new THREE.Scene();
-    private camera = new THREE.PerspectiveCamera(58, 1, 0.1, 110);
+    private camera = new THREE.PerspectiveCamera(45, 1, 0.1, 150);
+    private blackHoleGroup = new THREE.Group();
+    private diskMaterial?: THREE.ShaderMaterial;
     private starLayers: THREE.Points[] = [];
+    private asteroidLayer?: THREE.Points;
     private clock = new THREE.Clock();
     private raf = 0;
     private mouse = new THREE.Vector2();
     private mouseTarget = new THREE.Vector2();
     private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
     private visible = true;
-    private bgImage: HTMLElement | null = null;
 
     connectedCallback() {
       this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !this.lowPower, powerPreference: "high-performance" });
@@ -78,12 +80,12 @@ import Layout from "../layouts/Layout.astro";
       this.renderer.setClearColor(0x000000, 0);
       this.append(this.renderer.domElement);
 
-      this.camera.position.z = 7.2;
-      this.bgImage = document.querySelector(".bg-parallax-image");
+      this.camera.position.z = 12;
 
-      // Build only stars, flying towards camera
-      this.buildStars(this.lowPower ? 2200 : 4800, 1.25, 1.0, 0);
-      this.buildStars(this.lowPower ? 780 : 1800, 2.35, 1.0, 1);
+      this.buildStars(this.lowPower ? 2000 : 5000, 1.0, 0.8, 0);
+      this.buildStars(this.lowPower ? 800 : 2000, 1.8, 1.0, 1);
+      this.buildAsteroids(this.lowPower ? 150 : 400);
+      this.buildBlackHole();
 
       this.resize();
       addEventListener("resize", this.resize, { passive: true });
@@ -91,9 +93,13 @@ import Layout from "../layouts/Layout.astro";
       document.addEventListener("visibilitychange", this.onVisibility);
       this.raf = requestAnimationFrame(this.render);
 
-      gsap.fromTo(".not-found__content", 
-        { opacity: 0, scale: 0.95 }, 
-        { opacity: 1, scale: 1, duration: 1.5, ease: "power3.out", delay: 0.2 }
+      gsap.fromTo(".top-text-group", 
+        { opacity: 0, y: -20 }, 
+        { opacity: 1, y: 0, duration: 1.5, ease: "power3.out", delay: 0.2 }
+      );
+      gsap.fromTo(".center-button-group", 
+        { opacity: 0, y: 20 }, 
+        { opacity: 1, y: 0, duration: 1.5, ease: "power3.out", delay: 0.6 }
       );
       gsap.fromTo(".hud-item", 
         { opacity: 0, y: 15 }, 
@@ -111,6 +117,10 @@ import Layout from "../layouts/Layout.astro";
       removeEventListener("pointermove", this.onPointerMove);
       document.removeEventListener("visibilitychange", this.onVisibility);
       this.starLayers.forEach(l => { l.geometry.dispose(); (l.material as THREE.Material).dispose(); });
+      if (this.asteroidLayer) {
+        this.asteroidLayer.geometry.dispose();
+        (this.asteroidLayer.material as THREE.Material).dispose();
+      }
       this.renderer?.dispose();
     }
 
@@ -118,83 +128,243 @@ import Layout from "../layouts/Layout.astro";
       const positions = new Float32Array(count * 3);
       const sizes = new Float32Array(count);
       const alpha = new Float32Array(count);
-      const phase = new Float32Array(count);
-
+      
       for (let i = 0; i < count; i += 1) {
         const i3 = i * 3;
-        const radius = 2.8 + Math.pow(Math.random(), 0.6) * 34;
-        const angle = Math.random() * Math.PI * 2;
-        positions[i3] = Math.cos(angle) * radius;
-        positions[i3 + 1] = Math.sin(angle) * radius * 0.62;
-        positions[i3 + 2] = -Math.random() * 76 + 4;
-        sizes[i] = (0.6 + Math.random() * 2.2) * sizeMultiplier;
-        alpha[i] = (0.28 + Math.random() * 0.72) * opacity;
-        phase[i] = Math.random() * Math.PI * 2;
+        positions[i3] = (Math.random() - 0.5) * 80;
+        positions[i3 + 1] = (Math.random() - 0.5) * 50;
+        positions[i3 + 2] = (Math.random() - 0.5) * 60 - 20;
+        sizes[i] = (Math.random() * 2.0 + 0.5) * sizeMultiplier;
+        alpha[i] = (Math.random() * 0.7 + 0.3) * opacity;
       }
 
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
       geometry.setAttribute("aAlpha", new THREE.BufferAttribute(alpha, 1));
-      geometry.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
 
       const material = new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         uniforms: {
-          uPixelRatio: { value: this.lowPower ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.3) },
-          uTime: { value: 0 },
-          uLayer: { value: layerIndex },
+          uPixelRatio: { value: this.renderer!.getPixelRatio() },
+          uTime: { value: 0 }
         },
         vertexShader: `
           attribute float aSize;
           attribute float aAlpha;
-          attribute float aPhase;
           uniform float uPixelRatio;
           uniform float uTime;
-          uniform float uLayer;
           varying float vAlpha;
-          varying float vAngle;
-          varying float vLayer;
-
           void main() {
             vec3 p = position;
-            float speed = mix(0.12, 0.3, uLayer / 2.0);
-            p.z = mod(p.z + uTime * speed + 80.0, 80.0) - 76.0;
-            p.x += sin(uTime * 0.05 + aPhase) * 0.04;
-            p.y += cos(uTime * 0.045 + aPhase) * 0.03;
-            vec4 mv = modelViewMatrix * vec4(p, 1.0);
-            vec4 projected = projectionMatrix * mv;
-            gl_Position = projected;
-            vec2 ndc = projected.xy / max(projected.w, 0.001);
-            vAngle = atan(ndc.y, ndc.x);
-            vLayer = uLayer;
-            vAlpha = aAlpha * smoothstep(-76.0, -52.0, p.z) * smoothstep(4.0, -1.0, p.z);
-            float perspective = clamp(16.0 / -mv.z, 0.48, 3.6);
-            gl_PointSize = aSize * uPixelRatio * perspective;
+            // Slow rotation around center
+            float angle = uTime * 0.02;
+            float s = sin(angle);
+            float c = cos(angle);
+            p.x = position.x * c - position.z * s;
+            p.z = position.x * s + position.z * c;
+            
+            vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            gl_PointSize = aSize * uPixelRatio * (15.0 / -mvPosition.z);
+            vAlpha = aAlpha;
           }
         `,
         fragmentShader: `
-          precision highp float;
           varying float vAlpha;
-          varying float vAngle;
-          varying float vLayer;
-
           void main() {
-            vec2 p = gl_PointCoord - 0.5;
-            float d = length(p);
-            float core = smoothstep(0.48, 0.018, d);
-            if (core < 0.008) discard;
-            vec3 silver = mix(vec3(0.78, 0.82, 0.85), vec3(1.0), core);
-            gl_FragColor = vec4(silver * core, vAlpha * core);
+            float d = length(gl_PointCoord - 0.5);
+            if (d > 0.5) discard;
+            float alpha = smoothstep(0.5, 0.1, d) * vAlpha;
+            gl_FragColor = vec4(vec3(0.8, 0.9, 1.0), alpha);
           }
-        `,
+        `
       });
 
-      const layer = new THREE.Points(geometry, material);
-      this.starLayers.push(layer);
-      this.scene.add(layer);
+      const points = new THREE.Points(geometry, material);
+      this.starLayers.push(points);
+      this.scene.add(points);
+    }
+
+    private buildAsteroids(count: number) {
+      const positions = new Float32Array(count * 3);
+      const randoms = new Float32Array(count);
+      
+      for (let i = 0; i < count; i += 1) {
+        const i3 = i * 3;
+        // Distribute asteroids around the black hole in a wide disk
+        const radius = Math.random() * 25 + 4;
+        const angle = Math.random() * Math.PI * 2;
+        positions[i3] = Math.cos(angle) * radius;
+        positions[i3 + 1] = (Math.random() - 0.5) * (radius * 0.15); // thicker further out
+        positions[i3 + 2] = Math.sin(angle) * radius;
+        randoms[i] = Math.random();
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute("aRandom", new THREE.BufferAttribute(randoms, 1));
+
+      const material = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        uniforms: {
+          uPixelRatio: { value: this.renderer!.getPixelRatio() },
+          uTime: { value: 0 }
+        },
+        vertexShader: `
+          attribute float aRandom;
+          uniform float uPixelRatio;
+          uniform float uTime;
+          varying float vAlpha;
+          void main() {
+            vec3 p = position;
+            float r = length(p.xz);
+            float angle = atan(p.z, p.x);
+            
+            // Orbital mechanics: closer orbits faster
+            angle += uTime * (0.5 / sqrt(r));
+            
+            p.x = cos(angle) * r;
+            p.z = sin(angle) * r;
+            
+            vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            
+            float size = aRandom * 12.0 + 2.0;
+            gl_PointSize = size * uPixelRatio * (15.0 / -mvPosition.z);
+            
+            // Fade out when very close or very far
+            vAlpha = smoothstep(3.0, 5.0, r) * smoothstep(30.0, 20.0, r) * (0.4 + aRandom * 0.6);
+          }
+        `,
+        fragmentShader: `
+          varying float vAlpha;
+          void main() {
+            // Irregular rock shape approximation
+            vec2 p = gl_PointCoord - 0.5;
+            float r = length(p);
+            if (r > 0.5) discard;
+            
+            // Soft shading
+            float shade = smoothstep(0.5, 0.0, r);
+            vec3 rockColor = vec3(0.08, 0.09, 0.1);
+            gl_FragColor = vec4(rockColor * shade, vAlpha * shade);
+          }
+        `
+      });
+
+      this.asteroidLayer = new THREE.Points(geometry, material);
+      // Tilt the asteroid belt
+      this.asteroidLayer.rotation.x = -1.2;
+      this.scene.add(this.asteroidLayer);
+    }
+
+    private buildBlackHole() {
+      // Event Horizon
+      const sphereGeo = new THREE.SphereGeometry(1.5, 64, 64);
+      const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const eventHorizon = new THREE.Mesh(sphereGeo, sphereMat);
+      
+      // Accretion Disk
+      const diskGeo = new THREE.PlaneGeometry(16, 16, 64, 64);
+      this.diskMaterial = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        uniforms: {
+          uTime: { value: 0 }
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          varying vec3 vPos;
+          void main() {
+            vUv = uv;
+            vPos = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec2 vUv;
+          varying vec3 vPos;
+          uniform float uTime;
+          
+          // Noise function
+          vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+          vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+          vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+          float snoise(vec2 v) {
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+            vec2 i  = floor(v + dot(v, C.yy) );
+            vec2 x0 = v -   i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod289(i); // Avoid truncation effects in permutation
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+            m = m*m ;
+            m = m*m ;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x  = a0.x  * x0.x  + h.x  * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+          }
+
+          void main() {
+            vec2 center = vec2(0.0);
+            float r = length(vPos.xy);
+            float angle = atan(vPos.y, vPos.x);
+            
+            // Normalize radius relative to event horizon
+            float n = (r - 1.4) / 6.0;
+            if(n < 0.0 || n > 1.0) discard;
+            
+            // Smooth gradient
+            float glow = smoothstep(1.0, 0.0, n) * smoothstep(0.0, 0.08, n);
+            
+            // Swirling details
+            float speed = uTime * 1.5;
+            float swirl1 = snoise(vec2(angle * 4.0 - speed, r * 1.5));
+            float swirl2 = snoise(vec2(angle * 8.0 + speed * 0.5, r * 3.0));
+            
+            glow *= mix(0.4, 1.0, swirl1 * 0.5 + 0.5);
+            glow *= mix(0.7, 1.2, swirl2 * 0.5 + 0.5);
+            
+            // Doppler beaming (brighter on one side due to relativistic speeds)
+            float doppler = sin(angle) * 0.5 + 0.5;
+            glow *= mix(0.5, 2.0, doppler);
+            
+            // Colors: Deep orange, gold, and white hot core
+            vec3 deepSpace = vec3(0.05, 0.1, 0.2);
+            vec3 coreGlow = vec3(1.0, 0.9, 0.7);
+            vec3 outerGlow = vec3(0.8, 0.4, 0.1);
+            
+            vec3 color = mix(outerGlow, coreGlow, pow(smoothstep(0.8, 0.0, n), 2.0));
+            color = mix(deepSpace, color, glow);
+            
+            gl_FragColor = vec4(color, glow * 0.95);
+          }
+        `
+      });
+
+      const disk = new THREE.Mesh(diskGeo, this.diskMaterial);
+      disk.rotation.x = -1.25; // Cinematic tilt
+      disk.position.z = -0.1; // Slightly behind horizon to prevent z-fighting
+      
+      this.blackHoleGroup.add(eventHorizon);
+      this.blackHoleGroup.add(disk);
+      
+      this.scene.add(this.blackHoleGroup);
     }
 
     private onPointerMove = (event: PointerEvent) => {
@@ -219,19 +389,24 @@ import Layout from "../layouts/Layout.astro";
       const elapsed = this.clock.getElapsedTime();
       this.mouse.lerp(this.mouseTarget, 0.05);
 
-      this.camera.position.x += (this.mouse.x * 0.48 - this.camera.position.x) * 0.03;
-      this.camera.position.y += (this.mouse.y * 0.34 - this.camera.position.y) * 0.03;
+      // Camera parallax
+      this.camera.position.x += (this.mouse.x * 1.5 - this.camera.position.x) * 0.03;
+      this.camera.position.y += (this.mouse.y * 1.5 - this.camera.position.y) * 0.03;
+      this.camera.lookAt(0, 0, 0);
 
-      this.starLayers.forEach((layer, index) => {
-        const material = layer.material as THREE.ShaderMaterial;
-        material.uniforms.uTime.value = elapsed;
-        layer.rotation.y = this.mouse.x * (0.018 + index * 0.012);
-        layer.rotation.x = -this.mouse.y * (0.012 + index * 0.008);
+      this.starLayers.forEach((layer) => {
+        (layer.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
       });
+      
+      if (this.asteroidLayer) {
+        (this.asteroidLayer.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
+      }
 
-      if (this.bgImage) {
-        // Subtle mouse parallax for the background image
-        this.bgImage.style.transform = `translate(${this.mouse.x * 3}%, ${-this.mouse.y * 3}%) scale(1.05)`;
+      if (this.diskMaterial) {
+        this.diskMaterial.uniforms.uTime.value = elapsed;
+        // Subtle tilt interaction based on mouse
+        this.blackHoleGroup.rotation.y = this.mouse.x * 0.15;
+        this.blackHoleGroup.rotation.x = -this.mouse.y * 0.15;
       }
 
       this.renderer.render(this.scene, this.camera);
@@ -243,83 +418,68 @@ import Layout from "../layouts/Layout.astro";
 </script>
 
 <style>
-  .bg-parallax-wrapper {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    background: #000;
-  }
-  
-  .bg-parallax-image {
-    position: absolute;
-    inset: -5%; /* buffer for parallax */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    transform: scale(1.05);
-    will-change: transform;
-    opacity: 0.85; /* slight dim for text readability */
-  }
-
   .not-found {
     position: relative;
     z-index: 10;
     min-height: 100svh;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    padding: 2rem;
+    padding: 3rem 2rem;
     overflow: hidden;
   }
 
-  .not-found__content {
+  /* Top Group: ERROR, 404, Subtitle */
+  .top-text-group {
     text-align: center;
     position: relative;
     z-index: 2;
     pointer-events: none;
-    max-width: 800px;
-    margin-top: -5vh; 
+    margin-top: 4vh;
   }
 
   .error-label {
     font-family: var(--font-inter);
-    font-size: 0.7rem;
-    font-weight: 400;
-    letter-spacing: 0.35em;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.5em;
     color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
   }
 
-  .smooth-text {
-    font-family: var(--font-display);
-    font-size: clamp(8rem, 20vw, 18rem);
-    font-weight: 400;
-    line-height: 0.85;
+  .huge-404 {
+    font-family: var(--font-inter), sans-serif;
+    font-size: clamp(8rem, 18vw, 15rem);
+    font-weight: 300;
+    line-height: 1;
     margin: 0;
     color: #ffffff;
-    letter-spacing: -0.02em;
-    text-shadow: 0 0 5rem rgba(255, 255, 255, 0.4), 0 0 10rem rgba(255, 255, 255, 0.2);
+    letter-spacing: -0.01em;
+    text-shadow: 0 0 4rem rgba(255, 255, 255, 0.1);
   }
 
   .subtitle {
     font-family: var(--font-inter);
-    font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
     font-weight: 400;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.35em;
     color: rgba(255, 255, 255, 0.7);
     text-transform: uppercase;
-    line-height: 1.6;
+    line-height: 1.8;
   }
 
   .main-subtitle {
     margin-top: 1.5rem;
-    margin-bottom: 3rem;
   }
 
-  .return-btn-wrapper {
-    margin-top: 15vh;
+  /* Center Button */
+  .center-button-group {
+    position: absolute;
+    top: 68%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
   }
 
   .return-btn {
@@ -329,30 +489,31 @@ import Layout from "../layouts/Layout.astro";
     height: 3.4rem;
     padding: 0 2rem 0 2.4rem;
     font-family: var(--font-inter);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     color: rgba(255, 255, 255, 0.85);
-    background: rgba(10, 10, 10, 0.3);
+    background: rgba(5, 5, 5, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 2rem;
     text-decoration: none;
     pointer-events: auto;
     transition: transform 0.6s var(--ease-out-expo), background 0.6s, border-color 0.6s;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   .return-btn .arrow {
-    margin-left: 1rem;
-    font-size: 1.1em;
+    margin-left: 1.5rem;
+    font-size: 1.2em;
+    font-weight: 300;
     transition: transform 0.4s var(--ease-out-expo);
   }
 
   .return-btn:hover {
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.35);
     color: #fff;
   }
 
@@ -362,18 +523,15 @@ import Layout from "../layouts/Layout.astro";
 
   /* HUD Layout */
   .hud-container {
-    position: absolute;
-    bottom: 5rem;
-    left: 5%;
-    right: 5%;
+    width: 100%;
     display: flex;
     justify-content: space-between;
     z-index: 2;
     pointer-events: none;
-    max-width: 1200px;
+    max-width: 1100px;
     margin: 0 auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 2rem;
+    padding: 0 2rem;
+    margin-bottom: 2rem;
   }
 
   .hud-item {
@@ -381,33 +539,38 @@ import Layout from "../layouts/Layout.astro";
     flex-direction: column;
     align-items: flex-start;
     position: relative;
+    flex: 1;
   }
 
-  /* Add faint separator lines between hud items */
+  /* Vertical separators */
   .hud-item:not(:last-child)::after {
     content: '';
     position: absolute;
-    right: -25%;
-    top: 0;
-    height: 100%;
+    right: 0;
+    top: 10%;
+    height: 80%;
     width: 1px;
     background: rgba(255, 255, 255, 0.15);
+  }
+  
+  .hud-item:not(:first-child) {
+    padding-left: 2rem;
   }
 
   .hud-label {
     font-family: var(--font-inter);
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     font-weight: 500;
-    letter-spacing: 0.25em;
+    letter-spacing: 0.3em;
     color: rgba(255, 255, 255, 0.35);
     margin-bottom: 0.75rem;
   }
 
   .hud-value {
     font-family: var(--font-inter);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 400;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.2em;
     color: rgba(255, 255, 255, 0.7);
   }
 
@@ -420,8 +583,8 @@ import Layout from "../layouts/Layout.astro";
     font-family: var(--font-inter);
     font-size: 0.55rem;
     font-weight: 500;
-    letter-spacing: 0.35em;
-    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.4em;
+    color: rgba(255, 255, 255, 0.4);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -443,23 +606,26 @@ import Layout from "../layouts/Layout.astro";
     50% { opacity: 1; transform: scale(1.5); }
   }
 
-  /* Responsive HUD */
   @media (max-width: 768px) {
+    .huge-404 {
+      font-size: 8rem;
+    }
     .hud-container {
-      bottom: 6rem;
       flex-wrap: wrap;
       gap: 2rem;
-      border-top: none;
-      padding-top: 0;
+      margin-bottom: 5rem;
     }
     .hud-item {
-      width: 45%;
+      min-width: 40%;
     }
     .hud-item:not(:last-child)::after {
       display: none;
     }
-    .return-btn-wrapper {
-      margin-top: 5vh;
+    .hud-item:not(:first-child) {
+      padding-left: 0;
+    }
+    .center-button-group {
+      top: 60%;
     }
   }
 
@@ -468,6 +634,7 @@ import Layout from "../layouts/Layout.astro";
     inset: 0;
     display: block;
     z-index: 1;
+    background: #040508;
     pointer-events: none;
   }
   
