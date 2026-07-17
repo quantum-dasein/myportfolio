@@ -43,7 +43,8 @@
 
 <script>
   import gsap from "gsap";
-  import { navigate } from "astro:transitions/client";
+  // MPA, not ClientRouter — plain full-page navigation.
+  const navigate = (href: string) => location.assign(href);
 
   let root: HTMLElement;
   let black: HTMLElement;
@@ -54,16 +55,16 @@
   let lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
   let isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
 
-  document.addEventListener("astro:page-load", () => {
-    root = document.querySelector<HTMLElement>("[data-tunnel-root]")!;
-    if (!root) return;
+  const tunnelRoot = document.querySelector<HTMLElement>("[data-tunnel-root]");
+  if (tunnelRoot) {
+    root = tunnelRoot;
     black = root.querySelector<HTMLElement>("[data-tunnel-black]")!;
     hud = root.querySelector<HTMLElement>(".tunnel-hud")!;
     canvas = root.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
     ctx = canvas.getContext("2d", { alpha: false })!;
     isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
     resize();
-  });
+  }
 
   let stars: { x: number; y: number; z: number; tone: number }[] = [];
   let W = 0, H = 0, cx = 0, cy = 0, focal = 0;
@@ -208,7 +209,7 @@
     history.back();
   }
 
-  document.addEventListener("astro:page-load", () => {
+  if (root) {
     const arriving = sessionStorage.getItem("rb-warp-arrive");
     if (arriving) {
       sessionStorage.removeItem("rb-warp-arrive");
@@ -217,7 +218,7 @@
         history.pushState({ ...(history.state || {}), rbWarpGuard: true }, "", location.href);
       }
     }
-  });
+  }
 
   addEventListener("popstate", () => {
     if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;

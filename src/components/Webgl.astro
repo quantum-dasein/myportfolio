@@ -273,10 +273,30 @@ const { sculpture = true } = Astro.props;
       }
     };
 
+    private lastW = 0;
+    private lastH = 0;
     private resize = () => {
       if (!this.renderer) return;
-      this.renderer.setSize(innerWidth, innerHeight, false);
-      this.camera.aspect = innerWidth / innerHeight;
+      const w = innerWidth;
+      const h = innerHeight;
+      // iOS Safari fires `resize` on every scroll frame as the URL bar slides in
+      // and out — width never changes, height jumps ~60-100px. Re-allocating the
+      // WebGL drawing buffer on each of those is a repaint storm that reads as
+      // the ENTIRE page vibrating ("epilepsy on scroll"). On touch we lock to
+      // width: a genuine rotation or split-view changes width and still resizes;
+      // the URL-bar dance never does, so it is ignored.
+      if (this.lowPower && w === this.lastW && h !== this.lastH) {
+        this.lastH = h;
+        return;
+      }
+      this.lastW = w;
+      this.lastH = h;
+      // Size against the LARGEST height we have seen, so the fixed canvas always
+      // covers the tallest state (URL bar hidden) and never letterboxes when it
+      // reappears — the canvas is behind fixed content, a little overscan is free.
+      const renderH = this.lowPower ? Math.max(h, screen.height) : h;
+      this.renderer.setSize(w, renderH, false);
+      this.camera.aspect = w / renderH;
       this.camera.updateProjectionMatrix();
       this.starLayers.forEach((layer) => {
         (layer.material as THREE.ShaderMaterial).uniforms.uPixelRatio.value = this.lowPower

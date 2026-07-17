@@ -32,8 +32,8 @@ const { text = "MOTION", video, poster, label, labelKey } = Astro.props;
     aria-hidden="true"
     data-vtype-video></video>
 
-  <!-- black plate with the word punched out of it -->
-  <svg class="vtype-knock" viewBox="0 0 1000 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <!-- Desktop: wide full-bleed plate, the word sliced to fill the band. -->
+  <svg class="vtype-knock is-wide" viewBox="0 0 1000 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs>
       <mask id="vtype-mask">
         <rect width="1000" height="240" fill="#fff" />
@@ -41,6 +41,18 @@ const { text = "MOTION", video, poster, label, labelKey } = Astro.props;
       </mask>
     </defs>
     <rect width="1000" height="240" fill="#050505" mask="url(#vtype-mask)" />
+  </svg>
+
+  <!-- Mobile: a portrait-friendly plate. `textLength` forces the whole word to
+       span the width, so a narrow screen never crops "MOTION" down to "OTI". -->
+  <svg class="vtype-knock is-tall" viewBox="0 0 620 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <defs>
+      <mask id="vtype-mask-m">
+        <rect width="620" height="300" fill="#fff" />
+        <text x="310" y="158" text-anchor="middle" dominant-baseline="middle" textLength="560" lengthAdjust="spacingAndGlyphs">{text}</text>
+      </mask>
+    </defs>
+    <rect width="620" height="300" fill="#050505" mask="url(#vtype-mask-m)" />
   </svg>
 
   <h2 class="u-sr-only">{text}</h2>
@@ -81,6 +93,9 @@ const { text = "MOTION", video, poster, label, labelKey } = Astro.props;
     height: clamp(9rem, 22vw, 20rem);
   }
 
+  /* One SVG per orientation; the phone one is hidden until its breakpoint. */
+  .vtype-knock.is-tall { display: none; }
+
   /* styled via CSS so the inline SVG picks up the real display webfont */
   .vtype-knock text {
     font-family: var(--font-display);
@@ -88,6 +103,10 @@ const { text = "MOTION", video, poster, label, labelKey } = Astro.props;
     font-weight: 500;
     letter-spacing: -6px;
     fill: #000;
+  }
+  .vtype-knock.is-tall text {
+    font-size: 150px;
+    letter-spacing: 0;
   }
 
   .vtype-label {
@@ -102,14 +121,14 @@ const { text = "MOTION", video, poster, label, labelKey } = Astro.props;
     text-transform: uppercase;
   }
 
-  /* Phones get the film itself, not a keyhole: the band grows to a real strip
-     and the plate goes translucent, so the render plays across the full width
-     while the word stays punched through it as the brightest layer. */
+  /* Phones swap to the portrait plate: the whole word fits, the video plays
+     through both the letters and the translucent plate, so it reads as a real
+     film strip rather than a cropped keyhole. */
   @media (max-width: 600px) {
-    .vtype-knock { height: 62vw; }
-    .vtype-knock > rect { fill-opacity: 0.52; }
-    .vtype-knock text { font-size: 210px; letter-spacing: -4px; }
-    .vtype-vid { filter: grayscale(0.15) contrast(1.1) brightness(1.02); }
+    .vtype-knock.is-wide { display: none; }
+    .vtype-knock.is-tall { display: block; height: 82vw; max-height: 30rem; }
+    .vtype-knock.is-tall > rect { fill-opacity: 0.5; }
+    .vtype-vid { filter: grayscale(0.15) contrast(1.1) brightness(1.04); }
   }
 </style>
 

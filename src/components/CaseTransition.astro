@@ -122,7 +122,10 @@
 <script>
   import * as THREE from "three";
   import gsap from "gsap";
-  import { navigate as astroNavigate } from "astro:transitions/client";
+  // This site is a classic MPA — ClientRouter was removed. A module script is
+  // deferred, so the DOM is already parsed when it runs; there is no page-load
+  // event to wait for and no client router to navigate through.
+  const astroNavigate = (href: string) => location.assign(href);
 
   type CaseKind = "bridge" | "fidic";
   type TransitionOptions = { href: string; kind?: CaseKind; title?: string; sector?: number };
@@ -146,9 +149,9 @@
   let lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
   let casePage: HTMLElement | null = null;
 
-  document.addEventListener("astro:page-load", () => {
-    root = document.querySelector<HTMLElement>("[data-case-transition-root]")!;
-    if (!root) return;
+  const rootEl = document.querySelector<HTMLElement>("[data-case-transition-root]");
+  if (rootEl) {
+    root = rootEl;
     canvas = root.querySelector<HTMLCanvasElement>("[data-case-transition-canvas]")!;
     veil = root.querySelector<HTMLElement>("[data-case-transition-veil]")!;
     destination = root.querySelector<HTMLElement>("[data-transition-destination]")!;
@@ -158,7 +161,7 @@
     index = root.querySelector<HTMLElement>("[data-transition-index]")!;
     meter = root.querySelector<HTMLElement>("[data-transition-meter]")!;
     casePage = document.querySelector<HTMLElement>("[data-case-page]");
-  });
+  }
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
   let camera: THREE.PerspectiveCamera | null = null;
@@ -640,14 +643,37 @@
     });
   }
 
+  // The on-page "Back" control. It used to lean on history.back() → popstate →
+  // history.back(), a double-hop that silently died on mobile when any link in
+  // the chain didn't fire — the button appeared frozen. This is deterministic:
+  // play the reverse transition, then load the exact page we came from and let
+  // it restore scroll + play its arrival reveal. A hard failsafe guarantees the
+  // navigation happens even if the animation stalls.
+  function exitBackToOrigin() {
+    if (!casePage || running) return;
+    const origin = sessionStorage.getItem("rb-case-origin");
+    if (!origin) { history.back(); return; } // no stored origin → best-effort back
+    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
+    sessionStorage.removeItem("rb-case-arrive");
+    let navigated = false;
+    const go = () => {
+      if (navigated) return;
+      navigated = true;
+      sessionStorage.setItem("rb-case-return", kind);
+      location.assign(origin);
+    };
+    play(kind, "exit", go);
+    window.setTimeout(go, 2600); // never let the button appear stuck
+  }
+
   window.__rbCaseTransition = navigate;
 
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
     const back = target.closest<HTMLAnchorElement>("a[data-case-back]");
-    if (back && casePage && sessionStorage.getItem("rb-case-origin")) {
+    if (back && casePage) {
       event.preventDefault();
-      history.back();
+      exitBackToOrigin();
       return;
     }
 
@@ -670,7 +696,7 @@
     navigate({ href: url.href, kind: kindFromHref(url.href), title: link.textContent || undefined });
   });
 
-  document.addEventListener("astro:page-load", () => {
+  {
     const arriving = sessionStorage.getItem("rb-case-arrive") as CaseKind | null;
     const directArriving = sessionStorage.getItem("rb-case-direct-arrive") as CaseKind | null;
     const navigationType = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
@@ -694,17 +720,27 @@
       revealPage(kind);
       armCaseHistory(kind);
     }
-  });
+  }
 
   addEventListener("popstate", () => {
     if (!casePage || completingBack || !sessionStorage.getItem("rb-case-origin")) return;
     completingBack = true;
+    const origin = sessionStorage.getItem("rb-case-origin")!;
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
-    play(kind, "exit", () => {
+    let navigated = false;
+    const go = () => {
+      if (navigated) return;
+      navigated = true;
       sessionStorage.setItem("rb-case-return", kind);
       sessionStorage.removeItem("rb-case-arrive");
       history.back();
-    });
+      // If the history hop didn't take us off the case page, force it.
+      window.setTimeout(() => {
+        if (document.querySelector("[data-case-page]")) location.assign(origin);
+      }, 500);
+    };
+    play(kind, "exit", go);
+    window.setTimeout(go, 2600);
   });
 
   addEventListener("pageshow", (event) => {
