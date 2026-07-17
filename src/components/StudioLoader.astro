@@ -133,6 +133,10 @@ const isDe = lang === "de";
     transform: translateX(-50%);
   }
 
+  /* Rotation is driven from the script, not a CSS animation: iOS Safari
+     flattens preserve-3d subtrees on a whim (a backdrop-filter on any face is
+     enough), and when that happens the CSS-animated cube ships as a static
+     flower. A JS transform per frame survives every WebKit mood. */
   .loader-cube {
     position: absolute;
     top: 50%;
@@ -141,17 +145,17 @@ const isDe = lang === "de";
     height: 8rem;
     transform-style: preserve-3d;
     transform: translate(-50%, -50%) rotateX(-24deg) rotateY(38deg);
-    animation: loader-cube 8.5s linear infinite;
   }
 
+  /* No backdrop-filter here — the glass is painted, not sampled, precisely so
+     the 3D context never collapses on WebKit. */
   .cube-face {
     position: absolute;
     inset: 0;
     border: 1px solid rgba(255, 255, 255, 0.42);
     border-radius: 42% 58% 54% 46% / 48% 43% 57% 52%;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03));
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035));
     box-shadow: inset 0 0 2.4rem rgba(255, 255, 255, 0.13), 0 0 2.2rem rgba(255, 255, 255, 0.11);
-    backdrop-filter: blur(3px);
   }
 
   .cube-front { transform: translateZ(4rem); }
@@ -252,10 +256,6 @@ const isDe = lang === "de";
   .loader-axis { background: rgba(255, 255, 255, 0.09); }
   .axis-x { width: 100%; height: 1px; transform: translate(-50%, -50%); }
   .axis-y { width: 1px; height: 100%; transform: translate(-50%, -50%); }
-
-  @keyframes loader-cube {
-    to { transform: translate(-50%, -50%) rotateX(336deg) rotateY(398deg); }
-  }
 
   @keyframes loader-orbit-a {
     to { transform: translate(-50%, -50%) rotateX(67deg) rotateZ(372deg); }
@@ -401,7 +401,6 @@ const isDe = lang === "de";
      there"). Reduce it instead of killing it: a slow, steady turn with no
      pulsing or scanning — calm, but alive. */
   @media (prefers-reduced-motion: reduce) {
-    .loader-cube { animation-duration: 26s; }
     .orbit-a { animation-duration: 34s; }
     .orbit-b { animation-duration: 30s; }
     .loader-grid,
@@ -497,9 +496,18 @@ const isDe = lang === "de";
       let finished = false;
       let lastPhase = -1;
 
+      // The cube's spin lives here, not in CSS: Safari flattens the 3D subtree
+      // often enough that the keyframe animation shipped as a static flower on
+      // phones. One transform write per frame is free and works everywhere.
+      const SPIN_PERIOD = matchMedia("(prefers-reduced-motion: reduce)").matches ? 26 : 8.5;
+
       const tick = () => {
         if (finished) return;
         const elapsed = (performance.now() - start) / 1000;
+        if (cube) {
+          const turn = (elapsed / SPIN_PERIOD) * 360;
+          cube.style.transform = `translate(-50%, -50%) rotateX(${-24 + turn}deg) rotateY(${38 + turn}deg)`;
+        }
         const floor = Math.min(0.92, elapsed / 7.5); // never looks frozen
         const target = Math.min(Math.max(real(), floor), ceiling(elapsed)) * 100;
         displayed += (target - displayed) * 0.07;
