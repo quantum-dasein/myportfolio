@@ -43,15 +43,28 @@
 
 <script>
   import gsap from "gsap";
+  import { navigate } from "astro:transitions/client";
 
-  const root = document.querySelector<HTMLElement>("[data-tunnel-root]")!;
-  const black = root.querySelector<HTMLElement>("[data-tunnel-black]")!;
-  const hud = root.querySelector<HTMLElement>(".tunnel-hud")!;
-  const canvas = root.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
-  const ctx = canvas.getContext("2d", { alpha: false })!;
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
-  const isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
+  let root: HTMLElement;
+  let black: HTMLElement;
+  let hud: HTMLElement;
+  let canvas: HTMLCanvasElement;
+  let ctx: CanvasRenderingContext2D;
+  let reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+  let isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
+
+  document.addEventListener("astro:page-load", () => {
+    root = document.querySelector<HTMLElement>("[data-tunnel-root]")!;
+    if (!root) return;
+    black = root.querySelector<HTMLElement>("[data-tunnel-black]")!;
+    hud = root.querySelector<HTMLElement>(".tunnel-hud")!;
+    canvas = root.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
+    ctx = canvas.getContext("2d", { alpha: false })!;
+    isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
+    resize();
+  });
+
   let stars: { x: number; y: number; z: number; tone: number }[] = [];
   let W = 0, H = 0, cx = 0, cy = 0, focal = 0;
   let running = false;
@@ -185,7 +198,7 @@
     sessionStorage.setItem("rb-warp-scroll", String(scrollY));
     depart(() => {
       sessionStorage.setItem("rb-warp-arrive", "1");
-      location.assign(href);
+      navigate(href);
     });
   }
 
@@ -195,14 +208,16 @@
     history.back();
   }
 
-  const arriving = sessionStorage.getItem("rb-warp-arrive");
-  if (arriving) {
-    sessionStorage.removeItem("rb-warp-arrive");
-    arrive(sessionStorage.getItem("rb-warp-return") === "1");
-    if (isGallery && sessionStorage.getItem("rb-warp-origin") && !history.state?.rbWarpGuard) {
-      history.pushState({ ...(history.state || {}), rbWarpGuard: true }, "", location.href);
+  document.addEventListener("astro:page-load", () => {
+    const arriving = sessionStorage.getItem("rb-warp-arrive");
+    if (arriving) {
+      sessionStorage.removeItem("rb-warp-arrive");
+      arrive(sessionStorage.getItem("rb-warp-return") === "1");
+      if (isGallery && sessionStorage.getItem("rb-warp-origin") && !history.state?.rbWarpGuard) {
+        history.pushState({ ...(history.state || {}), rbWarpGuard: true }, "", location.href);
+      }
     }
-  }
+  });
 
   addEventListener("popstate", () => {
     if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
@@ -235,6 +250,5 @@
     enterArchive(url.href);
   });
 
-  resize();
   addEventListener("resize", resize);
 </script>

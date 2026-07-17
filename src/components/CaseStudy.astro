@@ -1012,8 +1012,7 @@ const caseSchema = {
     gap: clamp(3rem, 7vw, 6rem);
   }
 
-  .case-chapter p,
-  .visual-language-inner p {
+  .case-chapter p {
     position: relative;
     max-width: 58rem;
     margin: 1rem 0 0;
@@ -1028,6 +1027,24 @@ const caseSchema = {
     color: rgba(var(--rgb-text), 0.84);
     font-size: clamp(1.45rem, 2.65vw, 2.75rem);
     line-height: 1.12;
+    letter-spacing: 0;
+  }
+
+  .visual-language-inner p {
+    position: relative;
+    max-width: 58rem;
+    margin: 1rem 0 0;
+    font-family: var(--font-display);
+    padding: clamp(1.2rem, 2.8vw, 2rem);
+    border: 1px solid rgba(255, 255, 255, 0.095);
+    border-radius: 0.75rem;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
+      rgba(5, 7, 14, 0.76);
+    backdrop-filter: blur(20px);
+    color: rgba(var(--rgb-text), 0.84);
+    font-size: clamp(1.25rem, 2vw, 1.8rem);
+    line-height: 1.25;
     letter-spacing: 0;
   }
 

@@ -121,15 +121,25 @@
 <script>
   import gsap from "gsap";
   import { decode } from "../utils/decode";
+  import { navigate } from "astro:transitions/client";
 
-  const root = document.querySelector<HTMLElement>("[data-page-cut]")!;
-  const blades = root.querySelectorAll<HTMLElement>(".page-cut__blade");
-  const seam = root.querySelector<HTMLElement>("[data-page-cut-seam]")!;
-  const hud = root.querySelector<HTMLElement>("[data-page-cut-hud]")!;
-  const label = root.querySelector<HTMLElement>("[data-page-cut-label]")!;
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Case pages hand their own links to CaseTransition; we must not race it.
-  const casePage = document.querySelector("[data-case-page]");
+  let root: HTMLElement;
+  let blades: NodeListOf<HTMLElement>;
+  let seam: HTMLElement;
+  let hud: HTMLElement;
+  let label: HTMLElement;
+  let reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let casePage: Element | null = null;
+
+  document.addEventListener("astro:page-load", () => {
+    root = document.querySelector<HTMLElement>("[data-page-cut]")!;
+    if (!root) return;
+    blades = root.querySelectorAll<HTMLElement>(".page-cut__blade");
+    seam = root.querySelector<HTMLElement>("[data-page-cut-seam]")!;
+    hud = root.querySelector<HTMLElement>("[data-page-cut-hud]")!;
+    label = root.querySelector<HTMLElement>("[data-page-cut-label]")!;
+    casePage = document.querySelector("[data-case-page]");
+  });
 
   const ARRIVE_KEY = "rb-page-arrive";
 
@@ -147,8 +157,8 @@
       link?.dataset.transitionLabel ||
       (url.hash ? link?.textContent?.trim() : null) ||
       NAMED[path] ||
-      link?.textContent?.trim() ||
       path.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ||
+      link?.textContent?.trim() ||
       "STUDIO";
     return raw.toUpperCase().slice(0, 28);
   }
@@ -184,7 +194,7 @@
       done = true;
       // Let the ambience bow out over the page swap rather than be cut by pagehide.
       dispatchEvent(new CustomEvent("rb:transition-depart"));
-      location.assign(url.href);
+      navigate(url.href);
     };
     // Whatever happens to the timeline, the navigation still happens.
     const safety = window.setTimeout(go, reduced ? 420 : 1150);
@@ -251,8 +261,8 @@
     const link = (event.target as HTMLElement)?.closest<HTMLAnchorElement>("a[href]");
     if (!link) return null;
     if (link.hasAttribute("download") || (link.target && link.target !== "_self")) return null;
-    // Owned elsewhere: the archive warp, and every link on a case page.
-    if (link.hasAttribute("data-tunnel") || link.hasAttribute("data-case-link")) return null;
+    // Owned elsewhere: the archive warp, every link on a case page, and the lang switcher.
+    if (link.hasAttribute("data-tunnel") || link.hasAttribute("data-case-link") || link.hasAttribute("data-lang-route")) return null;
     if (casePage && (link.hasAttribute("data-case-exit") || link.hasAttribute("data-case-back"))) return null;
 
     const url = new URL(link.href, location.href);
@@ -275,9 +285,11 @@
     if (event.persisted) reset();
   });
 
-  const arriving = sessionStorage.getItem(ARRIVE_KEY);
-  if (arriving) {
-    sessionStorage.removeItem(ARRIVE_KEY);
-    arrive(arriving);
-  }
+  document.addEventListener("astro:page-load", () => {
+    const arriving = sessionStorage.getItem(ARRIVE_KEY);
+    if (arriving) {
+      sessionStorage.removeItem(ARRIVE_KEY);
+      arrive(arriving);
+    }
+  });
 </script>

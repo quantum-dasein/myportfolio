@@ -73,6 +73,7 @@ const research = [1, 2, 3, 4].map((n) => ({
               data-i18n-attr={`href:${s.href}`}
               data-reveal
               data-cursor="OPEN"
+              data-transition-label={tk(s.title)}
             >
               <span class="card-glint" aria-hidden="true" />
               <span class="card-n">{String(s.n).padStart(2, "0")}</span>
@@ -110,6 +111,7 @@ const research = [1, 2, 3, 4].map((n) => ({
               data-i18n-attr={`href:${r.href}`}
               data-reveal
               data-cursor="READ"
+              data-transition-label={tk(r.title)}
             >
               <span class="row-n">{String(r.n).padStart(2, "0")}</span>
               <span class="row-main">

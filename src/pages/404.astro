@@ -73,6 +73,8 @@ import Layout from "../layouts/Layout.astro";
     private mouseTarget = new THREE.Vector2();
     private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
     private visible = true;
+    private calm = document.documentElement.classList.contains("rb-calm");
+    private lastFrame = 0;
 
     connectedCallback() {
       this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !this.lowPower, powerPreference: "high-performance" });
@@ -91,6 +93,9 @@ import Layout from "../layouts/Layout.astro";
       addEventListener("resize", this.resize, { passive: true });
       addEventListener("pointermove", this.onPointerMove, { passive: true });
       document.addEventListener("visibilitychange", this.onVisibility);
+      addEventListener("rb:calmchange", this.onCalmChange as EventListener);
+      
+      this.lastFrame = performance.now();
       this.raf = requestAnimationFrame(this.render);
 
       gsap.fromTo(".top-text-group", 
@@ -116,6 +121,7 @@ import Layout from "../layouts/Layout.astro";
       removeEventListener("resize", this.resize);
       removeEventListener("pointermove", this.onPointerMove);
       document.removeEventListener("visibilitychange", this.onVisibility);
+      removeEventListener("rb:calmchange", this.onCalmChange as EventListener);
       this.starLayers.forEach(l => { l.geometry.dispose(); (l.material as THREE.Material).dispose(); });
       if (this.asteroidLayer) {
         this.asteroidLayer.geometry.dispose();
@@ -376,6 +382,14 @@ import Layout from "../layouts/Layout.astro";
       if (this.visible && !this.raf) this.raf = requestAnimationFrame(this.render);
     };
 
+    private onCalmChange = (event: CustomEvent<{ calm: boolean }>) => {
+      this.calm = Boolean(event.detail?.calm);
+      if (!this.calm && !this.raf && this.visible) {
+        this.lastFrame = performance.now();
+        this.raf = requestAnimationFrame(this.render);
+      }
+    };
+
     private resize = () => {
       if (!this.renderer) return;
       this.renderer.setSize(innerWidth, innerHeight, false);
@@ -385,7 +399,15 @@ import Layout from "../layouts/Layout.astro";
 
     private render = (now = performance.now()) => {
       this.raf = 0;
-      if (!this.renderer || !this.visible) return;
+      if (!this.renderer || !this.visible || this.calm) return;
+      
+      const targetFps = this.lowPower ? 45 : 60;
+      if (now - this.lastFrame < 1000 / targetFps) {
+        this.raf = requestAnimationFrame(this.render);
+        return;
+      }
+      this.lastFrame = now;
+      
       const elapsed = this.clock.getElapsedTime();
       this.mouse.lerp(this.mouseTarget, 0.05);
 

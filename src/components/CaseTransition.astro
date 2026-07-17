@@ -122,6 +122,7 @@
 <script>
   import * as THREE from "three";
   import gsap from "gsap";
+  import { navigate as astroNavigate } from "astro:transitions/client";
 
   type CaseKind = "bridge" | "fidic";
   type TransitionOptions = { href: string; kind?: CaseKind; title?: string; sector?: number };
@@ -132,18 +133,32 @@
     }
   }
 
-  const root = document.querySelector<HTMLElement>("[data-case-transition-root]")!;
-  const canvas = root.querySelector<HTMLCanvasElement>("[data-case-transition-canvas]")!;
-  const veil = root.querySelector<HTMLElement>("[data-case-transition-veil]")!;
-  const destination = root.querySelector<HTMLElement>("[data-transition-destination]")!;
-  const hud = root.querySelector<HTMLElement>(".case-transition__hud")!;
-  const label = root.querySelector<HTMLElement>("[data-transition-label]")!;
-  const status = root.querySelector<HTMLElement>("[data-transition-status]")!;
-  const index = root.querySelector<HTMLElement>("[data-transition-index]")!;
-  const meter = root.querySelector<HTMLElement>("[data-transition-meter]")!;
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
-  const casePage = document.querySelector<HTMLElement>("[data-case-page]");
+  let root: HTMLElement;
+  let canvas: HTMLCanvasElement;
+  let veil: HTMLElement;
+  let destination: HTMLElement;
+  let hud: HTMLElement;
+  let label: HTMLElement;
+  let status: HTMLElement;
+  let index: HTMLElement;
+  let meter: HTMLElement;
+  let reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+  let casePage: HTMLElement | null = null;
+
+  document.addEventListener("astro:page-load", () => {
+    root = document.querySelector<HTMLElement>("[data-case-transition-root]")!;
+    if (!root) return;
+    canvas = root.querySelector<HTMLCanvasElement>("[data-case-transition-canvas]")!;
+    veil = root.querySelector<HTMLElement>("[data-case-transition-veil]")!;
+    destination = root.querySelector<HTMLElement>("[data-transition-destination]")!;
+    hud = root.querySelector<HTMLElement>(".case-transition__hud")!;
+    label = root.querySelector<HTMLElement>("[data-transition-label]")!;
+    status = root.querySelector<HTMLElement>("[data-transition-status]")!;
+    index = root.querySelector<HTMLElement>("[data-transition-index]")!;
+    meter = root.querySelector<HTMLElement>("[data-transition-meter]")!;
+    casePage = document.querySelector<HTMLElement>("[data-case-page]");
+  });
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
   let camera: THREE.PerspectiveCamera | null = null;
@@ -577,7 +592,7 @@
     if (typeof options.sector === "number") sessionStorage.setItem("rb-case-sector", String(options.sector));
     play(kind, "depart", () => {
       sessionStorage.setItem("rb-case-arrive", kind);
-      location.assign(options.href);
+      astroNavigate(options.href);
     });
   }
 
@@ -618,7 +633,7 @@
     sessionStorage.removeItem("rb-case-return");
     play(kind, "exit", () => {
       sessionStorage.setItem("rb-case-direct-arrive", kind);
-      location.assign(href);
+      astroNavigate(href);
     });
   }
 
@@ -652,29 +667,31 @@
     navigate({ href: url.href, kind: kindFromHref(url.href), title: link.textContent || undefined });
   });
 
-  const arriving = sessionStorage.getItem("rb-case-arrive") as CaseKind | null;
-  const directArriving = sessionStorage.getItem("rb-case-direct-arrive") as CaseKind | null;
-  const navigationType = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-  if (directArriving && !casePage) {
-    sessionStorage.removeItem("rb-case-direct-arrive");
-    revealPage(directArriving, true);
-  } else if (arriving) {
-    sessionStorage.removeItem("rb-case-arrive");
-    revealPage(arriving);
-    armCaseHistory(arriving);
-  } else if (!casePage && sessionStorage.getItem("rb-case-return") && originMatches()) {
-    const kind = sessionStorage.getItem("rb-case-return") as CaseKind;
-    scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
-    revealPage(kind, true);
-  } else if (sessionStorage.getItem("rb-case-return") && !originMatches()) {
-    sessionStorage.removeItem("rb-case-return");
-    document.documentElement.classList.remove("rb-case-arriving");
-  } else if (casePage && navigationType?.type === "back_forward" && history.state?.rbCaseEntry) {
-    restoreCaseEntry();
-    const kind = (history.state.rbCaseKind as CaseKind) || kindFromHref(location.href);
-    revealPage(kind);
-    armCaseHistory(kind);
-  }
+  document.addEventListener("astro:page-load", () => {
+    const arriving = sessionStorage.getItem("rb-case-arrive") as CaseKind | null;
+    const directArriving = sessionStorage.getItem("rb-case-direct-arrive") as CaseKind | null;
+    const navigationType = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (directArriving && !casePage) {
+      sessionStorage.removeItem("rb-case-direct-arrive");
+      revealPage(directArriving, true);
+    } else if (arriving) {
+      sessionStorage.removeItem("rb-case-arrive");
+      revealPage(arriving);
+      armCaseHistory(arriving);
+    } else if (!casePage && sessionStorage.getItem("rb-case-return") && originMatches()) {
+      const kind = sessionStorage.getItem("rb-case-return") as CaseKind;
+      scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
+      revealPage(kind, true);
+    } else if (sessionStorage.getItem("rb-case-return") && !originMatches()) {
+      sessionStorage.removeItem("rb-case-return");
+      document.documentElement.classList.remove("rb-case-arriving");
+    } else if (casePage && navigationType?.type === "back_forward" && history.state?.rbCaseEntry) {
+      restoreCaseEntry();
+      const kind = (history.state.rbCaseKind as CaseKind) || kindFromHref(location.href);
+      revealPage(kind);
+      armCaseHistory(kind);
+    }
+  });
 
   addEventListener("popstate", () => {
     if (!casePage || completingBack || !sessionStorage.getItem("rb-case-origin")) return;

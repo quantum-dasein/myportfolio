@@ -80,3 +80,23 @@ export function decodeAll(targets: DecodeTarget[], opts: DecodeOptions = {}): ()
 export function decode(el: HTMLElement, final: string, opts: DecodeOptions = {}) {
   return decodeAll([{ text: final, write: (value) => (el.textContent = value) }], opts);
 }
+
+/**
+ * Decode whatever text an element already holds, without touching its markup.
+ *
+ * `decode(el, el.textContent)` looks equivalent and is not: textContent flattens
+ * the element, so a <br> or a <span> inside the label is destroyed the moment the
+ * text settles — which is how "DRIFTED<br>INTO" once shipped as "DRIFTEDINTO".
+ * Writing to the text nodes themselves leaves the structure alone.
+ */
+export function decodeText(el: HTMLElement, opts: DecodeOptions = {}) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const targets: DecodeTarget[] = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    if (!node.nodeValue?.trim()) continue;
+    const text = node.nodeValue;
+    targets.push({ text, write: (value) => (node.nodeValue = value) });
+  }
+  return decodeAll(targets, opts);
+}

@@ -287,6 +287,7 @@ const selectedWork = [
                 data-i18n-attr={`href:services.${n}.href`}
                 data-reveal
                 data-cursor="OPEN"
+                data-transition-label={tk(`services.${n}.title`)}
               >
                 <span class="svc-item-n">{String(n).padStart(2, "0")}</span>
                 <span class="svc-item-body">
@@ -333,7 +334,7 @@ const selectedWork = [
   <section class="portal" id="archive">
     <div class="u-container portal-inner">
       <div>
-        <span class="s-idx">06 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <span class="s-idx">07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
         <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
         <p class="portal-text" data-reveal data-i18n="portal.text">{t("portal.text")}</p>
       </div>
@@ -347,7 +348,7 @@ const selectedWork = [
 
   <section class="section contact legacy-ending" id="legacy-contact">
     <div class="u-container contact-grid">
-      <span class="s-idx">07 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+      <span class="s-idx">08 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
       <div>
         <h2 class="contact-title" data-sy-reveal="words" data-i18n="contact.title">{t("contact.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="contact.text">{t("contact.text")}</p>

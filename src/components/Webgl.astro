@@ -267,6 +267,10 @@ const { sculpture = true } = Astro.props;
 
     private onCalmChange = (event: CustomEvent<{ calm: boolean }>) => {
       this.calm = Boolean(event.detail?.calm);
+      if (!this.calm && !this.raf && this.visible) {
+        this.lastFrame = performance.now();
+        this.raf = requestAnimationFrame(this.render);
+      }
     };
 
     private resize = () => {
@@ -283,8 +287,9 @@ const { sculpture = true } = Astro.props;
 
     private render = (now = performance.now()) => {
       this.raf = 0;
-      if (!this.renderer || !this.visible) return;
-      const targetFps = this.calm ? 30 : this.fpsTiers[this.tier];
+      if (!this.renderer || !this.visible || this.calm) return;
+      
+      const targetFps = this.fpsTiers[this.tier];
       if (now - this.lastFrame < 1000 / targetFps) {
         this.raf = requestAnimationFrame(this.render);
         return;

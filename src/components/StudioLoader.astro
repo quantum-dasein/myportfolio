@@ -467,7 +467,7 @@
       // the arrival. Progress is now also capped by the clock, so the object
       // always gets its full run-up. The curve is front-loaded: it moves with
       // intent early, then holds back through the last stretch.
-      const MIN_RUN = 3.9;
+      const MIN_RUN = 0.8;
       const ceiling = (elapsed: number) =>
         elapsed >= MIN_RUN ? 1 : 1 - Math.pow(1 - elapsed / MIN_RUN, 1.7);
 
