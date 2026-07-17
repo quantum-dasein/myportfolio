@@ -576,19 +576,21 @@ const selectedWork = [
     --glint-x: 50%;
     --glint-y: 50%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* Reflow by the space actually available instead of one hard breakpoint:
+       a fixed repeat(3, 1fr) squeezed the columns at browser zoom until long
+       words like "Development" overflowed and got clipped by overflow:hidden.
+       13rem keeps the intended 3-up at desktop (the content column here is
+       ~860px, not the full container) and drops to 2-up / 1-up as space runs
+       out — at any zoom level, without a breakpoint to get wrong. */
+    grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
     gap: clamp(0.9rem, 2vw, 1.3rem);
     margin-top: 4rem;
     perspective: 1100px;
-
-    @media (--mq-tablet) {
-      grid-template-columns: 1fr;
-    }
   }
 
   .pillar {
     --panel-accent: 220, 226, 229;
-    min-height: 20rem;
+    min-height: clamp(14rem, 24vw, 20rem);
     position: relative;
     isolation: isolate;
     padding: clamp(1.2rem, 2.5vw, 2rem);
@@ -697,6 +699,9 @@ const selectedWork = [
     font-size: clamp(1.4rem, 2.4vw, 2.1rem);
     line-height: 1.05;
     letter-spacing: -0.02em;
+    /* a single long word must never be clipped by the card */
+    overflow-wrap: anywhere;
+    hyphens: auto;
     /* survive 90% browser zoom / odd widths without clipping long titles */
     overflow-wrap: break-word;
     text-wrap: balance;

@@ -40,11 +40,11 @@ const year = new Date().getFullYear();
 
     <div class="footer-main">
       <div class="brand-cell">
-        <a class="brand-mark" href={logoUrl} aria-label={logoAlt} data-case-exit data-locale-home>
+        <a class="brand-mark" href={logoUrl} aria-label={logoAlt} data-case-exit>
           <img src="/brand/rodion-belousov-rb-monogram.png" alt="" width="869" height="878" loading="lazy" />
         </a>
         <div>
-          <a class="logo" href={logoUrl} data-case-exit data-locale-home><span>Rodion Belousov</span><span class="dot">.studio</span></a>
+          <a class="logo" href={logoUrl} data-case-exit><span>Rodion Belousov</span><span class="dot">.studio</span></a>
           <p data-i18n="footer.tagline">{t("footer.tagline")}</p>
         </div>
       </div>
@@ -52,7 +52,7 @@ const year = new Date().getFullYear();
       <nav class="footer-nav" aria-label="Footer">
         {
           links.map((link) => (
-            <a href={link.url} data-i18n={link.i18n} data-case-exit data-locale-hash={link.url.startsWith("/#") ? link.url.slice(1) : undefined}>{link.title}</a>
+            <a href={link.url} data-i18n={link.i18n} data-case-exit>{link.title}</a>
           ))
         }
         <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance</a>
@@ -84,9 +84,6 @@ const year = new Date().getFullYear();
         <span class="machine-val">ASTRO / THREE / GSAP</span>
       </div>
     </div>
-
-    <!-- ── Giant wordmark ──────────────────────────────────────────────────── -->
-    <div class="wordmark" aria-hidden="true"><span>RODION BELOUSOV</span></div>
 
     <div class="footer-base">
       <p>© {year} Rodion Belousov · <span data-i18n="footer.rights">{t("footer.rights")}</span></p>
@@ -349,30 +346,6 @@ const year = new Date().getFullYear();
   @keyframes machine-pulse {
     0%, 100% { opacity: .35; }
     50% { opacity: 1; }
-  }
-
-  /* ── Giant wordmark ────────────────────────────────────────────────────── */
-  .wordmark {
-    overflow: hidden;
-    padding: clamp(1.5rem, 3vw, 2.5rem) 0 0;
-    line-height: .78;
-    text-align: center;
-  }
-
-  .wordmark span {
-    display: block;
-    font-family: var(--font-display);
-    font-weight: 500;
-    /* sized so the full 15-character wordmark always fits the viewport —
-       a rem cap let it outgrow the screen and clipped the final letters */
-    font-size: clamp(1.5rem, 11.4vw, 13rem);
-    letter-spacing: -0.04em;
-    white-space: nowrap;
-    color: transparent;
-    background: linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .045) 62%, transparent);
-    background-clip: text;
-    -webkit-background-clip: text;
-    transform: translateY(12%);
   }
 
   .footer-base {

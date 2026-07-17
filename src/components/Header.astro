@@ -19,7 +19,7 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
   <sy-head>
     <div class="inner u-container">
       <div class="wrapper">
-        <a class="logo" href={logoUrl} aria-label={logoAlt} data-case-exit data-locale-home data-tunnel={logoTunnel ? "" : undefined}>
+        <a class="logo" href={logoUrl} aria-label={logoAlt} data-case-exit data-tunnel={logoTunnel ? "" : undefined}>
           <span class="mark">Rodion Belousov</span><span class="dot">.studio</span>
         </a>
 
@@ -29,7 +29,7 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
               <ul>
                 {links.map((l) => (
                   <li>
-                    <a href={l.url} data-i18n={l.i18n} data-overlay={l.overlay} data-case-exit data-locale-hash={l.url.startsWith("/#") ? l.url.slice(1) : undefined}>
+                    <a href={l.url} data-i18n={l.i18n} data-overlay={l.overlay} data-case-exit>
                       {l.title}
                     </a>
                   </li>
@@ -54,8 +54,8 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
           <div class="lang" role="group" aria-label="Language">
             {localeLinks ? (
               <>
-                <a href={localeLinks.en ?? "/en/"} data-lang-route="en" class:list={{ "is-active": lang === "en" }} aria-current={lang === "en" ? "page" : undefined}>EN</a>
-                <a href={localeLinks.de ?? "/de/"} data-lang-route="de" class:list={{ "is-active": lang === "de" }} aria-current={lang === "de" ? "page" : undefined}>DE</a>
+                <a href={localeLinks.en} data-lang-route="en" class:list={{ "is-active": lang === "en" }} aria-current={lang === "en" ? "page" : undefined}>EN</a>
+                <a href={localeLinks.de} data-lang-route="de" class:list={{ "is-active": lang === "de" }} aria-current={lang === "de" ? "page" : undefined}>DE</a>
               </>
             ) : (
               <>
@@ -67,7 +67,7 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
 
           {
             cta ? (
-              <a class="nav-cta" href={cta.url} data-tunnel={cta.tunnel ? "" : undefined} data-locale-home={cta.url === "/" ? "" : undefined}>
+              <a class="nav-cta" href={cta.url} data-tunnel={cta.tunnel ? "" : undefined} data-magnetic data-cursor="ENTER">
                 <span data-i18n={cta.i18n}>{cta.title}</span>
               </a>
             ) : null

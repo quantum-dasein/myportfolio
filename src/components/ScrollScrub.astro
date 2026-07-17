@@ -44,8 +44,9 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
     </div>
 
     <div class="scrub-hud" aria-hidden="true">
+      <span class="scrub-rec"><i></i>REC</span>
       <span class="scrub-bar"><i data-scrub-bar></i></span>
-      <span class="scrub-frame" data-scrub-frame>00%</span>
+      <span class="scrub-frame" data-scrub-frame>FRAME 0000</span>
     </div>
   </div>
 </section>
@@ -72,15 +73,33 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: contrast(1.08) brightness(0.96);
+    /* Graded down to obsidian: only the highlights survive, so the film reads
+       as sculpture in the dark rather than as a bright stock clip. */
+    filter: contrast(1.32) brightness(0.52) saturate(0.28);
   }
 
   .scrub-veil {
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(90deg, rgba(5, 5, 5, 0.82), rgba(5, 5, 5, 0.25) 46%, transparent 70%),
-      linear-gradient(0deg, rgba(5, 5, 5, 0.7), transparent 42%);
+      radial-gradient(115% 85% at 70% 46%, transparent 0%, rgba(0, 0, 0, 0.5) 62%, rgba(0, 0, 0, 0.92) 100%),
+      linear-gradient(90deg, rgba(3, 3, 4, 0.94), rgba(3, 3, 4, 0.55) 44%, rgba(3, 3, 4, 0.1) 74%),
+      linear-gradient(0deg, rgba(3, 3, 4, 0.88), transparent 46%);
+  }
+
+  /* faint scan of the film gate */
+  .scrub-sticky::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.5;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgba(255, 255, 255, 0.014) 3px 4px
+    );
   }
 
   .scrub-copy {
@@ -129,6 +148,25 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
     letter-spacing: 0.14em;
     color: rgba(var(--rgb-text), 0.6);
     font-variant-numeric: tabular-nums;
+  }
+
+  .scrub-rec {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: rgba(var(--rgb-text), 0.75);
+  }
+  .scrub-rec i {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0.6rem rgba(255, 255, 255, 0.7);
+    animation: rec-blink 1.6s steps(2) infinite;
+  }
+  @keyframes rec-blink {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 1; }
   }
 
   .scrub-bar {
@@ -212,7 +250,13 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
           target = p * duration;
           apply();
           if (bar) bar.style.width = `${(p * 100).toFixed(1)}%`;
-          if (frame) frame.textContent = `${String(Math.round(p * 100)).padStart(2, "0")}%`;
+          // Read as an edit suite, not a progress bar: real frame numbers off
+          // the clip's own duration (25fps), so the count means something.
+          if (frame) {
+            const total = Math.max(1, Math.round(duration * 25));
+            const current = Math.round(p * total);
+            frame.textContent = `FRAME ${String(current).padStart(4, "0")} / ${String(total).padStart(4, "0")}`;
+          }
         },
       });
     }

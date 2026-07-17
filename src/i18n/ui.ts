@@ -338,10 +338,10 @@ export const ui = {
 
     // ── Video bands (type knockout + scroll-scrubbed product film) ──────────
     "reel.type.label": "Cinema 4D / Redshift — product film, rendered in-house",
-    "scrub.eyebrow": "Product film / scroll to turn",
-    "scrub.title": "Rendered to sell, not to decorate.",
+    "scrub.eyebrow": "Cinema 4D · Redshift / scroll runs the film",
+    "scrub.title": "Nothing here was filmed.",
     "scrub.text":
-      "Cinema 4D and Redshift product animation — lighting, materials and camera built so the object reads in a second. Scroll to turn it.",
+      "No studio. No camera. No product. Light, material and motion built out of nothing, then graded until it reads as real. Scroll to run it, frame by frame.",
 
     // ── Portal to the 3D archive ────────────────────────────────────────────
     "portal.eyebrow": "The Archive",
@@ -690,10 +690,10 @@ export const ui = {
 
     // ── Video bands (type knockout + scroll-scrubbed product film) ──────────
     "reel.type.label": "Cinema 4D / Redshift — Produktfilm, im Haus gerendert",
-    "scrub.eyebrow": "Produktfilm / Scrollen zum Drehen",
-    "scrub.title": "Gerendert zum Verkaufen, nicht zum Dekorieren.",
+    "scrub.eyebrow": "Cinema 4D · Redshift / Scrollen spielt den Film",
+    "scrub.title": "Hier wurde nichts gefilmt.",
     "scrub.text":
-      "Cinema 4D- und Redshift-Produktanimation — Licht, Materialien und Kamera so gebaut, dass das Objekt in einer Sekunde liest. Scrolle, um es zu drehen.",
+      "Kein Studio. Keine Kamera. Kein Produkt. Licht, Material und Bewegung aus dem Nichts gebaut und so lange gegradet, bis es echt liest. Scrolle — Bild für Bild.",
 
     // ── Portal to the 3D archive ────────────────────────────────────────────
     "portal.eyebrow": "Das Archiv",
