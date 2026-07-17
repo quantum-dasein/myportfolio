@@ -3,7 +3,8 @@ import { works } from "../data/works";
 import { insightContent, serviceContent } from "../data/seo-content";
 
 const site = "https://rodionbelousov.studio";
-const lastmod = "2026-07-14";
+// Build date, not a hardcode: every deploy tells crawlers the content moved.
+const lastmod = new Date().toISOString().slice(0, 10);
 
 function url(path: string, priority: string, changefreq: string, extras = "") {
   return `<url><loc>${site}${path}</loc><lastmod>${lastmod}</lastmod><changefreq>${changefreq}</changefreq><priority>${priority}</priority>${extras}</url>`;
