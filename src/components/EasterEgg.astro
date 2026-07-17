@@ -1,0 +1,304 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  EasterEgg — the secret transmission.
+//
+//  Hidden until you look for it. Two ways in:
+//   • tap the RB monogram five times in quick succession (works on touch), or
+//   • the Konami code ↑↑↓↓←→←→ B A on a keyboard.
+//
+//  Reward: the void opens, a field of particles gathers itself into the RB
+//  monogram over a drifting starfield, and a line decodes in — the studio's
+//  own signature move. Dismiss with a tap, a click, or Escape.
+//
+//  Self-contained canvas 2D (no three.js), DPR-aware, paused when hidden, and
+//  it degrades to a calm static reveal under reduced-motion / Calm mode.
+// ─────────────────────────────────────────────────────────────────────────────
+---
+
+<div class="egg" data-egg-root aria-hidden="true">
+  <canvas data-egg-canvas></canvas>
+  <div class="egg-copy">
+    <span class="egg-kicker" data-egg-kicker>RB · TRANSMISSION 404</span>
+    <p class="egg-line" data-egg-line></p>
+    <button type="button" class="egg-dismiss" data-egg-dismiss>CLOSE ✕</button>
+  </div>
+</div>
+
+<style>
+  .egg {
+    position: fixed;
+    inset: 0;
+    z-index: 1200; /* above everything, including the loader */
+    display: none;
+    place-items: center;
+    background: radial-gradient(circle at 50% 45%, #05060a, #010102 70%);
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out-expo, ease);
+  }
+  .egg.is-open { display: grid; opacity: 1; }
+
+  .egg canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .egg-copy {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: center;
+    gap: 1.1rem;
+    padding: 1.5rem;
+    text-align: center;
+    /* sits below the assembled monogram */
+    transform: translateY(clamp(7rem, 22vh, 12rem));
+    pointer-events: none;
+  }
+
+  .egg-kicker {
+    font-family: var(--font-inter, sans-serif);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+  }
+
+  .egg-line {
+    margin: 0;
+    max-width: 26ch;
+    font-family: var(--font-inter, sans-serif);
+    font-size: clamp(0.82rem, 2.6vw, 1.05rem);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    line-height: 1.6;
+    color: rgba(240, 244, 246, 0.9);
+  }
+
+  .egg-dismiss {
+    pointer-events: auto;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.75);
+    font-family: var(--font-inter, sans-serif);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    opacity: 0;
+    transition: color 0.3s, border-color 0.3s, background 0.3s;
+  }
+  .egg-dismiss:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.07);
+  }
+</style>
+
+<script>
+  import { decode, prefersCalm } from "../utils/decode";
+
+  const root = document.querySelector<HTMLElement>("[data-egg-root]");
+  const canvas = root?.querySelector<HTMLCanvasElement>("[data-egg-canvas]");
+  const lineEl = root?.querySelector<HTMLElement>("[data-egg-line]");
+  const kickerEl = root?.querySelector<HTMLElement>("[data-egg-kicker]");
+  const dismissEl = root?.querySelector<HTMLElement>("[data-egg-dismiss]");
+  const ctx = canvas?.getContext("2d");
+
+  const LINES = [
+    "You weren't supposed to find this. Welcome to the void.",
+    "Signal acquired. The archive remembers everyone who looks closer.",
+    "Built solo, in Vienna, at an hour no one should be awake.",
+    "Curiosity is the whole job. You just proved you have it.",
+  ];
+
+  type Dot = { x: number; y: number; tx: number; ty: number; vx: number; vy: number; tone: number };
+
+  let open = false;
+  let raf = 0;
+  let dots: Dot[] = [];
+  let stars: { x: number; y: number; z: number }[] = [];
+  let W = 0, H = 0, dpr = 1;
+  let settle = 0; // 0 → 1 convergence
+  let startedAt = 0;
+  const lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+
+  /** Sample the RB monogram into target points by rendering it offscreen. */
+  function buildTargets() {
+    const off = document.createElement("canvas");
+    const size = 260;
+    off.width = size;
+    off.height = size;
+    const octx = off.getContext("2d")!;
+    octx.fillStyle = "#fff";
+    octx.font = `700 ${size * 0.62}px "Inter", system-ui, sans-serif`;
+    octx.textAlign = "center";
+    octx.textBaseline = "middle";
+    octx.fillText("RB", size / 2, size / 2 + size * 0.02);
+
+    const data = octx.getImageData(0, 0, size, size).data;
+    const step = lowPower ? 4 : 3;
+    const targets: { x: number; y: number }[] = [];
+    for (let y = 0; y < size; y += step) {
+      for (let x = 0; x < size; x += step) {
+        if (data[(y * size + x) * 4 + 3] > 128) targets.push({ x: x / size - 0.5, y: y / size - 0.5 });
+      }
+    }
+    return targets;
+  }
+
+  function layout() {
+    if (!canvas || !ctx) return;
+    dpr = Math.min(devicePixelRatio || 1, lowPower ? 1.5 : 2);
+    W = canvas.width = Math.floor(innerWidth * dpr);
+    H = canvas.height = Math.floor(innerHeight * dpr);
+    const scale = Math.min(W, H) * (lowPower ? 0.62 : 0.5);
+    const cx = W / 2;
+    const cy = H * 0.42;
+    const targets = buildTargets();
+    dots = targets.map((t) => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      tx: cx + t.x * scale,
+      ty: cy + t.y * scale,
+      vx: 0,
+      vy: 0,
+      tone: 0.55 + Math.random() * 0.45,
+    }));
+    stars = Array.from({ length: lowPower ? 90 : 200 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      z: 0.2 + Math.random() * 0.8,
+    }));
+  }
+
+  function frame(now: number) {
+    if (!open || !ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(3,4,7,0.35)";
+    ctx.fillRect(0, 0, W, H);
+
+    // drifting stars
+    const t = (now - startedAt) / 1000;
+    for (const s of stars) {
+      const tw = 0.5 + 0.5 * Math.sin(t * 1.6 + s.x);
+      ctx.fillStyle = `rgba(210,225,240,${0.25 * s.z * tw})`;
+      ctx.fillRect(s.x, s.y + Math.sin(t * 0.2 + s.x * 0.01) * 6 * s.z, dpr, dpr);
+    }
+
+    settle += (1 - settle) * 0.03;
+    const converge = prefersCalm() ? 1 : settle;
+
+    // particles ease toward the monogram with a touch of orbital drift
+    for (const d of dots) {
+      const ex = d.tx - d.x;
+      const ey = d.ty - d.y;
+      d.vx = (d.vx + ex * 0.02) * 0.82;
+      d.vy = (d.vy + ey * 0.02) * 0.82;
+      d.x += d.vx * converge + (Math.random() - 0.5) * (1 - converge) * 6;
+      d.y += d.vy * converge + (Math.random() - 0.5) * (1 - converge) * 6;
+      const glow = 0.35 + converge * 0.65;
+      ctx.fillStyle = `rgba(${230 + d.tone * 25 | 0},${238 + d.tone * 12 | 0},245,${d.tone * glow})`;
+      ctx.fillRect(d.x, d.y, dpr * 1.4, dpr * 1.4);
+    }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  function activate() {
+    if (open || !root || !ctx || !lineEl) return;
+    open = true;
+    settle = 0;
+    startedAt = performance.now();
+    root.classList.add("is-open");
+    root.setAttribute("aria-hidden", "false");
+    layout();
+    if (prefersCalm()) {
+      // Calm: skip the convergence, paint one settled frame.
+      settle = 1;
+      dots.forEach((d) => { d.x = d.tx; d.y = d.ty; });
+      frame(performance.now());
+      cancelAnimationFrame(raf);
+    } else {
+      raf = requestAnimationFrame(frame);
+    }
+    const line = LINES[(Math.random() * LINES.length) | 0];
+    lineEl.textContent = "";
+    setTimeout(() => {
+      if (kickerEl) { kickerEl.style.opacity = "1"; decode(kickerEl, kickerEl.textContent || "RB · TRANSMISSION 404", { duration: 600 }); }
+      decode(lineEl, line, { duration: 1100 });
+      if (dismissEl) dismissEl.style.opacity = "1";
+    }, prefersCalm() ? 0 : 900);
+    // A little wink to the ambience, if the visitor has sound on.
+    dispatchEvent(new CustomEvent("rb:egg"));
+  }
+
+  function dismiss() {
+    if (!open || !root) return;
+    open = false;
+    cancelAnimationFrame(raf);
+    root.classList.remove("is-open");
+    root.setAttribute("aria-hidden", "true");
+    if (kickerEl) kickerEl.style.opacity = "0";
+    if (dismissEl) dismissEl.style.opacity = "0";
+  }
+
+  // ── Trigger 1: press and hold the monogram ────────────────────────────────
+  // The footer monogram is also the "home" link, so a tap must still navigate.
+  // A long press (~1.1s) can't be confused with a tap, and we swallow the click
+  // that a long press ends on so it doesn't also fire the link.
+  let pressTimer = 0;
+  let longFired = false;
+  document.addEventListener("pointerdown", (event) => {
+    if (open || !(event.target as HTMLElement)?.closest("[data-egg]")) return;
+    longFired = false;
+    clearTimeout(pressTimer);
+    pressTimer = window.setTimeout(() => { longFired = true; activate(); }, 1100);
+  });
+  const endPress = () => clearTimeout(pressTimer);
+  document.addEventListener("pointerup", endPress);
+  document.addEventListener("pointercancel", endPress);
+  document.addEventListener("pointermove", (event) => {
+    // A finger that wanders off the monogram cancels the hold.
+    if (pressTimer && !(event.target as HTMLElement)?.closest("[data-egg]")) endPress();
+  });
+  document.addEventListener("click", (event) => {
+    if (longFired && (event.target as HTMLElement)?.closest("[data-egg]")) {
+      event.preventDefault();
+      event.stopPropagation();
+      longFired = false;
+    }
+  }, true);
+
+  // ── Trigger 2: the Konami code ────────────────────────────────────────────
+  const KONAMI = ["arrowup","arrowup","arrowdown","arrowdown","arrowleft","arrowright","arrowleft","arrowright","b","a"];
+  let seq: string[] = [];
+  addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { dismiss(); return; }
+    seq.push(event.key.toLowerCase());
+    if (seq.length > KONAMI.length) seq.shift();
+    if (KONAMI.every((k, i) => seq[i] === k) && seq.length === KONAMI.length) { seq = []; activate(); }
+  });
+
+  // ── Dismissal ─────────────────────────────────────────────────────────────
+  dismissEl?.addEventListener("click", dismiss);
+  root?.addEventListener("click", (event) => {
+    // Any click on the backdrop (not the button) also closes it.
+    if (event.target === root || (event.target as HTMLElement)?.tagName === "CANVAS") dismiss();
+  });
+  addEventListener("resize", () => { if (open) layout(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelAnimationFrame(raf);
+    else if (open && !prefersCalm()) raf = requestAnimationFrame(frame);
+  });
+
+  // Expose a manual trigger for the curious who read the source. Hi.
+  (window as any).rbEgg = activate;
+</script>

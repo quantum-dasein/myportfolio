@@ -271,6 +271,9 @@
 
   addEventListener("rb:calmchange", () => fade(level(), 0.35));
 
+  // The secret transmission opening — a heavier cue than a click, if sound is on.
+  addEventListener("rb:egg", () => play("thunk", THUNK_LEVEL));
+
   // Dispatched the instant a transition commits to the new URL — the old
   // document then lives just long enough for this to land, so the ambience bows
   // out over the page swap instead of being guillotined by pagehide.

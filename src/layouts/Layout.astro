@@ -9,6 +9,7 @@ import CursorField from "../components/CursorField.astro";
 import SoundField from "../components/SoundField.astro";
 import CaseTransition from "../components/CaseTransition.astro";
 import PageTransition from "../components/PageTransition.astro";
+import EasterEgg from "../components/EasterEgg.astro";
 import { ui, defaultLang } from "../i18n/ui";
 import { useTranslations, type Lang } from "../i18n/utils";
 import type { Link } from "../types";
@@ -262,6 +263,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     <PageTransition />
     <CaseTransition />
     <Tunnel />
+    <EasterEgg />
   </body>
 </html>
 
