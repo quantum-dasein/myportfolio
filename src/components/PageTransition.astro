@@ -1,0 +1,284 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  PageTransition — the shutter.
+//
+//  The archive warps and the cases build themselves a world; every other route
+//  used to just … appear. This is the house cut for all of them: two blades
+//  close like a camera shutter, the destination decodes on the seam, and the
+//  blades open again on the other side. Cheap (transforms only, no WebGL), fast,
+//  and deliberately a different gesture from the other two so the site reads as
+//  three deliberate moves rather than one effect applied everywhere.
+//
+//  It never touches links that Tunnel or CaseTransition already own.
+// ─────────────────────────────────────────────────────────────────────────────
+---
+
+<div class="page-cut" data-page-cut aria-hidden="true">
+  <span class="page-cut__blade is-top"></span>
+  <span class="page-cut__blade is-bottom"></span>
+  <span class="page-cut__seam" data-page-cut-seam></span>
+  <div class="page-cut__hud" data-page-cut-hud>
+    <small data-page-cut-kicker>RB / STUDIO</small>
+    <p data-page-cut-label>STUDIO</p>
+  </div>
+</div>
+
+<style>
+  .page-cut {
+    position: fixed;
+    inset: 0;
+    z-index: 490; /* under the case world (500), over the archive warp (480) */
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .page-cut.is-active,
+  :global(html.rb-page-arriving) .page-cut {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .page-cut__blade {
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    height: 51vh; /* overlap the seam so no hairline of the page shows through */
+    background: linear-gradient(180deg, #06070a, #020304);
+    will-change: transform;
+  }
+
+  .page-cut__blade.is-top {
+    top: 0;
+    transform: translate3d(0, -100%, 0);
+    box-shadow: 0 1px 2.5rem rgba(0, 0, 0, 0.7);
+  }
+
+  .page-cut__blade.is-bottom {
+    bottom: 0;
+    transform: translate3d(0, 100%, 0);
+    box-shadow: 0 -1px 2.5rem rgba(0, 0, 0, 0.7);
+  }
+
+  /* Blades closed is the resting state for a page being arrived at, so the
+     incoming document is never visible before the shutter opens on it. */
+  :global(html.rb-page-arriving) .page-cut__blade.is-top,
+  :global(html.rb-page-arriving) .page-cut__blade.is-bottom {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .page-cut__seam {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #fff 18%, #fff 82%, transparent);
+    box-shadow: 0 0 1.5rem rgba(255, 255, 255, 0.55);
+    transform: scaleX(0);
+    opacity: 0;
+  }
+
+  /* Centred by the grid, not by a transform — GSAP owns transform here, and a
+     translate(-50%) baked into CSS would be the first thing it overwrote. */
+  .page-cut__hud {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.9rem;
+    padding-inline: clamp(1.2rem, 4vw, 4rem);
+    text-align: center;
+    opacity: 0;
+  }
+
+  .page-cut__hud small {
+    font-family: var(--font-inter);
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .page-cut__hud p {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 5.5vw, 4.6rem);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: #f4f7f8;
+    white-space: nowrap;
+  }
+
+  /* Calm mode keeps the cut — it is what stops the page snapping — but drops the
+     performance around it down to a plain, quick fade. */
+  @media (prefers-reduced-motion: reduce) {
+    .page-cut__hud,
+    .page-cut__seam { display: none; }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import { decode } from "../utils/decode";
+
+  const root = document.querySelector<HTMLElement>("[data-page-cut]")!;
+  const blades = root.querySelectorAll<HTMLElement>(".page-cut__blade");
+  const seam = root.querySelector<HTMLElement>("[data-page-cut-seam]")!;
+  const hud = root.querySelector<HTMLElement>("[data-page-cut-hud]")!;
+  const label = root.querySelector<HTMLElement>("[data-page-cut-label]")!;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Case pages hand their own links to CaseTransition; we must not race it.
+  const casePage = document.querySelector("[data-case-page]");
+
+  const ARRIVE_KEY = "rb-page-arrive";
+
+  // Routes worth naming. Anything else falls back to the link's own text, which
+  // is already the honest answer for a service or an insight.
+  const NAMED: Record<string, string> = {
+    "/": "STUDIO",
+    "/services": "SERVICES & RESEARCH",
+    "/gallery": "ARCHIVE",
+  };
+
+  function labelFor(url: URL, link?: HTMLAnchorElement | null) {
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+    const raw =
+      link?.dataset.transitionLabel ||
+      NAMED[path] ||
+      link?.textContent?.trim() ||
+      path.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ||
+      "STUDIO";
+    return raw.toUpperCase().slice(0, 28);
+  }
+
+  let running = false;
+
+  function reset() {
+    running = false;
+    gsap.killTweensOf([...blades, seam, hud]);
+    document.documentElement.classList.remove("rb-transitioning", "rb-page-arriving");
+    root.classList.remove("is-active");
+    gsap.set(blades, { clearProps: "transform" });
+    gsap.set([seam, hud], { clearProps: "opacity,transform" });
+  }
+
+  function depart(url: URL, link: HTMLAnchorElement | null) {
+    if (running) return;
+    running = true;
+    const text = labelFor(url, link);
+    sessionStorage.setItem(ARRIVE_KEY, text);
+    label.textContent = text;
+
+    document.documentElement.classList.add("rb-transitioning");
+    root.classList.add("is-active");
+    gsap.set(blades[0], { yPercent: -100 });
+    gsap.set(blades[1], { yPercent: 100 });
+    gsap.set(seam, { scaleX: 0, opacity: 0 });
+    gsap.set(hud, { opacity: 0, y: 14 });
+
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      // Let the ambience bow out over the page swap rather than be cut by pagehide.
+      dispatchEvent(new CustomEvent("rb:transition-depart"));
+      location.assign(url.href);
+    };
+    // Whatever happens to the timeline, the navigation still happens.
+    const safety = window.setTimeout(go, reduced ? 420 : 1150);
+    const tl = gsap.timeline({
+      defaults: { ease: "power3.inOut" },
+      onComplete: () => {
+        clearTimeout(safety);
+        go();
+      },
+    });
+
+    if (reduced) {
+      tl.to(blades, { yPercent: 0, duration: 0.28, ease: "power2.out" }, 0);
+      return;
+    }
+
+    tl.to(blades, { yPercent: 0, duration: 0.62 }, 0)
+      .to(seam, { scaleX: 1, opacity: 1, duration: 0.5, ease: "power2.out" }, 0.24)
+      .to(hud, { opacity: 1, y: 0, duration: 0.34, ease: "power2.out" }, 0.36)
+      .call(() => decode(label, text, { duration: 340 }), undefined, 0.36)
+      .to({}, { duration: 0.22 }); // hold on the closed shutter before the swap
+  }
+
+  /** The shutter opens on the page that was just loaded behind it. */
+  function arrive(text: string) {
+    running = true;
+    document.documentElement.classList.add("rb-transitioning", "rb-page-arriving");
+    root.classList.add("is-active");
+    label.textContent = text;
+    gsap.set(blades, { yPercent: 0 });
+
+    if (reduced) {
+      gsap.to(blades, {
+        yPercent: (i: number) => (i === 0 ? -100 : 100),
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: reset,
+      });
+      return;
+    }
+
+    gsap.set(seam, { scaleX: 1, opacity: 1 });
+    gsap.set(hud, { opacity: 1, y: 0 });
+
+    const safety = window.setTimeout(reset, 1600);
+    gsap
+      .timeline({
+        defaults: { ease: "power3.inOut" },
+        onComplete: () => {
+          clearTimeout(safety);
+          reset();
+        },
+      })
+      .to(hud, { opacity: 0, y: -10, duration: 0.32, ease: "power2.in" }, 0.06)
+      .to(seam, { scaleX: 0, opacity: 0, duration: 0.42, ease: "power2.in" }, 0.1)
+      .to(blades[0], { yPercent: -100, duration: 0.78 }, 0.24)
+      .to(blades[1], { yPercent: 100, duration: 0.78 }, 0.24);
+  }
+
+  /** The URL this click should transition to, or null if it is none of our business. */
+  function target(event: MouseEvent): { url: URL; link: HTMLAnchorElement } | null {
+    if (event.defaultPrevented || event.button !== 0) return null;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
+    const link = (event.target as HTMLElement)?.closest<HTMLAnchorElement>("a[href]");
+    if (!link) return null;
+    if (link.hasAttribute("download") || (link.target && link.target !== "_self")) return null;
+    // Owned elsewhere: the archive warp, and every link on a case page.
+    if (link.hasAttribute("data-tunnel") || link.hasAttribute("data-case-link")) return null;
+    if (casePage && (link.hasAttribute("data-case-exit") || link.hasAttribute("data-case-back"))) return null;
+
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin) return null;
+    // A hash on the page we are already on is a scroll, not a navigation.
+    if (url.pathname === location.pathname && url.search === location.search) return null;
+    return { url, link };
+  }
+
+  document.addEventListener("click", (event) => {
+    const hit = target(event);
+    if (!hit) return;
+    event.preventDefault();
+    document.body.classList.remove("is-nav-opened");
+    depart(hit.url, hit.link);
+  });
+
+  // A page restored from bfcache still has the shutter closed from when we left it.
+  addEventListener("pageshow", (event) => {
+    if (event.persisted) reset();
+  });
+
+  const arriving = sessionStorage.getItem(ARRIVE_KEY);
+  if (arriving) {
+    sessionStorage.removeItem(ARRIVE_KEY);
+    arrive(arriving);
+  }
+</script>

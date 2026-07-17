@@ -52,10 +52,10 @@
     overflow: hidden;
     padding: clamp(1.2rem, 3vw, 2.5rem);
     background:
-      radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.095), transparent 28%),
-      radial-gradient(circle at 65% 54%, rgba(255, 255, 255, 0.035), transparent 34%),
-      linear-gradient(145deg, #000, #08090a 54%, #010101);
-    color: #e8e9e9;
+      radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.17), transparent 30%),
+      radial-gradient(circle at 65% 54%, rgba(255, 255, 255, 0.07), transparent 36%),
+      linear-gradient(145deg, #030304, #0e1013 54%, #030304);
+    color: #f2f3f3;
   }
 
   rb-studio-loader::before {
@@ -64,8 +64,8 @@
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(90deg, transparent 49.95%, rgba(255, 255, 255, 0.035) 50%, transparent 50.05%),
-      linear-gradient(180deg, transparent 49.95%, rgba(255, 255, 255, 0.025) 50%, transparent 50.05%);
+      linear-gradient(90deg, transparent 49.95%, rgba(255, 255, 255, 0.07) 50%, transparent 50.05%),
+      linear-gradient(180deg, transparent 49.95%, rgba(255, 255, 255, 0.05) 50%, transparent 50.05%);
   }
 
   rb-studio-loader::after {
@@ -74,8 +74,8 @@
     inset: 0;
     pointer-events: none;
     background:
-      conic-gradient(from 0deg at 50% 42%, transparent, rgba(185, 213, 224, 0.045), transparent 18%, transparent 48%, rgba(185, 213, 224, 0.035), transparent 68%),
-      radial-gradient(circle at 50% 42%, rgba(196, 222, 232, 0.16), transparent 34%, transparent 68%, rgba(0, 0, 0, 0.64));
+      conic-gradient(from 0deg at 50% 42%, transparent, rgba(185, 213, 224, 0.085), transparent 18%, transparent 48%, rgba(185, 213, 224, 0.065), transparent 68%),
+      radial-gradient(circle at 50% 42%, rgba(196, 222, 232, 0.28), transparent 36%, transparent 72%, rgba(0, 0, 0, 0.5));
   }
 
   rb-studio-loader.is-hidden { pointer-events: none; }
@@ -95,7 +95,7 @@
     z-index: 1;
     display: flex;
     justify-content: space-between;
-    color: rgba(232, 233, 233, 0.38);
+    color: rgba(240, 242, 242, 0.52);
   }
 
   .loader-stage {
@@ -115,7 +115,7 @@
     position: absolute;
     top: -1.5rem;
     left: 50%;
-    color: rgba(232, 233, 233, 0.25);
+    color: rgba(240, 242, 242, 0.42);
     font: 400 0.55rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     letter-spacing: 0.12em;
     white-space: nowrap;
@@ -130,23 +130,23 @@
     height: 8rem;
     transform-style: preserve-3d;
     transform: translate(-50%, -50%) rotateX(-24deg) rotateY(38deg);
-    animation: loader-cube 6s linear infinite;
+    animation: loader-cube 8.5s linear infinite;
   }
 
   .cube-face {
     position: absolute;
     inset: 0;
-    border: 1px solid rgba(255, 255, 255, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.42);
     border-radius: 42% 58% 54% 46% / 48% 43% 57% 52%;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012));
-    box-shadow: inset 0 0 2.4rem rgba(255, 255, 255, 0.06), 0 0 1.5rem rgba(255, 255, 255, 0.055);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03));
+    box-shadow: inset 0 0 2.4rem rgba(255, 255, 255, 0.13), 0 0 2.2rem rgba(255, 255, 255, 0.11);
     backdrop-filter: blur(3px);
   }
 
   .cube-front { transform: translateZ(4rem); }
-  .cube-back { transform: rotateY(180deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.13); }
-  .cube-left { transform: rotateY(-90deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.18); }
-  .cube-right { transform: rotateY(90deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.1); }
+  .cube-back { transform: rotateY(180deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.24); }
+  .cube-left { transform: rotateY(-90deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.32); }
+  .cube-right { transform: rotateY(90deg) translateZ(4rem); border-color: rgba(255, 255, 255, 0.2); }
   .cube-top { transform: rotateX(90deg) translateZ(4rem); }
   .cube-bottom { transform: rotateX(-90deg) translateZ(4rem); }
 
@@ -158,7 +158,7 @@
     height: 0.55rem;
     border-radius: 50%;
     background: #ecfeff;
-    box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.86), 0 0 4rem rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 2.2rem rgba(255, 255, 255, 0.95), 0 0 5.5rem rgba(196, 222, 232, 0.4);
     transform: translate3d(-50%, -50%, 0);
   }
 
@@ -176,69 +176,69 @@
     bottom: -4%;
     width: 92%;
     height: 52%;
-    opacity: 0.42;
+    opacity: 0.62;
     background-image:
-      linear-gradient(rgba(204, 226, 234, 0.13) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(204, 226, 234, 0.13) 1px, transparent 1px);
+      linear-gradient(rgba(204, 226, 234, 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(204, 226, 234, 0.22) 1px, transparent 1px);
     background-size: 2.4rem 2.4rem;
     mask-image: linear-gradient(180deg, transparent, #000 24%, transparent 92%);
     transform: translateX(-50%) perspective(520px) rotateX(65deg);
     transform-origin: bottom;
-    animation: loader-grid 2.2s linear infinite;
+    animation: loader-grid 3.1s linear infinite;
   }
 
   .loader-node {
     position: absolute;
     width: 0.48rem;
     height: 0.48rem;
-    border: 1px solid rgba(229, 241, 245, 0.65);
+    border: 1px solid rgba(229, 241, 245, 0.85);
     border-radius: 50%;
     background: #eef2f3;
-    box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.72);
+    box-shadow: 0 0 2.4rem rgba(255, 255, 255, 0.9);
     /* nodes light up one by one as progress climbs */
-    opacity: calc(0.25 + var(--loader-progress, 0) * 0.75);
+    opacity: calc(0.4 + var(--loader-progress, 0) * 0.6);
   }
 
   .loader-node::after {
     content: "";
     position: absolute;
     inset: -0.7rem;
-    border: 1px solid rgba(209, 231, 239, 0.12);
+    border: 1px solid rgba(209, 231, 239, 0.22);
     border-radius: 50%;
-    animation: node-pulse 1.8s ease-out infinite;
+    animation: node-pulse 2.4s ease-out infinite;
   }
 
   .node-a { top: 15%; left: 23%; }
-  .node-b { top: 28%; right: 16%; animation-delay: -0.4s; }
-  .node-b { background: #c9ced0; box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.58); }
-  .node-c { bottom: 20%; left: 15%; animation-delay: -0.8s; background: #fff; box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.62); }
-  .node-d { right: 24%; bottom: 12%; animation-delay: -1.2s; background: #b9bfc2; box-shadow: 0 0 1.8rem rgba(255, 255, 255, 0.48); }
+  .node-b { top: 28%; right: 16%; animation-delay: -0.55s; }
+  .node-b { background: #dfe4e6; box-shadow: 0 0 2.4rem rgba(255, 255, 255, 0.75); }
+  .node-c { bottom: 20%; left: 15%; animation-delay: -1.1s; background: #fff; box-shadow: 0 0 2.4rem rgba(255, 255, 255, 0.82); }
+  .node-d { right: 24%; bottom: 12%; animation-delay: -1.65s; background: #d2d8da; box-shadow: 0 0 2.4rem rgba(255, 255, 255, 0.65); }
 
   .loader-orbit {
     width: 72%;
     aspect-ratio: 1;
-    border: 1px solid rgba(216, 232, 237, 0.1);
-    border-top-color: rgba(230, 239, 242, 0.44);
+    border: 1px solid rgba(216, 232, 237, 0.19);
+    border-top-color: rgba(230, 239, 242, 0.7);
     border-radius: 50%;
-    filter: drop-shadow(0 0 0.65rem rgba(205, 225, 232, 0.2));
+    filter: drop-shadow(0 0 0.9rem rgba(205, 225, 232, 0.36));
   }
 
   .orbit-a {
     transform: translate(-50%, -50%) rotateX(67deg) rotateZ(12deg);
-    animation: loader-orbit-a 7s linear infinite;
+    animation: loader-orbit-a 9.5s linear infinite;
     border-top-color: #f6f8f8;
-    border-right-color: rgba(255, 255, 255, 0.18);
+    border-right-color: rgba(255, 255, 255, 0.32);
   }
 
   .orbit-b {
     width: 54%;
     transform: translate(-50%, -50%) rotateY(68deg) rotateZ(-18deg);
-    animation: loader-orbit-b 5.5s linear infinite reverse;
-    border-top-color: #d9dddf;
-    border-left-color: rgba(255, 255, 255, 0.16);
+    animation: loader-orbit-b 7.5s linear infinite reverse;
+    border-top-color: #e9edee;
+    border-left-color: rgba(255, 255, 255, 0.28);
   }
 
-  .loader-axis { background: rgba(255, 255, 255, 0.045); }
+  .loader-axis { background: rgba(255, 255, 255, 0.09); }
   .axis-x { width: 100%; height: 1px; transform: translate(-50%, -50%); }
   .axis-y { width: 1px; height: 100%; transform: translate(-50%, -50%); }
 
@@ -277,7 +277,7 @@
     margin-bottom: 1.1rem;
   }
 
-  [data-loader-phase] { color: rgba(232, 233, 233, 0.55); }
+  [data-loader-phase] { color: rgba(240, 242, 242, 0.75); }
 
   .loader-count {
     display: inline-flex;
@@ -294,30 +294,30 @@
     letter-spacing: 0;
     text-align: right;
     color: transparent;
-    background: linear-gradient(135deg, #fff, #d8dddf 52%, #8e9599);
+    background: linear-gradient(135deg, #fff, #e6eaec 52%, #adb4b8);
     background-clip: text;
     -webkit-background-clip: text;
-    filter: drop-shadow(0 0 1.8rem rgba(255, 255, 255, 0.16));
+    filter: drop-shadow(0 0 2.4rem rgba(255, 255, 255, 0.3));
   }
 
   .loader-count small {
     margin: 0.1rem 0 0 0.45rem;
-    color: rgba(232, 233, 233, 0.4);
+    color: rgba(240, 242, 242, 0.55);
     font: 400 0.65rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
 
   .loader-line {
     height: 1px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.18);
   }
 
   .loader-line span {
     display: block;
     width: 0;
     height: 100%;
-    background: linear-gradient(90deg, #fff, #b8bec1 58%, #f4f6f6);
-    box-shadow: 0 0 1.2rem rgba(255, 255, 255, 0.42);
+    background: linear-gradient(90deg, #fff, #dce1e3 58%, #fff);
+    box-shadow: 0 0 1.6rem rgba(255, 255, 255, 0.7);
     transform-origin: left;
   }
 
@@ -327,11 +327,11 @@
     justify-content: space-between;
     gap: 1rem;
     margin-top: 0.9rem;
-    color: rgba(232, 233, 233, 0.28);
+    color: rgba(240, 242, 242, 0.42);
   }
 
   .loader-meta b {
-    color: rgba(232, 233, 233, 0.62);
+    color: rgba(240, 242, 242, 0.8);
     font-weight: 400;
   }
 
@@ -371,19 +371,19 @@
   @media (pointer: coarse) {
     .cube-face {
       backdrop-filter: none;
-      border-color: rgba(255, 255, 255, 0.42);
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.035));
-      box-shadow: inset 0 0 2.2rem rgba(255, 255, 255, 0.12), 0 0 1.4rem rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.56);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+      box-shadow: inset 0 0 2.2rem rgba(255, 255, 255, 0.18), 0 0 1.8rem rgba(255, 255, 255, 0.14);
     }
     .loader-orbit {
       filter: none;
-      border-color: rgba(216, 232, 237, 0.26);
+      border-color: rgba(216, 232, 237, 0.34);
       border-top-color: #ffffff;
     }
     .loader-count strong { filter: none; }
-    .loader-grid { opacity: 0.34; animation-duration: 4.4s; }
-    .loader-node::after { animation-duration: 3.6s; }
-    .loader-node { box-shadow: 0 0 1.2rem rgba(255, 255, 255, 0.8); }
+    .loader-grid { opacity: 0.5; animation-duration: 5.6s; }
+    .loader-node::after { animation-duration: 4.2s; }
+    .loader-node { box-shadow: 0 0 1.6rem rgba(255, 255, 255, 0.9); }
   }
 
   /* Reduce Motion previously froze the object dead ("the cube just stands
@@ -401,6 +401,8 @@
 
 <script>
   import gsap from "gsap";
+  // The decode this loader invented now lives in utils/ — links reuse it on hover.
+  import { decode } from "../utils/decode";
 
   const phases = [
     "INITIALISING RENDER",
@@ -408,33 +410,6 @@
     "RESOLVING TYPOGRAPHY",
     "OPENING CASE ARCHIVE",
   ];
-
-  const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789/#*<>·";
-  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  /** Scramble → resolve, so each phase decodes into place. */
-  function decode(el: HTMLElement, final: string) {
-    if (calm) {
-      el.textContent = final;
-      return;
-    }
-    const started = performance.now();
-    const duration = 520;
-    const step = (now: number) => {
-      const t = Math.min((now - started) / duration, 1);
-      const solid = Math.floor(t * final.length);
-      let out = "";
-      for (let i = 0; i < final.length; i++) {
-        out += i < solid || final[i] === " "
-          ? final[i]
-          : GLYPHS[(Math.random() * GLYPHS.length) | 0];
-      }
-      el.textContent = out;
-      if (t < 1) requestAnimationFrame(step);
-      else el.textContent = final;
-    };
-    requestAnimationFrame(step);
-  }
 
   class StudioLoader extends HTMLElement {
     connectedCallback() {
@@ -463,7 +438,7 @@
       // ── Asset-driven calibration ──────────────────────────────────────────
       // The theatre stays, but progress now tracks what is actually loading:
       // fonts (20%), full document (20%), first WebGL frame (25%), eager
-      // images (35%). A slow time floor keeps it moving; 7s is the failsafe.
+      // images (35%). A slow time floor keeps it moving; 8.5s is the failsafe.
       let fontsDone = 0;
       let domDone = document.readyState === "complete" ? 1 : 0;
       let webglDone = document.querySelector("rb-hero-gl") ? 0 : 1;
@@ -487,6 +462,15 @@
 
       const real = () => fontsDone * 0.2 + domDone * 0.2 + webglDone * 0.25 + imagesDone * 0.35;
 
+      // A warm cache used to resolve every asset almost immediately, and the
+      // whole sequence flashed past in about a second — all of the work, none of
+      // the arrival. Progress is now also capped by the clock, so the object
+      // always gets its full run-up. The curve is front-loaded: it moves with
+      // intent early, then holds back through the last stretch.
+      const MIN_RUN = 3.9;
+      const ceiling = (elapsed: number) =>
+        elapsed >= MIN_RUN ? 1 : 1 - Math.pow(1 - elapsed / MIN_RUN, 1.7);
+
       const start = performance.now();
       let displayed = 0;
       let finished = false;
@@ -495,10 +479,10 @@
       const tick = () => {
         if (finished) return;
         const elapsed = (performance.now() - start) / 1000;
-        const floor = Math.min(0.92, elapsed / 6.5); // never looks frozen
-        const target = Math.max(real(), floor) * 100;
-        displayed += (target - displayed) * 0.085;
-        if (elapsed > 7) displayed = 100; // failsafe
+        const floor = Math.min(0.92, elapsed / 7.5); // never looks frozen
+        const target = Math.min(Math.max(real(), floor), ceiling(elapsed)) * 100;
+        displayed += (target - displayed) * 0.07;
+        if (elapsed > 8.5) displayed = 100; // failsafe
         const value = Math.min(100, Math.round(displayed));
         const phaseIndex = Math.min(3, Math.floor(value / 25.1));
         line.style.width = `${value}%`;
@@ -514,7 +498,7 @@
         this.style.setProperty("--loader-progress", String(value / 100));
         if (cube) cube.style.setProperty("--loader-progress", String(value / 100));
 
-        if (value >= 100 && elapsed > 1.2) {
+        if (value >= 100 && elapsed > MIN_RUN) {
           finished = true;
           this.dismiss();
           return;

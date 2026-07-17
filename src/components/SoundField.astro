@@ -7,9 +7,10 @@
 //  loops seamlessly, where HTMLAudioElement.loop leaves an audible gap.
 //
 //  Rules it respects:
-//   • OFF by default and never autoplays — browsers block it and visitors hate it.
+//   • OFF by default and never autoplays for a visitor who never asked for it.
 //   • The ~1MB drone is NOT fetched until the visitor actually turns sound on.
-//   • The AudioContext is only created on the first real user gesture.
+//   • Once they HAVE asked, the ambience follows them across the site on its
+//     own — it takes a breath and fades back in, it never waits for a click.
 //   • Choice persists; muted under Calm mode and when the tab is hidden.
 // ─────────────────────────────────────────────────────────────────────────────
 ---
@@ -29,6 +30,15 @@
   const TICK_LEVEL = 0.1;     // hover fires constantly — it must be a whisper
   const THUNK_LEVEL = 0.26;
 
+  // Crossing to another page reads as a beat of held breath, not a dropout: the
+  // drone stops with the old document, rests, then eases back in exactly where
+  // it left off. Both numbers are seconds and are scheduled on the audio clock,
+  // so the gap is identical every time regardless of how busy the main thread is.
+  const RESUME_PAUSE = 1.2;
+  const RESUME_FADE = 1.6;
+  // A deliberate toggle is a gesture, so it gets its own quicker, firmer rise.
+  const TOGGLE_FADE = 0.6;
+
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
   let droneGain: GainNode | null = null;
@@ -46,7 +56,10 @@
   function dronePosition() {
     const buf = buffers.get("drone");
     if (!buf || !ctx || !droneSource) return droneOffset;
-    return (droneOffset + (ctx.currentTime - droneStartedAt)) % buf.duration;
+    // Guard the scheduled-but-not-yet-playing window, where currentTime is still
+    // behind droneStartedAt and the elapsed term would run negative.
+    const elapsed = Math.max(0, ctx.currentTime - droneStartedAt);
+    return (droneOffset + elapsed) % buf.duration;
   }
 
   function rememberPosition() {
@@ -90,7 +103,8 @@
     return loading;
   }
 
-  function startDrone() {
+  /** @param when audio-clock time to begin at; 0 means "now". */
+  function startDrone(when = 0) {
     if (!ctx || !droneGain || droneSource) return;
     const buf = buffers.get("drone");
     if (!buf) return;
@@ -103,8 +117,8 @@
     droneSource.buffer = buf;
     droneSource.loop = true;
     droneSource.connect(droneGain);
-    droneSource.start(0, droneOffset); // pick the track back up, don't restart it
-    droneStartedAt = ctx.currentTime;
+    droneSource.start(when, droneOffset); // pick the track back up, don't restart it
+    droneStartedAt = when || ctx.currentTime;
   }
 
   function stopDrone() {
@@ -135,20 +149,35 @@
     src.onended = () => src.disconnect();
   }
 
-  function fade(to: number, time = 0.6) {
+  /** Ramp the master gain, optionally starting at a future point on the audio clock. */
+  function fade(to: number, time = 0.6, from = 0) {
     if (!ctx || !master) return;
+    const at = Math.max(ctx.currentTime, from || ctx.currentTime);
     master.gain.cancelScheduledValues(ctx.currentTime);
     master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(to, ctx.currentTime + time);
+    if (at > ctx.currentTime) master.gain.setValueAtTime(master.gain.value, at);
+    master.gain.linearRampToValueAtTime(to, at + time);
   }
 
-  async function apply(on: boolean, persist = true) {
-    enabled = on;
-
+  function markToggles(on: boolean) {
     document.querySelectorAll<HTMLElement>("[data-sound-toggle]").forEach((btn) =>
       btn.setAttribute("aria-pressed", String(on)),
     );
     document.documentElement.classList.toggle("rb-sound", on);
+  }
+
+  type ApplyOptions = {
+    /** Write the choice to localStorage. Off when we are only restoring it. */
+    persist?: boolean;
+    /** Punctuate with the toggle thunk. Only a deliberate press earns one. */
+    thunk?: boolean;
+    fadeTime?: number;
+  };
+
+  async function apply(on: boolean, opts: ApplyOptions = {}) {
+    const { persist = true, thunk = true, fadeTime = TOGGLE_FADE } = opts;
+    enabled = on;
+    markToggles(on);
     if (persist) {
       try { localStorage.setItem(STORE, on ? "on" : "off"); } catch { /* private mode */ }
     }
@@ -164,8 +193,57 @@
     await loadAll();       // ~1MB, fetched only now
     if (!enabled) return;  // toggled off while loading
     startDrone();
-    play("thunk", THUNK_LEVEL);
-    fade(level());
+    if (thunk) play("thunk", THUNK_LEVEL);
+    fade(level(), fadeTime);
+  }
+
+  // ── Continuity across navigation ──────────────────────────────────────────
+  // Every page is a fresh document, so the ambience has to re-enter itself. It
+  // used to sit silent until the visitor happened to click something, and then
+  // land as one abrupt hit. Now it re-arms the moment the page boots: it takes
+  // RESUME_PAUSE of deliberate silence, then eases in from the stored playhead.
+  async function resumeFromNavigation() {
+    enabled = true;
+    markToggles(true);
+    if (!ensureContext()) return;
+
+    // Fetching and decoding need no gesture, and the drone is already in the
+    // HTTP cache from the previous page — so this is ready well before we need it.
+    const ready = loadAll();
+    await ctx!.resume().catch(() => { /* blocked — handled below */ });
+
+    // Chrome grants an origin the right to start audio once the visitor has
+    // interacted with it, which they did by turning sound on. When that grant
+    // is missing (a hard reload, a stricter browser) the context stays
+    // suspended, and there is nothing to do but wait for a real gesture.
+    if (ctx!.state !== "running") {
+      armOnGesture();
+      return;
+    }
+
+    await ready;
+    if (!enabled || droneSource) return; // toggled off, or a gesture beat us to it
+    const at = ctx!.currentTime + RESUME_PAUSE;
+    startDrone(at);
+    fade(level(), RESUME_FADE, at);
+  }
+
+  let armed = false;
+  function armOnGesture() {
+    if (armed) return;
+    armed = true;
+    let fired = false;
+    const arm = () => {
+      if (fired) return;
+      fired = true;
+      // Their gesture was meant for whatever they clicked, not for the audio —
+      // so it still eases in rather than announcing itself.
+      apply(true, { persist: false, thunk: false, fadeTime: RESUME_FADE });
+    };
+    // Any of these counts as activation; whichever lands first wins.
+    ["pointerdown", "touchstart", "keydown"].forEach((type) =>
+      addEventListener(type, arm, { once: true, passive: true }),
+    );
   }
 
   // ── Wiring ────────────────────────────────────────────────────────────────
@@ -192,6 +270,15 @@
   }, { passive: true });
 
   addEventListener("rb:calmchange", () => fade(level(), 0.35));
+
+  // Dispatched the instant a transition commits to the new URL — the old
+  // document then lives just long enough for this to land, so the ambience bows
+  // out over the page swap instead of being guillotined by pagehide.
+  addEventListener("rb:transition-depart", () => {
+    rememberPosition();
+    fade(0, 0.3);
+  });
+
   document.addEventListener("visibilitychange", () => {
     rememberPosition();
     fade(level(), 0.25);
@@ -203,15 +290,10 @@
   // …and a slow heartbeat, so a crash or a hard close never loses the spot.
   setInterval(rememberPosition, 4000);
 
-  // Restore the stored choice, but only arm audio on the first gesture —
-  // an AudioContext created before that is born suspended.
+  // Restore the stored choice. Sound stays off unless this visitor asked for it
+  // on an earlier page — at which point the ambience resumes itself, and only
+  // falls back to waiting for a gesture if the browser refuses to let it start.
   let stored = "off";
   try { stored = localStorage.getItem(STORE) || "off"; } catch { /* private mode */ }
-  if (stored === "on") {
-    const arm = () => apply(true, false);
-    addEventListener("pointerdown", arm, { once: true });
-    addEventListener("keydown", arm, { once: true });
-    document.querySelectorAll<HTMLElement>("[data-sound-toggle]").forEach((b) => b.setAttribute("aria-pressed", "true"));
-    document.documentElement.classList.add("rb-sound");
-  }
+  if (stored === "on") resumeFromNavigation();
 </script>

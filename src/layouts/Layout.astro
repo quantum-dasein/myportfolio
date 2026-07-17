@@ -8,6 +8,7 @@ import StudioLoader from "../components/StudioLoader.astro";
 import CursorField from "../components/CursorField.astro";
 import SoundField from "../components/SoundField.astro";
 import CaseTransition from "../components/CaseTransition.astro";
+import PageTransition from "../components/PageTransition.astro";
 import { ui, defaultLang } from "../i18n/ui";
 import { useTranslations, type Lang } from "../i18n/utils";
 import type { Link } from "../types";
@@ -167,7 +168,7 @@ const cta = isDeck
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
 const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
   defaultLang,
-)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';if(locked)localStorage.setItem('rb-lang',locked);}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving')}catch(e){}`;
+)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';if(locked)localStorage.setItem('rb-lang',locked);}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
 ---
 
 <html lang={lang === "de" ? "de-AT" : "en"}>
@@ -255,6 +256,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 
     {!isDeck && <Footer logoUrl="/" logoAlt="Rodion Belousov" links={nav} lang={lang} />}
     {!isDeck && <SmoothScroll />}
+    <PageTransition />
     <CaseTransition />
     <Tunnel />
   </body>
@@ -404,6 +406,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 <script>
   import "../utils/reveals";
   import "../utils/vitals";
+  import "../utils/link-decode";
 
   // Warm up the archive before the likely click: prefetch the /gallery route
   // (and its hashed three.js chunk via the browser's speculative parse) once
