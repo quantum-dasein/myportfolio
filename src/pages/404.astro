@@ -6,9 +6,8 @@ import Layout from "../layouts/Layout.astro";
   <section class="not-found" aria-labelledby="not-found-heading">
     <div class="not-found__content">
       <h1 id="not-found-heading" class="smooth-text">404</h1>
-      <p class="subtitle main-subtitle" data-decode>EVEN DATA MUST YIELD TO THE INEVITABLE VOID. THIS INFORMATION, LIKE ALL TEMPORAL CONSTRUCTS, IS LOST TO THE SINGULARITY.</p>
-      <p class="subtitle secondary-subtitle" data-decode>EVENT HORIZON: CROSSED. ALL PATHS LEAVE.</p>
-      <a href="/" class="return-btn">INITIATE ESCAPE TRAJECTORY (CHRONO-ESCAPE PROTOCOL)</a>
+      <p class="subtitle main-subtitle" data-decode>THE ARCHIVE HAS DRIFTED INTO THE VOID.</p>
+      <a href="/" class="return-btn">RETURN TO STUDIO</a>
     </div>
 
     <div class="cosmic-backdrop" aria-hidden="true">
@@ -165,99 +164,66 @@ import Layout from "../layouts/Layout.astro";
     }
 
     private buildAnomaly() {
-      // Event Horizon (Black Sphere)
-      const sphereGeo = new THREE.SphereGeometry(1.4, 32, 32);
+      // Clean Event Horizon
+      const sphereGeo = new THREE.SphereGeometry(2.0, 64, 64);
       const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
       this.mesh = new THREE.Mesh(sphereGeo, sphereMat);
+      
+      // Position it lower and further back to create a huge cinematic scale
+      this.mesh.position.y = -1.5;
+      this.mesh.position.z = -2.0;
       this.scene.add(this.mesh);
 
-      // Accretion Disk (Particles)
-      const count = 35000;
-      const positions = new Float32Array(count * 3);
-      const randoms = new Float32Array(count);
-      
-      for(let i=0; i<count; i++) {
-        // Distribute mostly in a disk shape, denser in the center
-        const r = Math.pow(Math.random(), 2.0); // concentrate near 0
-        const radius = 1.45 + r * 5.5;
-        const angle = Math.random() * Math.PI * 2;
-        
-        positions[i*3] = Math.cos(angle) * radius;
-        // Thickness depends on distance from center (very structured)
-        positions[i*3+1] = (Math.random() - 0.5) * 0.15 * (1.0 - r);
-        positions[i*3+2] = Math.sin(angle) * radius;
-        randoms[i] = Math.random();
-      }
-
-      this.geometry = new THREE.BufferGeometry();
-      this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      this.geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
-
+      // Clean, solid Accretion Disk (Ring Geometry)
+      this.geometry = new THREE.RingGeometry(2.1, 7.0, 128);
       this.material = new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
         uniforms: {
-          uTime: { value: 0 },
-          uMouse: { value: new THREE.Vector2() }
+          uTime: { value: 0 }
         },
         vertexShader: `
-          uniform float uTime;
-          attribute float aRandom;
-          varying float vIntensity;
+          varying vec3 vPos;
           void main() {
-            vec3 pos = position;
-            float radius = length(pos.xz);
-            
-            // Spiral rotation: inner particles spin much faster
-            float angle = atan(pos.z, pos.x);
-            angle -= uTime * (3.0 / pow(radius, 1.2));
-            
-            pos.x = cos(angle) * radius;
-            pos.z = sin(angle) * radius;
-            
-            // Particles smoothly suck into the center
-            float life = fract(aRandom + uTime * 0.08);
-            float currentRadius = mix(radius, 1.4, life);
-            
-            pos.x = cos(angle) * currentRadius;
-            pos.z = sin(angle) * currentRadius;
-            
-            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-            gl_Position = projectionMatrix * mvPosition;
-            
-            float proximity = smoothstep(6.0, 1.4, currentRadius);
-            gl_PointSize = (1.0 + proximity * 2.0 + aRandom) * (10.0 / -mvPosition.z);
-            
-            vIntensity = proximity * smoothstep(0.0, 0.2, life); 
+            vPos = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
           }
         `,
         fragmentShader: `
-          varying float vIntensity;
+          varying vec3 vPos;
+          uniform float uTime;
           void main() {
-            vec2 p = gl_PointCoord - 0.5;
-            float d = length(p);
-            if (d > 0.5) discard;
+            float radius = length(vPos.xy);
             
-            // Golden and blue concentric data rings
-            vec3 colorBlue = vec3(0.1, 0.6, 1.0);
-            vec3 colorGold = vec3(1.0, 0.8, 0.2);
-            vec3 coreGlow = vec3(1.0, 1.0, 1.0);
+            // Normalize radius from 0 to 1
+            float n = (radius - 2.1) / (7.0 - 2.1);
             
-            // Mix between gold and blue based on intensity (distance from center)
-            vec3 color = mix(colorBlue, colorGold, vIntensity);
-            color = mix(color, coreGlow, pow(vIntensity, 4.0));
+            // Smooth gradient fading out
+            float intensity = smoothstep(1.0, 0.0, n) * smoothstep(0.0, 0.05, n);
             
-            float alpha = (0.5 - d) * 2.0 * vIntensity;
-            gl_FragColor = vec4(color, alpha);
+            // Subtle rotation rings
+            float angle = atan(vPos.y, vPos.x);
+            float rings = sin(radius * 15.0 - uTime * 2.0) * 0.5 + 0.5;
+            float sweeping = sin(angle * 2.0 + uTime * 0.5) * 0.5 + 0.5;
+            
+            intensity *= mix(0.7, 1.0, rings) * mix(0.8, 1.0, sweeping);
+            
+            // Elegant corporate colors (Silver, subtle Blue, Gold highlights)
+            vec3 colorBlue = vec3(0.5, 0.7, 1.0);
+            vec3 colorGold = vec3(0.9, 0.8, 0.5);
+            vec3 color = mix(colorBlue, colorGold, smoothstep(0.5, 0.0, n));
+            
+            gl_FragColor = vec4(color, intensity * 0.65);
           }
         `
       });
 
-      const disk = new THREE.Points(this.geometry, this.material);
-      // Tilt the accretion disk for a cinematic angle
-      disk.rotation.x = 1.35;
-      disk.rotation.y = 0.1;
+      const disk = new THREE.Mesh(this.geometry, this.material);
+      // Tilt to a cinematic angle
+      disk.rotation.x = -1.25;
+      disk.rotation.y = 0.05;
       this.mesh.add(disk);
     }
 
@@ -295,9 +261,8 @@ import Layout from "../layouts/Layout.astro";
 
       if (this.mesh && this.material) {
         this.material.uniforms.uTime.value = elapsed;
-        this.material.uniforms.uMouse.value.copy(this.mouse);
-        this.mesh.rotation.y = elapsed * 0.1 + this.mouse.x * 0.5;
-        this.mesh.rotation.x = elapsed * 0.05 - this.mouse.y * 0.5;
+        this.mesh.rotation.y = this.mouse.x * 0.1;
+        this.mesh.rotation.x = -this.mouse.y * 0.1;
       }
 
       this.renderer.render(this.scene, this.camera);
@@ -326,6 +291,7 @@ import Layout from "../layouts/Layout.astro";
     z-index: 2;
     pointer-events: none;
     max-width: 800px;
+    margin-top: -10vh; /* Shift text up away from the black hole center */
   }
 
   .smooth-text {
@@ -337,29 +303,22 @@ import Layout from "../layouts/Layout.astro";
     margin: 0;
     color: #ffffff;
     letter-spacing: -0.02em;
-    text-shadow: 0 0 2rem rgba(255, 255, 255, 0.4), 0 0 4rem rgba(255, 255, 255, 0.2);
+    text-shadow: 0 0 4rem rgba(255, 255, 255, 0.2);
   }
 
   .subtitle {
     font-family: var(--font-inter);
     font-size: clamp(0.7rem, 1.5vw, 0.85rem);
     font-weight: 400;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.25em;
     color: rgba(255, 255, 255, 0.7);
     text-transform: uppercase;
     line-height: 1.6;
   }
 
   .main-subtitle {
-    margin-top: 2rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .secondary-subtitle {
-    margin-top: 0;
-    margin-bottom: 3.5rem;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.25em;
+    margin-top: 1.5rem;
+    margin-bottom: 2.5rem;
   }
 
   .return-btn {
@@ -367,9 +326,9 @@ import Layout from "../layouts/Layout.astro";
     align-items: center;
     justify-content: center;
     height: 3.4rem;
-    padding: 0 2.2rem;
+    padding: 0 2.6rem;
     font-family: var(--font-inter);
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.1em;
     color: rgba(255,255,255, 0.9);
