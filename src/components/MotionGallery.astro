@@ -393,54 +393,49 @@ const tiles = [
     .gallery-pill { position: relative; bottom: auto; margin-top: 2rem; }
   }
 
+  /* ── Phones: drop the overlapping collage entirely ─────────────────────────
+     The absolute-positioned, mutually-overlapping tiles cropped every image to
+     a random sliver and the per-scroll drift transform flickered. On phones this
+     becomes a plain editorial column: whole images, one per row, native scroll,
+     zero drift, caption always legible below the frame. */
   @media (max-width: 700px) {
     .motion { padding-block: 5rem; }
     .motion-title { max-width: 12ch; font-size: clamp(2.35rem, 12vw, 3.35rem); }
     .motion-lead { max-width: 34rem; font-size: .98rem; }
     .motion-tools { max-width: 30rem; font-size: .62rem; }
-    /* No perspective on phones: nothing translates in 3D here, and the extra
-       rendering context only taxes the compositor while the drift runs. */
+
     .gallery-stage {
       position: relative;
       inset: auto;
-      height: 46rem;
-      margin: 2.5rem calc(var(--container-offset) * -.45) 0;
+      height: auto;
+      margin: 2.5rem 0 0;
       overflow: visible;
       perspective: none;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.4rem;
     }
-    .archive-sculpture {
-      display: block;
-      left: 13%;
-      top: 26%;
-      width: 68%;
-      opacity: .48;
-      transform: scale(.9);
-    }
-    /* The sculpture's triple radial gradients + a 2.8rem inset shadow × five
-       lobes was the single biggest paint bill in this section on a phone GPU.
-       Two quiet lobes carry the same silhouette. */
-    .archive-sculpture span { box-shadow: none; }
-    .archive-sculpture span:nth-child(4),
-    .archive-sculpture span:nth-child(5) { display: none; }
+    .archive-sculpture { display: none; } /* decorative + the biggest paint bill */
+
     .tile {
-      position: absolute;
-      height: auto;
-      aspect-ratio: .88;
-      translate: 0 var(--gallery-drift, 0px);
-      box-shadow: 0 .8rem 1.7rem rgba(0, 0, 0, .42);
+      position: relative !important;
+      inset: auto !important;
+      z-index: auto !important;
+      width: 100% !important;
+      height: auto !important;
+      aspect-ratio: 4 / 5;
+      translate: none !important;
+      transform: none !important;
+      box-shadow: 0 .8rem 1.8rem rgba(0, 0, 0, .42);
     }
-    .archive-sculpture { translate: 0 var(--gallery-core-drift, 0px); }
-    .tile-1 { left: -2%; top: 22rem; width: 58%; }
-    .tile-2 { right: -1%; left: auto; top: 24rem; width: 41%; z-index: 6; }
-    .tile-3 { left: 5%; top: 1.5rem; width: 38%; z-index: 3; }
-    .tile-4 { right: 1%; left: auto; top: 0; width: 49%; z-index: 5; }
-    .tile-5 { right: -5%; left: auto; top: 16rem; width: 47%; z-index: 4; }
-    .tile-6 { left: 29%; right: auto; top: 34rem; bottom: auto; width: 48%; z-index: 7; aspect-ratio: 1.24; }
+    /* Two of the six read better wide — landscape architecture and the media wall. */
+    .tile-3, .tile-5 { aspect-ratio: 3 / 2; }
+
     .tile-arrow { width: 2.2rem; }
-    figcaption { left: .85rem; right: .85rem; bottom: .8rem; }
-    figcaption > span { font-size: .5rem; }
-    strong { font-size: clamp(1.05rem, 5.4vw, 1.65rem); }
-    .gallery-pill { display: inline-flex; width: 100%; justify-content: space-between; }
+    figcaption { left: .95rem; right: .95rem; bottom: .9rem; }
+    figcaption > span { font-size: .52rem; }
+    strong { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
+    .gallery-pill { display: inline-flex; width: 100%; justify-content: space-between; margin-top: 2rem; }
   }
 
   /* ── Mobile focus mode ─────────────────────────────────────────────────── */
@@ -523,100 +518,8 @@ const tiles = [
 </style>
 
 <script>
-  const galleryScene = document.querySelector<HTMLElement>("[data-gallery-scene]");
-  const galleryStage = galleryScene?.querySelector<HTMLElement>(".gallery-stage");
-  const galleryItems = galleryScene
-    ? [...galleryScene.querySelectorAll<HTMLElement>("[data-gallery-depth]")]
-    : [];
-  const mobileGallery = matchMedia("(max-width: 700px)");
-  const reducedGalleryMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  if (galleryScene && galleryStage && mobileGallery.matches && !reducedGalleryMotion) {
-    let visible = false;
-    let frame = 0;
-
-    const renderGalleryDepth = () => {
-      frame = 0;
-      if (!visible) return;
-      const rect = galleryStage.getBoundingClientRect();
-      const progress = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
-      const travel = progress - 0.5;
-
-      galleryItems.forEach((item, index) => {
-        const depth = Number(item.dataset.galleryDepth || 0.5);
-        const amount = travel * 72 * depth * (index % 2 === 0 ? -1 : 1);
-        const property = item.classList.contains("archive-sculpture") ? "--gallery-core-drift" : "--gallery-drift";
-        item.style.setProperty(property, `${amount.toFixed(2)}px`);
-      });
-    };
-
-    const requestGalleryDepth = () => {
-      if (!frame) frame = requestAnimationFrame(renderGalleryDepth);
-    };
-
-    const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      if (visible) requestGalleryDepth();
-    }, { rootMargin: "20% 0px" });
-
-    observer.observe(galleryStage);
-    addEventListener("scroll", requestGalleryDepth, { passive: true });
-    addEventListener("resize", requestGalleryDepth, { passive: true });
-  }
-
-  // ── Mobile focus mode ─────────────────────────────────────────────────────
-  // First tap lifts the work forward and reveals its description; a second tap
-  // on the focused tile follows the link to Behance. Tapping elsewhere clears.
-  if (galleryStage && matchMedia("(pointer: coarse)").matches) {
-    const note = document.querySelector<HTMLElement>("[data-focus-note]");
-    const noteCat = note?.querySelector<HTMLElement>("[data-focus-cat]");
-    const noteTools = note?.querySelector<HTMLElement>("[data-focus-tools]");
-    const noteTitle = note?.querySelector<HTMLElement>("[data-focus-title]");
-    const noteText = note?.querySelector<HTMLElement>("[data-focus-text]");
-    const noteHint = note?.querySelector<HTMLElement>("[data-focus-hint]");
-    const stageTiles = [...galleryStage.querySelectorAll<HTMLAnchorElement>(".tile")];
-    let focused: HTMLAnchorElement | null = null;
-
-    const activeLang = () => ((document.documentElement.lang || "en").startsWith("de") ? "de" : "en");
-
-    const fillNote = (tile: HTMLAnchorElement) => {
-      if (!note) return;
-      const lang = activeLang();
-      if (noteCat) noteCat.textContent = tile.dataset.tileCat || "";
-      if (noteTools) noteTools.textContent = tile.dataset.tileTools || "";
-      if (noteTitle) noteTitle.textContent = tile.dataset.tileTitle || "";
-      if (noteText) noteText.textContent = (lang === "de" ? tile.dataset.tileDe : tile.dataset.tileEn) || "";
-      if (noteHint) noteHint.textContent = lang === "de" ? "Nochmal tippen — öffnet Behance" : "Tap again — opens Behance";
-      note.hidden = false;
-    };
-
-    const clearFocus = () => {
-      focused?.classList.remove("is-focused");
-      focused = null;
-      galleryStage.classList.remove("has-focus");
-      if (note) note.hidden = true;
-    };
-
-    stageTiles.forEach((tile) => {
-      tile.addEventListener("click", (event) => {
-        if (focused === tile) return; // second tap → native navigation to Behance
-        event.preventDefault();
-        focused?.classList.remove("is-focused");
-        focused = tile;
-        tile.classList.add("is-focused");
-        galleryStage.classList.add("has-focus");
-        fillNote(tile);
-      });
-    });
-
-    document.addEventListener("click", (event) => {
-      if (!focused) return;
-      const target = event.target as Element | null;
-      if (!target?.closest(".gallery-stage .tile, [data-focus-note]")) clearFocus();
-    });
-
-    addEventListener("rb:langchange", () => {
-      if (focused) fillNote(focused);
-    });
-  }
+  // Desktop keeps the CSS-positioned collage (no JS). Phones now render a plain
+  // editorial column (see the ≤700px block) — static, native-scroll, no drift
+  // transform to flicker and no tap-to-focus overlay to fight. Tiles are plain
+  // links straight to Behance, captions always visible. Nothing to script.
 </script>
