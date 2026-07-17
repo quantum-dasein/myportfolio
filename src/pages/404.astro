@@ -132,9 +132,11 @@ import Layout from "../layouts/Layout.astro";
       for (int i = 0; i < 3; i++) { v += a * noise3(p); p = p * 2.02 + 1.7; a *= 0.5; }
       return v;
     }
+    // Four octaves for the disk — it is the subject and lives or dies on gas
+    // detail; the nebula behind it stays at three.
     float fbm2(vec2 p) {
       float v = 0.0, a = 0.5;
-      for (int i = 0; i < 3; i++) { v += a * noise2(p); p = p * 2.03 + 3.1; a *= 0.5; }
+      for (int i = 0; i < 4; i++) { v += a * noise2(p); p = p * 2.03 + 3.1; a *= 0.5; }
       return v;
     }
 
@@ -163,7 +165,7 @@ import Layout from "../layouts/Layout.astro";
       // curve here floods the whole equator of the sky with haze.
       float band = abs(dot(d, normalize(vec3(0.34, 1.0, -0.25))));
       float streak = smoothstep(0.30, 0.02, band);
-      col += vec3(0.010, 0.012, 0.017) * streak * streak * (0.35 + 0.65 * n1);
+      col += vec3(0.016, 0.019, 0.027) * streak * streak * (0.35 + 0.65 * n1);
       col += vec3(0.85, 0.92, 1.00) * starLayer(d, 0.9900, 190.0) * 1.15;
       col += vec3(1.00, 0.94, 0.86) * starLayer(d, 0.9972, 74.0) * 1.7;
       return col;
@@ -209,10 +211,13 @@ import Layout from "../layouts/Layout.astro";
       return vec4(col, clamp(density, 0.0, 1.0));
     }
 
+    // Output is LINEAR on purpose: the blit pass sRGB-encodes exactly once on
+    // the way to the canvas. Encoding here as well double-lifts every value —
+    // 0.004 deep space becomes 0.32 fog — which is precisely the milky wash
+    // this page shipped with twice.
     vec3 grade(vec3 col) {
       col *= uIntensity;
-      col = col / (1.0 + col);          // filmic-ish rolloff, no clipped highlights
-      return pow(col, vec3(0.4545));
+      return col / (1.0 + col);         // filmic-ish rolloff, no clipped highlights
     }
 
     void main() {
@@ -275,7 +280,7 @@ import Layout from "../layouts/Layout.astro";
   `;
 
   /** Fraction of the screen the geodesic march actually runs at. */
-  const MARCH_SCALE = 0.6;
+  const MARCH_SCALE = 0.7;
 
   class BlackHoleGL extends HTMLElement {
     private renderer?: THREE.WebGLRenderer;
@@ -299,7 +304,9 @@ import Layout from "../layouts/Layout.astro";
     private dummy = new THREE.Object3D();
 
     connectedCallback() {
-      this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: "high-performance" });
+      // AA costs nothing here (the march happens in the offscreen target); it
+      // only smooths the rasterised debris, which otherwise shimmers with jaggies.
+      this.renderer = new THREE.WebGLRenderer({ antialias: !this.lowPower, alpha: false, powerPreference: "high-performance" });
       // The march is the whole cost of this page — resolution is the cheapest
       // dial there is, so it stays modest and the geodesics stay accurate.
       this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, this.lowPower ? 1 : 1.25));
@@ -307,16 +314,17 @@ import Layout from "../layouts/Layout.astro";
       this.renderer.autoClear = false;
       this.append(this.renderer.domElement);
 
+      // Linear working space end to end: the march writes linear light into a
+      // half-float target (8-bit storage bands badly across these huge soft
+      // gradients), the blit samples it untouched, and the renderer applies the
+      // one and only sRGB encode when writing the canvas. Any gamma before that
+      // point stacks a second lift on top and washes the scene out to grey fog.
       this.target = new THREE.WebGLRenderTarget(1, 1, {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         depthBuffer: false,
+        type: THREE.HalfFloatType,
       });
-      // The shader already gamma-encodes its output. Without this tag three
-      // treats the texture as linear and sRGB-encodes it AGAIN on the way to the
-      // screen — double gamma, and the whole universe washes out to milky grey.
-      // Marked sRGB, the blit decodes and re-encodes and the two cancel.
-      this.target.texture.colorSpace = THREE.SRGBColorSpace;
       this.blitScene.add(
         new THREE.Mesh(
           new THREE.PlaneGeometry(2, 2),
