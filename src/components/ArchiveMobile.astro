@@ -1,0 +1,373 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ArchiveMobile — the archive for touch.
+//
+//  The desktop archive is a WebGL corridor you fly through. On phones that
+//  meant a hijacked scroll fighting the finger, a GPU running hot, and captions
+//  layered over the artwork. This is the same archive told natively: one card
+//  per work, the browser's own scroll (nothing to fight, nothing to drop
+//  frames), captions UNDER the image where they can never cover it, and the
+//  studio's signature moves — chrome hairlines, corner brackets, mono HUD,
+//  decode-in labels — carried over intact.
+//
+//  Videos are real <video> elements that lazy-attach their src and only play
+//  while on screen. Cases route through the cinematic CaseTransition exactly
+//  like on desktop.
+// ─────────────────────────────────────────────────────────────────────────────
+import { works, BEHANCE } from "../data/works";
+import { ui } from "../i18n/ui";
+
+const en = ui.en as Record<string, string>;
+const total = String(works.length).padStart(2, "0");
+---
+
+<section class="m-archive" data-m-archive aria-label="Archive">
+  <header class="ma-head">
+    <p class="mono dim">RB · STUDIO — {total} SECTORS</p>
+    <h1 class="ma-title">
+      <span class="l-en">Archive</span><span class="l-de">Archiv</span>
+    </h1>
+    <p class="ma-sub">
+      <span class="l-en">Cinema 4D · Redshift · Motion · WebGL. Every sector is a real launch or a real study.</span>
+      <span class="l-de">Cinema 4D · Redshift · Motion · WebGL. Jeder Sektor ist ein echter Launch oder eine echte Studie.</span>
+    </p>
+  </header>
+
+  {works.map((w, i) => {
+    const isCase = w.type === "case";
+    const title = w.title ?? en[w.kTitle ?? ""] ?? w.hrefLabel;
+    const external = w.href.startsWith("http");
+    return (
+      <article class="ma-card" data-ma-card data-ma-index={i}>
+        <a
+          class="ma-media"
+          href={w.href}
+          data-case-link={isCase ? "" : undefined}
+          target={external ? "_blank" : undefined}
+          rel={external ? "noopener" : undefined}
+          aria-label={title}
+          style={`aspect-ratio: ${w.video ? "16 / 10" : "4 / 5"};`}
+        >
+          {w.video ? (
+            <video
+              data-ma-video={w.video}
+              poster={w.img}
+              muted
+              loop
+              playsinline
+              preload="none"
+              aria-hidden="true"
+            ></video>
+          ) : (
+            <img
+              src={w.img}
+              alt={title}
+              loading={i < 2 ? "eager" : "lazy"}
+              decoding="async"
+            />
+          )}
+          <span class="ma-corner tl" aria-hidden="true"></span>
+          <span class="ma-corner tr" aria-hidden="true"></span>
+          <span class="ma-corner bl" aria-hidden="true"></span>
+          <span class="ma-corner br" aria-hidden="true"></span>
+          <span class="ma-idx mono" aria-hidden="true">SECTOR {String(i + 1).padStart(2, "0")}</span>
+          {w.video && <span class="ma-play mono" aria-hidden="true">▶ FILM</span>}
+        </a>
+
+        <div class="ma-info">
+          <span class="mono dim" data-i18n={w.kCat}>{en[w.kCat] ?? ""}</span>
+          <h2 class="ma-name" data-i18n={isCase ? w.kTitle : undefined}>{title}</h2>
+          <p class="ma-copy">
+            {isCase && w.kText ? (
+              <span data-i18n={w.kText}>{en[w.kText] ?? ""}</span>
+            ) : (
+              <>
+                <span class="l-en">{w.detail?.en}</span>
+                <span class="l-de">{w.detail?.de}</span>
+              </>
+            )}
+          </p>
+          {w.detail?.tools && <span class="ma-tools mono dim">{w.detail.tools}</span>}
+          <a
+            class="ma-link mono"
+            href={w.href}
+            data-case-link={isCase ? "" : undefined}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener" : undefined}
+          >{isCase ? "OPEN CASE" : w.hrefLabel}<i aria-hidden="true"></i></a>
+        </div>
+      </article>
+    );
+  })}
+
+  <footer class="ma-foot">
+    <a class="ma-link mono" href={BEHANCE} target="_blank" rel="noopener">
+      <span class="l-en">FULL ARCHIVE ON BEHANCE ↗</span>
+      <span class="l-de">GESAMTES ARCHIV AUF BEHANCE ↗</span>
+    </a>
+  </footer>
+</section>
+
+<div class="ma-hud" data-ma-hud aria-hidden="true">
+  <span class="mono" data-ma-sector>SECTOR 01 / {total}</span>
+  <i class="ma-bar"><b data-ma-bar></b></i>
+</div>
+
+<style>
+  /* Desktop keeps the corridor; this whole layer only exists for touch. */
+  .m-archive,
+  .ma-hud { display: none; }
+
+  @media (max-width: 760px), (pointer: coarse) {
+    /* The deck lock (Layout) pins the body for the WebGL fly-through. Native
+       scroll IS the experience here, so the lock must yield. !important because
+       the two component styles land in the same cascade layer. */
+    :global(body.is-deck) {
+      height: auto !important;
+      overflow: auto !important;
+      touch-action: auto !important;
+      overscroll-behavior: auto;
+    }
+    :global(body.is-deck main) { height: auto !important; }
+
+    .m-archive {
+      display: block;
+      position: relative;
+      z-index: 1;
+      padding: 6.5rem 1.1rem 5.5rem;
+      background:
+        radial-gradient(circle at 80% -4%, rgba(255, 255, 255, 0.05), transparent 26rem),
+        #050505;
+    }
+
+    .mono {
+      font-family: var(--font-inter);
+      font-size: 0.6rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-text);
+    }
+    .mono.dim { color: rgba(var(--rgb-text), 0.48); }
+
+    .ma-head { margin-bottom: 2.6rem; }
+    .ma-title {
+      margin: 0.9rem 0 0.7rem;
+      font: 500 clamp(3rem, 14vw, 4.2rem)/0.95 var(--font-display);
+      letter-spacing: -0.02em;
+    }
+    .ma-sub {
+      max-width: 30rem;
+      margin: 0;
+      color: rgba(var(--rgb-text), 0.62);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    /* ── Card ─────────────────────────────────────────────────────────────── */
+    /* Hidden-until-revealed only once the script has armed (.ma-js): if JS
+       never runs, the archive is simply visible instead of simply gone. */
+    .ma-card { margin-bottom: 3.4rem; }
+    .ma-js .ma-card {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 0.7s var(--ease-out-expo), transform 0.85s var(--ease-out-expo);
+    }
+    .ma-js .ma-card.is-in { opacity: 1; transform: none; }
+
+    .ma-media {
+      position: relative;
+      display: block;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: #0a0b0c;
+    }
+    .ma-media img,
+    .ma-media video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* chrome corner brackets — the portal frame, distilled */
+    .ma-corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      opacity: 0.75;
+    }
+    .ma-corner.tl { top: 8px; left: 8px; border-top: 1px solid #dfe5e8; border-left: 1px solid #dfe5e8; }
+    .ma-corner.tr { top: 8px; right: 8px; border-top: 1px solid #dfe5e8; border-right: 1px solid #dfe5e8; }
+    .ma-corner.bl { bottom: 8px; left: 8px; border-bottom: 1px solid #dfe5e8; border-left: 1px solid #dfe5e8; }
+    .ma-corner.br { bottom: 8px; right: 8px; border-bottom: 1px solid #dfe5e8; border-right: 1px solid #dfe5e8; }
+
+    .ma-idx {
+      position: absolute;
+      top: 0.85rem;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.54rem;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    .ma-play {
+      position: absolute;
+      right: 0.85rem;
+      bottom: 0.85rem;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 100px;
+      background: rgba(3, 4, 5, 0.6);
+      color: #fff;
+      font-size: 0.52rem;
+    }
+
+    /* ── Caption: always BELOW the artwork, never on it ──────────────────── */
+    .ma-info {
+      display: grid;
+      gap: 0.55rem;
+      padding: 1rem 0.15rem 0;
+    }
+    .ma-name {
+      margin: 0;
+      font: 500 clamp(1.55rem, 7vw, 2.1rem)/1 var(--font-display);
+      letter-spacing: -0.015em;
+      overflow-wrap: anywhere;
+    }
+    .ma-copy {
+      margin: 0.1rem 0 0;
+      color: rgba(var(--rgb-text), 0.66);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    .ma-tools { font-size: 0.52rem; letter-spacing: 0.16em; }
+
+    .ma-link {
+      justify-self: start;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+      padding: 0.6rem 0.95rem;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 2px;
+      color: var(--color-accent);
+      font-size: 0.58rem;
+    }
+    .ma-link i {
+      width: 0.42rem;
+      height: 0.42rem;
+      border-top: 1px solid currentColor;
+      border-right: 1px solid currentColor;
+      transform: rotate(45deg);
+    }
+
+    .ma-foot {
+      margin-top: 1rem;
+      padding-top: 2.2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    .ma-foot .ma-link { justify-self: center; }
+
+    /* ── Fixed HUD: sector readout + depth bar ───────────────────────────── */
+    .ma-hud {
+      position: fixed;
+      left: 1.1rem;
+      right: 1.1rem;
+      bottom: 0;
+      z-index: 30;
+      display: block;
+      padding: 0.55rem 0 0.75rem;
+      background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78) 45%);
+      pointer-events: none;
+    }
+    .ma-hud .mono { display: block; margin-bottom: 0.45rem; font-size: 0.52rem; }
+    .ma-bar {
+      display: block;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+    .ma-bar b {
+      display: block;
+      height: 100%;
+      background: #fff;
+      box-shadow: 0 0 0.6rem rgba(255, 255, 255, 0.55);
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+  }
+
+  /* Language layering: the SSR ships both, <html lang> picks one. */
+  .l-de { display: none; }
+  :global(html[lang="de-AT"]) .l-en { display: none; }
+  :global(html[lang="de-AT"]) .l-de { display: inline; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ma-card { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+
+<script>
+  import { decodeText } from "../utils/decode";
+
+  const MOBILE = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+  const root = document.querySelector<HTMLElement>("[data-m-archive]");
+
+  if (MOBILE && root) {
+    root.classList.add("ma-js"); // arm the reveal styles only now that JS is alive
+    const cards = [...root.querySelectorAll<HTMLElement>("[data-ma-card]")];
+    const sectorEl = document.querySelector<HTMLElement>("[data-ma-sector]");
+    const barEl = document.querySelector<HTMLElement>("[data-ma-bar]");
+    const total = String(cards.length).padStart(2, "0");
+
+    // Reveal + decode each card once as it arrives; keep videos playing only
+    // while their card is actually on screen.
+    const seen = new WeakSet<HTMLElement>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const card = entry.target as HTMLElement;
+          const video = card.querySelector<HTMLVideoElement>("video[data-ma-video]");
+
+          if (entry.isIntersecting) {
+            if (!seen.has(card)) {
+              seen.add(card);
+              card.classList.add("is-in");
+              card.querySelectorAll<HTMLElement>(".mono").forEach((el, i) =>
+                setTimeout(() => decodeText(el, { duration: 420 }), i * 70),
+              );
+            }
+            if (sectorEl) {
+              const index = String(Number(card.dataset.maIndex ?? 0) + 1).padStart(2, "0");
+              sectorEl.textContent = `SECTOR ${index} / ${total}`;
+            }
+            if (video) {
+              if (!video.src) video.src = video.dataset.maVideo!; // attach lazily
+              video.play().catch(() => {});
+            }
+          } else if (video && video.src) {
+            video.pause();
+          }
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.18 },
+    );
+    cards.forEach((card) => io.observe(card));
+
+    // Depth bar — one passive listener, work deferred to the frame.
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const max = document.documentElement.scrollHeight - innerHeight;
+        if (barEl && max > 0) barEl.style.transform = `scaleX(${Math.min(1, scrollY / max)})`;
+      });
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
+</script>

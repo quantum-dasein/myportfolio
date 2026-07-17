@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Spatial from "../components/Spatial.astro";
+import ArchiveMobile from "../components/ArchiveMobile.astro";
 import { works } from "../data/works";
 ---
 
@@ -42,5 +43,6 @@ import { works } from "../data/works";
       {works.map((work) => <li>{work.title ?? work.hrefLabel}</li>)}
     </ul>
   </section>
+  <ArchiveMobile />
   <Spatial />
 </Layout>

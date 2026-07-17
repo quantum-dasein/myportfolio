@@ -96,6 +96,14 @@ import { works } from "../data/works";
     touch-action: none;
     user-select: none;
   }
+
+  /* Touch devices run ArchiveMobile instead — the corridor never mounts there,
+     and its chrome must not linger either. */
+  @media (max-width: 760px), (pointer: coarse) {
+    .space,
+    .hud,
+    .preloader { display: none !important; }
+  }
   :global(canvas.rb-space-canvas) {
     position: fixed;
     inset: 0;
@@ -1276,6 +1284,12 @@ import { works } from "../data/works";
     }
   }
 
-  if (!customElements.get("rb-space")) customElements.define("rb-space", Space);
-  if (!document.querySelector("rb-space")) document.body.appendChild(document.createElement("rb-space"));
+  // Touch devices get ArchiveMobile instead — a native-scroll telling of the
+  // same archive. The corridor (renderer, textures, videos, tickers) is never
+  // even constructed there; that, not tuning, is what makes the phone fly.
+  const TOUCH_ARCHIVE = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+  if (!TOUCH_ARCHIVE) {
+    if (!customElements.get("rb-space")) customElements.define("rb-space", Space);
+    if (!document.querySelector("rb-space")) document.body.appendChild(document.createElement("rb-space"));
+  }
 </script>
