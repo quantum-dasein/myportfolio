@@ -24,9 +24,17 @@
 </div>
 
 <style>
+  /* Sized in dvh, not `inset:0`. On mobile a fixed `inset:0` box (and every
+     `vh`) resolves to the LARGE viewport — the URL-bar-hidden height — so the
+     seam at 50% and the label landed well below the visible centre while the
+     bar was showing. dvh tracks the viewport that is actually on screen, so the
+     shutter closes on the true centre at any URL-bar state. */
   .page-cut {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh;
     z-index: 490; /* under the case world (500), over the archive warp (480) */
     overflow: hidden;
     visibility: hidden;
@@ -43,7 +51,7 @@
     position: absolute;
     left: -1px;
     right: -1px;
-    height: 51vh; /* overlap the seam so no hairline of the page shows through */
+    height: 51dvh; /* overlap the seam so no hairline of the page shows through */
     background: linear-gradient(180deg, #06070a, #020304);
     will-change: transform;
   }
