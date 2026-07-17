@@ -404,38 +404,48 @@ const tiles = [
     .motion-lead { max-width: 34rem; font-size: .98rem; }
     .motion-tools { max-width: 30rem; font-size: .62rem; }
 
+    /* A horizontal snap carousel — swipe through the work rather than scrolling
+       a long plain column. Bleeds to both edges, each card peeks the next. */
     .gallery-stage {
       position: relative;
       inset: auto;
       height: auto;
-      margin: 2.5rem 0 0;
-      overflow: visible;
       perspective: none;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.4rem;
+      display: flex;
+      gap: 1rem;
+      margin: 2.2rem calc(var(--container-offset) * -1) 0;
+      padding: 0 var(--container-offset);
+      overflow-x: auto;
+      overflow-y: visible;
+      scroll-snap-type: x mandatory;
+      scroll-padding-left: var(--container-offset);
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .gallery-stage::-webkit-scrollbar { display: none; }
     .archive-sculpture { display: none; } /* decorative + the biggest paint bill */
 
     .tile {
       position: relative !important;
       inset: auto !important;
       z-index: auto !important;
-      width: 100% !important;
+      flex: 0 0 80%;
+      width: 80% !important;
       height: auto !important;
       aspect-ratio: 4 / 5;
       translate: none !important;
       transform: none !important;
+      scroll-snap-align: start;
       box-shadow: 0 .8rem 1.8rem rgba(0, 0, 0, .42);
     }
-    /* Two of the six read better wide — landscape architecture and the media wall. */
-    .tile-3, .tile-5 { aspect-ratio: 3 / 2; }
 
     .tile-arrow { width: 2.2rem; }
     figcaption { left: .95rem; right: .95rem; bottom: .9rem; }
     figcaption > span { font-size: .52rem; }
     strong { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
-    .gallery-pill { display: inline-flex; width: 100%; justify-content: space-between; margin-top: 2rem; }
+    /* "Ins Archiv eintreten" is dropped on phones — it duplicated the Behance
+       CTA right below it, and the archive is one tap away in the menu. */
+    .gallery-pill { display: none; }
   }
 
   /* ── Mobile focus mode ─────────────────────────────────────────────────── */

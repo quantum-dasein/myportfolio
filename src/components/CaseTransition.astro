@@ -650,9 +650,11 @@
   // it restore scroll + play its arrival reveal. A hard failsafe guarantees the
   // navigation happens even if the animation stalls.
   function exitBackToOrigin() {
-    if (!casePage || running) return;
-    const origin = sessionStorage.getItem("rb-case-origin");
-    if (!origin) { history.back(); return; } // no stored origin → best-effort back
+    if (!casePage) return;
+    // No stored origin (direct load / deep link) → there may be no history to
+    // go back to, and we already preventDefaulted the link, so navigate home
+    // outright rather than risk a dead button.
+    const origin = sessionStorage.getItem("rb-case-origin") || "/";
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
     let navigated = false;
@@ -662,8 +664,16 @@
       sessionStorage.setItem("rb-case-return", kind);
       location.assign(origin);
     };
-    play(kind, "exit", go);
-    window.setTimeout(go, 2600); // never let the button appear stuck
+    // CRITICAL: schedule the navigation BEFORE any early return. If the arrival
+    // reveal is still playing (`running`), we must NOT bail silently — that left
+    // the scene frozen and the button dead. We just skip re-playing the exit and
+    // leave quickly instead; otherwise play the reverse transition.
+    if (running) {
+      window.setTimeout(go, 650);
+    } else {
+      play(kind, "exit", go);
+      window.setTimeout(go, 2600); // never let the button appear stuck
+    }
   }
 
   window.__rbCaseTransition = navigate;

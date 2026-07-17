@@ -19,9 +19,9 @@ export const ui = {
     "accessibility.skip-to-content": "Skip to content",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
-    "meta.title": "Rodion Belousov - Digital Marketer & Creative Developer",
+    "meta.title": "Rodion Belousov — Digital Marketing & SEO Specialist in Vienna",
     "meta.description":
-      "Rodion Belousov is a digital marketer and creative developer building positioning, content, SEO and premium web experiences for brands that need to convert.",
+      "Rodion Belousov is a digital marketing and SEO specialist in Vienna — strategy, positioning, content and technical SEO that grow organic traffic and convert. Also a creative developer building the premium websites that carry it.",
 
     // ── Navigation ──────────────────────────────────────────────────────────
     "nav.intro": "Intro",
@@ -341,7 +341,7 @@ export const ui = {
     "scrub.eyebrow": "Cinema 4D · Redshift / scroll runs the film",
     "scrub.title": "Nothing here was filmed.",
     "scrub.text":
-      "No studio. No camera. No product. Light, material and motion built out of nothing, then graded until it reads as real. Scroll to run it, frame by frame.",
+      "No studio. No camera. No product. Light, material and motion built out of nothing, then graded until it reads as real.",
 
     // ── Portal to the 3D archive ────────────────────────────────────────────
     "portal.eyebrow": "The Archive",
@@ -376,9 +376,9 @@ export const ui = {
     "accessibility.skip-to-content": "Zum Inhalt springen",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
-    "meta.title": "Rodion Belousov - Digital Marketer & Creative Developer",
+    "meta.title": "Rodion Belousov — Digital-Marketing- & SEO-Spezialist in Wien",
     "meta.description":
-      "Rodion Belousov ist Digital Marketer und Creative Developer für Positionierung, Content, SEO und hochwertige Websites, die verkaufen.",
+      "Rodion Belousov ist Digital-Marketing- und SEO-Spezialist in Wien — Strategie, Positionierung, Content und technisches SEO, das organischen Traffic steigert und konvertiert. Zugleich Creative Developer für die hochwertigen Websites dahinter.",
 
     // ── Navigation ──────────────────────────────────────────────────────────
     "nav.intro": "Intro",
@@ -695,7 +695,7 @@ export const ui = {
     "scrub.eyebrow": "Cinema 4D · Redshift / Scrollen spielt den Film",
     "scrub.title": "Hier wurde nichts gefilmt.",
     "scrub.text":
-      "Kein Studio. Keine Kamera. Kein Produkt. Licht, Material und Bewegung aus dem Nichts gebaut und so lange gegradet, bis es echt liest. Scrolle — Bild für Bild.",
+      "Kein Studio. Keine Kamera. Kein Produkt. Licht, Material und Bewegung aus dem Nichts gebaut und so lange gegradet, bis es echt liest.",
 
     // ── Portal to the 3D archive ────────────────────────────────────────────
     "portal.eyebrow": "Das Archiv",

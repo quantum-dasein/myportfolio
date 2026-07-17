@@ -14,7 +14,7 @@
 //  while on screen. Cases route through the cinematic CaseTransition exactly
 //  like on desktop.
 // ─────────────────────────────────────────────────────────────────────────────
-import { works, BEHANCE } from "../data/works";
+import { works } from "../data/works";
 import { ui } from "../i18n/ui";
 
 const en = ui.en as Record<string, string>;
@@ -118,13 +118,6 @@ const total = String(works.length).padStart(2, "0");
     );
   })}
 
-  <footer class="ma-foot">
-    <a class="ma-link mono" href={BEHANCE} target="_blank" rel="noopener">
-      <span class="l-en">FULL ARCHIVE ON BEHANCE</span>
-      <span class="l-de">GESAMTES ARCHIV AUF BEHANCE</span>
-      <i aria-hidden="true"></i>
-    </a>
-  </footer>
 </section>
 
 <div class="ma-hud" data-ma-hud aria-hidden="true">

@@ -6,13 +6,6 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "4321"],
       "port": 4321
-    },
-    {
-      "name": "astro-dev-alt",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "4325"],
-      "port": 4325,
-      "autoPort": false
     }
   ]
 }

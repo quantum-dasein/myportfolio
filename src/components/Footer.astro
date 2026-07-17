@@ -263,9 +263,13 @@ const year = new Date().getFullYear();
 
   /* Brand block + two real link columns. The old single row wrapped seven links
      onto a ragged second line and left a void in the middle. */
+  /* 1fr 1fr so the column divider lands at exactly 50% — the machine row below
+     splits into four and its MIDDLE divider is also at 50%. Equal columns make
+     the two vertical lines stack instead of jogging (1.15fr put the top one at
+     ~53%, which is what "не сходится" was). */
   .footer-main {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     border-block: 1px solid rgba(255,255,255,.1);
   }
   .footer-main > * { padding: clamp(2rem, 3.4vw, 3.2rem) clamp(1.5rem, 5vw, 5rem); }
@@ -405,11 +409,12 @@ const year = new Date().getFullYear();
 
   .footer-base {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
     padding: 1.6rem clamp(1.5rem, 5vw, 5rem);
     color: rgba(var(--rgb-text), .46);
     font-size: .65rem;
+    text-align: center;
   }
   .footer-base p { margin: 0; }
   .footer-base div { display: flex; gap: 1rem; }

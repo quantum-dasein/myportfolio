@@ -88,7 +88,20 @@ const schema = {
       name: "Rodion Belousov",
       url: site.toString(),
       email: "mailto:rodionbelousov@protonmail.com",
-      jobTitle: "Digital Marketer and Creative Developer",
+      jobTitle: "Digital Marketing & SEO Specialist",
+      hasOccupation: [
+        {
+          "@type": "Occupation",
+          name: "Digital Marketing Specialist",
+          occupationLocation: { "@type": "City", name: "Vienna" },
+          skills: "Marketing strategy, positioning, content strategy, search engine optimization, technical SEO, conversion",
+        },
+        {
+          "@type": "Occupation",
+          name: "Creative Developer",
+          skills: "Astro, Three.js, WebGL, GLSL, front-end engineering",
+        },
+      ],
       description,
       address: {
         "@type": "PostalAddress",
@@ -101,21 +114,23 @@ const schema = {
         "https://github.com/quantum-dasein",
       ],
       knowsLanguage: ["German", "English", "Russian", "Czech"],
+      // Ordered by profession, not hobby: marketing & SEO first; 3D/motion tools
+      // are a supporting craft, listed last.
       knowsAbout: [
         "Digital marketing",
         "Marketing strategy",
         "Search engine optimization",
         "Technical SEO",
         "Content strategy",
+        "Conversion rate optimization",
+        "Brand positioning",
         "Web development",
         "Astro",
         "Three.js",
         "WebGL",
+        "Motion design",
         "Cinema 4D",
         "Redshift Renderer",
-        "Adobe After Effects",
-        "Adobe Premiere Pro",
-        "Adobe Photoshop",
       ],
     },
     {
