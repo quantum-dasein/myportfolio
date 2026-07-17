@@ -99,9 +99,9 @@ import Layout from "../layouts/Layout.astro";
 
     #define RS       1.0
     #define DISK_IN  3.0
-    #define DISK_OUT 12.5
+    #define DISK_OUT 17.0
     /** Radius outside which light travels straight enough to fake it. */
-    #define FIELD    16.0
+    #define FIELD    20.0
 
     float hash31(vec3 p) {
       p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
@@ -145,7 +145,9 @@ import Layout from "../layouts/Layout.astro";
       float h = hash31(floor(p));
       float on = step(thresh, h);
       float b = (h - thresh) / max(1e-4, 1.0 - thresh);
-      return on * b * smoothstep(0.36, 0.0, length(fract(p) - 0.5));
+      // Each star breathes on its own phase — a static sky reads as a JPEG.
+      float tw = 0.72 + 0.28 * sin(uTime * (1.5 + h * 4.0) + h * 41.0);
+      return on * b * tw * smoothstep(0.36, 0.0, length(fract(p) - 0.5));
     }
 
     /** Whatever the photon was looking at when it escaped. */
@@ -168,14 +170,40 @@ import Layout from "../layouts/Layout.astro";
       col += vec3(0.016, 0.019, 0.027) * streak * streak * (0.35 + 0.65 * n1);
       col += vec3(0.85, 0.92, 1.00) * starLayer(d, 0.9900, 190.0) * 1.15;
       col += vec3(1.00, 0.94, 0.86) * starLayer(d, 0.9972, 74.0) * 1.7;
+
+      // A handful of stars close enough to bloom — the anchors of the sky.
+      vec3 hp = d * 21.0;
+      float hh = hash31(floor(hp));
+      if (hh > 0.9990) {
+        float bloom = smoothstep(0.5, 0.0, length(fract(hp) - 0.5));
+        float pulse = 0.82 + 0.18 * sin(uTime * 1.3 + hh * 90.0);
+        col += vec3(0.85, 0.92, 1.10) * pow(bloom, 2.2) * ((hh - 0.9990) / 0.0010) * 1.15 * pulse;
+      }
       return col;
     }
 
-    /** Colour and opacity of the disk where a photon punched through it. */
+    /** Hairline orbit guides far beyond the gas — lensed and occluded like it. */
+    float ringGlow(float r) {
+      float g = 0.0;
+      g += 0.11  * exp(-pow((r - 19.2) / 0.16, 2.0));
+      g += 0.075 * exp(-pow((r - 23.0) / 0.14, 2.0));
+      g += 0.05  * exp(-pow((r - 27.2) / 0.13, 2.0));
+      return g;
+    }
+
+    /** Colour and opacity of the disk plane where a photon punched through it. */
     vec4 diskSample(vec3 p, vec3 dir) {
       float r = length(p.xz);
+
+      // Beyond the gas the plane carries only the orbit guides.
+      if (r > DISK_OUT) {
+        float ring = ringGlow(r);
+        if (ring < 0.002) return vec4(0.0);
+        return vec4(vec3(0.72, 0.80, 0.95) * 1.5, ring);
+      }
+
       float shape = smoothstep(DISK_IN, DISK_IN + 1.1, r) *
-                    (1.0 - smoothstep(DISK_OUT - 5.0, DISK_OUT, r));
+                    (1.0 - smoothstep(DISK_OUT - 6.0, DISK_OUT, r));
       if (shape <= 0.001) return vec4(0.0);
 
       // Keplerian shear — the inner disk laps the outer one, so the gas smears
@@ -189,14 +217,24 @@ import Layout from "../layouts/Layout.astro";
 
       float n = fbm2(q * 0.8);
       float n2 = fbm2(q * 2.5 + 9.0);
-      float density = shape * mix(0.22, 1.0, n) * mix(0.5, 1.4, n2);
+      float density = shape * mix(0.22, 1.0, n) * mix(0.55, 1.4, n2);
+
+      // Fine filaments, combed along the flow: high frequency across the radius,
+      // low along the orbit — this is what turns fog into gas. Sampled on the
+      // sheared angle so the streaks advect differentially like the real thing.
+      float fil = noise2(vec2(r * 6.5, a * 3.0));
+      float fil2 = noise2(vec2(r * 15.0 + 7.0, a * 6.0));
+      density *= mix(0.5, 1.35, fil);
 
       // Temperature falls with radius: white-hot at the ISCO, a dusty warm
       // silver at the rim. The reference disk is starlight-coloured, not lava —
       // the warmth is a tint, never the body of the colour.
-      float t = 1.0 - smoothstep(DISK_IN, DISK_OUT * 0.8, r);
-      vec3 col = mix(vec3(0.62, 0.46, 0.34), vec3(0.95, 0.82, 0.66), pow(t, 1.4));
-      col = mix(col, vec3(1.0, 0.98, 0.95), pow(t, 3.5));
+      float t = 1.0 - smoothstep(DISK_IN, DISK_OUT * 0.75, r);
+      vec3 col = mix(vec3(0.58, 0.50, 0.42), vec3(0.94, 0.88, 0.80), pow(t, 1.5));
+      col = mix(col, vec3(1.05, 1.02, 0.97), pow(t, 3.2));
+      col *= mix(0.78, 1.22, fil2);
+      // The ISCO edge burns — the last stable orbit is the hottest thing here.
+      col *= 1.0 + 1.3 * smoothstep(DISK_IN + 1.6, DISK_IN + 0.1, r);
 
       // Relativistic beaming: the limb rotating toward us is dramatically
       // brighter than the one rotating away. This asymmetry is the tell.
@@ -209,6 +247,18 @@ import Layout from "../layouts/Layout.astro";
       density *= clamp(beam * 0.6, 0.25, 1.0);
 
       return vec4(col, clamp(density, 0.0, 1.0));
+    }
+
+    /** Straight-line finish: a plane crossing beyond the march still counts —
+        this is what lets the outer guides run the full width of the frame. */
+    void farPlane(vec3 pos, vec3 dir, inout vec3 col, inout float trans) {
+      if (abs(dir.y) < 1e-4) return;
+      float t = -pos.y / dir.y;
+      if (t <= 0.0) return;
+      vec3 hit = pos + dir * t;
+      vec4 d = diskSample(hit, dir);
+      col += d.rgb * d.a * trans;
+      trans *= 1.0 - d.a;
     }
 
     // Output is LINEAR on purpose: the blit pass sRGB-encodes exactly once on
@@ -242,7 +292,12 @@ import Layout from "../layouts/Layout.astro";
       float c = dot(pos, pos) - FIELD * FIELD;
       float disc = b * b - c;
       if (disc < 0.0) {
-        gl_FragColor = vec4(grade(background(dir)), 1.0);
+        // Never bends — but may still cross the plane where the guides live.
+        vec3 col = vec3(0.0);
+        float trans = 1.0;
+        farPlane(pos, dir, col, trans);
+        col += background(dir) * trans;
+        gl_FragColor = vec4(grade(col), 1.0);
         return;
       }
       pos += dir * max(0.0, -b - sqrt(disc));
@@ -257,7 +312,7 @@ import Layout from "../layouts/Layout.astro";
         if (r < RS * 1.02) { captured = true; break; }
         if (r > FIELD + 2.0 && dot(pos, dir) > 0.0) break; // escaped for good
 
-        float dt = clamp(r * 0.075, 0.05, 0.9);
+        float dt = clamp(r * 0.075, 0.05, 1.1);
         vec3 prev = pos;
 
         // Null geodesic, Cartesian form: a = -1.5 h² r⃗ / r⁵.
@@ -274,13 +329,18 @@ import Layout from "../layouts/Layout.astro";
         }
       }
 
-      if (!captured) col += background(dir) * trans;
+      if (!captured) {
+        // Whatever the escaped photon still had ahead of it: the outer guides,
+        // then the sky.
+        farPlane(pos, dir, col, trans);
+        col += background(dir) * trans;
+      }
       gl_FragColor = vec4(grade(col), 1.0);
     }
   `;
 
   /** Fraction of the screen the geodesic march actually runs at. */
-  const MARCH_SCALE = 0.7;
+  const MARCH_SCALE = 0.75;
 
   class BlackHoleGL extends HTMLElement {
     private renderer?: THREE.WebGLRenderer;
@@ -302,6 +362,9 @@ import Layout from "../layouts/Layout.astro";
     private calm = document.documentElement.classList.contains("rb-calm");
     private lastFrame = 0;
     private dummy = new THREE.Object3D();
+    // 1 = adrift (idle sway on), 0 = stabilized. Driven by scroll, so
+    // "SCROLL TO STABILIZE" is an instruction, not just set dressing.
+    private stability = 1;
 
     connectedCallback() {
       // AA costs nothing here (the march happens in the offscreen target); it
@@ -358,6 +421,7 @@ import Layout from "../layouts/Layout.astro";
       this.resize();
       addEventListener("resize", this.resize, { passive: true });
       addEventListener("pointermove", this.onPointerMove, { passive: true });
+      addEventListener("scroll", this.onScroll, { passive: true });
       document.addEventListener("visibilitychange", this.onVisibility);
       addEventListener("rb:calmchange", this.onCalmChange as EventListener);
 
@@ -375,6 +439,7 @@ import Layout from "../layouts/Layout.astro";
       this.raf = 0;
       removeEventListener("resize", this.resize);
       removeEventListener("pointermove", this.onPointerMove);
+      removeEventListener("scroll", this.onScroll);
       document.removeEventListener("visibilitychange", this.onVisibility);
       removeEventListener("rb:calmchange", this.onCalmChange as EventListener);
       this.material?.dispose();
@@ -432,6 +497,10 @@ import Layout from "../layouts/Layout.astro";
       this.mouseTarget.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
     };
 
+    private onScroll = () => {
+      this.stability = 1 - Math.min(1, Math.max(0, scrollY / (innerHeight * 0.7)));
+    };
+
     private onVisibility = () => {
       this.visible = !document.hidden;
       if (this.visible && !this.raf && !this.calm) {
@@ -472,11 +541,16 @@ import Layout from "../layouts/Layout.astro";
       if (!this.renderer || !this.material) return;
       this.material.uniforms.uTime.value = elapsed;
 
-      // The camera drifts with the pointer — a slow, heavy parallax.
+      // The camera is adrift: pointer parallax plus a slow untethered sway.
+      // Scrolling ("stabilize") damps the sway and eases the ship back out.
       this.mouse.lerp(this.mouseTarget, 0.045);
+      const wob = this.stability;
+      const sway = Math.sin(elapsed * 0.14) * 0.9 * wob;
+      const bob = Math.cos(elapsed * 0.18) * 0.5 * wob;
       const pos = this.material.uniforms.uCamPos.value as THREE.Vector3;
-      pos.x += (this.mouse.x * 4.5 - pos.x) * 0.04;
-      pos.y += (CAM.y + this.mouse.y * 2.6 - pos.y) * 0.04;
+      pos.x += (this.mouse.x * 4.5 + sway - pos.x) * 0.04;
+      pos.y += (CAM.y + this.mouse.y * 2.6 + bob - pos.y) * 0.04;
+      pos.z += (CAM.z + (1 - wob) * 7 - pos.z) * 0.03;
       this.camera.position.copy(pos);
       this.camera.lookAt(TARGET);
 
