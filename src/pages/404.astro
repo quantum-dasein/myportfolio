@@ -74,7 +74,8 @@ import Layout from "../layouts/Layout.astro";
   import gsap from "gsap";
   import { decodeText, prefersCalm } from "../utils/decode";
 
-  const FOCAL = 1.7;
+  // Framed so the disk spans ~60% of the width, as in the reference.
+  const FOCAL = 2.0;
   // Rs = 1: horizon at r = 1, photon sphere at 1.5, ISCO (the disk's inner edge) at 3.
   const CAM = new THREE.Vector3(0, 3.4, 45);
   const TARGET = new THREE.Vector3(0, 0, 0);
@@ -149,9 +150,20 @@ import Layout from "../layouts/Layout.astro";
     vec3 background(vec3 d) {
       float n1 = fbm3(d * 1.9 + 4.0);
       float n2 = fbm3(d * 5.2 - 2.0);
-      vec3 col = mix(vec3(0.006, 0.008, 0.016), vec3(0.045, 0.055, 0.085), n1);
-      col += vec3(0.11, 0.10, 0.14) * pow(smoothstep(0.36, 0.95, n1), 2.2);
-      col += vec3(0.10, 0.055, 0.03) * pow(smoothstep(0.48, 1.0, n2), 3.0);
+      // These look absurdly dark written down, and have to be: everything here
+      // is linear light and gets a 1/2.2 gamma on the way out, which lifts 0.002
+      // to a visible 0.06. Authoring the sky at "looks right" values made deep
+      // space read as milky grey.
+      vec3 col = mix(vec3(0.0004, 0.0006, 0.0013), vec3(0.004, 0.005, 0.009), n1);
+      col += vec3(0.018, 0.016, 0.027) * pow(smoothstep(0.42, 0.95, n1), 2.4);
+      col += vec3(0.020, 0.010, 0.005) * pow(smoothstep(0.55, 1.0, n2), 3.0);
+      // A faint galactic band arcing behind the hole, tilted off-axis so it
+      // reads as scenery the hole sits in front of, not a frame around it.
+      // The falloff must die within ~15° of the band's plane — a soft power
+      // curve here floods the whole equator of the sky with haze.
+      float band = abs(dot(d, normalize(vec3(0.34, 1.0, -0.25))));
+      float streak = smoothstep(0.30, 0.02, band);
+      col += vec3(0.010, 0.012, 0.017) * streak * streak * (0.35 + 0.65 * n1);
       col += vec3(0.85, 0.92, 1.00) * starLayer(d, 0.9900, 190.0) * 1.15;
       col += vec3(1.00, 0.94, 0.86) * starLayer(d, 0.9972, 74.0) * 1.7;
       return col;
@@ -165,8 +177,10 @@ import Layout from "../layouts/Layout.astro";
       if (shape <= 0.001) return vec4(0.0);
 
       // Keplerian shear — the inner disk laps the outer one, so the gas smears
-      // into arcs instead of turning like a solid record.
-      float shear = uTime * 2.4 / pow(r, 1.5);
+      // into arcs instead of turning like a solid record. Sign matches the
+      // orbital velocity below; flipping one without the other would light the
+      // wrong limb.
+      float shear = -uTime * 2.4 / pow(r, 1.5);
       float a = atan(p.z, p.x) + shear;
       // Back to Cartesian before sampling: noise on (angle, r) tears at ±π.
       vec2 q = vec2(cos(a), sin(a)) * r;
@@ -175,18 +189,22 @@ import Layout from "../layouts/Layout.astro";
       float n2 = fbm2(q * 2.5 + 9.0);
       float density = shape * mix(0.22, 1.0, n) * mix(0.5, 1.4, n2);
 
-      // Temperature falls with radius: white-hot at the ISCO, ember at the rim.
+      // Temperature falls with radius: white-hot at the ISCO, a dusty warm
+      // silver at the rim. The reference disk is starlight-coloured, not lava —
+      // the warmth is a tint, never the body of the colour.
       float t = 1.0 - smoothstep(DISK_IN, DISK_OUT * 0.8, r);
-      vec3 col = mix(vec3(0.95, 0.28, 0.05), vec3(1.0, 0.70, 0.32), pow(t, 1.4));
-      col = mix(col, vec3(1.0, 0.96, 0.90), pow(t, 4.5));
+      vec3 col = mix(vec3(0.62, 0.46, 0.34), vec3(0.95, 0.82, 0.66), pow(t, 1.4));
+      col = mix(col, vec3(1.0, 0.98, 0.95), pow(t, 3.5));
 
       // Relativistic beaming: the limb rotating toward us is dramatically
       // brighter than the one rotating away. This asymmetry is the tell.
-      vec3 vel = normalize(vec3(-p.z, 0.0, p.x)) * (0.52 / sqrt(max(r, 1.0) / RS));
+      vec3 vel = normalize(vec3(p.z, 0.0, -p.x)) * (0.52 / sqrt(max(r, 1.0) / RS));
       float beam = 1.0 / (1.0 - dot(vel, -dir));
-      beam = pow(clamp(beam, 0.0, 3.0), 3.0);
+      // Physically this wants a higher exponent, but past ~2.4 the receding limb
+      // drops out of the frame entirely and the ring stops reading as a ring.
+      beam = pow(clamp(beam, 0.0, 3.0), 2.4);
       col *= beam;
-      density *= clamp(beam * 0.5, 0.12, 1.0);
+      density *= clamp(beam * 0.6, 0.25, 1.0);
 
       return vec4(col, clamp(density, 0.0, 1.0));
     }
@@ -257,7 +275,7 @@ import Layout from "../layouts/Layout.astro";
   `;
 
   /** Fraction of the screen the geodesic march actually runs at. */
-  const MARCH_SCALE = 0.5;
+  const MARCH_SCALE = 0.6;
 
   class BlackHoleGL extends HTMLElement {
     private renderer?: THREE.WebGLRenderer;
@@ -284,7 +302,7 @@ import Layout from "../layouts/Layout.astro";
       this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: "high-performance" });
       // The march is the whole cost of this page — resolution is the cheapest
       // dial there is, so it stays modest and the geodesics stay accurate.
-      this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1));
+      this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, this.lowPower ? 1 : 1.25));
       this.renderer.setClearColor(0x000000, 1);
       this.renderer.autoClear = false;
       this.append(this.renderer.domElement);
@@ -294,6 +312,11 @@ import Layout from "../layouts/Layout.astro";
         magFilter: THREE.LinearFilter,
         depthBuffer: false,
       });
+      // The shader already gamma-encodes its output. Without this tag three
+      // treats the texture as linear and sRGB-encodes it AGAIN on the way to the
+      // screen — double gamma, and the whole universe washes out to milky grey.
+      // Marked sRGB, the blit decodes and re-encodes and the two cancel.
+      this.target.texture.colorSpace = THREE.SRGBColorSpace;
       this.blitScene.add(
         new THREE.Mesh(
           new THREE.PlaneGeometry(2, 2),
@@ -306,7 +329,7 @@ import Layout from "../layouts/Layout.astro";
         fragmentShader: FRAG,
         depthTest: false,
         depthWrite: false,
-        defines: { STEPS: this.lowPower ? 48 : 76 },
+        defines: { STEPS: this.lowPower ? 64 : 110 },
         uniforms: {
           uRes: { value: new THREE.Vector2(1, 1) },
           uTime: { value: 0 },
@@ -322,7 +345,7 @@ import Layout from "../layouts/Layout.astro";
       this.camera.fov = 2 * Math.atan(0.5 / FOCAL) * (180 / Math.PI);
       this.camera.position.copy(CAM);
       this.camera.lookAt(TARGET);
-      this.buildAsteroids(this.lowPower ? 70 : 160);
+      this.buildAsteroids(this.lowPower ? 50 : 110);
 
       this.resize();
       addEventListener("resize", this.resize, { passive: true });
@@ -358,38 +381,43 @@ import Layout from "../layouts/Layout.astro";
 
     /** Debris that never made it in, lit only by the disk it is falling toward. */
     private buildAsteroids(count: number) {
-      const geometry = new THREE.IcosahedronGeometry(1, 0);
+      const geometry = new THREE.IcosahedronGeometry(1, 1);
       const material = new THREE.MeshStandardMaterial({
-        color: 0x0a0c0f,
-        roughness: 0.92,
-        metalness: 0.08,
+        color: 0x14161a,
+        roughness: 0.95,
+        metalness: 0.05,
         flatShading: true,
       });
       this.rocks = new THREE.InstancedMesh(geometry, material, count);
       this.rocks.frustumCulled = false;
 
       for (let i = 0; i < count; i += 1) {
-        const r = 13 + Math.random() * 27;
+        const r = 14 + Math.random() * 30;
         this.orbits.push({
           r,
           // Hug the disk plane near the hole, drift wider further out.
           y: (Math.random() - 0.5) * (2 + r * 0.14),
           phase: Math.random() * Math.PI * 2,
           speed: 0.55 / Math.pow(r, 1.5),
+          // In scene units the disk is ~12 across; debris must read as motes
+          // against it, not boulders. At 0.5 units each rock was the size of a
+          // building and the belt looked like Minecraft gravel.
           scale: new THREE.Vector3(
             0.5 + Math.random() * 0.8,
             0.4 + Math.random() * 0.7,
             0.5 + Math.random() * 0.9,
-          ).multiplyScalar(0.16 + Math.random() * 0.34),
+          ).multiplyScalar(0.035 + Math.pow(Math.random(), 2.5) * 0.1),
           spin: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.4),
         });
       }
       this.scene.add(this.rocks);
 
-      // The disk is the only light source in this scene, so it is the only one here.
-      const glow = new THREE.PointLight(0xff9a4a, 900, 90, 2);
+      // The disk is the only light source out here: a faint warm kiss on the
+      // sunward face of each mote, and near-nothing ambient. Debris should be
+      // silhouettes drifting across the glow, not lit props.
+      const glow = new THREE.PointLight(0xffb066, 140, 70, 2);
       this.scene.add(glow);
-      this.scene.add(new THREE.AmbientLight(0x223044, 0.5));
+      this.scene.add(new THREE.AmbientLight(0x1a2230, 0.12));
     }
 
     private onPointerMove = (event: PointerEvent) => {
