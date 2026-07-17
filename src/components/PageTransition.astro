@@ -148,6 +148,18 @@
     },
   };
 
+  function adjustFontSize(text: string) {
+    const len = text.length;
+    if (len > 24) {
+      const vw = Math.max(3.2, 5.5 - (len - 24) * 0.15);
+      const rem = Math.max(1.3, 1.9 - (len - 24) * 0.04);
+      const maxRem = Math.max(2.8, 4.6 - (len - 24) * 0.1);
+      label.style.fontSize = `clamp(${rem}rem, ${vw}vw, ${maxRem}rem)`;
+    } else {
+      label.style.fontSize = "";
+    }
+  }
+
   function labelFor(url: URL, link?: HTMLAnchorElement | null) {
     const path = url.pathname.replace(/\/+$/, "") || "/";
     const lang = document.documentElement.lang === "de-AT" ? "de" : "en";
@@ -159,7 +171,7 @@
       path.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ||
       link?.textContent?.trim() ||
       "STUDIO";
-    return raw.toUpperCase().slice(0, 28);
+    return raw.toUpperCase().slice(0, 36);
   }
 
   let running = false;
@@ -171,6 +183,7 @@
     root.classList.remove("is-active");
     gsap.set(blades, { clearProps: "transform" });
     gsap.set([seam, hud], { clearProps: "opacity,transform" });
+    label.style.fontSize = "";
   }
 
   function depart(url: URL, link: HTMLAnchorElement | null) {
@@ -179,6 +192,7 @@
     const text = labelFor(url, link);
     sessionStorage.setItem(ARRIVE_KEY, text);
     label.textContent = text;
+    adjustFontSize(text);
 
     document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
@@ -217,12 +231,12 @@
       .to({}, { duration: 0.22 }); // hold on the closed shutter before the swap
   }
 
-  /** The shutter opens on the page that was just loaded behind it. */
   function arrive(text: string) {
     running = true;
     document.documentElement.classList.add("rb-transitioning", "rb-page-arriving");
     root.classList.add("is-active");
     label.textContent = text;
+    adjustFontSize(text);
     gsap.set(blades, { yPercent: 0 });
 
     if (reduced) {
