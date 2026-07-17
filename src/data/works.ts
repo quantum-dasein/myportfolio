@@ -47,7 +47,7 @@ export const works: Work[] = [
     kCat: "work.2.tag",
     kText: "work.2.text",
     href: "/work/fidic",
-    hrefLabel: "fidic.uz ↗",
+    hrefLabel: "fidic.uz",
   },
   {
     id: "obsidian-residence",
@@ -56,7 +56,7 @@ export const works: Work[] = [
     title: "Obsidian Residence",
     kCat: "gallery.1.cat",
     href: BEHANCE,
-    hrefLabel: "Behance ↗",
+    hrefLabel: "Behance",
     detail: {
       tools: "CINEMA 4D / REDSHIFT",
       en: "A noir interior study built around a single warm light source — dark stone, soft shadow falloff and furniture staged like sculpture in a quiet, cinematic room.",
@@ -70,7 +70,7 @@ export const works: Work[] = [
     title: "Modular Lounge",
     kCat: "gallery.4.cat",
     href: BEHANCE,
-    hrefLabel: "Behance ↗",
+    hrefLabel: "Behance",
     detail: {
       tools: "CINEMA 4D / REDSHIFT",
       en: "A sectional sofa rendered as a product hero: fabric shading, daylight balance and composition tuned so the piece reads instantly in a furniture-catalogue context.",
@@ -84,7 +84,7 @@ export const works: Work[] = [
     title: "Media Wall System",
     kCat: "gallery.1.cat",
     href: BEHANCE,
-    hrefLabel: "Behance ↗",
+    hrefLabel: "Behance",
     detail: {
       tools: "CINEMA 4D / REDSHIFT",
       en: "A custom wood-and-black media wall visualized for a real interior decision: true material contrast, correct proportions and lighting that sells the built result before it exists.",
@@ -98,7 +98,7 @@ export const works: Work[] = [
     title: "Olive Still Life",
     kCat: "gallery.4.cat",
     href: BEHANCE,
-    hrefLabel: "Behance ↗",
+    hrefLabel: "Behance",
     detail: {
       tools: "CINEMA 4D / REDSHIFT",
       en: "An art-direction still life in olive and brass: console styling, controlled color palette and prop rhythm composed like an editorial photograph, entirely in 3D.",
@@ -112,7 +112,7 @@ export const works: Work[] = [
     title: "Classical Facade Study",
     kCat: "gallery.5.cat",
     href: BEHANCE,
-    hrefLabel: "Behance ↗",
+    hrefLabel: "Behance",
     detail: {
       tools: "CINEMA 4D / REDSHIFT",
       en: "An architectural exterior study of a classical residential facade — ornament, stone and daylight handled with restraint so the building's proportions carry the image.",
@@ -126,7 +126,7 @@ export const works: Work[] = [
     title: "Nocturne Ceremony",
     kCat: "gallery.4.cat",
     href: BEHANCE,
-    hrefLabel: "Behance ↗",
+    hrefLabel: "Behance",
     detail: {
       tools: "CINEMA 4D / REDSHIFT",
       en: "A candlelit wedding pergola staged at night: event design previsualized with real lighting logic, so the atmosphere can be approved long before the first candle is lit.",

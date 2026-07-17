@@ -1684,6 +1684,11 @@ const selectedWork = [
     .work-terrain { display: block; left: -42%; right: -42%; bottom: -2%; opacity: .28; }
     .work-orbits { display: block; inset: 4% -42% 8%; }
     .work-card {
+      /* The staggered collage below positions with top/right offsets — that
+         maths only works absolutely. The earlier phone rule flips cards to
+         `relative`, where `top` shifts FROM the flow position, which is how
+         FIDIC ended up 800px deep and bleeding into the services band. */
+      position: absolute;
       width: 84%;
       height: 24.5rem;
       min-height: 0;

@@ -102,8 +102,14 @@ const { text = "MOTION", video, poster, label, labelKey } = Astro.props;
     text-transform: uppercase;
   }
 
+  /* Phones get the film itself, not a keyhole: the band grows to a real strip
+     and the plate goes translucent, so the render plays across the full width
+     while the word stays punched through it as the brightest layer. */
   @media (max-width: 600px) {
+    .vtype-knock { height: 62vw; }
+    .vtype-knock > rect { fill-opacity: 0.52; }
     .vtype-knock text { font-size: 210px; letter-spacing: -4px; }
+    .vtype-vid { filter: grayscale(0.15) contrast(1.1) brightness(1.02); }
   }
 </style>
 

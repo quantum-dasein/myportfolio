@@ -65,9 +65,9 @@ const year = new Date().getFullYear();
 
         <div class="footer-col">
           <span class="col-label" data-i18n="footer.social.label">{t("footer.social.label")}</span>
-          <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance <i aria-hidden="true">↗</i></a>
-          <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn <i aria-hidden="true">↗</i></a>
-          <a href="https://github.com/quantum-dasein" target="_blank" rel="noopener">GitHub <i aria-hidden="true">↗</i></a>
+          <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance <i class="ext" aria-hidden="true"></i></a>
+          <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn <i class="ext" aria-hidden="true"></i></a>
+          <a href="https://github.com/quantum-dasein" target="_blank" rel="noopener">GitHub <i class="ext" aria-hidden="true"></i></a>
         </div>
       </nav>
     </div>
@@ -294,7 +294,37 @@ const year = new Date().getFullYear();
     transition: color .3s var(--ease-out-expo);
   }
   .footer-col a:hover { color: #fff; }
-  .footer-col a i { font-style: normal; opacity: .45; }
+
+  /* Drawn, not typed: the ↗ glyph renders as a blue emoji on iOS. */
+  .footer-col a i.ext {
+    position: relative;
+    display: inline-block;
+    width: .55em;
+    height: .55em;
+    margin-left: .28em;
+    opacity: .5;
+  }
+  .footer-col a i.ext::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    transform-origin: left bottom;
+  }
+  .footer-col a i.ext::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 55%;
+    height: 55%;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+  }
 
   .brand-cell { display: flex; align-items: flex-start; gap: 1.4rem; }
   .brand-copy { min-width: 0; }

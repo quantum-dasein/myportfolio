@@ -102,7 +102,7 @@ const tiles = [
       <span class="focus-note__meta"><b data-focus-cat></b><i data-focus-tools></i></span>
       <strong data-focus-title></strong>
       <p data-focus-text></p>
-      <span class="focus-note__hint" data-focus-hint>Tap again → Behance ↗</span>
+      <span class="focus-note__hint" data-focus-hint>Tap again — opens Behance</span>
     </aside>
   </div>
 </section>
@@ -398,13 +398,15 @@ const tiles = [
     .motion-title { max-width: 12ch; font-size: clamp(2.35rem, 12vw, 3.35rem); }
     .motion-lead { max-width: 34rem; font-size: .98rem; }
     .motion-tools { max-width: 30rem; font-size: .62rem; }
+    /* No perspective on phones: nothing translates in 3D here, and the extra
+       rendering context only taxes the compositor while the drift runs. */
     .gallery-stage {
       position: relative;
       inset: auto;
       height: 46rem;
       margin: 2.5rem calc(var(--container-offset) * -.45) 0;
       overflow: visible;
-      perspective: 900px;
+      perspective: none;
     }
     .archive-sculpture {
       display: block;
@@ -414,12 +416,18 @@ const tiles = [
       opacity: .48;
       transform: scale(.9);
     }
+    /* The sculpture's triple radial gradients + a 2.8rem inset shadow × five
+       lobes was the single biggest paint bill in this section on a phone GPU.
+       Two quiet lobes carry the same silhouette. */
+    .archive-sculpture span { box-shadow: none; }
+    .archive-sculpture span:nth-child(4),
+    .archive-sculpture span:nth-child(5) { display: none; }
     .tile {
       position: absolute;
       height: auto;
       aspect-ratio: .88;
       translate: 0 var(--gallery-drift, 0px);
-      box-shadow: 0 1.5rem 3.2rem rgba(0, 0, 0, .52);
+      box-shadow: 0 .8rem 1.7rem rgba(0, 0, 0, .42);
     }
     .archive-sculpture { translate: 0 var(--gallery-core-drift, 0px); }
     .tile-1 { left: -2%; top: 22rem; width: 58%; }
@@ -578,7 +586,7 @@ const tiles = [
       if (noteTools) noteTools.textContent = tile.dataset.tileTools || "";
       if (noteTitle) noteTitle.textContent = tile.dataset.tileTitle || "";
       if (noteText) noteText.textContent = (lang === "de" ? tile.dataset.tileDe : tile.dataset.tileEn) || "";
-      if (noteHint) noteHint.textContent = lang === "de" ? "Nochmal tippen → Behance ↗" : "Tap again → Behance ↗";
+      if (noteHint) noteHint.textContent = lang === "de" ? "Nochmal tippen — öffnet Behance" : "Tap again — opens Behance";
       note.hidden = false;
     };
 

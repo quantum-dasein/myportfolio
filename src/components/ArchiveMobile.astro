@@ -39,16 +39,15 @@ const total = String(works.length).padStart(2, "0");
     const external = w.href.startsWith("http");
     return (
       <article class="ma-card" data-ma-card data-ma-index={i}>
-        <a
-          class="ma-media"
-          href={w.href}
-          data-case-link={isCase ? "" : undefined}
-          target={external ? "_blank" : undefined}
-          rel={external ? "noopener" : undefined}
-          aria-label={title}
-          style={`aspect-ratio: ${w.video ? "16 / 10" : "4 / 5"};`}
-        >
-          {w.video ? (
+        {w.video ? (
+          /* Films play HERE, fullscreen with sound — they exist nowhere else. */
+          <button
+            class="ma-media"
+            type="button"
+            data-ma-play
+            aria-label={`Play: ${title}`}
+            style="aspect-ratio: 16 / 10;"
+          >
             <video
               data-ma-video={w.video}
               poster={w.img}
@@ -58,21 +57,36 @@ const total = String(works.length).padStart(2, "0");
               preload="none"
               aria-hidden="true"
             ></video>
-          ) : (
+            <span class="ma-corner tl" aria-hidden="true"></span>
+            <span class="ma-corner tr" aria-hidden="true"></span>
+            <span class="ma-corner bl" aria-hidden="true"></span>
+            <span class="ma-corner br" aria-hidden="true"></span>
+            <span class="ma-idx mono" aria-hidden="true">SECTOR {String(i + 1).padStart(2, "0")}</span>
+            <span class="ma-play mono" aria-hidden="true"><i class="tri"></i>FILM</span>
+          </button>
+        ) : (
+          <a
+            class="ma-media"
+            href={w.href}
+            data-case-link={isCase ? "" : undefined}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener" : undefined}
+            aria-label={title}
+            style="aspect-ratio: 4 / 5;"
+          >
             <img
               src={w.img}
               alt={title}
               loading={i < 2 ? "eager" : "lazy"}
               decoding="async"
             />
-          )}
-          <span class="ma-corner tl" aria-hidden="true"></span>
-          <span class="ma-corner tr" aria-hidden="true"></span>
-          <span class="ma-corner bl" aria-hidden="true"></span>
-          <span class="ma-corner br" aria-hidden="true"></span>
-          <span class="ma-idx mono" aria-hidden="true">SECTOR {String(i + 1).padStart(2, "0")}</span>
-          {w.video && <span class="ma-play mono" aria-hidden="true">▶ FILM</span>}
-        </a>
+            <span class="ma-corner tl" aria-hidden="true"></span>
+            <span class="ma-corner tr" aria-hidden="true"></span>
+            <span class="ma-corner bl" aria-hidden="true"></span>
+            <span class="ma-corner br" aria-hidden="true"></span>
+            <span class="ma-idx mono" aria-hidden="true">SECTOR {String(i + 1).padStart(2, "0")}</span>
+          </a>
+        )}
 
         <div class="ma-info">
           <span class="mono dim" data-i18n={w.kCat}>{en[w.kCat] ?? ""}</span>
@@ -88,13 +102,17 @@ const total = String(works.length).padStart(2, "0");
             )}
           </p>
           {w.detail?.tools && <span class="ma-tools mono dim">{w.detail.tools}</span>}
-          <a
-            class="ma-link mono"
-            href={w.href}
-            data-case-link={isCase ? "" : undefined}
-            target={external ? "_blank" : undefined}
-            rel={external ? "noopener" : undefined}
-          >{isCase ? "OPEN CASE" : w.hrefLabel}<i aria-hidden="true"></i></a>
+          {w.video ? (
+            <button class="ma-link mono" type="button" data-ma-play>PLAY FILM<i aria-hidden="true"></i></button>
+          ) : (
+            <a
+              class="ma-link mono"
+              href={w.href}
+              data-case-link={isCase ? "" : undefined}
+              target={external ? "_blank" : undefined}
+              rel={external ? "noopener" : undefined}
+            >{isCase ? "OPEN CASE" : w.hrefLabel}<i aria-hidden="true"></i></a>
+          )}
         </div>
       </article>
     );
@@ -102,8 +120,9 @@ const total = String(works.length).padStart(2, "0");
 
   <footer class="ma-foot">
     <a class="ma-link mono" href={BEHANCE} target="_blank" rel="noopener">
-      <span class="l-en">FULL ARCHIVE ON BEHANCE ↗</span>
-      <span class="l-de">GESAMTES ARCHIV AUF BEHANCE ↗</span>
+      <span class="l-en">FULL ARCHIVE ON BEHANCE</span>
+      <span class="l-de">GESAMTES ARCHIV AUF BEHANCE</span>
+      <i aria-hidden="true"></i>
     </a>
   </footer>
 </section>
@@ -178,9 +197,12 @@ const total = String(works.length).padStart(2, "0");
     .ma-media {
       position: relative;
       display: block;
+      width: 100%;
+      padding: 0;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.13);
       background: #0a0b0c;
+      cursor: pointer;
     }
     .ma-media img,
     .ma-media video {
@@ -216,12 +238,24 @@ const total = String(works.length).padStart(2, "0");
       position: absolute;
       right: 0.85rem;
       bottom: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
       padding: 0.35rem 0.6rem;
       border: 1px solid rgba(255, 255, 255, 0.35);
       border-radius: 100px;
       background: rgba(3, 4, 5, 0.6);
       color: #fff;
       font-size: 0.52rem;
+    }
+
+    /* Drawn triangle — the ▶ glyph ships as a blue emoji on iOS. */
+    .ma-play .tri {
+      width: 0;
+      height: 0;
+      border-left: 0.42em solid currentColor;
+      border-top: 0.3em solid transparent;
+      border-bottom: 0.3em solid transparent;
     }
 
     /* ── Caption: always BELOW the artwork, never on it ──────────────────── */
@@ -253,8 +287,10 @@ const total = String(works.length).padStart(2, "0");
       padding: 0.6rem 0.95rem;
       border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 2px;
+      background: none;
       color: var(--color-accent);
       font-size: 0.58rem;
+      cursor: pointer;
     }
     .ma-link i {
       width: 0.42rem;
@@ -356,6 +392,39 @@ const total = String(works.length).padStart(2, "0");
       { rootMargin: "0px 0px -12% 0px", threshold: 0.18 },
     );
     cards.forEach((card) => io.observe(card));
+
+    // ── On-site film playback ────────────────────────────────────────────
+    // The films exist nowhere else, so tapping PLAY hands the visitor the real
+    // thing: fullscreen, with sound and native controls. On exit the video
+    // returns to being a silent looping preview.
+    const enterFullscreen = (video: HTMLVideoElement) => {
+      const v = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+      if (video.requestFullscreen) video.requestFullscreen().catch(() => v.webkitEnterFullscreen?.());
+      else v.webkitEnterFullscreen?.(); // iPhone Safari's only fullscreen path
+    };
+    const calmDown = (video: HTMLVideoElement) => {
+      video.muted = true;
+      video.controls = false;
+      video.play().catch(() => {});
+    };
+    root.addEventListener("click", (event) => {
+      const trigger = (event.target as HTMLElement)?.closest<HTMLElement>("[data-ma-play]");
+      if (!trigger) return;
+      const video = trigger.closest("[data-ma-card]")?.querySelector<HTMLVideoElement>("video[data-ma-video]");
+      if (!video) return;
+      if (!video.src) video.src = video.dataset.maVideo!;
+      video.muted = false;
+      video.controls = true;
+      video.play().catch(() => {});
+      enterFullscreen(video);
+      video.addEventListener("webkitendfullscreen" as any, () => calmDown(video), { once: true });
+    });
+    document.addEventListener("fullscreenchange", () => {
+      if (document.fullscreenElement) return;
+      root.querySelectorAll<HTMLVideoElement>("video[data-ma-video]").forEach((video) => {
+        if (video.controls) calmDown(video);
+      });
+    });
 
     // Depth bar — one passive listener, work deferred to the frame.
     let raf = 0;
