@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
     {
-      "comment": "Every navigation is a new document, so the ambience is re-fetched and re-decoded on each page. These files never change under the same name — let the browser serve them straight from disk instead of re-downloading ~1MB per page.",
       "source": "/audio/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
@@ -16,11 +15,7 @@
     }
   ],
   "redirects": [
-    {
-      "source": "/en",
-      "destination": "/",
-      "permanent": true
-    },
+    { "source": "/en", "destination": "/", "permanent": true },
     { "source": "/en/", "destination": "/", "permanent": true },
     { "source": "/de", "destination": "/", "permanent": true },
     { "source": "/de/", "destination": "/", "permanent": true }
