@@ -23,9 +23,11 @@
     thunk: "/audio/rb-ui-thunk.m4a", // heavier click / toggle
   };
 
+  const POS_KEY = "rb-sound-pos";
+
   const AMBIENT_LEVEL = 0.34; // the drone is already quiet; this is the ceiling
-  const TICK_LEVEL = 0.3;
-  const THUNK_LEVEL = 0.5;
+  const TICK_LEVEL = 0.1;     // hover fires constantly — it must be a whisper
+  const THUNK_LEVEL = 0.26;
 
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
@@ -34,6 +36,23 @@
   const buffers = new Map<string, AudioBuffer>();
   let loading: Promise<void> | null = null;
   let enabled = false;
+
+  // Every navigation is a brand-new document, so the AudioContext dies with it
+  // and the drone would restart from zero. Remember where it was and resume
+  // there, so the ambience reads as one continuous track across the site.
+  let droneStartedAt = 0; // ctx.currentTime when the loop was started
+  let droneOffset = 0;    // where in the buffer it started
+
+  function dronePosition() {
+    const buf = buffers.get("drone");
+    if (!buf || !ctx || !droneSource) return droneOffset;
+    return (droneOffset + (ctx.currentTime - droneStartedAt)) % buf.duration;
+  }
+
+  function rememberPosition() {
+    if (!enabled || !droneSource) return;
+    try { sessionStorage.setItem(POS_KEY, String(dronePosition())); } catch { /* private mode */ }
+  }
 
   const isCalm = () => document.documentElement.classList.contains("rb-calm");
   const level = () => (enabled && !isCalm() && !document.hidden ? 1 : 0);
@@ -75,14 +94,21 @@
     if (!ctx || !droneGain || droneSource) return;
     const buf = buffers.get("drone");
     if (!buf) return;
+
+    let resumeAt = 0;
+    try { resumeAt = Number(sessionStorage.getItem(POS_KEY) || 0); } catch { /* private mode */ }
+    droneOffset = Number.isFinite(resumeAt) ? resumeAt % buf.duration : 0;
+
     droneSource = ctx.createBufferSource();
     droneSource.buffer = buf;
     droneSource.loop = true;
     droneSource.connect(droneGain);
-    droneSource.start();
+    droneSource.start(0, droneOffset); // pick the track back up, don't restart it
+    droneStartedAt = ctx.currentTime;
   }
 
   function stopDrone() {
+    rememberPosition();
     droneSource?.stop();
     droneSource?.disconnect();
     droneSource = null;
@@ -166,7 +192,16 @@
   }, { passive: true });
 
   addEventListener("rb:calmchange", () => fade(level(), 0.35));
-  document.addEventListener("visibilitychange", () => fade(level(), 0.25));
+  document.addEventListener("visibilitychange", () => {
+    rememberPosition();
+    fade(level(), 0.25);
+  });
+
+  // Hand the playhead to the next page. pagehide is the one that survives
+  // bfcache and mobile Safari, where unload never fires.
+  addEventListener("pagehide", rememberPosition);
+  // …and a slow heartbeat, so a crash or a hard close never loses the spot.
+  setInterval(rememberPosition, 4000);
 
   // Restore the stored choice, but only arm audio on the first gesture —
   // an AudioContext created before that is born suspended.
