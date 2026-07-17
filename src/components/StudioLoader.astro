@@ -1,4 +1,15 @@
-<rb-studio-loader aria-hidden="true">
+---
+import type { Lang } from "../i18n/utils";
+
+interface Props {
+  lang?: Lang;
+}
+
+const { lang = "en" } = Astro.props;
+const isDe = lang === "de";
+---
+
+<rb-studio-loader aria-hidden="true" data-lang={lang}>
   <div class="loader-topline">
     <span>RB / DIGITAL STUDIO</span>
     <span>VIENNA / 2026</span>
@@ -27,7 +38,7 @@
 
   <div class="loader-shell">
     <div class="loader-readout">
-      <span data-loader-phase>INITIALISING RENDER</span>
+      <span data-loader-phase>{isDe ? "RENDER INITIALISIEREN" : "INITIALISING RENDER"}</span>
       <span class="loader-count"><strong data-loader-count>000</strong><small>%</small></span>
     </div>
     <div class="loader-line" aria-hidden="true"><span data-loader-line></span></div>
@@ -404,12 +415,20 @@
   // The decode this loader invented now lives in utils/ — links reuse it on hover.
   import { decode } from "../utils/decode";
 
-  const phases = [
-    "INITIALISING RENDER",
-    "TRACING GEOMETRY",
-    "RESOLVING TYPOGRAPHY",
-    "OPENING CASE ARCHIVE",
-  ];
+  const PHASES_LANG: Record<string, string[]> = {
+    en: [
+      "INITIALISING RENDER",
+      "TRACING GEOMETRY",
+      "RESOLVING TYPOGRAPHY",
+      "OPENING CASE ARCHIVE",
+    ],
+    de: [
+      "RENDER INITIALISIEREN",
+      "GEOMETRIE BERECHNEN",
+      "TYPOGRAFIE AUFLÖSEN",
+      "PROJEKT-ARCHIV ÖFFNEN",
+    ],
+  };
 
   class StudioLoader extends HTMLElement {
     connectedCallback() {
@@ -429,6 +448,8 @@
     }
 
     private play() {
+      const lang = this.dataset.lang || "en";
+      const phases = PHASES_LANG[lang === "de" ? "de" : "en"];
       const line = this.querySelector<HTMLElement>("[data-loader-line]")!;
       const count = this.querySelector<HTMLElement>("[data-loader-count]")!;
       const phase = this.querySelector<HTMLElement>("[data-loader-phase]")!;

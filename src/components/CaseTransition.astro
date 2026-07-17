@@ -469,11 +469,14 @@
     if (running) return;
     running = true;
     const returning = direction === "exit";
+    const isDe = document.documentElement.lang === "de-AT";
     document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active", `is-${kind}`);
     gsap.set([root, canvas], { opacity: 1 });
     label.textContent = kind === "bridge" ? "BRIDGE CONSULT" : "FIDIC.UZ";
-    status.textContent = kind === "bridge" ? "ASSEMBLING INFRASTRUCTURE" : "OPENING CONTRACT ATLAS";
+    status.textContent = kind === "bridge"
+      ? (isDe ? "INFRASTRUKTUR AUFBAUEN" : "ASSEMBLING INFRASTRUCTURE")
+      : (isDe ? "VERTRAGSATLAS ÖFFNEN" : "OPENING CONTRACT ATLAS");
     index.textContent = kind === "bridge" ? "CASE / 01" : "CASE / 02";
     const object = init(kind);
     if (!camera) return;

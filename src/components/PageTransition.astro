@@ -135,18 +135,27 @@
 
   // Routes worth naming. Anything else falls back to the link's own text, which
   // is already the honest answer for a service or an insight.
-  const NAMED: Record<string, string> = {
-    "/": "STUDIO",
-    "/services": "SERVICES & RESEARCH",
-    "/gallery": "ARCHIVE",
+  const NAMED: Record<string, Record<string, string>> = {
+    en: {
+      "/": "STUDIO",
+      "/services": "SERVICES & RESEARCH",
+      "/gallery": "ARCHIVE",
+    },
+    de: {
+      "/": "STUDIO",
+      "/services": "LEISTUNGEN & RESEARCH",
+      "/gallery": "ARCHIV",
+    },
   };
 
   function labelFor(url: URL, link?: HTMLAnchorElement | null) {
     const path = url.pathname.replace(/\/+$/, "") || "/";
+    const lang = document.documentElement.lang === "de-AT" ? "de" : "en";
+    const routes = NAMED[lang] || NAMED["en"];
     const raw =
       link?.dataset.transitionLabel ||
       (url.hash ? link?.textContent?.trim() : null) ||
-      NAMED[path] ||
+      routes[path] ||
       path.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ||
       link?.textContent?.trim() ||
       "STUDIO";

@@ -220,7 +220,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     <title>{title}</title>
   </head>
   <body class:list={[{ "is-deck": isDeck }, theme && `case-theme-${theme}`]}>
-    <StudioLoader />
+    <StudioLoader lang={lang} />
     <CursorField />
     <SoundField />
 
