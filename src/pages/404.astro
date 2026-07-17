@@ -3,11 +3,43 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="404 — Signal Lost" description="The page you are looking for has drifted into the void." noindex={true} noWebgl={true}>
+  <div class="bg-parallax-wrapper">
+    <div class="bg-parallax-image" style="background-image: url('/404-bg.png')"></div>
+  </div>
+
   <section class="not-found" aria-labelledby="not-found-heading">
     <div class="not-found__content">
+      <div class="error-label">ERROR</div>
       <h1 id="not-found-heading" class="smooth-text">404</h1>
-      <p class="subtitle main-subtitle" data-decode>THE ARCHIVE HAS DRIFTED INTO THE VOID.</p>
-      <a href="/" class="return-btn">RETURN TO STUDIO</a>
+      <p class="subtitle main-subtitle" data-decode>THE ARCHIVE HAS DRIFTED<br/>INTO THE VOID</p>
+      
+      <div class="return-btn-wrapper">
+        <a href="/" class="return-btn">RETURN TO STUDIO <span class="arrow">→</span></a>
+      </div>
+    </div>
+    
+    <div class="hud-container">
+      <div class="hud-item">
+        <div class="hud-label">GRAVITY</div>
+        <div class="hud-value">1.42 &times; 10&sup1;&sup1; m/s&sup2;</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">DISTANCE</div>
+        <div class="hud-value">&infin; LY</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">EVENT HORIZON</div>
+        <div class="hud-value">UNKNOWN</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">SIGNAL</div>
+        <div class="hud-value">NONE</div>
+      </div>
+    </div>
+
+    <div class="scroll-stabilize">
+      <div class="scroll-dot"></div>
+      SCROLL TO STABILIZE
     </div>
 
     <div class="cosmic-backdrop" aria-hidden="true">
@@ -22,7 +54,7 @@ import Layout from "../layouts/Layout.astro";
   import { decode } from "../utils/decode";
 
   // Trigger decode on subtitles
-  const subs = document.querySelectorAll(".subtitle");
+  const subs = document.querySelectorAll(".subtitle, .hud-label, .hud-value, .scroll-stabilize, .error-label");
   subs.forEach((sub) => {
     decode(sub as HTMLElement, sub.textContent!, { duration: 800 });
   });
@@ -31,9 +63,6 @@ import Layout from "../layouts/Layout.astro";
     private renderer?: THREE.WebGLRenderer;
     private scene = new THREE.Scene();
     private camera = new THREE.PerspectiveCamera(58, 1, 0.1, 110);
-    private geometry?: THREE.BufferGeometry;
-    private material?: THREE.ShaderMaterial;
-    private mesh?: THREE.Mesh;
     private starLayers: THREE.Points[] = [];
     private clock = new THREE.Clock();
     private raf = 0;
@@ -41,6 +70,7 @@ import Layout from "../layouts/Layout.astro";
     private mouseTarget = new THREE.Vector2();
     private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
     private visible = true;
+    private bgImage: HTMLElement | null = null;
 
     connectedCallback() {
       this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !this.lowPower, powerPreference: "high-performance" });
@@ -49,13 +79,11 @@ import Layout from "../layouts/Layout.astro";
       this.append(this.renderer.domElement);
 
       this.camera.position.z = 7.2;
+      this.bgImage = document.querySelector(".bg-parallax-image");
 
-      // Stars
+      // Build only stars, flying towards camera
       this.buildStars(this.lowPower ? 2200 : 4800, 1.25, 1.0, 0);
       this.buildStars(this.lowPower ? 780 : 1800, 2.35, 1.0, 1);
-
-      // The shattered anomaly
-      this.buildAnomaly();
 
       this.resize();
       addEventListener("resize", this.resize, { passive: true });
@@ -64,8 +92,16 @@ import Layout from "../layouts/Layout.astro";
       this.raf = requestAnimationFrame(this.render);
 
       gsap.fromTo(".not-found__content", 
-        { opacity: 0, y: 30 }, 
-        { opacity: 1, y: 0, duration: 1.2, ease: "power3.out", delay: 0.2 }
+        { opacity: 0, scale: 0.95 }, 
+        { opacity: 1, scale: 1, duration: 1.5, ease: "power3.out", delay: 0.2 }
+      );
+      gsap.fromTo(".hud-item", 
+        { opacity: 0, y: 15 }, 
+        { opacity: 1, y: 0, duration: 1.0, stagger: 0.1, ease: "power3.out", delay: 0.8 }
+      );
+      gsap.fromTo(".scroll-stabilize", 
+        { opacity: 0 }, 
+        { opacity: 0.5, duration: 1.5, ease: "none", delay: 1.5 }
       );
     }
 
@@ -74,8 +110,6 @@ import Layout from "../layouts/Layout.astro";
       removeEventListener("resize", this.resize);
       removeEventListener("pointermove", this.onPointerMove);
       document.removeEventListener("visibilitychange", this.onVisibility);
-      if (this.geometry) this.geometry.dispose();
-      if (this.material) this.material.dispose();
       this.starLayers.forEach(l => { l.geometry.dispose(); (l.material as THREE.Material).dispose(); });
       this.renderer?.dispose();
     }
@@ -163,70 +197,6 @@ import Layout from "../layouts/Layout.astro";
       this.scene.add(layer);
     }
 
-    private buildAnomaly() {
-      // Clean Event Horizon
-      const sphereGeo = new THREE.SphereGeometry(2.0, 64, 64);
-      const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-      this.mesh = new THREE.Mesh(sphereGeo, sphereMat);
-      
-      // Position it lower and further back to create a huge cinematic scale
-      this.mesh.position.y = -1.5;
-      this.mesh.position.z = -2.0;
-      this.scene.add(this.mesh);
-
-      // Clean, solid Accretion Disk (Ring Geometry)
-      this.geometry = new THREE.RingGeometry(2.1, 7.0, 128);
-      this.material = new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        uniforms: {
-          uTime: { value: 0 }
-        },
-        vertexShader: `
-          varying vec3 vPos;
-          void main() {
-            vPos = position;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          varying vec3 vPos;
-          uniform float uTime;
-          void main() {
-            float radius = length(vPos.xy);
-            
-            // Normalize radius from 0 to 1
-            float n = (radius - 2.1) / (7.0 - 2.1);
-            
-            // Smooth gradient fading out
-            float intensity = smoothstep(1.0, 0.0, n) * smoothstep(0.0, 0.05, n);
-            
-            // Subtle rotation rings
-            float angle = atan(vPos.y, vPos.x);
-            float rings = sin(radius * 15.0 - uTime * 2.0) * 0.5 + 0.5;
-            float sweeping = sin(angle * 2.0 + uTime * 0.5) * 0.5 + 0.5;
-            
-            intensity *= mix(0.7, 1.0, rings) * mix(0.8, 1.0, sweeping);
-            
-            // Elegant corporate colors (Silver, subtle Blue, Gold highlights)
-            vec3 colorBlue = vec3(0.5, 0.7, 1.0);
-            vec3 colorGold = vec3(0.9, 0.8, 0.5);
-            vec3 color = mix(colorBlue, colorGold, smoothstep(0.5, 0.0, n));
-            
-            gl_FragColor = vec4(color, intensity * 0.65);
-          }
-        `
-      });
-
-      const disk = new THREE.Mesh(this.geometry, this.material);
-      // Tilt to a cinematic angle
-      disk.rotation.x = -1.25;
-      disk.rotation.y = 0.05;
-      this.mesh.add(disk);
-    }
-
     private onPointerMove = (event: PointerEvent) => {
       this.mouseTarget.set(event.clientX / innerWidth - 0.5, 0.5 - event.clientY / innerHeight);
     };
@@ -259,10 +229,9 @@ import Layout from "../layouts/Layout.astro";
         layer.rotation.x = -this.mouse.y * (0.012 + index * 0.008);
       });
 
-      if (this.mesh && this.material) {
-        this.material.uniforms.uTime.value = elapsed;
-        this.mesh.rotation.y = this.mouse.x * 0.1;
-        this.mesh.rotation.x = -this.mouse.y * 0.1;
+      if (this.bgImage) {
+        // Subtle mouse parallax for the background image
+        this.bgImage.style.transform = \`translate(\${this.mouse.x * 3}%, \${-this.mouse.y * 3}%) scale(1.05)\`;
       }
 
       this.renderer.render(this.scene, this.camera);
@@ -274,11 +243,31 @@ import Layout from "../layouts/Layout.astro";
 </script>
 
 <style>
+  .bg-parallax-wrapper {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: #000;
+  }
+  
+  .bg-parallax-image {
+    position: absolute;
+    inset: -5%; /* buffer for parallax */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.05);
+    will-change: transform;
+    opacity: 0.85; /* slight dim for text readability */
+  }
+
   .not-found {
     position: relative;
     z-index: 10;
     min-height: 100svh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 2rem;
@@ -291,19 +280,27 @@ import Layout from "../layouts/Layout.astro";
     z-index: 2;
     pointer-events: none;
     max-width: 800px;
-    margin-top: -10vh; /* Shift text up away from the black hole center */
+    margin-top: -5vh; 
+  }
+
+  .error-label {
+    font-family: var(--font-inter);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.35em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1rem;
   }
 
   .smooth-text {
-    position: relative;
     font-family: var(--font-display);
-    font-size: clamp(6rem, 18vw, 16rem);
-    font-weight: 500;
-    line-height: 1;
+    font-size: clamp(8rem, 20vw, 18rem);
+    font-weight: 400;
+    line-height: 0.85;
     margin: 0;
     color: #ffffff;
     letter-spacing: -0.02em;
-    text-shadow: 0 0 4rem rgba(255, 255, 255, 0.2);
+    text-shadow: 0 0 5rem rgba(255, 255, 255, 0.4), 0 0 10rem rgba(255, 255, 255, 0.2);
   }
 
   .subtitle {
@@ -318,7 +315,11 @@ import Layout from "../layouts/Layout.astro";
 
   .main-subtitle {
     margin-top: 1.5rem;
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .return-btn-wrapper {
+    margin-top: 15vh;
   }
 
   .return-btn {
@@ -326,26 +327,140 @@ import Layout from "../layouts/Layout.astro";
     align-items: center;
     justify-content: center;
     height: 3.4rem;
-    padding: 0 2.6rem;
+    padding: 0 2rem 0 2.4rem;
     font-family: var(--font-inter);
     font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.1em;
-    color: rgba(255,255,255, 0.9);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(10, 10, 10, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 2rem;
     text-decoration: none;
     pointer-events: auto;
-    transition: transform 0.6s var(--ease-out-expo), background 0.6s var(--ease-out-expo), border-color 0.6s;
-    backdrop-filter: blur(10px);
+    transition: transform 0.6s var(--ease-out-expo), background 0.6s, border-color 0.6s;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .return-btn .arrow {
+    margin-left: 1rem;
+    font-size: 1.1em;
+    transition: transform 0.4s var(--ease-out-expo);
   }
 
   .return-btn:hover {
     transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
+
+  .return-btn:hover .arrow {
+    transform: translateX(4px);
+  }
+
+  /* HUD Layout */
+  .hud-container {
+    position: absolute;
+    bottom: 5rem;
+    left: 5%;
+    right: 5%;
+    display: flex;
+    justify-content: space-between;
+    z-index: 2;
+    pointer-events: none;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 2rem;
+  }
+
+  .hud-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  /* Add faint separator lines between hud items */
+  .hud-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -25%;
+    top: 0;
+    height: 100%;
+    width: 1px;
     background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0.8rem 3rem rgba(255, 255, 255, 0.1);
+  }
+
+  .hud-label {
+    font-family: var(--font-inter);
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    color: rgba(255, 255, 255, 0.35);
+    margin-bottom: 0.75rem;
+  }
+
+  .hud-value {
+    font-family: var(--font-inter);
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* Scroll to stabilize */
+  .scroll-stabilize {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-inter);
+    font-size: 0.55rem;
+    font-weight: 500;
+    letter-spacing: 0.35em;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    z-index: 2;
+  }
+
+  .scroll-dot {
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px 2px rgba(255,255,255,0.8);
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+  }
+
+  /* Responsive HUD */
+  @media (max-width: 768px) {
+    .hud-container {
+      bottom: 6rem;
+      flex-wrap: wrap;
+      gap: 2rem;
+      border-top: none;
+      padding-top: 0;
+    }
+    .hud-item {
+      width: 45%;
+    }
+    .hud-item:not(:last-child)::after {
+      display: none;
+    }
+    .return-btn-wrapper {
+      margin-top: 5vh;
+    }
   }
 
   rb-404-gl {
@@ -353,7 +468,6 @@ import Layout from "../layouts/Layout.astro";
     inset: 0;
     display: block;
     z-index: 1;
-    background: #000;
     pointer-events: none;
   }
   
