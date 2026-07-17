@@ -367,6 +367,8 @@ export const ui = {
     "footer.cta.button": "Start a project",
     "footer.tagline": "Digital Marketer · Creative Developer · Vienna",
     "footer.status": "Available for projects",
+    "footer.nav.label": "Navigate",
+    "footer.social.label": "Elsewhere",
     "footer.rights": "All rights reserved.",
   },
 
@@ -719,6 +721,8 @@ export const ui = {
     "footer.cta.button": "Projekt starten",
     "footer.tagline": "Digital Marketer · Creative Developer · Wien",
     "footer.status": "Verfügbar für Projekte",
+    "footer.nav.label": "Navigation",
+    "footer.social.label": "Anderswo",
     "footer.rights": "Alle Rechte vorbehalten.",
   },
 } as const;

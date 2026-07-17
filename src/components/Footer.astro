@@ -40,29 +40,36 @@ const year = new Date().getFullYear();
 
     <div class="footer-main">
       <div class="brand-cell">
-        <a class="brand-mark" href={logoUrl} aria-label={logoAlt} data-case-exit>
+        <a class="brand-mark" href={logoUrl} aria-label={logoAlt} data-case-exit data-magnetic>
           <img src="/brand/rodion-belousov-rb-monogram.png" alt="" width="869" height="878" loading="lazy" />
         </a>
-        <div>
+        <div class="brand-copy">
           <a class="logo" href={logoUrl} data-case-exit><span>Rodion Belousov</span><span class="dot">.studio</span></a>
           <p data-i18n="footer.tagline">{t("footer.tagline")}</p>
+          <a class="brand-mail" href="mailto:rodionbelousov@protonmail.com" data-cursor="MAIL">
+            rodionbelousov@protonmail.com
+          </a>
         </div>
       </div>
 
-      <nav class="footer-nav" aria-label="Footer">
-        {
-          links.map((link) => (
-            <a href={link.url} data-i18n={link.i18n} data-case-exit>{link.title}</a>
-          ))
-        }
-        <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance</a>
-        <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn</a>
-        <a href="https://github.com/quantum-dasein" target="_blank" rel="noopener">GitHub</a>
-      </nav>
+      <nav class="footer-cols" aria-label="Footer">
+        <div class="footer-col">
+          <span class="col-label" data-i18n="footer.nav.label">{t("footer.nav.label")}</span>
+          {
+            links.map((link) => (
+              <a href={link.url} data-i18n={link.i18n} data-case-exit>{link.title}</a>
+            ))
+          }
+          <a href="/gallery" data-tunnel data-cursor="ENTER" data-i18n="nav.gallery">{t("nav.gallery")}</a>
+        </div>
 
-      <a class="archive-control" href="/gallery" data-tunnel data-cursor="ENTER">
-        <span data-i18n="nav.gallery">{t("nav.gallery")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
-      </a>
+        <div class="footer-col">
+          <span class="col-label" data-i18n="footer.social.label">{t("footer.social.label")}</span>
+          <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener">Behance <i aria-hidden="true">↗</i></a>
+          <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn <i aria-hidden="true">↗</i></a>
+          <a href="https://github.com/quantum-dasein" target="_blank" rel="noopener">GitHub <i aria-hidden="true">↗</i></a>
+        </div>
+      </nav>
     </div>
 
     <!-- ── Machine room: live telemetry strip ──────────────────────────────── -->
@@ -254,16 +261,55 @@ const year = new Date().getFullYear();
   .project-rule { height: 1px; background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.58)); }
   .project-arrow { font-size: 1.2rem; }
 
+  /* Brand block + two real link columns. The old single row wrapped seven links
+     onto a ragged second line and left a void in the middle. */
   .footer-main {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: 8.5rem;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     border-block: 1px solid rgba(255,255,255,.1);
   }
-  .footer-main > * { padding: 1.8rem clamp(1.5rem, 5vw, 5rem); }
+  .footer-main > * { padding: clamp(2rem, 3.4vw, 3.2rem) clamp(1.5rem, 5vw, 5rem); }
   .footer-main > * + * { border-left: 1px solid rgba(255,255,255,.1); }
 
-  .brand-cell { display: flex; align-items: center; gap: 1.4rem; }
+  .footer-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    gap: 2rem;
+  }
+
+  .footer-col { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; }
+
+  .col-label {
+    margin-bottom: .35rem;
+    color: rgba(var(--rgb-text), .32);
+    font-size: .56rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+  }
+
+  .footer-col a {
+    color: rgba(var(--rgb-text), .66);
+    font-size: .84rem;
+    white-space: nowrap;
+    transition: color .3s var(--ease-out-expo);
+  }
+  .footer-col a:hover { color: #fff; }
+  .footer-col a i { font-style: normal; opacity: .45; }
+
+  .brand-cell { display: flex; align-items: flex-start; gap: 1.4rem; }
+  .brand-copy { min-width: 0; }
+
+  .brand-mail {
+    display: inline-block;
+    margin-top: 1.1rem;
+    color: rgba(var(--rgb-text), .62);
+    font-size: .84rem;
+    border-bottom: 1px solid rgba(255,255,255,.16);
+    padding-bottom: .15rem;
+    overflow-wrap: anywhere;
+    transition: color .3s var(--ease-out-expo), border-color .3s var(--ease-out-expo);
+  }
+  .brand-mail:hover { color: #fff; border-color: rgba(255,255,255,.5); }
   .brand-mark {
     display: grid;
     flex: 0 0 4.5rem;
@@ -278,27 +324,6 @@ const year = new Date().getFullYear();
   .logo .dot { color: rgba(var(--rgb-text), .52); }
   .brand-cell p { margin: .5rem 0 0; color: rgba(var(--rgb-text),.48); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase; }
 
-  .footer-nav { display: flex; align-items: center; justify-content: center; gap: clamp(1rem, 2.2vw, 2.2rem); flex-wrap: wrap; }
-  .footer-nav a { color: rgba(var(--rgb-text), .64); font-size: .82rem; white-space: nowrap; transition: color .3s ease; }
-  .footer-nav a:hover { color: #fff; }
-
-  .archive-control {
-    display: none;
-    align-self: center;
-    justify-self: center;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2.5rem;
-    min-width: 13rem;
-    padding: 1rem 1.2rem;
-    border: 1px solid rgba(255,255,255,.18);
-    border-radius: 999px;
-    color: #fff;
-    font-size: .62rem;
-    letter-spacing: .15em;
-    text-transform: uppercase;
-    box-shadow: 0 0 2rem rgba(255,255,255,.05);
-  }
 
   /* ── Machine room ──────────────────────────────────────────────────────── */
   .machine {
@@ -365,8 +390,6 @@ const year = new Date().getFullYear();
   @media (max-width: 900px) {
     .footer-main { grid-template-columns: 1fr; }
     .footer-main > * + * { border-left: 0; border-top: 1px solid rgba(255,255,255,.1); }
-    .footer-nav { flex-wrap: wrap; }
-    .archive-control { margin-block: 1.2rem; }
 
     .machine { grid-template-columns: repeat(2, 1fr); }
     .machine-cell:nth-child(3) { border-left: 0; }
@@ -380,9 +403,7 @@ const year = new Date().getFullYear();
     .project-link { grid-template-columns: auto 1fr auto; }
     .project-rule { display: none; }
     .orb-a { left: -25%; }
-    .brand-cell { padding-inline: 1.5rem; }
     .brand-mark { flex-basis: 3.8rem; }
-    .footer-nav { gap: 1rem 1.4rem; padding-block: 1.3rem; }
     .footer-base { flex-direction: column; align-items: center; text-align: center; }
   }
 

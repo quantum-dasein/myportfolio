@@ -2,85 +2,111 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  SoundField — the studio's ambience.
 //
-//  Everything is synthesised with the Web Audio API: a low ambient drone (three
-//  detuned oscillators through a slow filter sweep) plus soft UI ticks on hover
-//  and click. No audio files ship, so this costs a few hundred bytes instead of
-//  a megabyte of mp3, and it can never be out of tune with the visuals.
+//  Plays Rodion's own generated audio (an ambient drone + two UI ticks) through
+//  the Web Audio API rather than <audio> elements: a looping AudioBufferSource
+//  loops seamlessly, where HTMLAudioElement.loop leaves an audible gap.
 //
 //  Rules it respects:
 //   • OFF by default and never autoplays — browsers block it and visitors hate it.
+//   • The ~1MB drone is NOT fetched until the visitor actually turns sound on.
 //   • The AudioContext is only created on the first real user gesture.
-//   • Choice persists in localStorage.
-//   • Muted when the tab is hidden, and when Calm mode is on.
+//   • Choice persists; muted under Calm mode and when the tab is hidden.
 // ─────────────────────────────────────────────────────────────────────────────
 ---
 
 <script>
   const STORE = "rb-sound";
 
+  const SRC = {
+    drone: "/audio/rb-ambient-drone.m4a",
+    tick: "/audio/rb-ui-tick.m4a",   // light hover blip
+    thunk: "/audio/rb-ui-thunk.m4a", // heavier click / toggle
+  };
+
+  const AMBIENT_LEVEL = 0.34; // the drone is already quiet; this is the ceiling
+  const TICK_LEVEL = 0.3;
+  const THUNK_LEVEL = 0.5;
+
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
-  let drone: { stop: () => void } | null = null;
+  let droneGain: GainNode | null = null;
+  let droneSource: AudioBufferSourceNode | null = null;
+  const buffers = new Map<string, AudioBuffer>();
+  let loading: Promise<void> | null = null;
   let enabled = false;
 
   const isCalm = () => document.documentElement.classList.contains("rb-calm");
+  const level = () => (enabled && !isCalm() && !document.hidden ? 1 : 0);
 
-  function build() {
-    if (ctx) return;
+  function ensureContext() {
+    if (ctx) return ctx;
     const Ctor = window.AudioContext || (window as any).webkitAudioContext;
-    if (!Ctor) return;
+    if (!Ctor) return null;
     ctx = new Ctor();
-
     master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
-
-    // ── Ambient drone: detuned sines under a slowly breathing low-pass ──────
-    const bus = ctx.createGain();
-    bus.gain.value = 0.5;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = 420;
-    filter.Q.value = 0.7;
-
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.05; // one slow breath every 20s
-    lfoGain.gain.value = 180;
-    lfo.connect(lfoGain).connect(filter.frequency);
-    lfo.start();
-
-    const oscs = [55, 82.5, 110.3].map((freq, i) => {
-      const osc = ctx!.createOscillator();
-      osc.type = i === 2 ? "triangle" : "sine";
-      osc.frequency.value = freq;
-      osc.detune.value = (i - 1) * 6;
-      const g = ctx!.createGain();
-      g.gain.value = i === 2 ? 0.12 : 0.3;
-      osc.connect(g).connect(bus);
-      osc.start();
-      return osc;
-    });
-
-    bus.connect(filter).connect(master);
-    drone = { stop: () => { oscs.forEach((o) => o.stop()); lfo.stop(); } };
+    droneGain = ctx.createGain();
+    droneGain.gain.value = AMBIENT_LEVEL;
+    droneGain.connect(master);
+    return ctx;
   }
 
-  /** Short filtered blip — used for hover / click feedback. */
-  function tick(freq: number, gain: number, dur = 0.05) {
-    if (!ctx || !master || !enabled || isCalm()) return;
-    const osc = ctx.createOscillator();
+  async function load(key: keyof typeof SRC) {
+    if (buffers.has(key) || !ctx) return;
+    const res = await fetch(SRC[key]);
+    const raw = await res.arrayBuffer();
+    buffers.set(key, await ctx.decodeAudioData(raw));
+  }
+
+  /** Fetch + decode everything once, on the first activation only. */
+  function loadAll() {
+    if (!loading) {
+      loading = (async () => {
+        await Promise.all([load("drone"), load("tick"), load("thunk")]);
+      })().catch(() => {
+        loading = null; // let a later toggle retry
+      });
+    }
+    return loading;
+  }
+
+  function startDrone() {
+    if (!ctx || !droneGain || droneSource) return;
+    const buf = buffers.get("drone");
+    if (!buf) return;
+    droneSource = ctx.createBufferSource();
+    droneSource.buffer = buf;
+    droneSource.loop = true;
+    droneSource.connect(droneGain);
+    droneSource.start();
+  }
+
+  function stopDrone() {
+    droneSource?.stop();
+    droneSource?.disconnect();
+    droneSource = null;
+  }
+
+  // The generated one-shots are padded out to ~3s of trailing silence. Playing
+  // them whole would stack dozens of near-silent sources on a fast hover, so
+  // each is cut to just its transient and given a short fade-out.
+  const CLIP = { tick: 0.4, thunk: 0.9 } as const;
+
+  function play(key: "tick" | "thunk", gain: number) {
+    if (!ctx || !master || !enabled || isCalm() || document.hidden) return;
+    const buf = buffers.get(key);
+    if (!buf) return;
+    const dur = Math.min(CLIP[key], buf.duration);
+    const src = ctx.createBufferSource();
     const g = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, ctx.currentTime + dur);
-    g.gain.setValueAtTime(0, ctx.currentTime);
-    g.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.006);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-    osc.connect(g).connect(master);
-    osc.start();
-    osc.stop(ctx.currentTime + dur + 0.02);
+    src.buffer = buf;
+    g.gain.setValueAtTime(gain, ctx.currentTime);
+    g.gain.setValueAtTime(gain, ctx.currentTime + dur * 0.7);
+    g.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    src.connect(g).connect(master);
+    src.start(0, 0, dur);
+    src.onended = () => src.disconnect();
   }
 
   function fade(to: number, time = 0.6) {
@@ -90,24 +116,30 @@
     master.gain.linearRampToValueAtTime(to, ctx.currentTime + time);
   }
 
-  const level = () => (enabled && !isCalm() && !document.hidden ? 0.06 : 0);
-
-  function apply(on: boolean, persist = true) {
+  async function apply(on: boolean, persist = true) {
     enabled = on;
-    if (on) {
-      build();
-      ctx?.resume();
-      fade(level());
-    } else {
-      fade(0, 0.4);
-    }
+
+    document.querySelectorAll<HTMLElement>("[data-sound-toggle]").forEach((btn) =>
+      btn.setAttribute("aria-pressed", String(on)),
+    );
+    document.documentElement.classList.toggle("rb-sound", on);
     if (persist) {
       try { localStorage.setItem(STORE, on ? "on" : "off"); } catch { /* private mode */ }
     }
-    document.querySelectorAll<HTMLElement>("[data-sound-toggle]").forEach((btn) => {
-      btn.setAttribute("aria-pressed", String(on));
-    });
-    document.documentElement.classList.toggle("rb-sound", on);
+
+    if (!on) {
+      fade(0, 0.45);
+      setTimeout(() => { if (!enabled) stopDrone(); }, 500);
+      return;
+    }
+
+    if (!ensureContext()) return;
+    await ctx!.resume();
+    await loadAll();       // ~1MB, fetched only now
+    if (!enabled) return;  // toggled off while loading
+    startDrone();
+    play("thunk", THUNK_LEVEL);
+    fade(level());
   }
 
   // ── Wiring ────────────────────────────────────────────────────────────────
@@ -115,22 +147,24 @@
     const toggle = (e.target as HTMLElement)?.closest("[data-sound-toggle]");
     if (toggle) {
       apply(!enabled);
-      if (enabled) tick(660, 0.16);
       return;
     }
-    // click feedback on real controls
-    if ((e.target as HTMLElement)?.closest("a, button")) tick(520, 0.1, 0.06);
+    if ((e.target as HTMLElement)?.closest("a, button")) play("thunk", THUNK_LEVEL * 0.55);
   });
 
   let lastHover: Element | null = null;
+  let lastTick = 0;
   addEventListener("pointerover", (e) => {
     const el = (e.target as HTMLElement)?.closest("a, button, [data-cursor]");
     if (!el || el === lastHover) return;
     lastHover = el;
-    tick(1180, 0.045, 0.035);
+    // sweeping across a nav must not machine-gun the tick
+    const now = performance.now();
+    if (now - lastTick < 90) return;
+    lastTick = now;
+    play("tick", TICK_LEVEL);
   }, { passive: true });
 
-  // Calm mode and tab visibility both duck the ambience.
   addEventListener("rb:calmchange", () => fade(level(), 0.35));
   document.addEventListener("visibilitychange", () => fade(level(), 0.25));
 
