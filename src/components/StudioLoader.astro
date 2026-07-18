@@ -542,10 +542,28 @@ const isDe = lang === "de";
       document.body.classList.add("is-loaded");
       window.dispatchEvent(new CustomEvent("rb:loaded"));
 
+      // Unlock scrolling NOW, unconditionally. `is-preloading` puts
+      // `overflow:hidden; touch-action:none` on <html> and <body>; its only job
+      // is to hold the page still under the loader intro. Gating the unlock on
+      // the gsap timeline's onComplete meant a stalled ticker (backgrounded tab,
+      // throttled rAF on a phone) left the body frozen — visibly loaded but
+      // unscrollable, exactly the "can't scroll unless I pull from the bottom"
+      // bug. The loader is `pointer-events:none` from `.is-hidden`, so releasing
+      // the lock here can't let a stray touch hit it during the fade.
+      const unlock = () => {
+        document.documentElement.classList.remove("is-preloading");
+        document.body.classList.remove("is-preloading");
+      };
+      unlock();
+
+      // Hard failsafe: even if the timeline below never completes, the element
+      // is removed and the lock stays off.
+      const safety = window.setTimeout(() => { unlock(); this.remove(); }, 2600);
+
       const timeline = gsap.timeline({
         onComplete: () => {
-          document.documentElement.classList.remove("is-preloading");
-          document.body.classList.remove("is-preloading");
+          clearTimeout(safety);
+          unlock();
           this.remove();
         },
       });
