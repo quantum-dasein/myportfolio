@@ -114,11 +114,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   max-width: 100%;
-  overflow-x: clip;
 }
 
 html {
   background: #000;
+}
+
+/* Horizontal clip belongs on BODY, never on the root. Lenis sets
+   `html { height: auto }`, which makes the root size to content and become the
+   native scroll container; `overflow-x: clip` on that same root forces the
+   cross-axis to clip too, killing vertical scroll. Desktop hid this because
+   Lenis drives the wheel via transform, but touch uses the native document
+   scroll — so the page froze on phones. Clipping on body stops sideways
+   overflow without ever touching the root's scrollability. */
+body {
+  overflow-x: clip;
 }
 
 body {

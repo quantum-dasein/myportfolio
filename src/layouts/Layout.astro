@@ -86,7 +86,12 @@ const schema = {
       "@type": "Person",
       "@id": `${site}#rodion-belousov`,
       name: "Rodion Belousov",
+      // The name is Russian; people search it both ways. Giving Google the
+      // Cyrillic spelling as an alternate strengthens the entity for the
+      // branded query in either script.
+      alternateName: "Родион Белоусов",
       url: site.toString(),
+      image: socialImage,
       email: "mailto:rodionbelousov@protonmail.com",
       jobTitle: "Digital Marketing & SEO Specialist",
       hasOccupation: [
