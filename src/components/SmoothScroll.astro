@@ -18,7 +18,12 @@
   window.scrollDirection = 1;
 
   const lenis = new Lenis({
-    syncTouch: true,
+    // syncTouch made Lenis intercept every touchmove to run its own transform
+    // scroll — which BLOCKS native horizontal scroll containers (the Behance
+    // carousel would not swipe) and fought the finger on iOS. Off: mobile uses
+    // the browser's own (already smooth) touch scrolling; Lenis still smooths
+    // the desktop wheel. This also settles the leftover mobile scroll jank.
+    syncTouch: false,
     lerp: 0.125,
   });
   window.__rbLenis = lenis;

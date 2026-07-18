@@ -489,7 +489,13 @@
     gsap.set(veil, { opacity: returning ? 1 : 0 });
     gsap.set(destination, { opacity: 0, scale: 1.05 });
     gsap.set(hud, { opacity: returning ? 0 : 0 });
-    gsap.set(meter, { opacity: returning ? 0 : 1, scaleX: 0 });
+    // On the way IN the meter fills left→right. On the way BACK it starts full
+    // and retreats to the right — the line visibly rewinds, so the exit reads as
+    // a true reverse of the entry (and it now plays on mobile too, where it was
+    // simply hidden before).
+    gsap.set(meter, returning
+      ? { opacity: 1, scaleX: 1, transformOrigin: "right center" }
+      : { opacity: 1, scaleX: 0, transformOrigin: "left center" });
 
     if (kind === "bridge") {
       const decks = animated.filter((item) => item.userData.role === "deck");
@@ -536,7 +542,9 @@
       tl.to(hud, { opacity: 1, duration: .3 }, 0)
         .to(meter, { scaleX: 1, duration: kind === "bridge" ? 2.15 : 1.82, ease: "power2.inOut" }, 0);
     } else {
-      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0);
+      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0)
+        // the line rewinds to the right as the scene comes apart
+        .to(meter, { scaleX: 0, duration: kind === "bridge" ? 1.35 : 1.15, ease: "power2.inOut" }, 0);
     }
 
     if (kind === "bridge") {

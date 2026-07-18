@@ -443,9 +443,9 @@ const tiles = [
     figcaption { left: .95rem; right: .95rem; bottom: .9rem; }
     figcaption > span { font-size: .52rem; }
     strong { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
-    /* "Ins Archiv eintreten" is dropped on phones — it duplicated the Behance
-       CTA right below it, and the archive is one tap away in the menu. */
-    .gallery-pill { display: none; }
+    /* "Ins Archiv eintreten" stays — it is NOT the Behance link, it fires the
+       Tunnel star-jump into the on-site archive. Full width under the carousel. */
+    .gallery-pill { display: inline-flex; width: 100%; justify-content: space-between; margin-top: 1.6rem; }
   }
 
   /* ── Mobile focus mode ─────────────────────────────────────────────────── */
