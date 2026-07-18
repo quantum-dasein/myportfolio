@@ -458,9 +458,12 @@
       reset();
       if (clearTransaction) clearCaseTransaction();
     };
+    // Guaranteed teardown, armed immediately — independent of rAF, fonts.ready
+    // and the gsap ticker. If any of those stall on mobile (backgrounded tab,
+    // throttled rAF), the arrival veil still lifts instead of hanging.
+    safetyTimer = window.setTimeout(finish, 1300);
     const reveal = () => requestAnimationFrame(() => requestAnimationFrame(() => {
       if (reduced) { finish(); return; }
-      safetyTimer = window.setTimeout(finish, 1300);
       gsap.to(root, { opacity: 0, duration: .82, ease: "power2.out", onComplete: finish });
     }));
     const fontsReady = (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
@@ -678,9 +681,16 @@
     // leave quickly instead; otherwise play the reverse transition.
     if (running) {
       window.setTimeout(go, 650);
-    } else {
+      return;
+    }
+    // Arm the navigation failsafe BEFORE touching WebGL/gsap: if init() throws
+    // (an exhausted GL context on mobile is the classic case), the scheduled
+    // `go` still fires and we leave instead of freezing on a dead scene.
+    window.setTimeout(go, 2600); // never let the button appear stuck
+    try {
       play(kind, "exit", go);
-      window.setTimeout(go, 2600); // never let the button appear stuck
+    } catch {
+      go();
     }
   }
 
@@ -757,8 +767,12 @@
         if (document.querySelector("[data-case-page]")) location.assign(origin);
       }, 500);
     };
-    play(kind, "exit", go);
     window.setTimeout(go, 2600);
+    try {
+      play(kind, "exit", go);
+    } catch {
+      go();
+    }
   });
 
   addEventListener("pageshow", (event) => {

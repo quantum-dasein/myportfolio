@@ -214,10 +214,30 @@
     });
   }
 
-  function returnToOrigin() {
+  // Leave the archive back to wherever we warped in from. The old path leaned on
+  // history.back() (once here, once more inside popstate) — a double hop that
+  // silently no-ops on iOS Safari, which left the reverse warp painted on screen
+  // and frozen forever. This is deterministic: play the reverse warp, then load
+  // the origin outright. The navigation failsafe is armed BEFORE any canvas/gsap
+  // work runs, so a thrown frame can never strand us on a dead warp.
+  function leaveArchive() {
     if (completingBack) return;
     completingBack = true;
-    history.back();
+    const origin = sessionStorage.getItem("rb-warp-origin") || "/";
+    let navigated = false;
+    const go = () => {
+      if (navigated) return;
+      navigated = true;
+      sessionStorage.setItem("rb-warp-arrive", "1");
+      sessionStorage.setItem("rb-warp-return", "1");
+      location.assign(origin);
+    };
+    window.setTimeout(go, 1900); // hard failsafe — never let the warp sit frozen
+    try {
+      depart(go, true); // reverse warp → navigate on complete
+    } catch {
+      go();
+    }
   }
 
   if (root) {
@@ -232,13 +252,12 @@
     }
   }
 
+  // Browser/edge-swipe back on the archive pops the guard entry we pushed on
+  // arrival (a reliable same-document popstate, even on iOS), and we take it from
+  // there through the same deterministic exit.
   addEventListener("popstate", () => {
     if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
-    depart(() => {
-      sessionStorage.setItem("rb-warp-arrive", "1");
-      sessionStorage.setItem("rb-warp-return", "1");
-      history.back();
-    }, true); // leaving the archive → reverse warp
+    leaveArchive();
   });
 
   addEventListener("pageshow", (event) => {
@@ -255,7 +274,7 @@
     const url = new URL(anchor.href, location.href);
     event.preventDefault();
     if (isGallery && sessionStorage.getItem("rb-warp-origin")) {
-      returnToOrigin();
+      leaveArchive();
       return;
     }
     if (url.pathname === location.pathname) return;
