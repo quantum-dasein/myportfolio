@@ -246,21 +246,27 @@
       sessionStorage.removeItem("rb-warp-arrive");
       const isReturn = sessionStorage.getItem("rb-warp-return") === "1";
       arrive(isReturn, isReturn); // returning home decelerates OUT of the reverse warp
-      if (isGallery && sessionStorage.getItem("rb-warp-origin") && !history.state?.rbWarpGuard) {
-        history.pushState({ ...(history.state || {}), rbWarpGuard: true }, "", location.href);
-      }
     }
   }
 
-  // Browser/edge-swipe back on the archive pops the guard entry we pushed on
-  // arrival (a reliable same-document popstate, even on iOS), and we take it from
-  // there through the same deterministic exit.
-  addEventListener("popstate", () => {
-    if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
-    leaveArchive();
-  });
+  // The browser back button is left native. We used to push a guard entry here
+  // and intercept the resulting popstate with history.back() — the exact machine
+  // that froze the warp on iOS (frozen BFCache timers, no-op hops). Native back
+  // is instant and dependable; the archive's own back link still warps out via
+  // the click handler below.
+  //
+  // Dead-man's switch: if the warp overlay is still up a beat after any load or
+  // BFCache restore, force it down — it can never legitimately linger this long.
+  const WARP_WATCHDOG_MS = 2400;
+  function clearIfStuck() {
+    if (root.classList.contains("is-active") || document.documentElement.classList.contains("rb-warp-arriving")) {
+      reset();
+    }
+  }
+  window.setTimeout(clearIfStuck, WARP_WATCHDOG_MS);
 
   addEventListener("pageshow", (event) => {
+    window.setTimeout(clearIfStuck, WARP_WATCHDOG_MS);
     if (!event.persisted || sessionStorage.getItem("rb-warp-return") !== "1" || !originMatches()) return;
     reset();
     sessionStorage.removeItem("rb-warp-arrive");
