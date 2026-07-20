@@ -370,6 +370,12 @@ export const ui = {
     "footer.nav.label": "Navigate",
     "footer.social.label": "Elsewhere",
     "footer.rights": "All rights reserved.",
+
+    // ── 404 — The Event Horizon ─────────────────────────────────────────────
+    "404.eyebrow": "Signal // 404",
+    "404.title": "Signal lost.",
+    "404.subtitle": "You've drifted off course. These coordinates do not exist in the current space.",
+    "404.cta": "Return to base",
   },
 
   de: {
@@ -724,5 +730,11 @@ export const ui = {
     "footer.nav.label": "Navigation",
     "footer.social.label": "Anderswo",
     "footer.rights": "Alle Rechte vorbehalten.",
+
+    // ── 404 — Der Ereignishorizont ──────────────────────────────────────────
+    "404.eyebrow": "Signal // 404",
+    "404.title": "Signal verloren.",
+    "404.subtitle": "Du bist vom Kurs abgekommen. Diese Koordinaten existieren nicht im aktuellen Raum.",
+    "404.cta": "Zurück zur Basis",
   },
 } as const;
