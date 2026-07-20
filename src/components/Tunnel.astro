@@ -222,10 +222,21 @@
     sessionStorage.removeItem("rb-case-return");
     sessionStorage.setItem("rb-warp-origin", location.href);
     sessionStorage.setItem("rb-warp-scroll", String(scrollY));
-    depart(() => {
+    let navigated = false;
+    const go = () => {
+      if (navigated) return;
+      navigated = true;
       sessionStorage.setItem("rb-warp-arrive", "1");
       navigate(href);
-    });
+    };
+    // Failsafe longer than the ~1.65s warp — never cuts it, always rescues a
+    // stall so the warp can't sit frozen on screen without navigating.
+    window.setTimeout(go, 2400);
+    try {
+      depart(go);
+    } catch {
+      go();
+    }
   }
 
   // Leave the archive back to wherever we warped in from. The old path leaned on
