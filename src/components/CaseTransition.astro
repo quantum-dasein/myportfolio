@@ -607,10 +607,20 @@
     sessionStorage.setItem("rb-case-scroll", String(scrollY));
     sessionStorage.setItem("rb-case-kind", kind);
     if (typeof options.sector === "number") sessionStorage.setItem("rb-case-sector", String(options.sector));
-    play(kind, "depart", () => {
+    let navigated = false;
+    const go = () => {
+      if (navigated) return;
+      navigated = true;
       sessionStorage.setItem("rb-case-arrive", kind);
       astroNavigate(options.href);
-    });
+    };
+    // Failsafe first: enter the case even if the WebGL scene throws or stalls.
+    window.setTimeout(go, 2600);
+    try {
+      play(kind, "depart", go);
+    } catch {
+      go();
+    }
   }
 
   function restoreCaseEntry() {
@@ -649,6 +659,11 @@
     const kind = kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
     sessionStorage.removeItem("rb-case-return");
+    // Touch: no WebGL reverse scene — navigate straight, it can never freeze.
+    if (lowPower) {
+      astroNavigate(href);
+      return;
+    }
     play(kind, "exit", () => {
       sessionStorage.setItem("rb-case-direct-arrive", kind);
       astroNavigate(href);
@@ -669,6 +684,15 @@
     const origin = sessionStorage.getItem("rb-case-origin") || "/";
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
+    // On touch devices the WebGL reverse scene is removed entirely — it is the
+    // one thing that kept freezing on iOS. A plain instant navigation cannot
+    // stall, and we set no arrival flag so no overlay shows on the way in. The
+    // desktop keeps the full cinematic reverse below.
+    if (lowPower) {
+      sessionStorage.removeItem("rb-case-return");
+      location.assign(origin);
+      return;
+    }
     let navigated = false;
     const go = () => {
       if (navigated) return;
