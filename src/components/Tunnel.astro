@@ -90,24 +90,25 @@
   }
 
   function initStars() {
-    // Fewer, dimmer motes than before — the old field was a bright, busy
-    // starfield that read as a dated video-game warp. This is a calmer, sparser
-    // drift that leans on depth instead of brightness.
-    stars = Array.from({ length: lowPower ? 150 : 460 }, () => ({
+    // Desktop keeps its original bright, dense field (untouched). The softer,
+    // sparser, calmer drift is applied ONLY on touch, where the reverse warp
+    // read as a dated video-game starfield.
+    stars = Array.from({ length: lowPower ? 150 : 620 }, () => ({
       x: (Math.random() * 2 - 1) * W,
       y: (Math.random() * 2 - 1) * H,
       z: Math.random() * W + 1,
-      tone: .3 + Math.random() * .4,
+      tone: lowPower ? .3 + Math.random() * .4 : .48 + Math.random() * .52,
     }));
   }
 
   function draw() {
     if (!running) return;
-    // Longer, softer trails (lower clear alpha) feather the streaks instead of
-    // hard-cutting them each frame.
-    ctx.fillStyle = `rgba(0,0,0,${Math.max(.1, .4 - state.speed / 330)})`;
+    // Softer, feathered trails on touch; original hard-cut on desktop.
+    ctx.fillStyle = lowPower
+      ? `rgba(0,0,0,${Math.max(.1, .4 - state.speed / 330)})`
+      : `rgba(0,0,0,${Math.max(.12, .46 - state.speed / 300)})`;
     ctx.fillRect(0, 0, W, H);
-    ctx.lineCap = "round";
+    ctx.lineCap = lowPower ? "round" : "butt";
     const speed = state.speed;
     for (const star of stars) {
       const previous = star.z;
@@ -129,11 +130,15 @@
       const k = focal / star.z;
       const oldK = focal / previous;
       const depth = 1 - star.z / W;
-      // Cooler, dimmer silver; far motes fade toward nothing so the field reads
-      // as depth, not a wall of bright stars.
-      const a = star.tone * state.alpha * (0.32 + depth * 0.68);
-      ctx.strokeStyle = `rgba(196,212,222,${a})`;
-      ctx.lineWidth = Math.max(.5, depth * 2.0);
+      if (lowPower) {
+        // Cooler, dimmer silver; far motes fade toward nothing (touch only).
+        ctx.strokeStyle = `rgba(196,212,222,${star.tone * state.alpha * (0.32 + depth * 0.68)})`;
+        ctx.lineWidth = Math.max(.5, depth * 2.0);
+      } else {
+        // Original desktop look — untouched.
+        ctx.strokeStyle = `rgba(238,244,247,${star.tone * state.alpha})`;
+        ctx.lineWidth = Math.max(.55, depth * 3.2);
+      }
       ctx.beginPath();
       ctx.moveTo(cx + star.x * oldK, cy + star.y * oldK);
       ctx.lineTo(cx + star.x * k, cy + star.y * k);
@@ -176,8 +181,8 @@
     safetyTimer = window.setTimeout(finish, 1650);
     gsap.timeline({ onComplete: finish })
       .to(hud, { opacity: 1, duration: .25 }, 0)
-      .to(state, { speed: 88, duration: 1.15, ease: "power2.in" }, 0)
-      .to(black, { opacity: 1, duration: .52, ease: "power2.in" }, .72);
+      .to(state, { speed: lowPower ? 88 : 112, duration: lowPower ? 1.15 : 1.05, ease: lowPower ? "power2.in" : "power3.in" }, 0)
+      .to(black, { opacity: 1, duration: lowPower ? .52 : .48, ease: "power2.in" }, .72);
   }
 
   function arrive(clearOrigin = false, reverse = false) {
@@ -188,7 +193,7 @@
     document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
     initStars();
-    state.speed = 88;
+    state.speed = lowPower ? 88 : 105;
     state.alpha = 1;
     black.style.opacity = "1";
     draw();
