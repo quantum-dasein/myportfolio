@@ -607,20 +607,13 @@
     sessionStorage.setItem("rb-case-scroll", String(scrollY));
     sessionStorage.setItem("rb-case-kind", kind);
     if (typeof options.sector === "number") sessionStorage.setItem("rb-case-sector", String(options.sector));
-    let navigated = false;
-    const go = () => {
-      if (navigated) return;
-      navigated = true;
+    // Left exactly as it was — the desktop entry into a case is perfect and must
+    // not be touched. (No failsafe timer here: the earlier one fired at 2600ms
+    // and cut the ~3000ms bridge depart short.)
+    play(kind, "depart", () => {
       sessionStorage.setItem("rb-case-arrive", kind);
       astroNavigate(options.href);
-    };
-    // Failsafe first: enter the case even if the WebGL scene throws or stalls.
-    window.setTimeout(go, 2600);
-    try {
-      play(kind, "depart", go);
-    } catch {
-      go();
-    }
+    });
   }
 
   function restoreCaseEntry() {
