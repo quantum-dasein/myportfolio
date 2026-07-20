@@ -458,12 +458,9 @@
       reset();
       if (clearTransaction) clearCaseTransaction();
     };
-    // Guaranteed teardown, armed immediately — independent of rAF, fonts.ready
-    // and the gsap ticker. If any of those stall on mobile (backgrounded tab,
-    // throttled rAF), the arrival veil still lifts instead of hanging.
-    safetyTimer = window.setTimeout(finish, 1300);
     const reveal = () => requestAnimationFrame(() => requestAnimationFrame(() => {
       if (reduced) { finish(); return; }
+      safetyTimer = window.setTimeout(finish, 1300);
       gsap.to(root, { opacity: 0, duration: .82, ease: "power2.out", onComplete: finish });
     }));
     const fontsReady = (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
@@ -492,13 +489,7 @@
     gsap.set(veil, { opacity: returning ? 1 : 0 });
     gsap.set(destination, { opacity: 0, scale: 1.05 });
     gsap.set(hud, { opacity: returning ? 0 : 0 });
-    // On the way IN the meter fills left→right. On the way BACK it starts full
-    // and retreats to the right — the line visibly rewinds, so the exit reads as
-    // a true reverse of the entry (and it now plays on mobile too, where it was
-    // simply hidden before).
-    gsap.set(meter, returning
-      ? { opacity: 1, scaleX: 1, transformOrigin: "right center" }
-      : { opacity: 1, scaleX: 0, transformOrigin: "left center" });
+    gsap.set(meter, { opacity: returning ? 0 : 1, scaleX: 0 });
 
     if (kind === "bridge") {
       const decks = animated.filter((item) => item.userData.role === "deck");
@@ -545,9 +536,7 @@
       tl.to(hud, { opacity: 1, duration: .3 }, 0)
         .to(meter, { scaleX: 1, duration: kind === "bridge" ? 2.15 : 1.82, ease: "power2.inOut" }, 0);
     } else {
-      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0)
-        // the line rewinds to the right as the scene comes apart
-        .to(meter, { scaleX: 0, duration: kind === "bridge" ? 1.35 : 1.15, ease: "power2.inOut" }, 0);
+      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0);
     }
 
     if (kind === "bridge") {
@@ -607,25 +596,10 @@
     sessionStorage.setItem("rb-case-scroll", String(scrollY));
     sessionStorage.setItem("rb-case-kind", kind);
     if (typeof options.sector === "number") sessionStorage.setItem("rb-case-sector", String(options.sector));
-    let navigated = false;
-    const go = () => {
-      if (navigated) return;
-      navigated = true;
+    play(kind, "depart", () => {
       sessionStorage.setItem("rb-case-arrive", kind);
       astroNavigate(options.href);
-    };
-    // The failsafe is LONGER than the longest depart (~3s on desktop), so in the
-    // happy path play() finishes and navigates first and this NEVER fires — the
-    // animation is not cut and desktop looks exactly as before. It only rescues a
-    // genuine stall: play() paints the overlay before it builds WebGL, so an
-    // exhausted GL context throwing in init() (caught below) — or a silently dead
-    // timeline — would otherwise strand the depart on screen forever.
-    window.setTimeout(go, 4200);
-    try {
-      play(kind, "depart", go);
-    } catch {
-      go();
-    }
+    });
   }
 
   function restoreCaseEntry() {
@@ -643,11 +617,6 @@
     const origin = sessionStorage.getItem("rb-case-origin");
     if (!origin) return;
 
-    // Store the entry metadata on the CURRENT history entry (replaceState — no
-    // new entry, no extra "back" the user has to press). We deliberately do NOT
-    // push a guard entry any more: pushing one so we could intercept the back
-    // button with popstate + history.back() was the whole fragile machine that
-    // froze on iOS. The browser back button is now left completely native.
     if (!history.state?.rbCaseEntry) {
       history.replaceState({
         ...(history.state || {}),
@@ -657,6 +626,10 @@
         rbCaseKind: kind,
       }, "", location.href);
     }
+
+    if (!history.state?.rbCaseGuard) {
+      history.pushState({ ...(history.state || {}), rbCaseGuard: true }, "", location.href);
+    }
   }
 
   function exitTo(href: string) {
@@ -664,11 +637,6 @@
     const kind = kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
     sessionStorage.removeItem("rb-case-return");
-    // Touch: no WebGL reverse scene — navigate straight, it can never freeze.
-    if (lowPower) {
-      astroNavigate(href);
-      return;
-    }
     play(kind, "exit", () => {
       sessionStorage.setItem("rb-case-direct-arrive", kind);
       astroNavigate(href);
@@ -682,22 +650,11 @@
   // it restore scroll + play its arrival reveal. A hard failsafe guarantees the
   // navigation happens even if the animation stalls.
   function exitBackToOrigin() {
-    if (!casePage) return;
-    // No stored origin (direct load / deep link) → there may be no history to
-    // go back to, and we already preventDefaulted the link, so navigate home
-    // outright rather than risk a dead button.
-    const origin = sessionStorage.getItem("rb-case-origin") || "/";
+    if (!casePage || running) return;
+    const origin = sessionStorage.getItem("rb-case-origin");
+    if (!origin) { history.back(); return; } // no stored origin → best-effort back
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
-    // On touch devices the WebGL reverse scene is removed entirely — it is the
-    // one thing that kept freezing on iOS. A plain instant navigation cannot
-    // stall, and we set no arrival flag so no overlay shows on the way in. The
-    // desktop keeps the full cinematic reverse below.
-    if (lowPower) {
-      sessionStorage.removeItem("rb-case-return");
-      location.assign(origin);
-      return;
-    }
     let navigated = false;
     const go = () => {
       if (navigated) return;
@@ -705,23 +662,8 @@
       sessionStorage.setItem("rb-case-return", kind);
       location.assign(origin);
     };
-    // CRITICAL: schedule the navigation BEFORE any early return. If the arrival
-    // reveal is still playing (`running`), we must NOT bail silently — that left
-    // the scene frozen and the button dead. We just skip re-playing the exit and
-    // leave quickly instead; otherwise play the reverse transition.
-    if (running) {
-      window.setTimeout(go, 650);
-      return;
-    }
-    // Arm the navigation failsafe BEFORE touching WebGL/gsap: if init() throws
-    // (an exhausted GL context on mobile is the classic case), the scheduled
-    // `go` still fires and we leave instead of freezing on a dead scene.
+    play(kind, "exit", go);
     window.setTimeout(go, 2600); // never let the button appear stuck
-    try {
-      play(kind, "exit", go);
-    } catch {
-      go();
-    }
   }
 
   window.__rbCaseTransition = navigate;
@@ -780,34 +722,28 @@
     }
   }
 
-  // The browser/edge-swipe back button is intentionally NOT intercepted here.
-  // Intercepting it (guard entry → popstate → history.back()) is what froze the
-  // scene on iOS: timers pause as the page is frozen for BFCache and the hop
-  // silently no-ops, so the overlay sat there forever. Native back is instant
-  // and reliable; the on-page "← Back" control still plays the reverse cinema.
-  //
-  // Dead-man's switch: no matter how we arrived (native back, BFCache restore,
-  // a stalled reveal), the transition overlay must never outlive the animation.
-  // Any legit arrival reveal finishes well under 2s, so if the overlay is still
-  // up after this delay it is stuck — tear it down unconditionally.
-  const OVERLAY_WATCHDOG_MS = 2600;
-  function clearIfStuck() {
-    // Only clear an ORPHANED overlay (class present, nothing animating). A live
-    // transition sets `running`; never cut one short.
-    if (
-      !running &&
-      (root.classList.contains("is-active") ||
-        document.documentElement.classList.contains("rb-case-arriving"))
-    ) {
-      reset();
-    }
-  }
-  window.setTimeout(clearIfStuck, OVERLAY_WATCHDOG_MS);
+  addEventListener("popstate", () => {
+    if (!casePage || completingBack || !sessionStorage.getItem("rb-case-origin")) return;
+    completingBack = true;
+    const origin = sessionStorage.getItem("rb-case-origin")!;
+    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
+    let navigated = false;
+    const go = () => {
+      if (navigated) return;
+      navigated = true;
+      sessionStorage.setItem("rb-case-return", kind);
+      sessionStorage.removeItem("rb-case-arrive");
+      history.back();
+      // If the history hop didn't take us off the case page, force it.
+      window.setTimeout(() => {
+        if (document.querySelector("[data-case-page]")) location.assign(origin);
+      }, 500);
+    };
+    play(kind, "exit", go);
+    window.setTimeout(go, 2600);
+  });
 
   addEventListener("pageshow", (event) => {
-    // Re-arm the watchdog on every restore — BFCache freezes pending timers, so
-    // the load-time one may never have fired.
-    window.setTimeout(clearIfStuck, OVERLAY_WATCHDOG_MS);
     if (casePage && event.persisted) {
       reset();
       completingBack = false;
