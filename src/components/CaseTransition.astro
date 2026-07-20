@@ -763,9 +763,12 @@
   // up after this delay it is stuck — tear it down unconditionally.
   const OVERLAY_WATCHDOG_MS = 2600;
   function clearIfStuck() {
+    // Only clear an ORPHANED overlay (class present, nothing animating). A live
+    // transition sets `running`; never cut one short.
     if (
-      root.classList.contains("is-active") ||
-      document.documentElement.classList.contains("rb-case-arriving")
+      !running &&
+      (root.classList.contains("is-active") ||
+        document.documentElement.classList.contains("rb-case-arriving"))
     ) {
       reset();
     }

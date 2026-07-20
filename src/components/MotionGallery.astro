@@ -443,9 +443,11 @@ const tiles = [
     figcaption { left: .95rem; right: .95rem; bottom: .9rem; }
     figcaption > span { font-size: .52rem; }
     strong { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
-    /* "Ins Archiv eintreten" stays — it is NOT the Behance link, it fires the
-       Tunnel star-jump into the on-site archive. Full width under the carousel. */
-    .gallery-pill { display: inline-flex; width: 100%; justify-content: space-between; margin-top: 1.6rem; }
+    /* On phones the "Ins Archiv eintreten" pill under the Behance carousel is
+       hidden — the dedicated "portal" section (07) lower down is the archive
+       entry on mobile, so this one is redundant here. The desktop layout keeps
+       it. (The portal-section button is untouched.) */
+    .gallery-pill { display: none !important; }
   }
 
   /* ── Mobile focus mode ─────────────────────────────────────────────────── */
@@ -518,7 +520,9 @@ const tiles = [
   .gallery-stage.has-focus .archive-sculpture { opacity: .2; }
 
   @media (pointer: coarse) {
-    .gallery-pill { backdrop-filter: none; }
+    /* Hidden on every touch device (phones and touch tablets), not just narrow
+       widths — the archive entry on touch is the portal section lower down. */
+    .gallery-pill { display: none !important; }
     .tile:hover { border-color: rgba(255, 255, 255, .24); }
   }
 

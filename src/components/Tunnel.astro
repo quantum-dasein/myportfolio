@@ -259,7 +259,10 @@
   // BFCache restore, force it down — it can never legitimately linger this long.
   const WARP_WATCHDOG_MS = 2400;
   function clearIfStuck() {
-    if (root.classList.contains("is-active") || document.documentElement.classList.contains("rb-warp-arriving")) {
+    // Only ever clear an ORPHANED overlay (class present, nothing animating).
+    // A live warp sets `running`; the watchdog must never cut one short — that
+    // would glitch a slow entry on a real GPU.
+    if (!running && (root.classList.contains("is-active") || document.documentElement.classList.contains("rb-warp-arriving"))) {
       reset();
     }
   }
