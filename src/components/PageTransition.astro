@@ -109,13 +109,18 @@
 
   .page-cut__hud p {
     margin: 0;
+    max-width: 100%;
     font-family: var(--font-display);
     font-size: clamp(1.9rem, 5.5vw, 4.6rem);
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.04;
     letter-spacing: 0.02em;
     color: #f4f7f8;
-    white-space: nowrap;
+    /* Long labels ("BRIDGE CONSULT — +780% ORGANIC") wrap and stay on screen
+       instead of running off the right edge with white-space: nowrap. */
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-wrap: balance;
   }
 
   /* Calm mode keeps the cut — it is what stops the page snapping — but drops the
