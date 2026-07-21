@@ -464,6 +464,11 @@ const caseSchema = {
     font-weight: 500;
     line-height: 0.9;
     letter-spacing: 0;
+    /* Long German compounds ("Betriebssystem") must break with a hyphen, not
+       snap mid-word off the edge. lang="de-AT" on <html> drives the dictionary. */
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    overflow-wrap: break-word;
   }
 
   .case-title a {
