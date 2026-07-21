@@ -369,6 +369,7 @@ export const ui = {
     "footer.status": "Available for projects",
     "footer.nav.label": "Navigate",
     "footer.social.label": "Elsewhere",
+    "footer.colophon": "How this site is built",
     "footer.rights": "All rights reserved.",
 
     // ── 404 — The Event Horizon ─────────────────────────────────────────────
@@ -747,6 +748,7 @@ export const ui = {
     "footer.status": "Verfügbar für Projekte",
     "footer.nav.label": "Navigation",
     "footer.social.label": "Anderswo",
+    "footer.colophon": "Wie diese Seite gebaut ist",
     "footer.rights": "Alle Rechte vorbehalten.",
 
     // ── 404 — Der Ereignishorizont ──────────────────────────────────────────
