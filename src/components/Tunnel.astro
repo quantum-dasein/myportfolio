@@ -63,7 +63,6 @@
     canvas = root.querySelector<HTMLCanvasElement>("[data-tunnel-canvas]")!;
     ctx = canvas.getContext("2d", { alpha: false })!;
     isGallery = location.pathname === "/gallery" || location.pathname === "/gallery/";
-    resize();
   }
 
   let stars: { x: number; y: number; z: number; tone: number }[] = [];
@@ -74,6 +73,12 @@
   let safetyTimer = 0;
   let dir = 1;
   const state = { speed: 0, alpha: 1 };
+
+  // Size the canvas ONCE now — after W/H/focal are declared above. Calling
+  // resize() up in the init block ran before `let W = 0 …`, whose initializer
+  // then clobbered the real values back to 0, so W/H/focal stayed 0 and every
+  // star projected to (0,0): the whole warp drew pure black on desktop.
+  if (root) resize();
 
   const originMatches = () => {
     const raw = sessionStorage.getItem("rb-warp-origin");

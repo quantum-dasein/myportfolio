@@ -392,7 +392,9 @@
     book.add(orbit);
     animated.push(orbit);
     book.rotation.set(-.16, -.08, -.035);
-    book.scale.setScalar(innerWidth < 760 ? .72 : 1.02);
+    // Phones: the book was overflowing the viewport on the way in — pull it down
+    // to a size that sits fully on screen.
+    book.scale.setScalar(innerWidth < 760 ? .5 : 1.02);
     target.add(book);
     return book;
   }
@@ -487,9 +489,16 @@
     const cover = kind === "fidic" ? animated.find((item) => item.userData.cover) : null;
     const baseScale = object.scale.x;
     gsap.set(veil, { opacity: returning ? 1 : 0 });
+    // On the way back, hide the 3D canvas for frame 0 so the crisp fully-built
+    // scene (the "final frame" of the entry) never flashes before it starts
+    // coming apart — it fades in a beat later, already in motion.
+    if (returning) gsap.set(canvas, { opacity: 0 });
     gsap.set(destination, { opacity: 0, scale: 1.05 });
     gsap.set(hud, { opacity: returning ? 0 : 0 });
-    gsap.set(meter, { opacity: returning ? 0 : 1, scaleX: 0 });
+    // Meter is visible in BOTH directions now. Forward it fills left→right; on
+    // the way back it starts full and drains to empty, so the progress line
+    // animates with the reverse instead of standing still.
+    gsap.set(meter, { opacity: 1, scaleX: returning ? 1 : 0, transformOrigin: returning ? "right center" : "left center" });
 
     if (kind === "bridge") {
       const decks = animated.filter((item) => item.userData.role === "deck");
@@ -536,7 +545,9 @@
       tl.to(hud, { opacity: 1, duration: .3 }, 0)
         .to(meter, { scaleX: 1, duration: kind === "bridge" ? 2.15 : 1.82, ease: "power2.inOut" }, 0);
     } else {
-      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0);
+      tl.to(veil, { opacity: .08, duration: .28, ease: "power2.out" }, 0)
+        // the progress line rewinds to the right as the scene comes apart
+        .to(meter, { scaleX: 0, duration: kind === "bridge" ? 1.35 : 1.15, ease: "power2.inOut" }, 0);
     }
 
     if (kind === "bridge") {
@@ -565,8 +576,11 @@
             .to((item as THREE.Mesh).material, { opacity: 0, duration: .5 }, .52 + i * .009);
         });
         towers.forEach((item, i) => tl.to(item.scale, { y: .015, duration: .62, ease: "power3.in" }, .7 + i * .12));
-        tl.to(object.rotation, { y: .055, duration: 1.1 }, .2)
-          .to(camera.position, { z: 10.8, y: .9, duration: 1.35, ease: "power2.in", onUpdate: () => camera?.lookAt(0, -.12, -24) }, .18)
+        // Camera pulls back from t=0 (motion is immediate) and the canvas fades
+        // in over the first beat, so the built scene never sits still on screen.
+        tl.to(canvas, { opacity: 1, duration: .22, ease: "power1.out" }, .04)
+          .to(object.rotation, { y: .055, duration: 1.1 }, 0)
+          .to(camera.position, { z: 10.8, y: .9, duration: 1.35, ease: "power2.in", onUpdate: () => camera?.lookAt(0, -.12, -24) }, 0)
           .to(veil, { opacity: 1, duration: .48, ease: "power2.in" }, 1.12)
           .to(canvas, { opacity: 0, duration: .3 }, 1.26);
       }
@@ -577,11 +591,14 @@
       if (cover) tl.to(cover.rotation, { y: -Math.PI * .92, duration: 1.02, ease: "power3.inOut" }, .12);
       pages.forEach((page, i) => tl.to(page.rotation, { y: -Math.PI * (.62 + i * .025), duration: .76, ease: "power2.inOut" }, .32 + i * .05));
     } else {
-      pages.slice().reverse().forEach((page, i) => tl.to(page.rotation, { y: 0, duration: .58, ease: "power3.inOut" }, .2 + i * .045));
-      if (cover) tl.to(cover.rotation, { y: 0, duration: .72, ease: "power3.inOut" }, .46);
-      tl.to(object.rotation, { y: -.2, z: 0, duration: .92 }, .3)
-        .to(object.scale, { x: baseScale * .58, y: baseScale * .58, z: baseScale * .58, duration: .72, ease: "power3.in" }, .68)
-        .to(camera.position, { z: 11.8, duration: 1.1, ease: "power3.in" }, .38)
+      // Canvas fades in over the first beat and the book zoom/rotate start at
+      // t=0, so the fully-open book never flashes before it closes away.
+      tl.to(canvas, { opacity: 1, duration: .22, ease: "power1.out" }, .04);
+      pages.slice().reverse().forEach((page, i) => tl.to(page.rotation, { y: 0, duration: .58, ease: "power3.inOut" }, .12 + i * .045));
+      if (cover) tl.to(cover.rotation, { y: 0, duration: .72, ease: "power3.inOut" }, .3);
+      tl.to(object.rotation, { y: -.2, z: 0, duration: .92 }, .1)
+        .to(object.scale, { x: baseScale * .58, y: baseScale * .58, z: baseScale * .58, duration: .72, ease: "power3.in" }, .38)
+        .to(camera.position, { z: 11.8, duration: 1.1, ease: "power3.in" }, .1)
         .to(veil, { opacity: 1, duration: .48, ease: "power2.in" }, 1.12)
         .to(canvas, { opacity: 0, duration: .28 }, 1.26);
     }
