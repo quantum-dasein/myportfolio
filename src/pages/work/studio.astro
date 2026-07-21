@@ -185,6 +185,18 @@ const notes = [1, 2, 3].map((n) => ({
     border-bottom: 1px solid rgba(255, 255, 255, .09);
   }
 
+  /* On phones there's no hero scene to fill the top of an 86svh block, so
+     `align-items: end` left a tall empty void above the title. Let the hero
+     size to its content and sit just below the header instead. */
+  @media (--mq-tablet-sm) {
+    .st-hero {
+      min-height: auto;
+      align-items: start;
+      padding: 7.5rem 0 3rem;
+      background: radial-gradient(circle at 82% 16%, rgba(255, 255, 255, .1), transparent 20rem);
+    }
+  }
+
   .st-eyebrow, .st-idx {
     display: inline-block;
     font-family: var(--font-inter);
