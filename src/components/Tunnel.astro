@@ -241,6 +241,7 @@
   addEventListener("popstate", () => {
     if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
     if (lowPower) {
+      reset(); // kill any active warp before leaving so nothing streams on
       sessionStorage.removeItem("rb-warp-return");
       sessionStorage.removeItem("rb-warp-arrive");
       sessionStorage.removeItem("rb-warp-origin");
@@ -254,7 +255,14 @@
     }, true);
   });
 
+  // A warp must never survive into the page cache. On iOS the animation loop
+  // could get frozen mid-flight into BFCache and then resume forever when the
+  // page was restored — the "endless stream of stars" on mobile back. Resetting
+  // on pagehide stops the loop and clears the overlay before the freeze, and a
+  // pageshow safety net catches anything that still slips through.
+  addEventListener("pagehide", () => reset());
   addEventListener("pageshow", (event) => {
+    if (event.persisted && running) reset();
     if (!event.persisted || sessionStorage.getItem("rb-warp-return") !== "1" || !originMatches()) return;
     reset();
     sessionStorage.removeItem("rb-warp-arrive");
