@@ -1298,6 +1298,29 @@ const caseSchema = {
     .fidic-metric-5 { grid-column: 1 / -1; }
     .fidic-layers { grid-template-columns: 1fr; }
     .fidic-layers article { min-height: 15rem; }
+
+    /* Section heads on phones: plain block flow with explicit spacing (no grid
+       align-items surprises that let the huge heading ride up into the kicker)
+       and hyphenation so long German compounds like "Betriebssystem" break with
+       a clean hyphen instead of snapping mid-word or colliding above. */
+    .fidic-platform-head,
+    .impact-head,
+    .build-head,
+    .system-map-head { display: block; }
+    .fidic-platform-head .chapter-label,
+    .impact-head .chapter-label,
+    .build-head .chapter-label,
+    .system-map-head .chapter-label { display: block; margin-bottom: 1.5rem; }
+    .fidic-platform-head h2,
+    .impact-head h2,
+    .build-head h2,
+    .system-map-head h2 {
+      margin: 0 0 1.2rem;
+      max-width: 100%;
+      hyphens: auto;
+      -webkit-hyphens: auto;
+      overflow-wrap: break-word;
+    }
   }
 
   @media (max-width: 520px) {

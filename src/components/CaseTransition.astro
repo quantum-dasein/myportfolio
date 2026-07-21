@@ -644,7 +644,11 @@
       }, "", location.href);
     }
 
-    if (!history.state?.rbCaseGuard) {
+    // Desktop only: the guard entry lets us intercept the browser back button and
+    // play the reverse cinema. On touch we DON'T push it — the WebGL reverse scene
+    // stalls and sticks on real iOS (which DevTools device mode never reproduces,
+    // since it's the same Blink engine as desktop). Touch gets a clean native back.
+    if (!lowPower && !history.state?.rbCaseGuard) {
       history.pushState({ ...(history.state || {}), rbCaseGuard: true }, "", location.href);
     }
   }
@@ -654,6 +658,8 @@
     const kind = kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
     sessionStorage.removeItem("rb-case-return");
+    // Touch: no WebGL exit scene — navigate straight, it can't freeze on iOS.
+    if (lowPower) { astroNavigate(href); return; }
     play(kind, "exit", () => {
       sessionStorage.setItem("rb-case-direct-arrive", kind);
       astroNavigate(href);
@@ -672,6 +678,14 @@
     if (!origin) { history.back(); return; } // no stored origin → best-effort back
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
+    // Touch: skip the WebGL reverse scene entirely — plain instant navigation,
+    // no arrival overlay, nothing that can stall and stick on iOS. Desktop keeps
+    // the cinematic reverse below.
+    if (lowPower) {
+      sessionStorage.removeItem("rb-case-return");
+      location.assign(origin);
+      return;
+    }
     let navigated = false;
     const go = () => {
       if (navigated) return;
@@ -744,6 +758,18 @@
     completingBack = true;
     const origin = sessionStorage.getItem("rb-case-origin")!;
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
+    // Touch: never play the WebGL reverse scene on a back — it stalls and sticks
+    // on iOS. Reset any overlay and complete the back cleanly.
+    if (lowPower) {
+      reset();
+      sessionStorage.removeItem("rb-case-return");
+      sessionStorage.removeItem("rb-case-arrive");
+      history.back();
+      window.setTimeout(() => {
+        if (document.querySelector("[data-case-page]")) location.assign(origin);
+      }, 500);
+      return;
+    }
     let navigated = false;
     const go = () => {
       if (navigated) return;
@@ -764,6 +790,9 @@
     if (casePage && event.persisted) {
       reset();
       completingBack = false;
+      // Touch: a BFCache-restored case page just shows clean, no overlay replay
+      // (an overlay reveal can stall and stick on iOS).
+      if (lowPower) return;
       restoreCaseEntry();
       const kind = (history.state?.rbCaseKind as CaseKind) || kindFromHref(location.href);
       revealPage(kind);
@@ -775,6 +804,7 @@
     if (!event.persisted || !returning || !originMatches()) return;
     reset();
     scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
+    if (lowPower) return; // touch: land clean, no arrival overlay
     revealPage(returning, true);
   });
 
