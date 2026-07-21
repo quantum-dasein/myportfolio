@@ -85,21 +85,25 @@
     opacity: 0;
   }
 
-  /* Centred by the grid, not by a transform — GSAP owns transform here, and a
-     translate(-50%) baked into CSS would be the first thing it overwrote. */
+  /* Two halves split at 50% — exactly where the seam sits. The kicker hugs the
+     bottom of the top half, the label the top of the bottom half, each with a
+     gap, so the seam reads as a divider BETWEEN them instead of a line drawn
+     through the letters. Centred by the grid, not a transform — GSAP owns
+     transform here. */
   .page-cut__hud {
     position: absolute;
     inset: 0;
     display: grid;
-    align-content: center;
+    grid-template-rows: 1fr 1fr;
     justify-items: center;
-    gap: 0.9rem;
     padding-inline: clamp(1.2rem, 4vw, 4rem);
     text-align: center;
     opacity: 0;
   }
 
   .page-cut__hud small {
+    align-self: end;
+    margin-bottom: clamp(1rem, 3.5vw, 1.6rem);
     font-family: var(--font-inter);
     font-size: 0.58rem;
     font-weight: 500;
@@ -108,7 +112,8 @@
   }
 
   .page-cut__hud p {
-    margin: 0;
+    align-self: start;
+    margin: clamp(1rem, 3.5vw, 1.6rem) 0 0;
     max-width: 100%;
     font-family: var(--font-display);
     font-size: clamp(1.9rem, 5.5vw, 4.6rem);
