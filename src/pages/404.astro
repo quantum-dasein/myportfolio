@@ -38,6 +38,63 @@ const t = useTranslations("en");
     <span class="void-bracket tr" aria-hidden="true"></span>
     <span class="void-bracket bl" aria-hidden="true"></span>
     <span class="void-bracket br" aria-hidden="true"></span>
+
+    <span class="void-scroll" aria-hidden="true"><b></b>drift on</span>
+  </section>
+
+  <!-- ── Signal recovery: real destinations, dressed as navigation beacons ──── -->
+  <section class="recover" aria-labelledby="recover-title">
+    <div class="recover-head">
+      <span class="recover-eyebrow" data-decode-in>Re-establish signal</span>
+      <h2 id="recover-title" data-split>Known coordinates</h2>
+      <p>The route you asked for is off the map — but these are still transmitting. Pick a heading and drift back in.</p>
+    </div>
+
+    <div class="beacons">
+      <a class="beacon" href="/" data-beacon data-magnetic data-cursor="HOME">
+        <span class="beacon-top"><span class="beacon-id">00 / BASE</span><span class="beacon-dot"></span></span>
+        <span class="beacon-name">Studio</span>
+        <span class="beacon-desc">The home signal — where the spatial transit begins.</span>
+        <span class="beacon-go" aria-hidden="true">→</span>
+      </a>
+      <a class="beacon" href="/services" data-beacon data-magnetic data-cursor="OPEN">
+        <span class="beacon-top"><span class="beacon-id">01 / WORKSHOP</span><span class="beacon-dot"></span></span>
+        <span class="beacon-name">Services &amp; Research</span>
+        <span class="beacon-desc">Digital marketing, technical SEO and creative development.</span>
+        <span class="beacon-go" aria-hidden="true">→</span>
+      </a>
+      <a class="beacon" href="/gallery" data-beacon data-magnetic data-cursor="ENTER">
+        <span class="beacon-top"><span class="beacon-id">02 / ARCHIVE</span><span class="beacon-dot"></span></span>
+        <span class="beacon-name">Archive</span>
+        <span class="beacon-desc">The visual record — projects, frames and experiments.</span>
+        <span class="beacon-go" aria-hidden="true">→</span>
+      </a>
+      <a class="beacon" href="/work/bridge-consult" data-beacon data-magnetic data-cursor="OPEN">
+        <span class="beacon-top"><span class="beacon-id">03 / CASE</span><span class="beacon-dot"></span></span>
+        <span class="beacon-name">Bridge Consult</span>
+        <span class="beacon-desc">From infrastructure expertise to +780% organic demand.</span>
+        <span class="beacon-go" aria-hidden="true">→</span>
+      </a>
+      <a class="beacon" href="/work/fidic" data-beacon data-magnetic data-cursor="OPEN">
+        <span class="beacon-top"><span class="beacon-id">04 / CASE</span><span class="beacon-dot"></span></span>
+        <span class="beacon-name">FIDIC.uz</span>
+        <span class="beacon-desc">A multilingual operating system for contract knowledge.</span>
+        <span class="beacon-go" aria-hidden="true">→</span>
+      </a>
+      <a class="beacon" href="/work/studio" data-beacon data-magnetic data-cursor="OPEN">
+        <span class="beacon-top"><span class="beacon-id">05 / META</span><span class="beacon-dot"></span></span>
+        <span class="beacon-name">How this site is built</span>
+        <span class="beacon-desc">The engineering behind the warp — GLSL, Three.js, GSAP.</span>
+        <span class="beacon-go" aria-hidden="true">→</span>
+      </a>
+    </div>
+
+    <div class="diag" aria-hidden="true">
+      <div class="diag-cell"><span class="diag-key">System</span><span class="diag-val"><i class="diag-pulse"></i>Operational</span></div>
+      <div class="diag-cell"><span class="diag-key">Sector</span><span class="diag-val">rodionbelousov.studio</span></div>
+      <div class="diag-cell"><span class="diag-key">Error</span><span class="diag-val">HTTP 404 · NO_ROUTE</span></div>
+      <div class="diag-cell"><span class="diag-key">Recovery</span><span class="diag-val">6 beacons in range</span></div>
+    </div>
   </section>
 </Layout>
 
@@ -512,6 +569,27 @@ const t = useTranslations("en");
       drift();
     }
   }
+
+  // Beacon grid drifts into range as it scrolls into view.
+  const beacons = gsap.utils.toArray<HTMLElement>("[data-beacon]");
+  if (beacons.length) {
+    if (prefersCalm()) {
+      gsap.set(beacons, { opacity: 1, y: 0 });
+    } else {
+      gsap.set(beacons, { opacity: 0, y: 26 });
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e, i) => {
+            if (!e.isIntersecting) return;
+            gsap.to(e.target, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: (i % 3) * 0.08 });
+            io.unobserve(e.target);
+          });
+        },
+        { threshold: 0.18 },
+      );
+      beacons.forEach((b) => io.observe(b));
+    }
+  }
 </script>
 
 <style>
@@ -649,7 +727,209 @@ const t = useTranslations("en");
     .void-ui { gap: 1.1rem; }
   }
 
+  /* A quiet nudge that there is more below the full-height void. */
+  .void-scroll {
+    position: absolute;
+    left: 50%;
+    bottom: 1.7rem;
+    z-index: 2;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    font-family: var(--font-inter);
+    font-size: .54rem;
+    font-weight: 500;
+    letter-spacing: .34em;
+    text-transform: uppercase;
+    color: rgba(180, 200, 225, .42);
+    pointer-events: none;
+  }
+  .void-scroll b {
+    width: 1px;
+    height: 2rem;
+    background: linear-gradient(rgba(180, 200, 225, 0), rgba(180, 200, 225, .7));
+    animation: scroll-pull 2.4s ease-in-out infinite;
+  }
+  @keyframes scroll-pull { 0%, 100% { transform: scaleY(.4); opacity: .4; transform-origin: top; } 50% { transform: scaleY(1); opacity: 1; transform-origin: top; } }
+
+  /* ── Signal recovery ───────────────────────────────────────────────────── */
+  .recover {
+    position: relative;
+    z-index: 2;
+    padding: clamp(4rem, 9vw, 8rem) clamp(1.2rem, 5vw, 5rem) clamp(5rem, 10vw, 9rem);
+    background: linear-gradient(180deg, #010203 0%, #05070b 42%, #04060a 100%);
+    border-top: 1px solid rgba(255, 255, 255, .07);
+  }
+  .recover::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .4;
+    background-image: radial-gradient(circle, rgba(180, 205, 235, .5) 0 1px, transparent 1.4px);
+    background-size: 7rem 7rem;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000, transparent 70%);
+    pointer-events: none;
+  }
+  .recover-head {
+    position: relative;
+    max-width: 46rem;
+    margin: 0 auto clamp(2.6rem, 5vw, 4.2rem);
+    text-align: center;
+  }
+  .recover-eyebrow {
+    display: block;
+    margin-bottom: 1.1rem;
+    font-family: var(--font-inter);
+    font-size: .6rem;
+    font-weight: 500;
+    letter-spacing: .5em;
+    text-indent: .5em;
+    text-transform: uppercase;
+    color: rgba(190, 210, 235, .5);
+  }
+  .recover-head h2 {
+    margin: 0 0 1.1rem;
+    font-family: var(--font-display), sans-serif;
+    font-weight: 500;
+    font-size: clamp(2.1rem, 5.2vw, 3.7rem);
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: #f2f6fb;
+  }
+  .recover-head p {
+    margin: 0 auto;
+    max-width: 34rem;
+    font-family: var(--font-inter);
+    font-size: clamp(.9rem, 1.4vw, 1.02rem);
+    line-height: 1.65;
+    color: rgba(216, 226, 240, .6);
+  }
+
+  .beacons {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+    gap: clamp(.8rem, 1.6vw, 1.1rem);
+    max-width: 74rem;
+    margin: 0 auto;
+  }
+  .beacon {
+    --mx: 0px; --my: 0px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+    padding: clamp(1.4rem, 2.4vw, 1.9rem);
+    border: 1px solid rgba(180, 205, 235, .14);
+    border-radius: 10px;
+    background: linear-gradient(150deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .006));
+    text-decoration: none;
+    overflow: hidden;
+    transform: translate3d(var(--mx), var(--my), 0);
+    transition: border-color .5s var(--ease-out-expo), background .5s var(--ease-out-expo);
+  }
+  .beacon::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 82% 0%, rgba(150, 190, 255, .16), transparent 60%);
+    opacity: 0;
+    transition: opacity .5s var(--ease-out-expo);
+    pointer-events: none;
+  }
+  .beacon:hover {
+    border-color: rgba(200, 222, 250, .44);
+    background: linear-gradient(150deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .015));
+  }
+  .beacon:hover::after { opacity: 1; }
+  .beacon-top { display: flex; align-items: center; justify-content: space-between; }
+  .beacon-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .56rem;
+    letter-spacing: .2em;
+    color: rgba(180, 200, 225, .5);
+  }
+  .beacon-dot {
+    width: .4rem;
+    height: .4rem;
+    border-radius: 50%;
+    background: rgba(150, 190, 255, .45);
+    box-shadow: 0 0 .5rem rgba(150, 190, 255, .4);
+    transition: background .4s var(--ease-out-expo), box-shadow .4s var(--ease-out-expo);
+  }
+  .beacon:hover .beacon-dot { background: #9ec3ff; box-shadow: 0 0 .8rem #9ec3ff; }
+  .beacon-name {
+    font-family: var(--font-display), sans-serif;
+    font-weight: 500;
+    font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+    line-height: 1.05;
+    color: #f2f6fb;
+  }
+  .beacon-desc {
+    font-family: var(--font-inter);
+    font-size: .82rem;
+    line-height: 1.55;
+    color: rgba(210, 222, 238, .56);
+  }
+  .beacon-go {
+    margin-top: .35rem;
+    font-size: 1.1rem;
+    color: rgba(200, 222, 250, .7);
+    transition: transform .4s var(--ease-out-expo);
+  }
+  .beacon:hover .beacon-go { transform: translateX(6px); }
+
+  .diag {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 74rem;
+    margin: clamp(1.8rem, 3vw, 2.4rem) auto 0;
+    border: 1px solid rgba(255, 255, 255, .09);
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow: hidden;
+  }
+  .diag-cell {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding: 1rem clamp(1rem, 2vw, 1.6rem);
+  }
+  .diag-cell + .diag-cell { border-left: 1px solid rgba(255, 255, 255, .09); }
+  .diag-key {
+    font-size: .52rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), .34);
+  }
+  .diag-val {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .66rem;
+    letter-spacing: .06em;
+    color: rgba(var(--rgb-text), .74);
+  }
+  .diag-pulse {
+    width: .4rem;
+    height: .4rem;
+    border-radius: 50%;
+    background: #7dffa4;
+    box-shadow: 0 0 .6rem #7dffa4;
+    animation: diag-blink 2s ease-in-out infinite;
+  }
+  @keyframes diag-blink { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+
+  @media (max-width: 720px) {
+    .diag { grid-template-columns: repeat(2, 1fr); }
+    .diag-cell:nth-child(3) { border-left: 0; }
+    .diag-cell:nth-child(n + 3) { border-top: 1px solid rgba(255, 255, 255, .09); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .void-char { opacity: 1 !important; transform: none !important; }
+    .void-scroll b, .diag-pulse { animation: none; }
   }
 </style>
