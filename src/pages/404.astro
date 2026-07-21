@@ -39,61 +39,61 @@ const t = useTranslations("en");
     <span class="void-bracket bl" aria-hidden="true"></span>
     <span class="void-bracket br" aria-hidden="true"></span>
 
-    <span class="void-scroll" aria-hidden="true"><b></b>drift on</span>
+    <span class="void-scroll" aria-hidden="true"><b></b><span data-i18n="404.scroll">drift on</span></span>
   </section>
 
   <!-- ── Signal recovery: real destinations, dressed as navigation beacons ──── -->
   <section class="recover" aria-labelledby="recover-title">
     <div class="recover-head">
-      <span class="recover-eyebrow" data-decode-in>Re-establish signal</span>
-      <h2 id="recover-title" data-split>Known coordinates</h2>
-      <p>The route you asked for is off the map — but these are still transmitting. Pick a heading and drift back in.</p>
+      <span class="recover-eyebrow" data-i18n="404.recover.eyebrow" data-decode-in>{t("404.recover.eyebrow")}</span>
+      <h2 id="recover-title" data-i18n="404.recover.title">{t("404.recover.title")}</h2>
+      <p data-i18n="404.recover.sub">{t("404.recover.sub")}</p>
     </div>
 
     <div class="beacons">
       <a class="beacon" href="/" data-beacon data-magnetic data-cursor="HOME">
         <span class="beacon-top"><span class="beacon-id">00 / BASE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name">Studio</span>
-        <span class="beacon-desc">The home signal — where the spatial transit begins.</span>
+        <span class="beacon-name" data-i18n="404.beacon.studio.name">{t("404.beacon.studio.name")}</span>
+        <span class="beacon-desc" data-i18n="404.beacon.studio.desc">{t("404.beacon.studio.desc")}</span>
         <span class="beacon-go" aria-hidden="true">→</span>
       </a>
       <a class="beacon" href="/services" data-beacon data-magnetic data-cursor="OPEN">
         <span class="beacon-top"><span class="beacon-id">01 / WORKSHOP</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name">Services &amp; Research</span>
-        <span class="beacon-desc">Digital marketing, technical SEO and creative development.</span>
+        <span class="beacon-name" data-i18n="404.beacon.services.name">{t("404.beacon.services.name")}</span>
+        <span class="beacon-desc" data-i18n="404.beacon.services.desc">{t("404.beacon.services.desc")}</span>
         <span class="beacon-go" aria-hidden="true">→</span>
       </a>
       <a class="beacon" href="/gallery" data-beacon data-magnetic data-cursor="ENTER">
         <span class="beacon-top"><span class="beacon-id">02 / ARCHIVE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name">Archive</span>
-        <span class="beacon-desc">The visual record — projects, frames and experiments.</span>
+        <span class="beacon-name" data-i18n="404.beacon.archive.name">{t("404.beacon.archive.name")}</span>
+        <span class="beacon-desc" data-i18n="404.beacon.archive.desc">{t("404.beacon.archive.desc")}</span>
         <span class="beacon-go" aria-hidden="true">→</span>
       </a>
       <a class="beacon" href="/work/bridge-consult" data-beacon data-magnetic data-cursor="OPEN">
         <span class="beacon-top"><span class="beacon-id">03 / CASE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name">Bridge Consult</span>
-        <span class="beacon-desc">From infrastructure expertise to +780% organic demand.</span>
+        <span class="beacon-name" data-i18n="404.beacon.bridge.name">{t("404.beacon.bridge.name")}</span>
+        <span class="beacon-desc" data-i18n="404.beacon.bridge.desc">{t("404.beacon.bridge.desc")}</span>
         <span class="beacon-go" aria-hidden="true">→</span>
       </a>
       <a class="beacon" href="/work/fidic" data-beacon data-magnetic data-cursor="OPEN">
         <span class="beacon-top"><span class="beacon-id">04 / CASE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name">FIDIC.uz</span>
-        <span class="beacon-desc">A multilingual operating system for contract knowledge.</span>
+        <span class="beacon-name" data-i18n="404.beacon.fidic.name">{t("404.beacon.fidic.name")}</span>
+        <span class="beacon-desc" data-i18n="404.beacon.fidic.desc">{t("404.beacon.fidic.desc")}</span>
         <span class="beacon-go" aria-hidden="true">→</span>
       </a>
       <a class="beacon" href="/work/studio" data-beacon data-magnetic data-cursor="OPEN">
         <span class="beacon-top"><span class="beacon-id">05 / META</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name">How this site is built</span>
-        <span class="beacon-desc">The engineering behind the warp — GLSL, Three.js, GSAP.</span>
+        <span class="beacon-name" data-i18n="404.beacon.meta.name">{t("404.beacon.meta.name")}</span>
+        <span class="beacon-desc" data-i18n="404.beacon.meta.desc">{t("404.beacon.meta.desc")}</span>
         <span class="beacon-go" aria-hidden="true">→</span>
       </a>
     </div>
 
     <div class="diag" aria-hidden="true">
-      <div class="diag-cell"><span class="diag-key">System</span><span class="diag-val"><i class="diag-pulse"></i>Operational</span></div>
+      <div class="diag-cell"><span class="diag-key">System</span><span class="diag-val"><i class="diag-pulse"></i><span data-i18n="404.diag.system">{t("404.diag.system")}</span></span></div>
       <div class="diag-cell"><span class="diag-key">Sector</span><span class="diag-val">rodionbelousov.studio</span></div>
       <div class="diag-cell"><span class="diag-key">Error</span><span class="diag-val">HTTP 404 · NO_ROUTE</span></div>
-      <div class="diag-cell"><span class="diag-key">Recovery</span><span class="diag-val">6 beacons in range</span></div>
+      <div class="diag-cell"><span class="diag-key">Recovery</span><span class="diag-val" data-i18n="404.diag.recovery">{t("404.diag.recovery")}</span></div>
     </div>
   </section>
 </Layout>
