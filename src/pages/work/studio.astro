@@ -229,10 +229,10 @@ const notes = [1, 2, 3].map((n) => ({
     border-bottom: 1px solid rgba(255, 255, 255, .09);
   }
 
-  /* On phones there's no hero scene to fill the top of an 86svh block, so
-     `align-items: end` left a tall empty void above the title. Let the hero
-     size to its content and sit just below the header instead. */
-  @media (--mq-tablet-sm) {
+  /* Below wide desktop there's no room to float the map beside the headline
+     (and no hero scene to fill an 86svh top), so let the hero size to its
+     content, top-anchor it under the header, and drop the map into flow. */
+  @media (max-width: 1199px) {
     .st-hero {
       min-height: auto;
       align-items: start;
@@ -241,23 +241,33 @@ const notes = [1, 2, 3].map((n) => ({
     }
   }
 
-  /* The map fills the empty upper-right the other two cases give to a hero
-     scene. Absolutely placed so the copy column and its reveal pipeline are
-     untouched; it drops back into flow (below the copy) on phones. */
+  /* Default (phones + tablets): the map sits in flow, centred under the copy. */
   .st-map {
-    position: absolute;
-    top: 4.5rem;
-    right: clamp(1.5rem, 4vw, 4.5rem);
-    z-index: 0;
-    margin: 0;
-    width: min(32vw, 23rem);
+    margin: 2.6rem auto 0;
+    width: 100%;
+    max-width: 20rem;
     pointer-events: none;
-    /* Strongest in the top-right corner, dissolving toward the title so the
-       two never fight even where the headline's long first line reaches over. */
-    -webkit-mask-image: radial-gradient(120% 120% at 78% 32%, #000 52%, transparent 82%);
-    mask-image: radial-gradient(120% 120% at 78% 32%, #000 52%, transparent 82%);
   }
   .st-map svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  /* Wide desktop only: float the map into the empty upper-right the other two
+     cases give to a hero scene, and reserve room in the copy so the headline
+     never reaches under it. Absolutely placed → copy's reveal is untouched. */
+  @media (min-width: 1200px) {
+    .st-hero .u-container { padding-right: min(34vw, 25rem); }
+    .st-map {
+      position: absolute;
+      top: 4.5rem;
+      right: clamp(1.5rem, 4vw, 4.5rem);
+      z-index: 0;
+      margin: 0;
+      width: min(30vw, 22rem);
+      max-width: none;
+      /* Strongest in the top-right corner, dissolving toward the copy. */
+      -webkit-mask-image: radial-gradient(120% 120% at 78% 34%, #000 54%, transparent 84%);
+      mask-image: radial-gradient(120% 120% at 78% 34%, #000 54%, transparent 84%);
+    }
+  }
 
   .cn-edges line { stroke: rgba(160, 195, 240, .16); stroke-width: 1; }
   .cn-live {
@@ -295,15 +305,6 @@ const notes = [1, 2, 3].map((n) => ({
   @keyframes cn-pulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
   @keyframes cn-ping { 0% { transform: scale(1); opacity: .6; } 70%, 100% { transform: scale(3.4); opacity: 0; } }
 
-  /* Below 767px: back into flow, centred under the copy. */
-  @media (--mq-tablet-sm) {
-    .st-map {
-      position: static;
-      width: 100%;
-      max-width: 20rem;
-      margin: 2.4rem auto 0;
-    }
-  }
   @media (prefers-reduced-motion: reduce) {
     .cn-node, .cn-ping, .cn-live { animation: none; }
     .cn-node { opacity: .8; }
