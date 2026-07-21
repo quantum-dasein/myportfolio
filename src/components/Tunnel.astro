@@ -72,6 +72,7 @@
   let completingBack = false;
   let rafId = 0;
   let safetyTimer = 0;
+  let dir = 1;
   const state = { speed: 0, alpha: 1 };
 
   const originMatches = () => {
@@ -104,13 +105,22 @@
     const speed = state.speed;
     for (const star of stars) {
       const previous = star.z;
-      star.z -= speed;
-      if (star.z < 1) {
+      star.z -= speed * dir;
+      
+      if (dir === 1 && star.z < 1) {
         star.z = W;
         star.x = (Math.random() * 2 - 1) * W;
         star.y = (Math.random() * 2 - 1) * H;
         continue;
       }
+      
+      if (dir === -1 && star.z > W) {
+        star.z = 1;
+        star.x = (Math.random() * 2 - 1) * W;
+        star.y = (Math.random() * 2 - 1) * H;
+        continue;
+      }
+
       const k = focal / star.z;
       const oldK = focal / previous;
       const depth = 1 - star.z / W;
@@ -136,10 +146,11 @@
     ctx.clearRect(0, 0, W, H);
   }
 
-  function depart(complete: () => void) {
+  function depart(complete: () => void, reverse = false) {
     if (running) reset();
     if (reduced) { complete(); return; }
     running = true;
+    dir = reverse ? -1 : 1;
     document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
     initStars();
@@ -161,10 +172,11 @@
       .to(black, { opacity: 1, duration: .48, ease: "power2.in" }, .72);
   }
 
-  function arrive(clearOrigin = false) {
+  function arrive(clearOrigin = false, reverse = false) {
     if (reduced) { reset(); return; }
     if (running) reset();
     running = true;
+    dir = reverse ? -1 : 1;
     document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
     initStars();
@@ -213,7 +225,8 @@
     const arriving = sessionStorage.getItem("rb-warp-arrive");
     if (arriving) {
       sessionStorage.removeItem("rb-warp-arrive");
-      arrive(sessionStorage.getItem("rb-warp-return") === "1");
+      const isReturn = sessionStorage.getItem("rb-warp-return") === "1";
+      arrive(isReturn, isReturn);
       if (isGallery && sessionStorage.getItem("rb-warp-origin") && !history.state?.rbWarpGuard) {
         history.pushState({ ...(history.state || {}), rbWarpGuard: true }, "", location.href);
       }
@@ -222,11 +235,18 @@
 
   addEventListener("popstate", () => {
     if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
+    if (lowPower) {
+      sessionStorage.removeItem("rb-warp-return");
+      sessionStorage.removeItem("rb-warp-arrive");
+      sessionStorage.removeItem("rb-warp-origin");
+      history.back();
+      return;
+    }
     depart(() => {
       sessionStorage.setItem("rb-warp-arrive", "1");
       sessionStorage.setItem("rb-warp-return", "1");
       history.back();
-    });
+    }, true);
   });
 
   addEventListener("pageshow", (event) => {
@@ -234,7 +254,7 @@
     reset();
     sessionStorage.removeItem("rb-warp-arrive");
     scrollTo(0, Number(sessionStorage.getItem("rb-warp-scroll") || 0));
-    arrive(true);
+    arrive(true, true);
   });
 
   document.addEventListener("click", (event) => {
