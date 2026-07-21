@@ -787,6 +787,17 @@
   });
 
   addEventListener("pageshow", (event) => {
+    // Safety net for the "static transition image on browser back": a
+    // BFCache-restored page (typically the gallery/home we launched a case from)
+    // must never resurface with the forward scene still frozen on it. If we come
+    // back persisted and an overlay is up but this isn't a legit arrival, kill it.
+    if (event.persisted && (running || root.classList.contains("is-active")) &&
+        !sessionStorage.getItem("rb-case-return") &&
+        !sessionStorage.getItem("rb-case-arrive") &&
+        !sessionStorage.getItem("rb-case-direct-arrive")) {
+      reset();
+    }
+
     if (casePage && event.persisted) {
       reset();
       completingBack = false;
@@ -808,9 +819,12 @@
     revealPage(returning, true);
   });
 
-  addEventListener("pagehide", () => {
-    if (casePage) reset();
-  });
+  // Reset on pagehide UNCONDITIONALLY (not just on case pages). The forward
+  // scene plays on the gallery/home before navigating into the case; if that page
+  // is frozen into BFCache with the overlay still active, browser-back brings it
+  // back as a static full-screen image. Clearing it here means the cached page is
+  // always clean.
+  addEventListener("pagehide", () => reset());
 
   addEventListener("resize", () => {
     if (!renderer || !camera) return;
