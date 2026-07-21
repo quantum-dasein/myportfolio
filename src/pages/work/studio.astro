@@ -36,8 +36,8 @@ const notes = [1, 2, 3].map((n) => ({
 ---
 
 <Layout
-  title="How this site is built | Astro, Three.js & GLSL — Rodion Belousov"
-  description="A meta case study of rodionbelousov.studio: raymarched GLSL, a warp transition, onyx-glass portals, synthesised Web Audio ambience, and the engineering mistakes fixed along the way."
+  title="How this site is built — Astro, Three.js, GLSL & GSAP"
+  description="A meta case study of rodionbelousov.studio: raymarched GLSL, a warp transition, onyx-glass portals, synthesised Web Audio and the mistakes fixed along the way."
   pageType="article"
   keywords={[
     "Three.js case study",
@@ -72,6 +72,49 @@ const notes = [1, 2, 3].map((n) => ({
         <h1 class="st-title" data-sy-reveal="words" data-i18n="studio.title">{t("studio.title")}</h1>
         <p class="st-lead" data-sy-reveal="lines" data-i18n="studio.lead">{t("studio.lead")}</p>
       </div>
+
+      <!-- The stack, drawn as the system it is: five real building blocks wired
+           together. Pure SVG — no scene, no WebGL, in keeping with a page whose
+           whole point is that every claim is measurable. Absolutely positioned
+           so it never touches the copy's own reveal pipeline. -->
+      <figure class="st-map" data-reveal aria-hidden="true">
+          <svg viewBox="0 0 420 320" preserveAspectRatio="xMidYMid meet">
+            <g class="cn-edges">
+              <line x1="230" y1="160" x2="330" y2="82"></line>
+              <line x1="230" y1="160" x2="338" y2="232"></line>
+              <line x1="230" y1="160" x2="150" y2="82"></line>
+              <line x1="230" y1="160" x2="122" y2="232"></line>
+              <line x1="150" y1="82" x2="330" y2="82"></line>
+              <line x1="122" y1="232" x2="338" y2="232"></line>
+              <line x1="330" y1="82" x2="392" y2="150"></line>
+              <line x1="150" y1="82" x2="66" y2="52"></line>
+              <line x1="122" y1="232" x2="52" y2="168"></line>
+              <line x1="338" y1="232" x2="230" y2="298"></line>
+              <line x1="230" y1="160" x2="230" y2="298"></line>
+            </g>
+            <!-- one live signal tracing the Astro → Three.js edge -->
+            <line class="cn-live" x1="230" y1="160" x2="330" y2="82"></line>
+            <g class="cn-nodes">
+              <circle class="cn-small" cx="392" cy="150" r="2"></circle>
+              <circle class="cn-small" cx="66" cy="52" r="2"></circle>
+              <circle class="cn-small" cx="52" cy="168" r="2"></circle>
+              <circle class="cn-small" cx="230" cy="298" r="2.4"></circle>
+              <circle class="cn-node" cx="330" cy="82" r="4" style="--d:.2s"></circle>
+              <circle class="cn-node" cx="338" cy="232" r="4" style="--d:.9s"></circle>
+              <circle class="cn-node" cx="150" cy="82" r="4" style="--d:1.4s"></circle>
+              <circle class="cn-node" cx="122" cy="232" r="4" style="--d:.6s"></circle>
+              <circle class="cn-hub" cx="230" cy="160" r="6"></circle>
+              <circle class="cn-ping" cx="230" cy="160" r="6"></circle>
+            </g>
+            <g class="cn-labels">
+              <text x="230" y="184" text-anchor="middle">Astro</text>
+              <text x="342" y="80" text-anchor="start">Three.js</text>
+              <text x="350" y="230" text-anchor="start">GSAP</text>
+              <text x="138" y="80" text-anchor="end">GLSL</text>
+              <text x="110" y="230" text-anchor="end">Web Audio</text>
+            </g>
+          </svg>
+      </figure>
     </header>
 
     <!-- ── Measured metrics ───────────────────────────────────────────────── -->
@@ -177,6 +220,7 @@ const notes = [1, 2, 3].map((n) => ({
 
   /* ── Hero ──────────────────────────────────────────────────────────────── */
   .st-hero {
+    position: relative;
     min-height: 86svh;
     display: grid;
     align-items: end;
@@ -195,6 +239,74 @@ const notes = [1, 2, 3].map((n) => ({
       padding: 7.5rem 0 3rem;
       background: radial-gradient(circle at 82% 16%, rgba(255, 255, 255, .1), transparent 20rem);
     }
+  }
+
+  /* The map fills the empty upper-right the other two cases give to a hero
+     scene. Absolutely placed so the copy column and its reveal pipeline are
+     untouched; it drops back into flow (below the copy) on phones. */
+  .st-map {
+    position: absolute;
+    top: 4.5rem;
+    right: clamp(1.5rem, 4vw, 4.5rem);
+    z-index: 0;
+    margin: 0;
+    width: min(32vw, 23rem);
+    pointer-events: none;
+    /* Strongest in the top-right corner, dissolving toward the title so the
+       two never fight even where the headline's long first line reaches over. */
+    -webkit-mask-image: radial-gradient(120% 120% at 78% 32%, #000 52%, transparent 82%);
+    mask-image: radial-gradient(120% 120% at 78% 32%, #000 52%, transparent 82%);
+  }
+  .st-map svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  .cn-edges line { stroke: rgba(160, 195, 240, .16); stroke-width: 1; }
+  .cn-live {
+    stroke: rgba(190, 216, 255, .95);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-dasharray: 3 46;
+    filter: drop-shadow(0 0 3px rgba(150, 190, 255, .85));
+    animation: cn-dash 2.8s linear infinite;
+  }
+  .cn-small { fill: rgba(180, 205, 235, .4); }
+  .cn-node {
+    fill: #cfe0ff;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: cn-pulse 3.4s ease-in-out infinite;
+    animation-delay: var(--d, 0s);
+  }
+  .cn-hub { fill: #eef4ff; filter: drop-shadow(0 0 5px rgba(150, 190, 255, .9)); }
+  .cn-ping {
+    fill: none;
+    stroke: rgba(150, 190, 255, .55);
+    stroke-width: 1.4;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: cn-ping 3s ease-out infinite;
+  }
+  .cn-labels text {
+    fill: rgba(200, 218, 240, .5);
+    font: 500 9px var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  @keyframes cn-dash { to { stroke-dashoffset: -49; } }
+  @keyframes cn-pulse { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+  @keyframes cn-ping { 0% { transform: scale(1); opacity: .6; } 70%, 100% { transform: scale(3.4); opacity: 0; } }
+
+  /* Below 767px: back into flow, centred under the copy. */
+  @media (--mq-tablet-sm) {
+    .st-map {
+      position: static;
+      width: 100%;
+      max-width: 20rem;
+      margin: 2.4rem auto 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cn-node, .cn-ping, .cn-live { animation: none; }
+    .cn-node { opacity: .8; }
   }
 
   .st-eyebrow, .st-idx {
