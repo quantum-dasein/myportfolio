@@ -112,6 +112,9 @@ export interface InsightContent {
   key: InsightKey;
   paths: Record<SeoLang, string>;
   title: LocalizedCopy;
+  /** Optional shorter title for the <title>/OG tag when the headline itself
+      exceeds Google's ~60-char display width. Falls back to `title`. */
+  seoTitle?: LocalizedCopy;
   description: LocalizedCopy;
   dek: LocalizedCopy;
   sections: Array<{ title: LocalizedCopy; text: LocalizedCopy }>;
@@ -123,6 +126,7 @@ export const insightContent: Record<InsightKey, InsightContent> = {
     key: "bridge-growth",
     paths: { en: "/en/insights/bridge-consult-seo-growth/", de: "/de/insights/bridge-consult-seo-wachstum/" },
     title: c("Bridge Consult: from infrastructure expertise to organic demand", "Bridge Consult: von Infrastruktur-Expertise zu organischer Nachfrage"),
+    seoTitle: c("Bridge Consult: infrastructure expertise to organic demand", "Bridge Consult: Infrastruktur-Expertise zu Nachfrage"),
     description: c("A practical case study on positioning, multilingual Astro development, Three.js and early organic-search growth for Bridge Consult.", "Case Study über Positionierung, mehrsprachige Astro-Entwicklung, Three.js und frühes Organic-Search-Wachstum für Bridge Consult."),
     dek: c("A solo launch built in one month connected brand, multilingual content, technical SEO and an interactive project universe.", "Ein Solo-Launch in einem Monat verband Marke, mehrsprachigen Content, Technical SEO und ein interaktives Projektuniversum."),
     sections: [

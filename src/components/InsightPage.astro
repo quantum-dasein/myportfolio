@@ -16,7 +16,7 @@ const og: Record<string, { image: string; alt: string }> = {
 };
 const ogEntry = og[insight.key];
 ---
-<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(insight.title, lang)} description={pick(insight.description, lang)} image={ogEntry?.image} imageAlt={ogEntry?.alt} pageType="article" structuredData={articleSchema}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(insight.seoTitle ?? insight.title, lang)} description={pick(insight.description, lang)} image={ogEntry?.image} imageAlt={ogEntry?.alt} pageType="article" structuredData={articleSchema}>
   <div class="read-progress" aria-hidden="true"><span data-read-bar></span></div>
 
   <article class="insight">
