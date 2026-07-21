@@ -699,6 +699,7 @@ import { works } from "../data/works";
       removeEventListener("pointerup", this.onUp);
       removeEventListener("pointercancel", this.onCancel);
       removeEventListener("pageshow", this.onPageShow);
+      removeEventListener("rb:langchange", this.onLang as EventListener);
       document.removeEventListener("visibilitychange", this.onVis);
       document.querySelector("[data-exit]")?.removeEventListener("click", this.exit);
       this.rt.dispose();
@@ -883,6 +884,7 @@ import { works } from "../data/works";
       addEventListener("pointerup", this.onUp);
       addEventListener("pointercancel", this.onCancel);
       addEventListener("pageshow", this.onPageShow);
+      addEventListener("rb:langchange", this.onLang as EventListener);
       document.addEventListener("visibilitychange", this.onVis);
       document.querySelector("[data-exit]")?.addEventListener("click", this.exit);
       document.querySelector("[data-enter]")?.addEventListener("click", () => {
@@ -1097,6 +1099,15 @@ import { works } from "../data/works";
         if (index === i) portal.video.play().catch(() => {});
         else portal.video.pause();
       });
+      this.applyPanel(i);
+    }
+
+    /** Fill the HUD/film-note panel for portal `i` in the active language.
+        Split out of setActive so a language switch can re-render the panel of
+        the work already in focus (the guard in setActive skips same-index). */
+    private applyPanel(i: number) {
+      if (i < 0 || !this.portals[i]) return;
+      const w = this.portals[i].work;
       const activeLang = (document.documentElement.lang || "en").split("-")[0];
       const dict = (window as any).__I18N__?.[activeLang] ?? {};
       const title = w.title ?? dict[w.kTitle ?? ""] ?? "";
@@ -1117,6 +1128,11 @@ import { works } from "../data/works";
         button.classList.toggle("is-active", Number(button.dataset.sectorJump) === i);
       });
     }
+
+    /** The nav language toggle swaps copy in place; re-render the open panel. */
+    private onLang = () => {
+      if (this.active >= 0) this.applyPanel(this.active);
+    };
 
     private ensureVideo(index: number) {
       const portal = this.portals[index];
