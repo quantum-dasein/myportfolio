@@ -346,7 +346,7 @@ const t = useTranslations("en");
       c.width = 2048; c.height = 1024;
       const ctx = c.getContext("2d")!;
       ctx.clearRect(0, 0, c.width, c.height);
-      ctx.fillStyle = "rgba(255,255,255,0.06)";
+      ctx.fillStyle = "rgba(255,255,255,0.085)";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = "900 620px Inter, 'Helvetica Neue', Arial, sans-serif";
@@ -455,12 +455,22 @@ const t = useTranslations("en");
       if (!this.renderer) return;
       const w = innerWidth, h = innerHeight;
       this.renderer.setSize(w, h, false);
-      this.camera.aspect = w / h;
+      const aspect = w / h;
+      this.camera.aspect = aspect;
       this.camera.updateProjectionMatrix();
       const dpr = this.renderer.getPixelRatio();
       if (this.target && this.post) {
         this.target.setSize(Math.round(w * dpr), Math.round(h * dpr));
         (this.post.uniforms.uRes.value as THREE.Vector2).set(w * dpr, h * dpr);
+      }
+      // The ghost "404" is 20 units wide — on a portrait phone it runs off both
+      // sides and vanishes. Shrink it to fit the frame and pull the orb in a
+      // little so the digits read around it, the way they flank it on desktop.
+      if (this.ghost) this.ghost.scale.setScalar(aspect < 1 ? Math.max(0.46, aspect * 0.92) : 1);
+      if (this.sphere) {
+        const s = aspect < 0.8 ? 0.56 : 1;
+        this.sphere.scale.setScalar(s);
+        this.wire?.scale.setScalar(s * 1.004);
       }
     };
 
@@ -754,21 +764,28 @@ const t = useTranslations("en");
   @keyframes scroll-pull { 0%, 100% { transform: scaleY(.4); opacity: .4; transform-origin: top; } 50% { transform: scaleY(1); opacity: 1; transform-origin: top; } }
 
   /* ── Signal recovery ───────────────────────────────────────────────────── */
+  /* Flat #030405 — exactly the void's WebGL clear colour — so the seam between
+     the two sections disappears and the page reads as one black space instead
+     of shifting blue toward the bottom. */
   .recover {
     position: relative;
     z-index: 2;
     padding: clamp(4rem, 9vw, 8rem) clamp(1.2rem, 5vw, 5rem) clamp(5rem, 10vw, 9rem);
-    background: linear-gradient(180deg, #010203 0%, #05070b 42%, #04060a 100%);
-    border-top: 1px solid rgba(255, 255, 255, .07);
+    background: #030405;
   }
+  /* A scattered starfield (not a regular grid) that carries the void's stars
+     down through the lower half. Four layers at coprime sizes never line up,
+     so it reads as random sky. */
   .recover::before {
     content: "";
     position: absolute;
     inset: 0;
-    opacity: .4;
-    background-image: radial-gradient(circle, rgba(180, 205, 235, .5) 0 1px, transparent 1.4px);
-    background-size: 7rem 7rem;
-    mask-image: radial-gradient(ellipse at 50% 0%, #000, transparent 70%);
+    background-image:
+      radial-gradient(1.3px 1.3px at 24% 33%, rgba(255, 255, 255, .6), transparent 60%),
+      radial-gradient(1px 1px at 72% 61%, rgba(255, 255, 255, .45), transparent 60%),
+      radial-gradient(1.4px 1.4px at 52% 84%, rgba(205, 222, 255, .5), transparent 60%),
+      radial-gradient(1px 1px at 88% 20%, rgba(255, 255, 255, .38), transparent 60%);
+    background-size: 9rem 9rem, 13rem 13rem, 17rem 17rem, 23rem 23rem;
     pointer-events: none;
   }
   .recover-head {
