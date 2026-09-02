@@ -42,7 +42,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     ],
     proof: [
       { value: "+780%", label: c("organic-search sessions after the Bridge Consult launch", "Organic-Search-Sitzungen nach dem Bridge-Consult-Launch") },
-      { value: "109", label: c("production routes in the FIDIC knowledge platform", "produktive Routen in der FIDIC-Wissensplattform") },
+      { value: "429", label: c("static pages in the FIDIC knowledge platform", "statische Seiten in der FIDIC-Wissensplattform") },
       { value: "RU / EN / UZ", label: c("multilingual content and routing system", "mehrsprachiges Content- und Routing-System") },
     ],
     faq: [
@@ -70,7 +70,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     ],
     proof: [
       { value: "+780%", label: c("organic-search growth in the early Bridge launch window", "Organic-Search-Wachstum im frühen Bridge-Launch-Fenster") },
-      { value: "105", label: c("expert articles structured for the FIDIC platform", "für die FIDIC-Plattform strukturierte Fachartikel") },
+      { value: "117", label: c("expert articles structured for the FIDIC platform", "für die FIDIC-Plattform strukturierte Fachartikel") },
       { value: "3", label: c("languages with explicit routing and search signals", "Sprachen mit explizitem Routing und Search-Signalen") },
     ],
     faq: [
@@ -140,12 +140,14 @@ export const insightContent: Record<InsightKey, InsightContent> = {
     key: "fidic-platform",
     paths: { en: "/en/insights/fidic-knowledge-platform/", de: "/de/insights/fidic-wissensplattform/" },
     title: c("FIDIC.uz: designing a contract knowledge operating system", "FIDIC.uz: ein Betriebssystem für Vertragswissen gestalten"),
-    description: c("How a multilingual FIDIC platform combines 109 routes, 105 expert articles, contract books, tools and technical SEO.", "Wie eine mehrsprachige FIDIC-Plattform 109 Routen, 105 Fachartikel, Vertragsbücher, Tools und Technical SEO verbindet."),
+    description: c("How a multilingual FIDIC platform combines 429 pages, 117 expert articles, contract books, tools and technical SEO.", "Wie eine mehrsprachige FIDIC-Plattform 429 Seiten, 117 Fachartikel, Vertragsbücher, Tools und Technical SEO verbindet."),
     dek: c("The challenge was not another brochure, but a navigable professional platform for dense infrastructure-contract knowledge.", "Die Aufgabe war keine weitere Broschüre, sondern eine navigierbare professionelle Plattform für dichtes Infrastruktur-Vertragswissen."),
     sections: [
       { title: c("Content as product architecture", "Content als Produktarchitektur"), text: c("Contract books, clauses, certifications, calculators and expert articles require distinct user journeys while sharing a consistent knowledge model.", "Vertragsbücher, Klauseln, Zertifikate, Rechner und Fachartikel brauchen eigene User Journeys und zugleich ein konsistentes Wissensmodell.") },
       { title: c("Search at platform scale", "Search auf Plattformniveau"), text: c("Stable routes, canonical rules, schema, internal linking and sitemap generation make the growing library understandable to both users and crawlers.", "Stabile Routen, Canonical-Regeln, Schema, interne Verlinkung und Sitemap-Generierung machen die wachsende Bibliothek für Nutzer und Crawler verständlich.") },
       { title: c("Solo delivery with AI assistance", "Solo-Auslieferung mit AI-Assistenz"), text: c("Creative direction and final decisions remained human. Specialized AI tools accelerated research, code review and repetitive engineering inside a controlled repository workflow.", "Creative Direction und finale Entscheidungen blieben menschlich. Spezialisierte AI-Tools beschleunigten Research, Code Review und wiederholbares Engineering in einem kontrollierten Repository-Workflow.") },
+      { title: c("A data layer that maintains itself", "Eine Datenebene, die sich selbst pflegt"), text: c("A daily job merges World Bank procurement notices into a cumulative archive of 2,981 records across eight countries. The upstream API only returns a rolling window, so the pipeline never overwrites - and fails loudly rather than saving an empty snapshot.", "Ein täglicher Job führt Ausschreibungen der Weltbank zu einem kumulativen Archiv von 2.981 Einträgen aus acht Ländern zusammen. Die Quell-API liefert nur ein gleitendes Fenster, deshalb überschreibt die Pipeline nie - und scheitert laut, statt einen leeren Snapshot zu speichern.") },
+      { title: c("Performance as an editing decision", "Performance als Redaktionsentscheidung"), text: c("Four Three.js scenes, smooth scroll and a custom cursor shipped, then got measured. Smooth scroll was dropped on mobile for LCP, page CSS was inlined so a failed request cannot strip a page, and reveal logic was moved outside the bundle so content survives a broken build asset.", "Vier Three.js-Szenen, Smooth Scroll und ein eigener Cursor gingen live und wurden dann gemessen. Smooth Scroll fiel auf Mobilgeräten für den LCP weg, Seiten-CSS wird inline ausgeliefert, damit ein fehlgeschlagener Request keine Seite entkleidet, und die Reveal-Logik liegt außerhalb des Bundles, damit Inhalte ein defektes Build-Asset überleben.") },
     ],
     relatedService: "digital-marketing",
   },

@@ -53,29 +53,57 @@ const bridgeSystems = [
   { no: "04", title: "case.bridge.system.universe.title", text: "case.bridge.system.universe.text", meta: "THREE.JS / 08 NODES" },
 ];
 const fidicMetrics = [
-  { value: "109", label: "case.fidic.metric.routes", meta: "ASTRO ROUTES" },
-  { value: "105", label: "case.fidic.metric.articles", meta: "EXPERT MDX" },
+  { value: "429", label: "case.fidic.metric.routes", meta: "STATIC PAGES" },
+  { value: "117", label: "case.fidic.metric.articles", meta: "MDX / 39 x 3" },
+  { value: "16", label: "case.fidic.metric.tools", meta: "TOOLS + CALCULATORS" },
   { value: "09", label: "case.fidic.metric.books", meta: "FIDIC LIBRARY" },
-  { value: "15", label: "case.fidic.metric.tools", meta: "TOOLS + CALCULATORS" },
   { value: "03", label: "case.fidic.metric.languages", meta: "RU / EN / UZ" },
+  { value: "32", label: "case.fidic.metric.schema", meta: "STRUCTURED DATA" },
 ];
 const fidicLayers = [
-  { no: "01", key: "case.fidic.layer.knowledge", meta: "105 / MDX" },
+  { no: "01", key: "case.fidic.layer.knowledge", meta: "117 / MDX" },
   { no: "02", key: "case.fidic.layer.books", meta: "09 / CONTRACTS" },
-  { no: "03", key: "case.fidic.layer.tools", meta: "10 / WORKFLOWS" },
+  { no: "03", key: "case.fidic.layer.tools", meta: "16 / WORKFLOWS" },
   { no: "04", key: "case.fidic.layer.calculators", meta: "05 / MODELS" },
   { no: "05", key: "case.fidic.layer.ai", meta: "SERVERLESS / AI" },
   { no: "06", key: "case.fidic.layer.trust", meta: "CERTIFY / VERIFY" },
 ];
+// The tender pipeline, the runtime split and the performance ledger — the three
+// parts of fidic.uz that only show up if you read the repo, not the site.
+const fidicDataStats = [
+  { value: "2 981", key: "case.fidic.data.stat.notices" },
+  { value: "08", key: "case.fidic.data.stat.countries" },
+  { value: "2019", key: "case.fidic.data.stat.depth" },
+  { value: "06:15", key: "case.fidic.data.stat.refresh" },
+];
+const fidicPipeline = [
+  { no: "01", key: "case.fidic.data.row.source", meta: "WORLD BANK API" },
+  { no: "02", key: "case.fidic.data.row.schedule", meta: "CRON 15 6 * * *" },
+  { no: "03", key: "case.fidic.data.row.model", meta: "MERGE, NEVER OVERWRITE" },
+  { no: "04", key: "case.fidic.data.row.publish", meta: "COMMIT -> BUILD -> INDEX" },
+];
+const fidicRuntime = [
+  { no: "01", key: "case.fidic.runtime.1", meta: "AI ASSISTANT" },
+  { no: "02", key: "case.fidic.runtime.2", meta: "LEAD ROUTING" },
+  { no: "03", key: "case.fidic.runtime.3", meta: "SOCIAL CARDS" },
+  { no: "04", key: "case.fidic.runtime.4", meta: "INDEXING / ENTITY" },
+  { no: "05", key: "case.fidic.runtime.5", meta: "07 SCRIPTS" },
+  { no: "06", key: "case.fidic.runtime.6", meta: "STRUCTURED DATA" },
+];
+const fidicPerf = [1, 2, 3, 4, 5].map((n) => ({
+  no: String(n).padStart(2, "0"),
+  problem: `case.fidic.perf.${n}.problem`,
+  fix: `case.fidic.perf.${n}.fix`,
+}));
 const seoTitle = isBridge
   ? "Bridge Consult Case Study | SEO & Astro by Rodion Belousov"
   : "FIDIC.uz Case Study | Content, SEO & Astro by Rodion Belousov";
 const seoDescription = isBridge
   ? "How Rodion Belousov built Bridge Consult's multilingual Astro and Three.js website, technical SEO system and 780% organic search growth."
-  : "Inside Rodion Belousov's solo build of FIDIC.uz: 109 Astro routes, 105 expert articles, technical SEO, contract tools and multilingual content.";
+  : "Inside Rodion Belousov's solo build of FIDIC.uz: 429 static pages, 117 expert articles, 16 contract tools and a self-refreshing World Bank tender archive.";
 const seoKeywords = isBridge
   ? ["Bridge Consult case study", "Astro case study", "Three.js website", "technical SEO Austria", "multilingual website development", "AI-assisted web development"]
-  : ["FIDIC knowledge platform", "FIDIC SEO", "Astro content platform", "technical SEO case study", "multilingual content architecture", "contract management tools"];
+  : ["FIDIC knowledge platform", "FIDIC SEO", "Astro content platform", "technical SEO case study", "multilingual content architecture", "contract management tools", "World Bank tender data pipeline"];
 const caseSchema = {
   "@type": "CreativeWork",
   "@id": `https://rodionbelousov.studio/work/${isBridge ? "bridge-consult" : "fidic"}#project`,
@@ -90,7 +118,7 @@ const caseSchema = {
   keywords: seoKeywords.join(", "),
   about: isBridge
     ? ["Infrastructure consulting", "Technical SEO", "Astro", "Three.js", "Multilingual content"]
-    : ["FIDIC contracts", "Knowledge management", "Technical SEO", "Astro", "Content architecture"],
+    : ["FIDIC contracts", "Knowledge management", "Technical SEO", "Astro", "Content architecture", "Data pipelines"],
 };
 ---
 
@@ -299,6 +327,86 @@ const caseSchema = {
         </div>
       </div>
     </section>
+
+    {!isBridge && (
+      <section class="fidic-data" aria-labelledby="fidic-data-title">
+        <div class="u-container fidic-data-head">
+          <span class="chapter-label">LIVE DATA LAYER / WORLD BANK / UNATTENDED</span>
+          <h2 id="fidic-data-title" data-i18n="case.fidic.data.title">{tk("case.fidic.data.title")}</h2>
+          <p data-i18n="case.fidic.data.text">{tk("case.fidic.data.text")}</p>
+        </div>
+
+        <div class="u-container data-figures" data-reveal>
+          {fidicDataStats.map((stat) => (
+            <article data-kinetic>
+              <strong>{stat.value}</strong>
+              <p data-i18n={stat.key}>{tk(stat.key)}</p>
+            </article>
+          ))}
+        </div>
+
+        <ol class="u-container data-pipeline">
+          {fidicPipeline.map((row) => (
+            <li data-kinetic>
+              <span class="pipeline-no">{row.no}</span>
+              <span class="pipeline-meta">{row.meta}</span>
+              <h3 data-i18n={`${row.key}.title`}>{tk(`${row.key}.title`)}</h3>
+              <p data-i18n={`${row.key}.text`}>{tk(`${row.key}.text`)}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+
+    {!isBridge && (
+      <section class="fidic-runtime" aria-labelledby="fidic-runtime-title">
+        <div class="u-container fidic-runtime-head">
+          <span class="chapter-label">RUNTIME / 03 SERVERLESS FUNCTIONS</span>
+          <h2 id="fidic-runtime-title" data-i18n="case.fidic.runtime.title">{tk("case.fidic.runtime.title")}</h2>
+          <p data-i18n="case.fidic.runtime.text">{tk("case.fidic.runtime.text")}</p>
+        </div>
+        <div class="u-container runtime-grid">
+          {fidicRuntime.map((item) => (
+            <article data-kinetic>
+              <span>{item.no}</span>
+              <small>{item.meta}</small>
+              <h3 data-i18n={`${item.key}.title`}>{tk(`${item.key}.title`)}</h3>
+              <p data-i18n={`${item.key}.text`}>{tk(`${item.key}.text`)}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {!isBridge && (
+      <section class="fidic-perf" aria-labelledby="fidic-perf-title">
+        <div class="u-container fidic-perf-head">
+          <span class="chapter-label">MEASURED, THEN CUT / PER DEVICE</span>
+          <h2 id="fidic-perf-title" data-i18n="case.fidic.perf.title">{tk("case.fidic.perf.title")}</h2>
+          <p data-i18n="case.fidic.perf.text">{tk("case.fidic.perf.text")}</p>
+        </div>
+
+        <div class="u-container perf-ledger" data-reveal>
+          <div class="perf-legend" aria-hidden="true">
+            <span data-i18n="case.fidic.perf.problem">{tk("case.fidic.perf.problem")}</span>
+            <span data-i18n="case.fidic.perf.fix">{tk("case.fidic.perf.fix")}</span>
+          </div>
+          {fidicPerf.map((row) => (
+            <article data-kinetic>
+              <span class="perf-no">{row.no}</span>
+              <p class="perf-problem" data-i18n={row.problem}>{tk(row.problem)}</p>
+              <span class="perf-arrow" aria-hidden="true">-&gt;</span>
+              <p class="perf-fix" data-i18n={row.fix}>{tk(row.fix)}</p>
+            </article>
+          ))}
+        </div>
+
+        <div class="u-container perf-principle" data-reveal>
+          <span>PRINCIPLE</span>
+          <p data-i18n="case.fidic.perf.principle">{tk("case.fidic.perf.principle")}</p>
+        </div>
+      </section>
+    )}
 
     <section class="case-highlights">
       <div class="u-container case-highlight-grid">
@@ -650,7 +758,12 @@ const caseSchema = {
   .fidic-core i:nth-of-type(1){--i:1}.fidic-core i:nth-of-type(2){--i:2}.fidic-core i:nth-of-type(3){--i:3}
   .fidic-metrics { position:absolute; z-index:3; inset:1.4rem; }
   .fidic-metric { position:absolute; width:min(13.5rem,25vw); min-height:8.5rem; padding:1rem; overflow:hidden; border:1px solid rgba(var(--fidic-gold),.2); border-radius:6px; background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.012)),rgba(2,8,13,.78); backdrop-filter:blur(16px); }
-  .fidic-metric-1{left:3%;top:8%}.fidic-metric-2{right:3%;top:7%}.fidic-metric-3{left:4%;bottom:8%}.fidic-metric-4{right:4%;bottom:8%}.fidic-metric-5{left:calc(50% - 6.75rem);bottom:3%}
+  .fidic-metric-1{left:3%;top:9%}
+  .fidic-metric-2{left:calc(50% - 6.75rem);top:1%}
+  .fidic-metric-3{right:3%;top:9%}
+  .fidic-metric-4{left:4%;bottom:9%}
+  .fidic-metric-5{left:calc(50% - 6.75rem);bottom:1%}
+  .fidic-metric-6{right:4%;bottom:9%}
   .fidic-metric span { color:rgba(var(--fidic-gold),.68); font-size:.54rem; letter-spacing:.14em; }
   .fidic-metric strong { display:block; margin:.8rem 0 .3rem; font:500 clamp(2.3rem,4vw,4rem)/.85 var(--font-display); }
   .fidic-metric p { margin:0; color:rgba(var(--rgb-text),.62); font-size:.75rem; line-height:1.35; }
@@ -660,6 +773,150 @@ const caseSchema = {
   .fidic-layers small { position:absolute; top:1.3rem; right:1.3rem; color:rgba(var(--rgb-text),.35); font-size:.52rem; letter-spacing:.12em; }
   .fidic-layers h3 { margin:4rem 0 .8rem; font:500 clamp(1.5rem,2vw,2rem)/1 var(--font-display); }
   .fidic-layers p { margin:0; color:rgba(var(--rgb-text),.62); line-height:1.55; }
+  /* ── Tender pipeline / runtime / performance ledger ──────────────────────
+     Three FIDIC-only chapters. They inherit the platform section's gold grid
+     so the case keeps one surface from the atlas down to the ledger. */
+  .fidic-data,
+  .fidic-runtime,
+  .fidic-perf {
+    --fidic-gold: 219, 169, 73;
+    position: relative;
+    padding: clamp(5rem, 10vw, 9rem) 0;
+    border-block: 1px solid rgba(var(--fidic-gold), .12);
+    background:
+      linear-gradient(rgba(var(--fidic-gold),.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--fidic-gold),.03) 1px, transparent 1px),
+      rgba(1, 7, 12, .92);
+    background-size: 5rem 5rem;
+  }
+  .fidic-data { background-image:
+      radial-gradient(circle at 15% 0%, rgba(var(--fidic-gold), .09), transparent 26rem),
+      linear-gradient(rgba(var(--fidic-gold),.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--fidic-gold),.03) 1px, transparent 1px);
+    background-size: auto, 5rem 5rem, 5rem 5rem;
+  }
+
+  .fidic-data-head,
+  .fidic-runtime-head,
+  .fidic-perf-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(18rem, .8fr);
+    gap: clamp(2rem, 6vw, 7rem);
+    align-items: end;
+  }
+  .fidic-data-head .chapter-label,
+  .fidic-runtime-head .chapter-label,
+  .fidic-perf-head .chapter-label { grid-column: 1 / -1; }
+  .fidic-data-head h2,
+  .fidic-runtime-head h2,
+  .fidic-perf-head h2 { max-width: 15ch; margin: 0; font: 500 clamp(2.9rem,4.9vw,5.2rem)/.94 var(--font-display); text-wrap: balance; }
+  .fidic-data-head > p,
+  .fidic-runtime-head > p,
+  .fidic-perf-head > p { margin: 0; color: rgba(var(--rgb-text),.7); font-size: clamp(1.02rem,1.5vw,1.28rem); line-height: 1.55; }
+
+  /* Figures: the four numbers that make the archive claim checkable. */
+  .data-figures {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+  }
+  .data-figures article {
+    padding: 1.4rem 1.3rem 1.5rem;
+    border: 1px solid rgba(var(--fidic-gold), .2);
+    border-radius: 6px;
+    background: linear-gradient(150deg, rgba(var(--fidic-gold),.075), rgba(255,255,255,.012));
+  }
+  .data-figures strong { display: block; font: 500 clamp(2.4rem,4.6vw,4rem)/.85 var(--font-display); color: #fff; white-space: nowrap; }
+  .data-figures p { margin: .9rem 0 0; color: rgba(var(--rgb-text),.62); font-size: .82rem; line-height: 1.4; }
+
+  /* Pipeline: an ordered list, because the order is the point. */
+  .data-pipeline {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+    margin-top: .75rem;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: none;
+  }
+  .data-pipeline li {
+    position: relative;
+    min-height: 16rem;
+    padding: 1.3rem;
+    overflow: hidden;
+    border: 1px solid rgba(var(--fidic-gold), .15);
+    border-radius: 6px;
+    background: linear-gradient(150deg, rgba(255,255,255,.05), rgba(255,255,255,.012));
+  }
+  .pipeline-no { color: rgb(var(--fidic-gold)); font-size: .64rem; }
+  .pipeline-meta { position: absolute; top: 1.35rem; right: 1.3rem; max-width: 55%; color: rgba(var(--rgb-text),.35); font-size: .52rem; letter-spacing: .1em; text-align: right; }
+  .data-pipeline h3 { margin: 3rem 0 .8rem; font: 500 clamp(1.35rem,1.8vw,1.75rem)/1.05 var(--font-display); }
+  .data-pipeline p { margin: 0; color: rgba(var(--rgb-text),.62); font-size: .92rem; line-height: 1.55; }
+
+  /* Runtime integrations. */
+  .runtime-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+  }
+  .runtime-grid article {
+    position: relative;
+    min-height: 15rem;
+    padding: 1.3rem;
+    overflow: hidden;
+    border: 1px solid rgba(var(--fidic-gold), .15);
+    border-radius: 6px;
+    background: linear-gradient(150deg, rgba(var(--fidic-gold),.055), rgba(255,255,255,.012));
+  }
+  .runtime-grid article > span { color: rgb(var(--fidic-gold)); font-size: .64rem; }
+  .runtime-grid small { position: absolute; top: 1.35rem; right: 1.3rem; max-width: 55%; color: rgba(var(--rgb-text),.35); font-size: .52rem; letter-spacing: .1em; text-align: right; }
+  .runtime-grid h3 { margin: 2.6rem 0 .7rem; font: 500 clamp(1.2rem,1.6vw,1.55rem)/1.1 var(--font-display); overflow-wrap: anywhere; }
+  .runtime-grid p { margin: 0; color: rgba(var(--rgb-text),.62); font-size: .9rem; line-height: 1.55; }
+
+  /* Performance ledger: measurement on the left, the decision on the right. */
+  .perf-ledger { margin-top: clamp(2.5rem, 5vw, 4rem); }
+  .perf-legend {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) 2.5rem minmax(0, 1.1fr);
+    gap: 1.25rem;
+    padding: 0 1.3rem .9rem;
+    color: rgba(var(--fidic-gold), .6);
+    font-size: .54rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .perf-legend span:first-child { grid-column: 2; }
+  .perf-legend span:last-child { grid-column: 4; }
+  .perf-ledger article {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) 2.5rem minmax(0, 1.1fr);
+    gap: 1.25rem;
+    align-items: baseline;
+    padding: 1.35rem 1.3rem;
+    border-top: 1px solid rgba(var(--fidic-gold), .14);
+  }
+  .perf-ledger article:last-of-type { border-bottom: 1px solid rgba(var(--fidic-gold), .14); }
+  .perf-no { color: rgb(var(--fidic-gold)); font-size: .64rem; }
+  .perf-problem { margin: 0; color: rgba(var(--rgb-text),.55); font-size: 1rem; line-height: 1.5; }
+  .perf-arrow { color: rgba(var(--fidic-gold), .55); font-size: .8rem; }
+  .perf-fix { margin: 0; color: rgba(var(--rgb-text),.9); font-size: 1rem; line-height: 1.5; }
+
+  .perf-principle {
+    display: grid;
+    grid-template-columns: minmax(0, 10rem) minmax(0, 1fr);
+    gap: clamp(1.25rem, 4vw, 3rem);
+    align-items: start;
+    margin-top: clamp(2rem, 4vw, 3rem);
+    padding: 1.6rem 1.3rem;
+    border: 1px solid rgba(var(--fidic-gold), .2);
+    border-radius: 6px;
+    background: linear-gradient(150deg, rgba(var(--fidic-gold),.07), rgba(255,255,255,.012));
+  }
+  .perf-principle > span { color: rgb(var(--fidic-gold)); font-size: .54rem; letter-spacing: .16em; }
+  .perf-principle p { margin: 0; color: rgba(var(--rgb-text),.82); font-size: clamp(1rem,1.4vw,1.2rem); line-height: 1.6; text-wrap: pretty; }
+
   @keyframes fidic-ring { to{transform:translate(-50%,-50%) rotateX(66deg) rotateZ(360deg)} }
   @keyframes fidic-ring-alt { to{transform:translate(-50%,-50%) rotateY(66deg) rotateZ(360deg)} }
 
@@ -1255,6 +1512,10 @@ const caseSchema = {
     .workflow-grid,
     .system-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .fidic-layers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .data-figures,
+    .data-pipeline,
+    .runtime-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fidic-metric { width: min(12rem, 27vw); }
     .metric strong { font-size: clamp(2rem, 5.2vw, 3.4rem); }
   }
 
@@ -1274,6 +1535,9 @@ const caseSchema = {
     .build-head,
     .system-map-head,
     .fidic-platform-head,
+    .fidic-data-head,
+    .fidic-runtime-head,
+    .fidic-perf-head,
     .proof-grid { grid-template-columns: 1fr; }
     .workflow-grid,
     .system-rail { grid-template-columns: 1fr; }
@@ -1296,27 +1560,85 @@ const caseSchema = {
     .proof-node { min-height: 25rem !important; }
     .proof-top,
     .proof-bottom { align-items: flex-start; flex-direction: column; }
-    .fidic-atlas { min-height: 48rem; }
-    .fidic-core { top: 43%; }
-    .fidic-metrics { inset: .7rem; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; align-content: end; }
-    .fidic-metric { position: relative; inset: auto !important; width: auto; min-height: 8rem; backdrop-filter: none; }
-    .fidic-metric-5 { grid-column: 1 / -1; }
+    .fidic-atlas {
+      display: grid;
+      gap: 1.5rem;
+      min-height: 0;
+      padding: 2.4rem .7rem .7rem;
+    }
+    .fidic-atlas::before { top: 8rem; width: min(24rem, 68vw); }
+    .fidic-atlas::after { top: 8rem; width: min(17rem, 48vw); }
+    .fidic-core {
+      position: relative;
+      left: auto;
+      top: auto;
+      justify-self: center;
+      width: 11rem;
+      transform: none;
+    }
+    .fidic-core i { transform: translate(-50%,-50%) rotate(calc(var(--i) * 120deg)) translateX(6.5rem); }
+    .fidic-metrics {
+      position: relative;
+      inset: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .55rem;
+    }
+    .fidic-metric {
+      position: relative;
+      inset: auto !important;
+      width: auto;
+      min-height: 0;
+      backdrop-filter: none;
+    }
     .fidic-layers { grid-template-columns: 1fr; }
     .fidic-layers article { min-height: 15rem; }
+
+    .data-pipeline,
+    .runtime-grid { grid-template-columns: 1fr; }
+    .data-pipeline li { min-height: 0; }
+    .runtime-grid article { min-height: 0; }
+    .pipeline-meta,
+    .runtime-grid small { position: static; display: block; max-width: 100%; margin-top: .35rem; text-align: left; }
+    .data-pipeline h3 { margin-top: 1.1rem; }
+    .runtime-grid h3 { margin-top: 1.1rem; }
+
+    /* The ledger loses its columns: number, measurement, then the decision,
+       each on its own line, with the arrow rotated to point down the stack. */
+    .perf-legend { display: none; }
+    .perf-ledger article {
+      grid-template-columns: 2.25rem minmax(0, 1fr);
+      gap: .5rem .9rem;
+      align-items: start;
+      padding: 1.25rem .2rem;
+    }
+    .perf-no { grid-row: 1 / 3; }
+    .perf-arrow { justify-self: center; margin-top: .1rem; transform: rotate(90deg); }
+    .perf-fix { grid-column: 2; }
+    .perf-principle { grid-template-columns: 1fr; gap: .9rem; }
 
     /* Section heads on phones: plain block flow with explicit spacing (no grid
        align-items surprises that let the huge heading ride up into the kicker)
        and hyphenation so long German compounds like "Betriebssystem" break with
        a clean hyphen instead of snapping mid-word or colliding above. */
     .fidic-platform-head,
+    .fidic-data-head,
+    .fidic-runtime-head,
+    .fidic-perf-head,
     .impact-head,
     .build-head,
     .system-map-head { display: block; }
     .fidic-platform-head .chapter-label,
+    .fidic-data-head .chapter-label,
+    .fidic-runtime-head .chapter-label,
+    .fidic-perf-head .chapter-label,
     .impact-head .chapter-label,
     .build-head .chapter-label,
     .system-map-head .chapter-label { display: block; margin-bottom: 1.5rem; }
     .fidic-platform-head h2,
+    .fidic-data-head h2,
+    .fidic-runtime-head h2,
+    .fidic-perf-head h2,
     .impact-head h2,
     .build-head h2,
     .system-map-head h2 {
@@ -1338,7 +1660,10 @@ const caseSchema = {
     .impact-head h2,
     .build-head h2,
     .system-map-head h2,
-    .fidic-platform-head h2 {
+    .fidic-platform-head h2,
+    .fidic-data-head h2,
+    .fidic-runtime-head h2,
+    .fidic-perf-head h2 {
       max-width: 100%;
       font-size: clamp(2.55rem, 12.2vw, 3.55rem);
       line-height: .96;
@@ -1348,7 +1673,10 @@ const caseSchema = {
     .impact-head > p,
     .build-head > p,
     .system-map-head > p,
-    .fidic-platform-head > p { font-size: 1rem; line-height: 1.5; }
+    .fidic-platform-head > p,
+    .fidic-data-head > p,
+    .fidic-runtime-head > p,
+    .fidic-perf-head > p { font-size: 1rem; line-height: 1.5; }
 
     .impact-stage { min-height: 70rem; }
     .metric-grid {
@@ -1364,16 +1692,28 @@ const caseSchema = {
     .metric strong { margin-top: .65rem; font-size: clamp(2rem, 10.8vw, 2.75rem); white-space: nowrap; }
     .metric p { margin-block: .4rem .65rem; font-size: .82rem; }
 
-    .fidic-atlas { min-height: 66rem; }
-    .fidic-core { top: 25%; width: 9rem; }
-    .fidic-metrics {
-      inset: auto .55rem .55rem;
-      grid-template-columns: 1fr;
-      align-content: end;
-    }
-    .fidic-metric,
-    .fidic-metric-5 { grid-column: auto; min-height: 7.25rem; }
-    .fidic-metric strong { margin-top: .55rem; font-size: 2rem; }
+    .fidic-atlas { padding: 2rem .55rem .55rem; gap: 1.25rem; }
+    .fidic-atlas::before { top: 6.75rem; }
+    .fidic-atlas::after { top: 6.75rem; }
+    .fidic-core { width: 9rem; }
+    .fidic-core i { transform: translate(-50%,-50%) rotate(calc(var(--i) * 120deg)) translateX(5.25rem); }
+    .fidic-metrics { gap: .45rem; }
+    .fidic-metric { padding: .8rem .75rem; }
+    .fidic-metric span { font-size: .5rem; }
+    .fidic-metric strong { margin: .55rem 0 .25rem; font-size: clamp(1.8rem, 9vw, 2.4rem); }
+    .fidic-metric p { font-size: .7rem; }
+
+    .data-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
+    .data-figures article { padding: 1.1rem 1rem 1.2rem; }
+    .data-figures strong { font-size: clamp(1.9rem, 9.5vw, 2.6rem); }
+    .data-figures p { margin-top: .7rem; font-size: .76rem; }
+    .data-pipeline,
+    .runtime-grid { gap: .45rem; }
+    .data-pipeline p,
+    .runtime-grid p { font-size: .88rem; }
+    .perf-problem,
+    .perf-fix { font-size: .95rem; }
+    .perf-principle { padding: 1.3rem 1.1rem; }
 
     .case-chapter p,
     .visual-language-inner p,
