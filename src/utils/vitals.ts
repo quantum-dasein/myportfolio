@@ -68,6 +68,27 @@ observe("paint", (entries) => {
 const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
 if (navigation) metrics.TTFB = Math.round(navigation.responseStart);
 
+// GA4 identifies a visitor by client id. Minting a fresh random one per beacon
+// made every page view land as a separate user, so the property's user and
+// engagement numbers would drift away from reality the moment this was switched
+// on. Keep one id per browser, in the same "timestamp.random" shape gtag uses,
+// and fall back to a per-session value where storage is unavailable (private
+// mode, blocked cookies) rather than throwing on the way out of the page.
+const CID_KEY = "rb-cid";
+let memoryCid = "";
+function clientId() {
+  const fresh = () => `${Date.now()}.${Math.floor(Math.random() * 1e9)}`;
+  try {
+    const stored = localStorage.getItem(CID_KEY);
+    if (stored) return stored;
+    const value = fresh();
+    localStorage.setItem(CID_KEY, value);
+    return value;
+  } catch {
+    return (memoryCid ||= fresh());
+  }
+}
+
 function send() {
   if (sent || !Object.keys(metrics).length) return;
   sent = true;
@@ -91,7 +112,7 @@ function send() {
   const params = new URLSearchParams({
     v: "2",
     tid: GA4_ID,
-    cid: `${Date.now()}.${Math.floor(Math.random() * 1e9)}`,
+    cid: clientId(),
     en: "web_vitals",
     dl: location.href,
     ...Object.fromEntries(Object.entries(payload).map(([key, value]) => [`ep.${key}`, String(value)])),
