@@ -572,10 +572,15 @@ const caseSchema = {
     font-weight: 500;
     line-height: 0.9;
     letter-spacing: 0;
-    /* Long German compounds ("Betriebssystem") must break with a hyphen, not
-       snap mid-word off the edge. lang="de-AT" on <html> drives the dictionary. */
-    hyphens: auto;
-    -webkit-hyphens: auto;
+    /* Never hyphenate this one. The case titles are proper nouns and a domain
+       ("FIDIC - fidic.uz"), and with hyphens:auto a device that actually ships
+       the hyphenation dictionary — Android Chrome does, desktop Linux mostly
+       does not, which is why this only showed up on a phone — greedily fills
+       line one and splits the domain as "fi-dic.uz". Both halves fit their own
+       line at every width down to 320px, so the space is the only break we
+       want. Sentence-length German headings keep their hyphens elsewhere. */
+    hyphens: manual;
+    -webkit-hyphens: manual;
     overflow-wrap: break-word;
   }
 
@@ -1526,7 +1531,9 @@ const caseSchema = {
       max-width: 100%;
       font-size: clamp(3.25rem, 16.5vw, 5.15rem);
       line-height: .92;
-      overflow-wrap: anywhere;
+      /* break-word, not anywhere: only split a word that genuinely cannot
+         fit. "fidic.uz" always fits, so it stays whole. */
+      overflow-wrap: break-word;
     }
     .case-subtitle { margin-top: 1.35rem; font-size: 1.05rem; line-height: 1.48; }
     .case-visual { min-height: 31rem; }

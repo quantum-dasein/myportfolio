@@ -27,11 +27,11 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
   <div class="scrub-sticky">
     <video
       class="scrub-vid"
-      src={video}
+      data-scrub-src={video}
       poster={poster}
       muted
       playsinline
-      preload="auto"
+      preload="none"
       aria-hidden="true"
       data-scrub-video></video>
 
@@ -210,15 +210,43 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
     const coarse = matchMedia("(pointer: coarse)").matches;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // ── Attach the source late ────────────────────────────────────────────
+    // The film is ~13 MB. Shipped as `src` + `preload="auto"` in the markup it
+    // was pulled in full on first paint, from the top of the page, for every
+    // visitor — this section starts three screens down. On a phone on a weak
+    // connection that saturates the pipe for minutes: the page paints, then
+    // sits there feeling frozen while the video streams in behind it. The
+    // poster carries the section until the source is actually wanted.
+    const conn = (navigator as any).connection;
+    const frugal = !!conn && (conn.saveData === true || /(^|\W)2g$/.test(conn.effectiveType || ""));
+    const attach = (mode: "metadata" | "auto") => {
+      if (video.dataset.scrubAttached || frugal) return;
+      video.dataset.scrubAttached = "1";
+      video.preload = mode;
+      video.src = video.dataset.scrubSrc || "";
+    };
+
     if (coarse || reduced) {
-      // fallback: just play it
+      // fallback: just play it — and only fetch it once it is actually on screen
       video.loop = true;
       const io = new IntersectionObserver(
-        ([e]) => (e.isIntersecting ? video.play().catch(() => {}) : video.pause()),
+        ([e]) => {
+          if (!e.isIntersecting) return video.pause();
+          attach("auto");
+          video.play().catch(() => {});
+        },
         { threshold: 0.2 },
       );
       io.observe(section);
     } else {
+      // Scrubbing needs the clip buffered, so start the fetch a screen out
+      // rather than at the moment it becomes visible.
+      const near = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        near.disconnect();
+        attach("auto");
+      }, { rootMargin: "100% 0px" });
+      near.observe(section);
       let duration = 0;
       const ready = () => {
         duration = video.duration || 0;

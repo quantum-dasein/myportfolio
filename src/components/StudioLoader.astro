@@ -443,7 +443,26 @@ const isDe = lang === "de";
       sessionStorage.setItem("rb-loader-seen", "1");
       document.documentElement.classList.add("is-preloading");
       document.body.classList.add("is-preloading");
-      this.play();
+
+      // ── The lock must never outlive this method ─────────────────────────
+      // `is-preloading` is a hard scroll lock (overflow:hidden + touch-action:
+      // none). Everything that releases it used to live inside the rAF tick:
+      // the progress failsafe at 8.5s is itself a line of the tick, so any
+      // path that stops the loop — a throw in play(), a missing node, frames
+      // starved by a saturated main thread — left the page painted but
+      // permanently unscrollable, and only a reload cleared it (the reload
+      // takes the sessionStorage branch above and never locks at all).
+      // This timer runs off setTimeout instead, so it fires whether or not a
+      // single frame is ever served.
+      const deadline = window.setTimeout(() => this.dismiss(), 9000);
+      this.addEventListener("rb:dismissed", () => clearTimeout(deadline), { once: true });
+
+      try {
+        this.play();
+      } catch {
+        clearTimeout(deadline);
+        this.dismiss();
+      }
     }
 
     private play() {
@@ -538,6 +557,9 @@ const isDe = lang === "de";
     }
 
     private dismiss() {
+      if (this.dataset.dismissed) return;
+      this.dataset.dismissed = "1";
+      this.dispatchEvent(new CustomEvent("rb:dismissed"));
       this.classList.add("is-hidden");
       document.body.classList.add("is-loaded");
       window.dispatchEvent(new CustomEvent("rb:loaded"));
