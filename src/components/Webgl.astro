@@ -371,7 +371,32 @@ const { sculpture = true } = Astro.props;
     };
   }
 
-  if (!customElements.get("rb-hero-gl")) customElements.define("rb-hero-gl", HeroGL);
+  // ── Opt the constrained devices out entirely ──────────────────────────────
+  // The backdrop was already tuned down on phones (no AA, capped DPR, a lower
+  // FPS tier), but "tuned down" still meant 133 KB of three.js over the wire,
+  // half a megabyte to parse, and a WebGL context running for as long as the
+  // tab is open. On a metered connection or a cheap phone that is a real cost
+  // for a decorative layer, and the people paying it are least able to.
+  // Save-Data is an explicit request from the visitor; deviceMemory <= 2 GB or
+  // two hardware threads describe a phone that will struggle. Those visitors
+  // get the CSS background alone — which is what a WebGL failure would leave
+  // them with anyway, so there is no second code path to keep alive.
+  const nav = navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+    deviceMemory?: number;
+  };
+  const frugal =
+    nav.connection?.saveData === true ||
+    /(^|\W)2g$/.test(nav.connection?.effectiveType || "") ||
+    (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 2) ||
+    (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 2);
+
+  if (frugal) {
+    // Nothing else should sit waiting on a backdrop that is never coming.
+    dispatchEvent(new CustomEvent("rb:webgl-ready"));
+  } else if (!customElements.get("rb-hero-gl")) {
+    customElements.define("rb-hero-gl", HeroGL);
+  }
 </script>
 
 <style>

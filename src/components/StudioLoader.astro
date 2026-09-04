@@ -454,7 +454,9 @@ const isDe = lang === "de";
       // takes the sessionStorage branch above and never locks at all).
       // This timer runs off setTimeout instead, so it fires whether or not a
       // single frame is ever served.
-      const deadline = window.setTimeout(() => this.dismiss(), 9000);
+      // Well clear of the 1.6-3.0s budget, but no longer the 9s it was when
+      // the intro itself could legitimately run that long.
+      const deadline = window.setTimeout(() => this.dismiss(), 5000);
       this.addEventListener("rb:dismissed", () => clearTimeout(deadline), { once: true });
 
       try {
@@ -475,18 +477,33 @@ const isDe = lang === "de";
       const cube = this.querySelector<HTMLElement>("[data-loader-cube]");
 
       // ── Asset-driven calibration ──────────────────────────────────────────
-      // The theatre stays, but progress now tracks what is actually loading:
+      // The theatre stays, but progress tracks what is actually loading:
       // fonts (20%), full document (20%), first WebGL frame (25%), eager
-      // images (35%). A slow time floor keeps it moving; 8.5s is the failsafe.
+      // images (35%).
+      //
+      // The intro is a first-visit-only brand moment, and it was costing far
+      // more than it looked like it did: measured on a throttled Pixel 7 it
+      // held scroll for 4.7-5.6s after DOMContentLoaded, with the page painted
+      // and readable from ~1.3s. For somebody arriving from a search result
+      // that is most of the way to giving up. Two things caused it.
+      //
+      // First, the WebGL gate. three.js is deferred and does not even begin
+      // downloading until ~3.0s, so `rb:webgl-ready` could not realistically
+      // land before the 4.2s fallback — the loader was, in practice, always
+      // waiting out a timeout for work that had barely started. The intro no
+      // longer waits on the first WebGL frame at all; the backdrop fades in
+      // when it is ready, behind whatever the visitor is already reading.
+      //
+      // Second, the budget was one size for every device. It is now explicit
+      // and device-aware, and the run is capped rather than open-ended.
+      const touch = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
+      const BUDGET = touch ? 1.6 : 3.0; // seconds, hard ceiling on the intro
       let fontsDone = 0;
       let domDone = document.readyState === "complete" ? 1 : 0;
-      let webglDone = document.querySelector("rb-hero-gl") ? 0 : 1;
       let imagesDone = 0;
 
       document.fonts?.ready.then(() => (fontsDone = 1));
       if (!domDone) addEventListener("load", () => (domDone = 1), { once: true });
-      addEventListener("rb:webgl-ready", () => (webglDone = 1), { once: true });
-      setTimeout(() => (webglDone = 1), 4200); // WebGL fallback (blocked/very slow GPU)
 
       const eager = [...document.images].filter((img) => img.loading !== "lazy");
       const pending = eager.filter((img) => !img.complete);
@@ -499,14 +516,14 @@ const isDe = lang === "de";
         img.addEventListener("error", bump, { once: true });
       });
 
-      const real = () => fontsDone * 0.2 + domDone * 0.2 + webglDone * 0.25 + imagesDone * 0.35;
+      const real = () => fontsDone * 0.3 + domDone * 0.25 + imagesDone * 0.45;
 
       // A warm cache used to resolve every asset almost immediately, and the
       // whole sequence flashed past in about a second — all of the work, none of
       // the arrival. Progress is now also capped by the clock, so the object
       // always gets its full run-up. The curve is front-loaded: it moves with
       // intent early, then holds back through the last stretch.
-      const MIN_RUN = 0.8;
+      const MIN_RUN = touch ? 0.45 : 0.8;
       const ceiling = (elapsed: number) =>
         elapsed >= MIN_RUN ? 1 : 1 - Math.pow(1 - elapsed / MIN_RUN, 1.7);
 
@@ -527,10 +544,12 @@ const isDe = lang === "de";
           const turn = (elapsed / SPIN_PERIOD) * 360;
           cube.style.transform = `translate(-50%, -50%) rotateX(${-24 + turn}deg) rotateY(${38 + turn}deg)`;
         }
-        const floor = Math.min(0.92, elapsed / 7.5); // never looks frozen
+        // The floor walks the bar to full across the budget on its own, so a
+        // slow asset can stall progress but can no longer stall the visitor.
+        const floor = Math.min(1, elapsed / BUDGET);
         const target = Math.min(Math.max(real(), floor), ceiling(elapsed)) * 100;
-        displayed += (target - displayed) * 0.07;
-        if (elapsed > 8.5) displayed = 100; // failsafe
+        displayed += (target - displayed) * 0.16;
+        if (elapsed > BUDGET) displayed = 100;
         const value = Math.min(100, Math.round(displayed));
         const phaseIndex = Math.min(3, Math.floor(value / 25.1));
         line.style.width = `${value}%`;
