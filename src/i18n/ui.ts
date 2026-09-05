@@ -453,6 +453,7 @@ export const ui = {
     "footer.nav.label": "Navigate",
     "footer.social.label": "Elsewhere",
     "footer.colophon": "How this site is built",
+    "footer.profile": "Profile & experience · Vienna",
     "footer.rights": "All rights reserved.",
 
     // ── 404 — The Event Horizon ─────────────────────────────────────────────
@@ -910,6 +911,7 @@ export const ui = {
     "footer.nav.label": "Navigation",
     "footer.social.label": "Anderswo",
     "footer.colophon": "Wie diese Seite gebaut ist",
+    "footer.profile": "Profil & Berufserfahrung · Wien",
     "footer.rights": "Alle Rechte vorbehalten.",
 
     // ── 404 — Der Ereignishorizont ──────────────────────────────────────────

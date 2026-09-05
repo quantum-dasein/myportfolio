@@ -100,8 +100,25 @@ document.addEventListener("click", (e) => {
   setLang(btn.dataset.lang!);
 });
 
+// Localized routes carry their own href per language, so a single footer or
+// nav entry can point at /en/… or /de/… without the markup shipping both.
+function syncLangHrefs(lang: string) {
+  document.querySelectorAll<HTMLAnchorElement>("a[data-lang-href-en]").forEach((a) => {
+    const href = a.dataset[lang === "de" ? "langHrefDe" : "langHrefEn"];
+    if (href) a.setAttribute("href", href);
+  });
+}
+syncLangHrefs(current);
+window.addEventListener("rb:langchange", (e) => {
+  syncLangHrefs((e as CustomEvent<{ lang: string }>).detail.lang);
+});
+
 // Apply the preferred language on load (no-op text swap when it matches SSR).
-setLang(resolveInitial(), { persist: Boolean(LOCKED_LANG) });
+// Never persist on a locked page: /en/rodion-belousov-vienna/ declares its own
+// language, it is not the visitor picking one. Writing it to storage meant a
+// German reader who opened the English profile stayed in English site-wide,
+// with no idea what had changed it.
+setLang(resolveInitial(), { persist: false });
 
 // Expose for debugging / manual control.
 (window as any).rbSetLang = setLang;

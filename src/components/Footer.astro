@@ -62,8 +62,18 @@ const year = new Date().getFullYear();
           }
           <a href="/gallery" data-tunnel data-cursor="ENTER" data-i18n="nav.gallery">{t("nav.gallery")}</a>
           <a href="/work/studio" data-case-exit data-cursor="READ" data-i18n="footer.colophon">{t("footer.colophon")}</a>
-          <a href="/de/rodion-belousov-wien/" hreflang="de-AT" lang="de" data-case-exit>Profil & Berufserfahrung · Wien</a>
-          <a href="/en/rodion-belousov-vienna/" hreflang="en" lang="en" data-case-exit>Profile & experience · Vienna</a>
+          {/* One link, not both. Showing the EN and DE profile side by side sent
+              German visitors to the English page, which is lockLang and used to
+              overwrite their saved language for the whole site. The href and the
+              label are swapped by the client-side language controller, exactly
+              like every other localized route in the footer. */}
+          <a
+            href="/de/rodion-belousov-wien/"
+            data-lang-href-en="/en/rodion-belousov-vienna/"
+            data-lang-href-de="/de/rodion-belousov-wien/"
+            data-i18n="footer.profile"
+            data-case-exit
+          >{t("footer.profile")}</a>
         </div>
 
         <div class="footer-col">

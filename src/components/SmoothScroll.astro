@@ -20,6 +20,8 @@
   // Touch scroll stays entirely browser-owned, including momentum and toolbar
   // resizing on iOS. Do not write scrollTo from a native scroll/scrollend event.
   const nativeScroll = matchMedia("(pointer: coarse)").matches;
+  let lenis: Lenis | null = null;
+
   if (nativeScroll) {
     window.scrollCurrent = scrollY;
     let previous = scrollY;
@@ -30,58 +32,89 @@
       ScrollTrigger.update();
     }, { passive: true });
   } else {
-  const lenis = new Lenis({
-    // syncTouch made Lenis intercept every touchmove to run its own transform
-    // scroll — which BLOCKS native horizontal scroll containers (the Behance
-    // carousel would not swipe) and fought the finger on iOS. Off: mobile uses
-    // the browser's own (already smooth) touch scrolling; Lenis still smooths
-    // the desktop wheel. This also settles the leftover mobile scroll jank.
-    syncTouch: false,
-    lerp: 0.125,
-  });
-  window.__rbLenis = lenis;
-  lenis.on("scroll", ScrollTrigger.update);
-
-  lenis.direction = 1;
-
-  addGlobalTicker((t: number) => {
-    lenis.raf(t * 1000);
-    window.scrollVelocity = lenis.velocity;
-    window.scrollDirection = lenis.direction;
-    window.scrollCurrent = lenis.animatedScroll;
-  });
-
-  let syncFrame = 0;
-  const syncNativeJump = () => {
-    cancelAnimationFrame(syncFrame);
-    syncFrame = requestAnimationFrame(() => {
-      const nativeY = window.scrollY;
-      const delta = Math.abs(nativeY - lenis.animatedScroll);
-      if (delta > Math.max(180, innerHeight * .32)) {
-        lenis.scrollTo(nativeY, { immediate: true, force: true });
-        window.scrollCurrent = nativeY;
-        ScrollTrigger.update();
-      }
+    lenis = new Lenis({
+      // syncTouch made Lenis intercept every touchmove to run its own transform
+      // scroll — which BLOCKS native horizontal scroll containers (the Behance
+      // carousel would not swipe) and fought the finger on iOS. Off: mobile uses
+      // the browser's own (already smooth) touch scrolling; Lenis still smooths
+      // the desktop wheel. This also settles the leftover mobile scroll jank.
+      syncTouch: false,
+      lerp: 0.125,
     });
+    const l = lenis;
+    window.__rbLenis = l;
+    l.on("scroll", ScrollTrigger.update);
+
+    l.direction = 1;
+
+    addGlobalTicker((t: number) => {
+      l.raf(t * 1000);
+      window.scrollVelocity = l.velocity;
+      window.scrollDirection = l.direction;
+      window.scrollCurrent = l.animatedScroll;
+    });
+
+    let syncFrame = 0;
+    const syncNativeJump = () => {
+      cancelAnimationFrame(syncFrame);
+      syncFrame = requestAnimationFrame(() => {
+        const nativeY = window.scrollY;
+        const delta = Math.abs(nativeY - l.animatedScroll);
+        if (delta > Math.max(180, innerHeight * .32)) {
+          l.scrollTo(nativeY, { immediate: true, force: true });
+          window.scrollCurrent = nativeY;
+          ScrollTrigger.update();
+        }
+      });
+    };
+
+    addEventListener("scroll", syncNativeJump, { passive: true });
+    addEventListener("scrollend", () => l.scrollTo(window.scrollY, { immediate: true, force: true }), { passive: true });
+    addEventListener("resize", () => {
+      l.resize();
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+    }, { passive: true });
+
+    document.fonts?.ready.then(() => {
+      l.resize();
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+    });
+  }
+
+  // ── In-page anchor navigation — every device ────────────────────────────
+  // This used to live inside the Lenis branch, so turning Lenis off for touch
+  // took the whole of it out with it: on a phone, #about / #work / #contact-cta
+  // and every cross-page "/#work" arrival fell back to the browser's raw hash
+  // jump. With a fixed header and a layout still settling as images land, that
+  // put people somewhere arbitrary down the page — usually far past the section
+  // they tapped. It is shared now, and uses Lenis only when Lenis exists.
+  // global.css already declares `[id] { scroll-margin-top: 5.25rem }`, so the
+  // clearance under the fixed header is stated once, in CSS, and read from the
+  // element here. Passing an element plus an offset to Lenis counted it twice —
+  // desktop landed 189px below the header instead of 84 — so both paths resolve
+  // a number themselves and hand Lenis that.
+  const HEADER_OFFSET = 84;
+  const anchorTop = (el: HTMLElement) => {
+    const margin = parseFloat(getComputedStyle(el).scrollMarginTop);
+    const clearance = Number.isFinite(margin) && margin > 0 ? margin : HEADER_OFFSET;
+    return Math.max(0, el.getBoundingClientRect().top + window.scrollY - clearance);
   };
-
-  addEventListener("scroll", syncNativeJump, { passive: true });
-  addEventListener("scrollend", () => lenis.scrollTo(window.scrollY, { immediate: true, force: true }), { passive: true });
-  addEventListener("resize", () => {
-    lenis.resize();
-    requestAnimationFrame(() => ScrollTrigger.refresh());
-  }, { passive: true });
-
-  document.fonts?.ready.then(() => {
-    lenis.resize();
-    requestAnimationFrame(() => ScrollTrigger.refresh());
-  });
 
   const scrollToHash = (hash: string, immediate = false) => {
     if (!hash || hash === "#") return false;
-    const target = document.querySelector<HTMLElement>(hash);
+    let target: HTMLElement | null = null;
+    try {
+      target = document.querySelector<HTMLElement>(hash);
+    } catch {
+      return false; // a hash that is not a valid selector
+    }
     if (!target) return false;
-    lenis.scrollTo(target, { offset: -84, immediate, duration: immediate ? 0 : 1.05 });
+    const y = anchorTop(target);
+    if (lenis) {
+      lenis.scrollTo(y, { immediate, duration: immediate ? 0 : 1.05, force: true });
+    } else {
+      window.scrollTo({ top: y, left: 0, behavior: immediate ? "auto" : "smooth" });
+    }
     return true;
   };
 
@@ -96,7 +129,18 @@
   });
 
   addEventListener("hashchange", () => scrollToHash(location.hash));
-  if (location.hash) requestAnimationFrame(() => scrollToHash(location.hash, true));
+
+  // Arriving on a hash needs re-applying, not one shot. The browser jumps to the
+  // anchor before this runs, and the target then moves as eager images and fonts
+  // change the height above it — which is exactly how a tap on "Work" ended up
+  // near the bottom of the page.
+  if (location.hash) {
+    const settle = () => scrollToHash(location.hash, true);
+    requestAnimationFrame(settle);
+    if (document.readyState !== "complete") {
+      addEventListener("load", () => requestAnimationFrame(settle), { once: true });
+    }
+    document.fonts?.ready.then(() => requestAnimationFrame(settle));
   }
 </script>
 
