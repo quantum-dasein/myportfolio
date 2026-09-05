@@ -1,0 +1,266 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  /notes — the engineering log.
+//
+//  Promoted out of a section on /work/studio, where it was the strongest thing
+//  on the site sitting on the page fewest people reach. The pitch is simple:
+//  a finished surface proves nothing any more, because a finished surface can
+//  be generated. A record of what broke, how it was found and what it measured
+//  cannot be. Two of these entries are decisions to throw work away, which is
+//  the part of the job that never shows up in a deliverable.
+//
+//  Entries come from src/data/notes.ts so this page and the studio excerpt
+//  cannot drift; copy lives in the dictionary under note.N.*.
+// ─────────────────────────────────────────────────────────────────────────────
+import Layout from "../layouts/Layout.astro";
+import { useTranslations, type UIKey } from "../i18n/utils";
+import { notes, notesNewestFirst, noteKey } from "../data/notes";
+
+const t = useTranslations("en");
+const tk = (key: string) => t(key as UIKey);
+---
+
+<Layout
+  title="Engineering notes — what broke on this site and why"
+  description="A running log of real failures on rodionbelousov.studio: a 12.75 MB video nobody asked for, a loading screen that could never end, a codec that lost, an optimisation that cost 42 KB."
+  image="/og/rodion-belousov-how-this-site-is-built-astro-threejs-glsl.jpg"
+  imageAlt="Engineering notes — measured failures and fixes on rodionbelousov.studio"
+  pageType="article"
+  keywords={[
+    "engineering notes",
+    "web performance case study",
+    "Core Web Vitals debugging",
+    "Astro performance",
+    "technical decision log",
+  ]}
+  structuredData={{
+    "@type": "CollectionPage",
+    name: "Engineering notes",
+    description:
+      "A running log of measured failures and fixes on rodionbelousov.studio, including two changes that were measured and then discarded.",
+    creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+    hasPart: notes.map((note) => ({
+      "@type": "TechArticle",
+      headline: tk(noteKey(note.n, "title")),
+      description: tk(noteKey(note.n, "text")),
+      author: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+    })),
+  }}
+>
+  <div class="nt-page">
+  <section class="nt-hero">
+    <div class="u-container">
+      <span class="nt-kicker" data-i18n="notes.kicker">{t("notes.kicker")}</span>
+      <h1 class="nt-title" data-sy-reveal="words" data-i18n="notes.title">{t("notes.title")}</h1>
+      <p class="nt-lead" data-sy-reveal="lines" data-i18n="notes.lead">{t("notes.lead")}</p>
+
+      <div class="nt-meta" data-reveal>
+        <span><b>{String(notes.length).padStart(2, "0")}</b> <i data-i18n="notes.count">{t("notes.count")}</i></span>
+        <span class="nt-measured" data-i18n="notes.measured">{t("notes.measured")}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="nt-log">
+    <div class="u-container">
+      <ol class="nt-list">
+        {
+          notesNewestFirst.map((note) => (
+            <li class="nt-item" data-reveal>
+              <span class="nt-n">{String(note.n).padStart(2, "0")}</span>
+              <div class="nt-body">
+                <span class="nt-tag">{note.tag}</span>
+                <h2 data-i18n={noteKey(note.n, "title")}>{tk(noteKey(note.n, "title"))}</h2>
+                <p data-i18n={noteKey(note.n, "text")}>{tk(noteKey(note.n, "text"))}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <div class="u-container nt-outro" data-reveal>
+      <p data-i18n="notes.outro">{t("notes.outro")}</p>
+      <a class="nt-cta" href="/work/studio" data-cursor="READ" data-magnetic>
+        <span data-i18n="notes.cta">{t("notes.cta")}</span>
+        <i class="ui-arrow" aria-hidden="true"></i>
+      </a>
+    </div>
+  </section>
+  </div>
+</Layout>
+
+<style>
+  /* A log is a reading page, so it takes the same treatment as the insight
+     articles: an opaque surface above the site-wide WebGL backdrop. Running
+     body copy over the sculpture was unreadable on a phone, where the sphere
+     sits directly behind the column. The radial glow keeps the light the
+     backdrop would have given without costing any legibility. */
+  .nt-page {
+    position: relative;
+    z-index: 1;
+    background: #030405;
+  }
+
+  .nt-hero {
+    padding: clamp(7.5rem, 14vw, 11rem) 0 clamp(2.5rem, 5vw, 4rem);
+    background: radial-gradient(circle at 74% 26%, rgba(255, 255, 255, 0.085), transparent 26rem);
+  }
+
+  .nt-kicker {
+    display: inline-block;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .nt-title {
+    margin: 1.4rem 0 0;
+    max-width: 16ch;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2.6rem, 8vw, 7rem);
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+
+  .nt-lead {
+    max-width: 62ch;
+    margin: 2rem 0 0;
+    color: rgba(var(--rgb-text), 0.72);
+    font-size: clamp(1.02rem, 1.5vw, 1.3rem);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .nt-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem 2.2rem;
+    align-items: baseline;
+    margin-top: clamp(2rem, 4vw, 3rem);
+    padding-top: 1.4rem;
+    border-top: 1px solid rgba(var(--rgb-text), 0.14);
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.45);
+  }
+  .nt-meta b {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: rgb(var(--rgb-text));
+  }
+  .nt-meta i { font-style: normal; }
+
+  /* ── The log ───────────────────────────────────────────────────────────── */
+  .nt-log { padding-bottom: clamp(5rem, 10vw, 8rem); }
+
+  /* The backdrop sculpture owns the right of the viewport on every page that
+     has one, so the reading column stays left of it — same split as /services. */
+  .nt-list {
+    display: grid;
+    gap: 0;
+    max-width: 54rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nt-item {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: clamp(1rem, 2.5vw, 2rem);
+    padding: clamp(2rem, 4vw, 2.9rem) 0;
+    border-top: 1px solid rgba(var(--rgb-text), 0.12);
+  }
+  .nt-item:last-child { border-bottom: 1px solid rgba(var(--rgb-text), 0.12); }
+
+  .nt-n {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+    font-weight: 500;
+    line-height: 1;
+    color: rgba(var(--rgb-text), 0.3);
+  }
+
+  .nt-tag {
+    display: block;
+    margin-bottom: 0.8rem;
+    font-family: var(--font-inter);
+    font-size: 0.54rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .nt-body h2 {
+    margin: 0 0 0.9rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.4rem, 2.4vw, 2.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .nt-body p {
+    margin: 0;
+    max-width: 64ch;
+    color: rgba(var(--rgb-text), 0.66);
+    font-size: clamp(0.96rem, 1.2vw, 1.06rem);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  /* ── Outro ─────────────────────────────────────────────────────────────── */
+  .nt-outro {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4rem 3rem;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 54rem;
+    margin-top: clamp(3rem, 6vw, 5rem);
+  }
+  .nt-outro p {
+    margin: 0;
+    max-width: 40ch;
+    color: rgba(var(--rgb-text), 0.6);
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    line-height: 1.55;
+  }
+  .nt-cta {
+    display: inline-flex;
+    gap: 0.8rem;
+    align-items: center;
+    padding: 0.95rem 1.6rem;
+    border: 1px solid rgba(var(--rgb-text), 0.22);
+    border-radius: 999px;
+    color: rgb(var(--rgb-text));
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.3s, background-color 0.3s;
+  }
+  .nt-cta:hover {
+    border-color: rgba(var(--rgb-text), 0.5);
+    background: rgba(var(--rgb-text), 0.06);
+  }
+
+  @media (max-width: 760px) {
+    .nt-item {
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+    .nt-n { font-size: 1.5rem; }
+    .nt-outro { flex-direction: column; align-items: flex-start; }
+  }
+</style>

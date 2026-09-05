@@ -334,18 +334,41 @@ export const ui = {
       "Two languages, one home. Copy swaps in place from a dictionary; only genuinely localized content earns its own URL. No locale roots, no redirect traps, no duplicate homepages.",
 
     "studio.notes.label": "Engineering notes",
+    "studio.notes.more": "Read the full engineering log",
     "studio.notes.title": "The parts that were wrong first.",
     "studio.notes.lead":
       "Anyone can show the finished surface. These are the failures underneath it — because knowing why something broke is the actual skill being sold.",
-    "studio.notes.1.title": "Mobile pays a different price",
-    "studio.notes.1.text":
-      "The archive rendered every frame twice: the scene into a render target, then a fullscreen composite for grain and vignette. On a phone GPU that memory bandwidth is the entire budget. It now draws straight to the screen and only spins the composite up while a transition wipe is running.",
-    "studio.notes.2.title": "Reduce Motion is not an off switch",
-    "studio.notes.2.text":
-      "The preloader froze its object with animation-play-state: paused. On any phone with Reduce Motion enabled that read as a broken page — a cube standing still. It now turns slowly instead of dying.",
-    "studio.notes.3.title": "The locale trap",
-    "studio.notes.3.text":
-      "Localized clones of the homepage lived at /en/ and /de/, and the wordmark pointed at them. Switching language on a service page stranded you on a duplicate with no way back. The clones are gone, 301'd to the real home, and locale now applies only to real localized content.",
+
+    // ── Engineering log ─────────────────────────────────────────────────────
+    // Shared source for /notes/ and the excerpt on /work/studio. Entries 1-3
+    // are the original three, verbatim; 4-8 came out of later sessions.
+    "nav.notes": "Notes",
+    "notes.meta.title": "Engineering notes - what broke on this site and why | Rodion Belousov",
+    "notes.meta.description": "A running log of real failures on rodionbelousov.studio: a 12.75 MB video nobody asked for, a loading screen that could never end, a codec that lost, an optimisation that cost 42 KB.",
+    "notes.kicker": "Engineering log / rodionbelousov.studio",
+    "notes.title": "What broke, and what it cost.",
+    "notes.lead": "Anyone can show the finished surface, and by now anyone can generate one. This is the part that does not come out of a prompt: the things that were wrong first, how they were found, and the two entries where the right answer was to throw the work away.",
+    "notes.count": "entries",
+    "notes.measured": "Every number here was measured, not estimated.",
+    "notes.outro": "This list only gets longer. That is the point of it.",
+    "notes.cta": "See the systems these came out of",
+
+    "note.1.title": "Mobile pays a different price",
+    "note.1.text": "The archive rendered every frame twice: the scene into a render target, then a fullscreen composite for grain and vignette. On a phone GPU that memory bandwidth is the entire budget. It now draws straight to the screen and only spins the composite up while a transition wipe is running.",
+    "note.2.title": "Reduce Motion is not an off switch",
+    "note.2.text": "The preloader froze its object with animation-play-state: paused. On any phone with Reduce Motion enabled that read as a broken page - a cube standing still. It now turns slowly instead of dying.",
+    "note.3.title": "The locale trap",
+    "note.3.text": "Localized clones of the homepage lived at /en/ and /de/, and the wordmark pointed at them. Switching language on a service page stranded you on a duplicate with no way back. The clones are gone, 301'd to the real home, and locale now applies only to real localized content.",
+    "note.4.title": "The film that downloaded before anyone asked for it",
+    "note.4.text": "A scroll-scrubbed film shipped with its source and preload=auto written straight into the markup, for a section that starts three screens down the page. Every visitor pulled all 12.75 MB of it from first paint. On a phone on a weak connection the page painted in about a second and then sat there feeling frozen, because the connection stayed saturated for minutes behind it. The source now attaches only as the section approaches, and not at all under Save-Data. Home page transfer went from 12.92 MB to 0.16 MB.",
+    "note.5.title": "A loading screen that could never end",
+    "note.5.text": "The intro held overflow:hidden and touch-action:none on the document while it played. Every path that released that lock lived inside the animation-frame loop - including the failsafe, which was itself a line of that loop. So anything that stopped the loop left the page painted, readable and permanently unscrollable, recoverable only by reloading. The release now also hangs off a plain timer that fires whether or not a single frame is ever served. Verified by stubbing out requestAnimationFrame entirely.",
+    "note.6.title": "Hyphenation only breaks where the dictionary exists",
+    "note.6.text": "A case title carried hyphens:auto, added so that long German headings would break cleanly. Android Chrome ships the hyphenation dictionary; desktop Linux mostly does not. So the title split as FIDIC - fi- / dic.uz on a phone, and looked perfect on every machine it was built on. Both halves fit their own line down to 320px, so the space was the only break ever wanted.",
+    "note.7.title": "The codec that won on paper",
+    "note.7.text": "AV1 was encoded next to H.264 for all three films. It cut the two 1080p30 clips by up to 78% - and came out larger than H.264 on the 60fps one, because a single CRF number does not map to the same quality across codecs. Shipping it meant per-file tuning plus format negotiation in four components, for a win that reverses on one file in three and that iOS largely cannot use. Measured, then dropped.",
+    "note.8.title": "The optimisation that cost 42 KB",
+    "note.8.text": "Making three.js a dynamic import, so devices that skip the WebGL backdrop could skip the download too. It worked - and the shared chunk grew from 528 KB to 674 KB, because a dynamic import forces the bundler to keep the whole namespace instead of tree-shaking it. That is 42 KB added for every ordinary visitor to save a minority, and it pulled the download forward into the window that decides LCP. Reverted the same hour it was written.",
 
     "studio.cta.insight": "How the AI-assisted workflow actually works",
     "studio.cta.live": "Open the archive",
@@ -760,18 +783,39 @@ export const ui = {
       "Zwei Sprachen, ein Zuhause. Texte werden aus einem Wörterbuch an Ort und Stelle getauscht; nur echt lokalisierte Inhalte bekommen eine eigene URL. Keine Locale-Roots, keine Redirect-Fallen, keine doppelten Startseiten.",
 
     "studio.notes.label": "Engineering-Notizen",
+    "studio.notes.more": "Das vollständige Engineering-Log lesen",
     "studio.notes.title": "Die Stellen, die zuerst falsch waren.",
     "studio.notes.lead":
       "Die fertige Oberfläche kann jeder zeigen. Das hier sind die Fehler darunter — denn zu wissen, warum etwas kaputtging, ist die eigentliche Fähigkeit, die hier verkauft wird.",
-    "studio.notes.1.title": "Mobil zahlt einen anderen Preis",
-    "studio.notes.1.text":
-      "Das Archiv renderte jeden Frame doppelt: die Szene in ein Render-Target, danach ein Vollbild-Composite für Korn und Vignette. Auf einer Handy-GPU ist diese Speicherbandbreite das gesamte Budget. Jetzt wird direkt auf den Bildschirm gezeichnet, und das Composite läuft nur während eines Übergangs.",
-    "studio.notes.2.title": "Reduce Motion ist kein Ausschalter",
-    "studio.notes.2.text":
-      "Der Preloader fror sein Objekt mit animation-play-state: paused ein. Auf jedem Handy mit aktiviertem Reduce Motion las sich das als kaputte Seite — ein Würfel, der stillsteht. Jetzt dreht er sich langsam, statt zu sterben.",
-    "studio.notes.3.title": "Die Locale-Falle",
-    "studio.notes.3.text":
-      "Unter /en/ und /de/ lagen Klone der Startseite, und die Wortmarke zeigte darauf. Ein Sprachwechsel auf einer Leistungsseite strandete dich auf einem Duplikat ohne Rückweg. Die Klone sind weg, per 301 auf das echte Zuhause umgeleitet, und Locale gilt nur noch für echt lokalisierte Inhalte.",
+
+    // ── Engineering-Log ─────────────────────────────────────────────────────
+    "nav.notes": "Notizen",
+    "notes.meta.title": "Engineering-Notizen - was auf dieser Seite kaputtging und warum | Rodion Belousov",
+    "notes.meta.description": "Ein laufendes Protokoll echter Fehler auf rodionbelousov.studio: ein 12,75-MB-Video, das niemand angefordert hat, ein Ladebildschirm ohne Ende, ein Codec, der verlor, eine Optimierung, die 42 KB kostete.",
+    "notes.kicker": "Engineering-Log / rodionbelousov.studio",
+    "notes.title": "Was kaputtging - und was es gekostet hat.",
+    "notes.lead": "Die fertige Oberfläche kann jeder zeigen, und inzwischen kann sie jeder generieren. Das hier ist der Teil, der nicht aus einem Prompt fällt: die Stellen, die zuerst falsch waren, wie sie gefunden wurden, und die zwei Einträge, bei denen die richtige Antwort war, die Arbeit wegzuwerfen.",
+    "notes.count": "Einträge",
+    "notes.measured": "Jede Zahl hier ist gemessen, nicht geschätzt.",
+    "notes.outro": "Diese Liste wird nur länger. Genau darum geht es.",
+    "notes.cta": "Die Systeme ansehen, aus denen das stammt",
+
+    "note.1.title": "Mobil zahlt einen anderen Preis",
+    "note.1.text": "Das Archiv renderte jeden Frame doppelt: die Szene in ein Render-Target, danach ein Vollbild-Composite für Korn und Vignette. Auf einer Handy-GPU ist diese Speicherbandbreite das gesamte Budget. Jetzt wird direkt auf den Bildschirm gezeichnet, und das Composite läuft nur während eines Übergangs.",
+    "note.2.title": "Reduce Motion ist kein Ausschalter",
+    "note.2.text": "Der Preloader fror sein Objekt mit animation-play-state: paused ein. Auf jedem Handy mit aktiviertem Reduce Motion las sich das als kaputte Seite - ein Würfel, der stillsteht. Jetzt dreht er sich langsam, statt zu sterben.",
+    "note.3.title": "Die Locale-Falle",
+    "note.3.text": "Unter /en/ und /de/ lagen Klone der Startseite, und die Wortmarke zeigte darauf. Ein Sprachwechsel auf einer Leistungsseite strandete dich auf einem Duplikat ohne Rückweg. Die Klone sind weg, per 301 auf das echte Zuhause umgeleitet, und Locale gilt nur noch für echt lokalisierte Inhalte.",
+    "note.4.title": "Der Film, der lud, bevor ihn jemand angefordert hat",
+    "note.4.text": "Ein scroll-gesteuerter Film stand mit Quelle und preload=auto direkt im Markup - für einen Abschnitt, der drei Bildschirme weiter unten beginnt. Jeder Besucher zog alle 12,75 MB ab dem ersten Frame. Auf einem Telefon mit schwacher Verbindung war die Seite nach etwa einer Sekunde gezeichnet und fühlte sich danach eingefroren an, weil die Leitung minutenlang ausgelastet blieb. Die Quelle wird jetzt erst beim Herannahen angehängt, unter Save-Data gar nicht. Der Transfer der Startseite fiel von 12,92 MB auf 0,16 MB.",
+    "note.5.title": "Ein Ladebildschirm, der nie enden konnte",
+    "note.5.text": "Das Intro hielt overflow:hidden und touch-action:none auf dem Dokument, solange es lief. Jeder Weg, der diese Sperre löste, lag in der Animation-Frame-Schleife - auch die Notbremse, die selbst eine Zeile dieser Schleife war. Alles, was die Schleife anhielt, hinterließ also eine gezeichnete, lesbare und dauerhaft nicht scrollbare Seite, die nur ein Reload rettete. Die Freigabe hängt jetzt zusätzlich an einem einfachen Timer, der feuert, ob je ein Frame geliefert wird oder nicht. Geprüft, indem requestAnimationFrame komplett stillgelegt wurde.",
+    "note.6.title": "Silbentrennung bricht nur dort, wo das Wörterbuch liegt",
+    "note.6.text": "Ein Case-Titel trug hyphens:auto, eingeführt, damit lange deutsche Überschriften sauber umbrechen. Android Chrome liefert das Trennwörterbuch mit, Desktop-Linux meist nicht. Also trennte der Titel auf dem Telefon als FIDIC - fi- / dic.uz und sah auf jeder Maschine, auf der er gebaut wurde, perfekt aus. Beide Hälften passen bis 320px in ihre eigene Zeile - das Leerzeichen war immer der einzige gewünschte Umbruch.",
+    "note.7.title": "Der Codec, der auf dem Papier gewann",
+    "note.7.text": "AV1 wurde für alle drei Filme neben H.264 kodiert. Es verkleinerte die beiden 1080p30-Clips um bis zu 78% - und fiel beim 60-fps-Film größer aus als H.264, weil eine einzelne CRF-Zahl über Codecs hinweg nicht denselben Qualitätspunkt trifft. Es auszuliefern hätte Feintuning pro Datei plus Formataushandlung in vier Komponenten bedeutet, für einen Gewinn, der sich bei einer von drei Dateien umkehrt und den iOS größtenteils nicht nutzen kann. Gemessen, dann verworfen.",
+    "note.8.title": "Die Optimierung, die 42 KB kostete",
+    "note.8.text": "three.js zu einem dynamischen Import machen, damit Geräte ohne WebGL-Hintergrund auch den Download sparen. Es funktionierte - und der gemeinsame Chunk wuchs von 528 KB auf 674 KB, weil ein dynamischer Import den Bundler zwingt, den gesamten Namespace zu behalten, statt ihn zu tree-shaken. Das sind 42 KB mehr für jeden normalen Besucher, um einer Minderheit etwas zu sparen, und der Download rutschte in genau das Fenster, das den LCP bestimmt. Noch in derselben Stunde zurückgenommen.",
 
     "studio.cta.insight": "Wie der AI-assisted Workflow wirklich funktioniert",
     "studio.cta.live": "Archiv öffnen",

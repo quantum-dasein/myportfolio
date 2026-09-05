@@ -182,6 +182,11 @@ const nav: Link[] = isDeck
       // completely independent of the language system. It must never resolve to
       // a locale root (/en/, /de/), which is what trapped visitors before.
       { title: t("nav.services"), url: "/services", i18n: "nav.services" },
+      // The engineering log. A finished surface no longer proves much on its
+      // own, so the record of what broke — and the two entries where the right
+      // call was to bin the work — earns a top-level slot rather than living
+      // as a section on /work/studio.
+      { title: t("nav.notes"), url: "/notes", i18n: "nav.notes" },
       { title: t("nav.contact"), url: `${homePrefix}#contact-cta`, i18n: "nav.contact" },
     ];
 const cta = isDeck

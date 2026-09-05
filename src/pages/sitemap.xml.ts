@@ -31,6 +31,7 @@ ${url("/services", "0.9", "monthly")}
 ${url("/work/bridge-consult", "0.9", "monthly", `<image:image><image:loc>${site}/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp</image:loc><image:title>Bridge Consult SEO and Astro case study</image:title></image:image>`)}
 ${url("/work/fidic", "0.9", "monthly", `<image:image><image:loc>${site}/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp</image:loc><image:title>FIDIC.uz content platform and technical SEO case study</image:title></image:image>`)}
 ${url("/work/studio", "0.8", "monthly", `<image:image><image:loc>${site}/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg</image:loc><image:title>How rodionbelousov.studio is built: Astro, Three.js, GLSL and Web Audio</image:title></image:image>`)}
+${url("/notes", "0.8", "weekly")}
 ${url("/gallery", "0.8", "monthly", galleryMedia)}
 </urlset>`;
 

@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../../layouts/Layout.astro";
 import { useTranslations, type UIKey } from "../../i18n/utils";
+import { notes as allNotes, noteKey } from "../../data/notes";
 
 const t = useTranslations("en");
 const tk = (key: string) => t(key as UIKey);
@@ -28,10 +29,12 @@ const systems = [1, 2, 3, 4, 5, 6].map((n) => ({
   text: `studio.sys.${n}.text`,
 }));
 
-const notes = [1, 2, 3].map((n) => ({
+// Excerpt only — the full log lives at /notes/ and both read the same source,
+// so the two can never drift apart.
+const notes = allNotes.slice(0, 3).map(({ n }) => ({
   n,
-  title: `studio.notes.${n}.title`,
-  text: `studio.notes.${n}.text`,
+  title: noteKey(n, "title"),
+  text: noteKey(n, "text"),
 }));
 ---
 
@@ -173,6 +176,11 @@ const notes = [1, 2, 3].map((n) => ({
             ))
           }
         </div>
+
+        <a class="st-notes-more" href="/notes" data-cursor="READ" data-magnetic>
+          <span data-i18n="studio.notes.more">{t("studio.notes.more")}</span>
+          <i class="arrow" aria-hidden="true"></i>
+        </a>
       </div>
     </section>
 
@@ -403,6 +411,22 @@ const notes = [1, 2, 3].map((n) => ({
 
   /* ── Notes ─────────────────────────────────────────────────────────────── */
   .st-notes-list { margin-top: 3rem; }
+  .st-notes-more {
+    display: inline-flex;
+    gap: .7rem;
+    align-items: center;
+    margin-top: 2.5rem;
+    color: rgb(var(--rgb-text));
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(var(--rgb-text), .28);
+    padding-bottom: .35rem;
+    transition: border-color .3s;
+  }
+  .st-notes-more:hover { border-color: rgb(var(--rgb-text)); }
 
   .st-note {
     display: grid;
