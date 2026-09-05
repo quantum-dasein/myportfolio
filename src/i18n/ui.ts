@@ -123,8 +123,7 @@ export const ui = {
     // ── Selected Work (teaser — immersive cases land next) ───────────────────
     "work.label": "Selected Work",
     "work.title": "Two marketing builds. One standard: premium.",
-    "work.text":
-      "Two digital systems I conceived and built solo: strategy, content, technical SEO and Astro front-end from one hand, with Claude, Cursor and Codex as my AI toolchain.",
+    "work.text": "Two digital systems I conceived and built solo: strategy, content, technical SEO and the Astro front-end from one hand — and both still maintained, in production, with the search results to check.",
     "work.1.tag": "Astro · GSAP · Technical SEO",
     "work.1.title": "Bridge Consult",
     "work.1.role": "Solo build · Strategy, code & SEO",
@@ -584,8 +583,7 @@ export const ui = {
     // ── Selected Work (teaser — immersive cases land next) ───────────────────
     "work.label": "Ausgewählte Arbeiten",
     "work.title": "Zwei Marketing-Builds. Ein Standard: erstklassig.",
-    "work.text":
-      "Zwei digitale Systeme, die ich solo konzipiert und gebaut habe: Strategie, Content, Technical SEO und Astro-Frontend aus einer Hand - mit Claude, Cursor und Codex als AI-Toolchain.",
+    "work.text": "Zwei digitale Systeme, die ich solo konzipiert und gebaut habe: Strategie, Content, Technical SEO und das Astro-Frontend aus einer Hand — und beide laufen weiter, in Produktion, mit nachprüfbaren Suchergebnissen.",
     "work.1.tag": "Astro · GSAP · Technical SEO",
     "work.1.title": "Bridge Consult",
     "work.1.role": "Solo Build · Strategie, Code & SEO",
