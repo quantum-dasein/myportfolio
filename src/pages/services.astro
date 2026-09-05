@@ -22,6 +22,18 @@ const services = [1, 2, 3].map((n) => ({
   href: `services.${n}.href`,
 }));
 
+const how = [1, 2, 3, 4].map((n) => ({
+  n,
+  title: `services.how.${n}.title`,
+  text: `services.how.${n}.text`,
+}));
+
+const faq = [1, 2, 3, 4, 5].map((n) => ({
+  n,
+  q: `services.faq.${n}.q`,
+  a: `services.faq.${n}.a`,
+}));
+
 const research = [1, 2, 3, 4].map((n) => ({
   n,
   title: `research.${n}.title`,
@@ -42,13 +54,23 @@ const research = [1, 2, 3, 4].map((n) => ({
     "Marketing Research",
     "Rodion Belousov Services",
   ]}
-  structuredData={{
-    "@type": "CollectionPage",
-    name: "Services & Research",
-    description:
-      "Digital marketing, technical SEO and creative development services plus supporting research by Rodion Belousov.",
-    creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
-  }}
+  structuredData={[
+    {
+      "@type": "CollectionPage",
+      name: "Services & Research",
+      description:
+        "Digital marketing, technical SEO and creative development services plus supporting research by Rodion Belousov.",
+      creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: faq.map((item) => ({
+        "@type": "Question",
+        name: tk(item.q),
+        acceptedAnswer: { "@type": "Answer", text: tk(item.a) },
+      })),
+    },
+  ]}
 >
   <!-- ── Hero (deliberately distinct from the homepage) ───────────────────── -->
   <section class="svc-hero" data-hero>
@@ -131,9 +153,80 @@ const research = [1, 2, 3, 4].map((n) => ({
       </div>
     </div>
   </section>
+
+  <!-- ── 03 How the three combine ──────────────────────────────────────── -->
+  <section class="svc-section" id="how">
+    <div class="u-container">
+      <span class="svc-idx">03 - <span data-i18n="services.how.label">{t("services.how.label")}</span></span>
+      <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.how.title">{t("services.how.title")}</h2>
+      <p class="svc-section-lead" data-reveal data-i18n="services.how.lead">{t("services.how.lead")}</p>
+
+      <div class="rows">
+        {
+          how.map((item) => (
+            <div class="row static" data-reveal>
+              <span class="row-n">{String(item.n).padStart(2, "0")}</span>
+              <span class="row-main">
+                <span class="row-title" data-i18n={item.title}>{tk(item.title)}</span>
+                <span class="row-text" data-i18n={item.text}>{tk(item.text)}</span>
+              </span>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 04 FAQ ───────────────────────────────────────────────────────────  -->
+  <section class="svc-section" id="faq">
+    <div class="u-container">
+      <span class="svc-idx">04 - <span data-i18n="services.faq.label">{t("services.faq.label")}</span></span>
+      <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.faq.title">{t("services.faq.title")}</h2>
+
+      <div class="svc-faq">
+        {
+          faq.map((item) => (
+            <details data-reveal>
+              <summary data-i18n={item.q}>{tk(item.q)}</summary>
+              <p data-i18n={item.a}>{tk(item.a)}</p>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
 </Layout>
 
 <style>
+  /* ── Added sections ────────────────────────────────────────────────────── */
+  .svc-section-lead {
+    max-width: 62ch;
+    margin: 0 0 clamp(2rem, 4vw, 3rem);
+    color: rgba(var(--rgb-text), .7);
+    font-size: clamp(1.02rem, 1.5vw, 1.25rem);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+  /* A non-navigating variant of .row — same rhythm, no hover or arrow. */
+  .row.static { cursor: default; }
+
+  .svc-faq { max-width: 68rem; }
+  .svc-faq details { border-bottom: 1px solid rgba(255, 255, 255, .14); }
+  .svc-faq summary {
+    cursor: pointer;
+    padding: 1.5rem 0;
+    font: 500 clamp(1.1rem, 1.9vw, 1.6rem)/1.25 var(--font-display);
+    text-wrap: balance;
+  }
+  .svc-faq details p {
+    max-width: 62ch;
+    padding: 0 0 1.7rem;
+    margin: 0;
+    color: rgba(var(--rgb-text), .68);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
   /* ── Hero ──────────────────────────────────────────────────────────────── */
   .svc-hero {
     min-height: 82svh;

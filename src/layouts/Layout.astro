@@ -213,7 +213,7 @@ const cta = isDeck
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
 const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
   defaultLang,
-)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1')document.documentElement.classList.add('rb-loader-seen');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
+)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1'){document.documentElement.classList.add('rb-loader-seen')}else{document.documentElement.classList.add('is-preloading');setTimeout(function(){document.documentElement.classList.remove('is-preloading');if(document.body)document.body.classList.remove('is-preloading')},7000)}if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
 ---
 
 <html lang={lang === "de" ? "de-AT" : "en"}>
@@ -257,6 +257,14 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 
     <script type="application/ld+json" is:inline set:html={serializedSchema} />
 
+    <!-- The intro's scroll lock is applied here, in the boot script, rather
+         than by the loader element. The element's connectedCallback runs when
+         its bundled module executes — measured at ~3.2s on a throttled phone —
+         and until then the overlay covered the screen while the page scrolled
+         freely underneath it, which is what the intro exists to prevent. The
+         boot script runs before first paint, so the lock is in place for the
+         whole time the overlay is visible. It carries its own 7s timeout so a
+         module that never loads at all still cannot strand the page. -->
     <script is:inline set:html={bootScript} />
     <script is:inline>
       // Apply before layout and history guards can record a stale case offset.

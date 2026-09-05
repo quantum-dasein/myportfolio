@@ -10,8 +10,11 @@ const articleSchema = { "@type": "Article", headline: pick(insight.title, lang),
 // Unique OG image per insight — the artifact the article is actually about.
 const og: Record<string, { image: string; alt: string }> = {
   "bridge-growth": { image: "/cases/bridge-consult-google-analytics-organic-search-growth-780-percent.jpg", alt: "Google Analytics chart: 780% organic search growth for Bridge Consult" },
-  "fidic-platform": { image: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.png", alt: "FIDIC.uz multilingual contract knowledge platform by Rodion Belousov" },
-  "threejs-marketing": { image: "/cases/bridge-consult-threejs-project-experience-webgl.png", alt: "Bridge Consult interactive Three.js project universe" },
+  // An article about a project may show that project, but as a real share card:
+  // 1200x630 derivatives, 99 KB and 61 KB, from screenshots that were 2 MB and
+  // 883 KB at aspect ratios no social platform crops kindly.
+  "fidic-platform": { image: "/og/rodion-belousov-fidic-uz-knowledge-platform.jpg", alt: "FIDIC.uz multilingual contract knowledge platform by Rodion Belousov" },
+  "threejs-marketing": { image: "/og/rodion-belousov-threejs-marketing-websites.jpg", alt: "Three.js project universe built by Rodion Belousov" },
   "ai-development": { image: "/cases/bridge-consult-open-source-astro-threejs-github-repository.png", alt: "Open-source Astro and Three.js repository behind Bridge Consult" },
 };
 const ogEntry = og[insight.key];

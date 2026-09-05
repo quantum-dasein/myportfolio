@@ -12,10 +12,17 @@ const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({
 const serviceSchema = { "@type": "Service", name: pick(service.title, lang), description: pick(service.description, lang), provider: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, areaServed: [{ "@type": "City", name: "Vienna" }, { "@type": "Country", name: "Austria" }] };
 const seoTitle = `${pick(service.eyebrow, lang).replace(" / ", " · ")} | Rodion Belousov`;
 // Unique OG image per service — real case evidence instead of the generic card.
+// These pages sell Rodion's services, so the share card has to carry Rodion's
+// identity. They previously pointed at client screenshots — the creative
+// development page shared as a picture of the Bridge Consult website under the
+// title "Rodion Belousov Studio", which reads as sharing the client's site.
+// Work samples belong on the case studies; a service page gets its own card.
+// These are also purpose-built at 1200x630 and under 100 KB, where the case
+// screenshots were 883 KB and 2 MB at the wrong aspect ratio.
 const og: Record<ServiceKey, { image: string; alt: string }> = {
-  "digital-marketing": { image: "/cases/bridge-consult-google-analytics-organic-search-growth-780-percent.jpg", alt: "Google Analytics chart: 780% organic search growth for Bridge Consult" },
-  "technical-seo": { image: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.png", alt: "FIDIC.uz multilingual contract knowledge platform by Rodion Belousov" },
-  "creative-development": { image: "/cases/bridge-consult-threejs-project-experience-webgl.png", alt: "Bridge Consult interactive Three.js project universe by Rodion Belousov" },
+  "digital-marketing": { image: "/og/rodion-belousov-digital-marketer-vienna.jpg", alt: "Rodion Belousov — digital marketing and SEO in Vienna" },
+  "technical-seo": { image: "/og/rodion-belousov-services-marketing-seo-creative-development-vienna.jpg", alt: "Rodion Belousov — technical SEO in Vienna" },
+  "creative-development": { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — creative development in Vienna" },
 };
 ---
 

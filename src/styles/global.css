@@ -206,14 +206,12 @@ body.is-preloading {
   touch-action: none;
 }
 
-/* The intro must never disable native touch scrolling on a phone. */
-@media (pointer: coarse) {
-  html.is-preloading,
-  html.is-preloading body,
-  body.is-preloading {
-    height: auto;
-    overflow-y: visible !important;
-    touch-action: auto;
-    overscroll-behavior-y: auto;
-  }
-}
+/* This used to be cancelled on (pointer: coarse), because the lock could
+   outlive the intro and strand the page — everything that released it lived
+   inside the animation-frame loop, the failsafe included, so a stopped loop
+   meant a painted, readable, permanently unscrollable page. Disabling the lock
+   treated the symptom and cost the intro its purpose: the page scrolled around
+   underneath a full-screen overlay while it played.
+   The release now also hangs off a plain timer in StudioLoader that fires
+   whether or not a single frame is ever served, and the intro is capped at
+   1.6s on touch, so holding the page still for that window is safe again. */
