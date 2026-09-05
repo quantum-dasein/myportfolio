@@ -131,9 +131,36 @@ const selectedWork = [
     </div>
   </section>
 
+  <!-- ── The objection, answered before it is raised ────────────────────── -->
+  <section class="section objection" id="objection">
+    <div class="u-container section-grid">
+      <span class="s-idx">02 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
+      <div>
+        <h2 class="s-title obj-title" data-sy-reveal="words" data-i18n="objection.title">{t("objection.title")}</h2>
+        <p class="s-lead" data-reveal data-i18n="objection.text">{t("objection.text")}</p>
+
+        <div class="obj-rows">
+          {
+            [1, 2, 3].map((n) => (
+              <article class="obj-row" data-reveal>
+                <h3 data-i18n={`objection.${n}.title`}>{tk(`objection.${n}.title`)}</h3>
+                <p data-i18n={`objection.${n}.text`}>{tk(`objection.${n}.text`)}</p>
+              </article>
+            ))
+          }
+        </div>
+
+        <a class="obj-cta" href="/notes" data-cursor="READ" data-magnetic>
+          <span data-i18n="objection.cta">{t("objection.cta")}</span>
+          <i class="ui-arrow" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <section class="section career" id="career">
     <div class="u-container section-grid">
-      <span class="s-idx">02 - <span data-i18n="exp.label">{t("exp.label")}</span></span>
+      <span class="s-idx">03 - <span data-i18n="exp.label">{t("exp.label")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="exp.title">{t("exp.title")}</h2>
         <div class="jobs">
@@ -163,7 +190,7 @@ const selectedWork = [
 
   <section class="section" id="education">
     <div class="u-container section-grid">
-      <span class="s-idx">03 - <span data-i18n="edu.label">{t("edu.label")}</span></span>
+      <span class="s-idx">04 - <span data-i18n="edu.label">{t("edu.label")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="edu.title">{t("edu.title")}</h2>
 
@@ -198,7 +225,7 @@ const selectedWork = [
   <section class="section work" id="work">
     <div class="u-container work-composition">
       <div class="work-intro">
-        <span class="s-idx">04 - <span data-i18n="work.label">{t("work.label")}</span></span>
+        <span class="s-idx">05 - <span data-i18n="work.label">{t("work.label")}</span></span>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="work.text">{t("work.text")}</p>
         <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
@@ -273,7 +300,7 @@ const selectedWork = [
        the active language to the matching localized deep-dive. -->
   <section class="section services-teaser" id="services">
     <div class="u-container section-grid">
-      <span class="s-idx">05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+      <span class="s-idx">06 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="services.title">{t("services.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="services.lead">{t("services.lead")}</p>
@@ -334,7 +361,7 @@ const selectedWork = [
   <section class="portal" id="archive">
     <div class="u-container portal-inner">
       <div>
-        <span class="s-idx">07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <span class="s-idx">08 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
         <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
         <p class="portal-text" data-reveal data-i18n="portal.text">{t("portal.text")}</p>
       </div>
@@ -348,7 +375,7 @@ const selectedWork = [
 
   <section class="section contact legacy-ending" id="legacy-contact">
     <div class="u-container contact-grid">
-      <span class="s-idx">08 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+      <span class="s-idx">09 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
       <div>
         <h2 class="contact-title" data-sy-reveal="words" data-i18n="contact.title">{t("contact.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="contact.text">{t("contact.text")}</p>
@@ -569,6 +596,63 @@ const selectedWork = [
       border-color: rgba(255, 255, 255, 0.28);
       background: rgba(255, 255, 255, 0.05);
     }
+  }
+
+  /* ── The objection band ────────────────────────────────────────────────
+     Deliberately plainer than the pillars around it: this section is an
+     argument, not a showcase, and a rule-separated list reads as candour
+     where a grid of glass cards would read as marketing. */
+  .obj-title { max-width: 22ch; text-wrap: balance; }
+
+  .obj-rows {
+    display: grid;
+    gap: 0;
+    max-width: 52rem;
+    margin-top: clamp(2.5rem, 5vw, 3.5rem);
+  }
+
+  .obj-row {
+    display: grid;
+    gap: .5rem;
+    padding: 1.6rem 0;
+    border-top: 1px solid rgba(var(--rgb-text), .13);
+  }
+  .obj-row:last-child { border-bottom: 1px solid rgba(var(--rgb-text), .13); }
+
+  .obj-row h3 {
+    margin: 0;
+    font: 500 clamp(1.05rem, 1.5vw, 1.3rem)/1.25 var(--font-display);
+    color: rgba(var(--rgb-text), .95);
+    text-wrap: balance;
+  }
+  .obj-row p {
+    margin: 0;
+    max-width: 62ch;
+    color: rgba(var(--rgb-text), .62);
+    font-size: clamp(.94rem, 1.2vw, 1.02rem);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .obj-cta {
+    display: inline-flex;
+    gap: .7rem;
+    align-items: center;
+    margin-top: 2.2rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid rgba(var(--rgb-text), .28);
+    color: rgb(var(--rgb-text));
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color .3s;
+  }
+  .obj-cta:hover { border-color: rgb(var(--rgb-text)); }
+
+  @media (max-width: 620px) {
+    .obj-row { padding: 1.3rem 0; }
   }
 
   .pillars {

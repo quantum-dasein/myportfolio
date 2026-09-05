@@ -42,8 +42,7 @@ export const ui = {
     "hero.eyebrow": "Digital Marketer · Creative Developer",
     "hero.title.1": "Marketing that moves,",
     "hero.title.2": "websites that convert.",
-    "hero.subtitle":
-      "I'm Rodion Belousov: a digital marketer with creative-development range. I shape positioning, content, SEO, motion and websites into one launch system - so the idea does not die between strategy, visuals and execution.",
+    "hero.subtitle": "I'm Rodion Belousov: a digital marketer with creative-development range. I shape positioning, content, SEO, motion and websites into one launch system — and stay accountable for what it does in the market afterwards. The proof is two live platforms in three languages, not a deck.",
     "hero.cta.primary": "View selected work",
     "hero.cta.secondary": "Start a project",
     "hero.scroll": "Scroll",
@@ -54,6 +53,21 @@ export const ui = {
       "One operator for the messy space between strategy and launch.",
     "about.text":
       "I work where marketing usually gets fragmented: positioning in one file, content in another, SEO somewhere else, and the website treated like decoration. My edge is connecting the whole chain - market logic, copy, search intent, campaign assets, motion and the final interface - with a Master's focus in International Marketing and Brand Management behind it.",
+
+    // ── The objection, said out loud ────────────────────────────────────────
+    // Buyers are already asking it; a site that pretends otherwise reads as
+    // either naive or evasive. Answering it first is the only version that
+    // converts.
+    "objection.label": "The obvious question",
+    "objection.title": "\u201cWhy pay you when I could just pay for the model?\u201d",
+    "objection.text": "Fair question, and the honest answer is that you can now generate a website. What you cannot generate is someone who knows the subject well enough to catch the answer that is confidently wrong, who decides what not to build, and who is still here in six months when the thing quietly breaks.",
+    "objection.1.title": "You can generate a page",
+    "objection.1.text": "You cannot generate the judgement that its scope is wrong — that the client needed one verifiable proposition, not eleven more pages.",
+    "objection.2.title": "You can generate an article about FIDIC",
+    "objection.2.text": "You cannot tell whether it is correct. That takes knowing the clause, the procurement rule and the practice, and it is the reason the platform can be published at all.",
+    "objection.3.title": "You can generate a fast site",
+    "objection.3.text": "You cannot generate the person who notices, months later, that the home page has started shipping 13 MB of video before anyone scrolls.",
+    "objection.cta": "Read what actually broke",
     "about.pillar.1.title": "Marketing Strategy",
     "about.pillar.1.text":
       "Offer logic, audience insight, positioning and narrative - the strategic spine before anything becomes visual.",
@@ -181,13 +195,12 @@ export const ui = {
     "case.bridge.system.search.text": "Canonical logic, hreflang, structured data, generated sitemaps and editorial content create a foundation for compounding organic discovery.",
     "case.bridge.system.universe.title": "Proof you can explore",
     "case.bridge.system.universe.text": "Eight infrastructure references live inside a custom draggable Three.js universe with project detail layers and resilient fallbacks.",
-    "case.bridge.workflow.title": "One vision. Several specialist copilots.",
-    "case.bridge.workflow.text":
-      "The strategy, visual direction and final decisions stayed human. AI accelerated research and engineering, while every system was reviewed, shaped and shipped in repository context.",
-    "case.bridge.workflow.human": "Original art direction, 3D assets and motion craft - designed by hand for a premium infrastructure brand.",
-    "case.bridge.workflow.gemini": "Analytical sparring for structure drafts, presentation logic and the content framework.",
-    "case.bridge.workflow.claude": "Architecture support for Astro, Three.js, automation and multilingual routing.",
-    "case.bridge.workflow.cursor": "Repository-aware implementation, debugging and performance work with Cursor and Codex.",
+    "case.bridge.workflow.title": "What the tooling does not decide.",
+    "case.bridge.workflow.text": "Cinema 4D, Three.js, GSAP, an editor with a model in it — the stack is not the argument, because anyone can have the same stack. These four decisions are the work, and none of them come out of a prompt.",
+    "case.bridge.workflow.human": "Deciding what to build and what to leave out. Bridge Consult did not need more pages; it needed a proposition an international decision-maker could verify in thirty seconds. Scope is the first and cheapest place to be wrong.",
+    "case.bridge.workflow.gemini": "Knowing when an answer is wrong. Infrastructure contracting is full of checkable facts — FIDIC clauses, procurement rules, what a claim actually requires. Generated text is equally confident either way; being able to reject it is the part that took years.",
+    "case.bridge.workflow.claude": "Removing what the measurement does not justify. Smooth scroll off on phones, page CSS inlined so a dropped request cannot strip the styling, reveal logic kept outside the bundle. Most of the engineering here was subtraction.",
+    "case.bridge.workflow.cursor": "Being the one accountable in six months. The tender pipeline still commits every morning, and someone has to notice when a home page quietly starts shipping 13 MB of video. That is not a deliverable, it is a relationship.",
 
     "case.fidic.kicker": "Case Study / Knowledge Platform",
     "case.fidic.title": "FIDIC - fidic.uz",
@@ -370,7 +383,7 @@ export const ui = {
     "note.8.title": "The optimisation that cost 42 KB",
     "note.8.text": "Making three.js a dynamic import, so devices that skip the WebGL backdrop could skip the download too. It worked - and the shared chunk grew from 528 KB to 674 KB, because a dynamic import forces the bundler to keep the whole namespace instead of tree-shaking it. That is 42 KB added for every ordinary visitor to save a minority, and it pulled the download forward into the window that decides LCP. Reverted the same hour it was written.",
 
-    "studio.cta.insight": "How the AI-assisted workflow actually works",
+    "studio.cta.insight": "Where AI helps — and where it is the wrong tool",
     "studio.cta.live": "Open the archive",
 
     "services.eyebrow": "Services & Research / Vienna",
@@ -494,8 +507,7 @@ export const ui = {
     "hero.eyebrow": "Digital Marketer · Creative Developer",
     "hero.title.1": "Marketing, das sich bewegt,",
     "hero.title.2": "Websites, die verkaufen.",
-    "hero.subtitle":
-      "Ich bin Rodion Belousov: Digital Marketer mit Creative-Development-Range. Ich verbinde Positionierung, Content, SEO, Motion und Websites zu einem Launch-System - damit eine Idee nicht zwischen Strategie, Visuals und Umsetzung stirbt.",
+    "hero.subtitle": "Ich bin Rodion Belousov: Digital Marketer mit Creative-Development-Reichweite. Ich forme Positionierung, Content, SEO, Motion und Websites zu einem Launch-System — und bleibe danach dafür verantwortlich, was es im Markt tut. Der Beleg sind zwei laufende Plattformen in drei Sprachen, kein Deck.",
     "hero.cta.primary": "Ausgewählte Arbeiten",
     "hero.cta.secondary": "Projekt starten",
     "hero.scroll": "Scrollen",
@@ -505,6 +517,18 @@ export const ui = {
     "about.title": "Ein Operator für den Raum zwischen Strategie und Launch.",
     "about.text":
       "Die meisten Projekte verlieren ihre Schärfe zwischen Business-Idee, Content-Plan und fertiger Website. Ich schließe diese Lücke. Mit Master-Fokus auf International Marketing und Brand Management sowie Erfahrung bei Siemens, im Consulting und in eigenen Builds verbinde ich Marktlogik mit Copy, Search Intent, Kampagnen und Interface.",
+
+    // ── Der Einwand, laut ausgesprochen ─────────────────────────────────────
+    "objection.label": "Die naheliegende Frage",
+    "objection.title": "\u201eWarum dich bezahlen, wenn ich einfach das Modell bezahlen kann?\u201c",
+    "objection.text": "Berechtigte Frage, und die ehrliche Antwort lautet: Eine Website lässt sich heute generieren. Nicht generieren lässt sich jemand, der das Thema gut genug kennt, um die selbstbewusst falsche Antwort zu erkennen, der entscheidet, was nicht gebaut wird, und der in sechs Monaten noch da ist, wenn etwas leise kaputtgeht.",
+    "objection.1.title": "Eine Seite lässt sich generieren",
+    "objection.1.text": "Nicht generieren lässt sich das Urteil, dass ihr Scope falsch ist — dass der Kunde ein prüfbares Versprechen brauchte und nicht elf weitere Seiten.",
+    "objection.2.title": "Ein Artikel über FIDIC lässt sich generieren",
+    "objection.2.text": "Ob er stimmt, lässt sich damit nicht sagen. Dafür braucht es die Klausel, die Vergaberegel und die Praxis — und genau deshalb ist die Plattform überhaupt veröffentlichbar.",
+    "objection.3.title": "Eine schnelle Seite lässt sich generieren",
+    "objection.3.text": "Nicht generieren lässt sich die Person, die Monate später bemerkt, dass die Startseite 13 MB Video ausliefert, bevor überhaupt jemand scrollt.",
+    "objection.cta": "Nachlesen, was wirklich kaputtging",
     "about.pillar.1.title": "Marketing-Strategie",
     "about.pillar.1.text":
       "Angebotslogik, Zielgruppenverständnis, Positionierung und Narrativ - die strategische Wirbelsäule, bevor etwas visuell wird.",
@@ -632,13 +656,12 @@ export const ui = {
     "case.bridge.system.search.text": "Canonicals, hreflang, strukturierte Daten, generierte Sitemaps und redaktioneller Content schaffen die Basis für nachhaltige organische Sichtbarkeit.",
     "case.bridge.system.universe.title": "Proof zum Erkunden",
     "case.bridge.system.universe.text": "Acht Infrastrukturreferenzen leben in einer eigenen, dragbaren Three.js-Welt mit Projekt-Details und robusten Fallbacks.",
-    "case.bridge.workflow.title": "Eine Vision. Mehrere spezialisierte Copilots.",
-    "case.bridge.workflow.text":
-      "Strategie, visuelle Richtung und finale Entscheidungen blieben menschlich. KI beschleunigte Research und Engineering, waehrend jedes System im Repository-Kontext geprueft, geformt und ausgeliefert wurde.",
-    "case.bridge.workflow.human": "Art Direction, 3D-Assets und Motion Craft - von Hand fuer eine hochwertige Infrastrukturmarke gestaltet.",
-    "case.bridge.workflow.gemini": "Analytischer Sparringspartner fuer Struktur-Drafts, Praesentationslogik und Content-Framework.",
-    "case.bridge.workflow.claude": "Architektur-Support fuer Astro, Three.js, Automatisierung und mehrsprachiges Routing.",
-    "case.bridge.workflow.cursor": "Repository-nahe Umsetzung, Debugging und Performance-Arbeit mit Cursor und Codex.",
+    "case.bridge.workflow.title": "Was das Werkzeug nicht entscheidet.",
+    "case.bridge.workflow.text": "Cinema 4D, Three.js, GSAP, ein Editor mit einem Modell darin — der Stack ist nicht das Argument, denn den gleichen Stack kann jeder haben. Diese vier Entscheidungen sind die Arbeit, und keine davon fällt aus einem Prompt.",
+    "case.bridge.workflow.human": "Entscheiden, was gebaut wird und was nicht. Bridge Consult brauchte keine weiteren Seiten, sondern ein Versprechen, das ein internationaler Entscheider in dreißig Sekunden prüfen kann. Der Scope ist die erste und billigste Stelle, an der man falsch liegen kann.",
+    "case.bridge.workflow.gemini": "Erkennen, wann eine Antwort falsch ist. Infrastrukturverträge stecken voller prüfbarer Fakten — FIDIC-Klauseln, Vergaberegeln, was eine Claim tatsächlich verlangt. Generierter Text klingt so oder so gleich überzeugt; ihn zurückweisen zu können, ist der Teil, der Jahre gebraucht hat.",
+    "case.bridge.workflow.claude": "Entfernen, was die Messung nicht rechtfertigt. Smooth Scroll auf Telefonen aus, Seiten-CSS inline, damit ein abgebrochener Request das Styling nicht abräumt, Reveal-Logik außerhalb des Bundles. Der größere Teil des Engineerings war Weglassen.",
+    "case.bridge.workflow.cursor": "Derjenige sein, der in sechs Monaten verantwortlich ist. Die Tender-Pipeline committet weiterhin jeden Morgen, und irgendwer muss merken, wenn eine Startseite still 13 MB Video auszuliefern beginnt. Das ist kein Deliverable, das ist eine Beziehung.",
 
     "case.fidic.kicker": "Case Study / Wissensplattform",
     "case.fidic.title": "FIDIC - fidic.uz",
@@ -817,7 +840,7 @@ export const ui = {
     "note.8.title": "Die Optimierung, die 42 KB kostete",
     "note.8.text": "three.js zu einem dynamischen Import machen, damit Geräte ohne WebGL-Hintergrund auch den Download sparen. Es funktionierte - und der gemeinsame Chunk wuchs von 528 KB auf 674 KB, weil ein dynamischer Import den Bundler zwingt, den gesamten Namespace zu behalten, statt ihn zu tree-shaken. Das sind 42 KB mehr für jeden normalen Besucher, um einer Minderheit etwas zu sparen, und der Download rutschte in genau das Fenster, das den LCP bestimmt. Noch in derselben Stunde zurückgenommen.",
 
-    "studio.cta.insight": "Wie der AI-assisted Workflow wirklich funktioniert",
+    "studio.cta.insight": "Wo KI hilft — und wo sie das falsche Werkzeug ist",
     "studio.cta.live": "Archiv öffnen",
 
     "services.eyebrow": "Leistungen & Research / Wien",
