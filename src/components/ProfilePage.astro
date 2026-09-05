@@ -1,4 +1,19 @@
 ---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ProfilePage.astro — /en/rodion-belousov-vienna/ and /de/rodion-belousov-wien/
+//
+//  The page an employer or a client lands on from search, so it carries the
+//  professional record rather than the studio's showreel. It was previously a
+//  plain document — no section indices, no mono labels, no reveals, underlined
+//  text links — which read as an unstyled fallback next to the rest of the site.
+//  It now uses the same furniture as the home page and /notes: numbered
+//  sections, monospace labels, rule-separated rows and an opaque reading
+//  surface over the WebGL backdrop, so it belongs to the site it is part of.
+//
+//  Both languages live in this one component; the route decides which. It is
+//  lockLang, which means it states its own language and must never write that
+//  into the visitor's stored preference.
+// ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../layouts/Layout.astro";
 import { useTranslations, type Lang, type UIKey } from "../i18n/utils";
 import { serviceContent } from "../data/seo-content";
@@ -8,11 +23,13 @@ const { lang } = Astro.props;
 const de = lang === "de";
 const t = useTranslations(lang);
 const tk = (key: string) => t(key as UIKey);
+
 const paths = { en: "/en/rodion-belousov-vienna/", de: "/de/rodion-belousov-wien/" };
 const title = de ? "Rodion Belousov in Wien | Digital Marketing & SEO" : "Rodion Belousov in Vienna | Digital Marketing & SEO";
 const description = de
   ? "Rodion Belousov in Wien: Digital Marketing, Content, technisches SEO und Webentwicklung. Berufserfahrung, Projekte und Kontakt für Unternehmen und Arbeitgeber."
   : "Rodion Belousov in Vienna, Austria: digital marketing, content, technical SEO and web development. Experience, projects and contact for clients and employers.";
+
 const breadcrumbs = {
   "@type": "BreadcrumbList",
   itemListElement: [
@@ -20,88 +37,402 @@ const breadcrumbs = {
     { "@type": "ListItem", position: 2, name: de ? "Profil & Berufserfahrung" : "Profile & experience", item: `https://rodionbelousov.studio${paths[lang]}` },
   ],
 };
+
+// Facts the rest of the site already evidences, restated here because this is
+// the page read by someone deciding whether to make contact.
+const facts = [
+  { v: "+780%", k: de ? "Organic Search nach Launch" : "organic search after launch" },
+  { v: "429", k: de ? "Seiten, FIDIC-Plattform" : "pages, FIDIC platform" },
+  { v: "03", k: de ? "Sprachen im Content-System" : "languages in the content system" },
+  { v: "2 981", k: de ? "Ausschreibungen, täglich aktualisiert" : "tenders, refreshed daily" },
+];
+
+const experience = [1, 2, 3];
+const education = [1, 2, 3];
+const projects = [
+  { n: 1, href: "/work/bridge-consult", title: "Bridge Consult", meta: "ASTRO / GSAP / SEO" },
+  { n: 2, href: "/work/fidic", title: "FIDIC.uz", meta: "429 PAGES / 3 LANGUAGES" },
+];
 ---
 
-<Layout lang={lang} lockLang alternateUrls={{ ...paths, "x-default": paths.en }} title={title} description={description} pageType="profile" structuredData={breadcrumbs} noWebgl>
-  <article class="profile u-container">
-    <header>
-      <p class="eyebrow">{de ? "WIEN, ÖSTERREICH · INTERNATIONAL / REMOTE" : "VIENNA, AUSTRIA · INTERNATIONAL / REMOTE"}</p>
-      <h1>Rodion Belousov <span>{de ? "in Wien." : "in Vienna."}</span></h1>
-      <p class="lead">{de
-        ? "Ich bin Digital Marketer und Creative Developer in Wien. Ich verbinde Marketingstrategie, Content, technisches SEO und Webentwicklung — von der Positionierung bis zur veröffentlichten Website."
-        : "I'm a digital marketer and creative developer based in Vienna (Wien), Austria. I connect marketing strategy, content, technical SEO and web development, from positioning to the published website."}</p>
-      <div class="actions">
-        <a href="mailto:rodionbelousov@protonmail.com">{de ? "Kontakt aufnehmen" : "Get in touch"} ↗</a>
-        <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank">LinkedIn ↗</a>
-        <a href="#experience">{de ? "Berufserfahrung" : "Experience"} ↓</a>
-      </div>
-    </header>
+<Layout
+  lang={lang}
+  lockLang
+  alternateUrls={{ ...paths, "x-default": paths.en }}
+  title={title}
+  description={description}
+  pageType="profile"
+  structuredData={breadcrumbs}
+  noWebgl
+>
+  <div class="pf">
+    <article class="u-container pf-inner">
+      <header class="pf-hero">
+        <span class="pf-kicker">{de ? "WIEN, ÖSTERREICH · INTERNATIONAL / REMOTE" : "VIENNA, AUSTRIA · INTERNATIONAL / REMOTE"}</span>
+        <h1 class="pf-title" data-sy-reveal="words">Rodion Belousov <span>{de ? "in Wien." : "in Vienna."}</span></h1>
+        <p class="pf-lead" data-reveal>{de
+          ? "Digital Marketer und Creative Developer in Wien. Ich verbinde Marketingstrategie, Content, technisches SEO und Webentwicklung — von der Positionierung bis zur veröffentlichten Website, und bleibe danach dafür verantwortlich, was sie im Markt tut."
+          : "Digital marketer and creative developer in Vienna, Austria. I connect marketing strategy, content, technical SEO and web development — from positioning to the published website, and stay accountable for what it does in the market afterwards."}</p>
 
-    <section aria-labelledby="collaboration-title">
-      <h2 id="collaboration-title">{de ? "Für Unternehmen und Arbeitgeber." : "For clients and employers."}</h2>
-      <p>{de
-        ? "Diese Seite bündelt mein berufliches Profil und ausgewählte Arbeiten für Teams in Wien, ganz Österreich und international. Für ein Projekt oder eine passende Position in Digital Marketing, Content, SEO oder Webentwicklung erreichen Sie mich direkt per E-Mail."
-        : "This page brings together my professional background and selected work for teams in Vienna, across Austria and internationally. For a project or a relevant role in digital marketing, content, SEO or web development, contact me directly by email."}</p>
-      <p>{t("edu.langs.value")}</p>
-    </section>
+        <div class="pf-actions" data-reveal>
+          <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
+            <span>{de ? "Kontakt aufnehmen" : "Get in touch"}</span><i class="ui-arrow" aria-hidden="true"></i>
+          </a>
+          <a class="pf-btn" href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank" data-magnetic>
+            <span>LinkedIn</span><i class="ui-arrow" aria-hidden="true"></i>
+          </a>
+          <a class="pf-btn ghost" href="#experience" data-magnetic>
+            <span>{de ? "Berufserfahrung" : "Experience"}</span><i class="ui-arrow ui-arrow-down" aria-hidden="true"></i>
+          </a>
+        </div>
 
-    <section id="experience" aria-labelledby="experience-title">
-      <h2 id="experience-title">{de ? "Berufserfahrung" : "Professional experience"}</h2>
-      <div class="entries">{[1, 2, 3].map(n => <article>
-        <p class="eyebrow">{tk(`exp.${n}.period`)}</p>
-        <h3>{tk(`exp.${n}.company`)}</h3>
-        <p class="role">{tk(`exp.${n}.role`)}</p>
-        <p>{tk(`exp.${n}.text`)}</p>
-      </article>)}</div>
-    </section>
+        <dl class="pf-facts" data-reveal>
+          {facts.map((f) => (
+            <div>
+              <dt>{f.v}</dt>
+              <dd>{f.k}</dd>
+            </div>
+          ))}
+        </dl>
+      </header>
 
-    <section aria-labelledby="projects-title">
-      <h2 id="projects-title">{de ? "Ausgewählte Projekte" : "Selected projects"}</h2>
-      <div class="grid">{[
-        { n: 1, href: "/work/bridge-consult", title: "Bridge Consult" },
-        { n: 2, href: "/work/fidic", title: "FIDIC.uz" },
-      ].map(item => <article>
-        <h3><a href={item.href} data-case-link translate="no">{item.title} ↗</a></h3>
-        <p>{tk(`work.${item.n}.text`)}</p>
-      </article>)}</div>
-    </section>
+      <section class="pf-section" aria-labelledby="collaboration-title">
+        <span class="pf-idx">01 — {de ? "PROFIL" : "PROFILE"}</span>
+        <div class="pf-body">
+          <h2 id="collaboration-title" data-sy-reveal="words">{de ? "Für Unternehmen und Arbeitgeber." : "For clients and employers."}</h2>
+          <p data-reveal>{de
+            ? "Diese Seite bündelt mein berufliches Profil und ausgewählte Arbeiten für Teams in Wien, ganz Österreich und international. Für ein Projekt oder eine passende Position in Digital Marketing, Content, SEO oder Webentwicklung erreichen Sie mich direkt per E-Mail."
+            : "This page brings together my professional background and selected work for teams in Vienna, across Austria and internationally. For a project or a relevant role in digital marketing, content, SEO or web development, contact me directly by email."}</p>
+          <p class="pf-langs" data-reveal><span>{t("edu.langs.label")}</span>{t("edu.langs.value")}</p>
+        </div>
+      </section>
 
-    <section aria-labelledby="services-title">
-      <h2 id="services-title">{de ? "Leistungen in Wien und remote" : "Services in Vienna and remotely"}</h2>
-      <div class="entries">{Object.values(serviceContent).map(service => <article>
-        <h3><a href={service.paths[lang]}>{service.eyebrow[lang]} ↗</a></h3>
-        <p>{service.description[lang]}</p>
-      </article>)}</div>
-    </section>
+      <section class="pf-section" id="experience" aria-labelledby="experience-title">
+        <span class="pf-idx">02 — {de ? "BERUFSERFAHRUNG" : "EXPERIENCE"}</span>
+        <div class="pf-body">
+          <h2 id="experience-title" data-sy-reveal="words">{de ? "Berufserfahrung" : "Professional experience"}</h2>
+          <ol class="pf-rows">
+            {experience.map((n) => (
+              <li data-reveal>
+                <span class="pf-period">{tk(`exp.${n}.period`)}</span>
+                <div>
+                  <h3>{tk(`exp.${n}.company`)}</h3>
+                  <p class="pf-role">{tk(`exp.${n}.role`)}</p>
+                  <p>{tk(`exp.${n}.text`)}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
-    <section aria-labelledby="education-title">
-      <h2 id="education-title">{de ? "Ausbildung & Werkzeuge" : "Education & tools"}</h2>
-      <div class="grid">{[1, 2].map(n => <article>
-        <p class="eyebrow">{tk(`edu.${n}.period`)}</p>
-        <h3>{tk(`edu.${n}.degree`)}</h3>
-        <p>{tk(`edu.${n}.school`)}</p>
-      </article>)}</div>
-      <p>{t("edu.stack.value")}</p>
-    </section>
-  </article>
+      <section class="pf-section" aria-labelledby="projects-title">
+        <span class="pf-idx">03 — {de ? "ARBEITEN" : "WORK"}</span>
+        <div class="pf-body">
+          <h2 id="projects-title" data-sy-reveal="words">{de ? "Ausgewählte Projekte" : "Selected projects"}</h2>
+          <div class="pf-cards">
+            {projects.map((item) => (
+              <article data-reveal>
+                <span class="pf-meta">{item.meta}</span>
+                <h3><a href={item.href} data-case-link translate="no">{item.title}<i class="ui-arrow" aria-hidden="true"></i></a></h3>
+                <p>{tk(`work.${item.n}.text`)}</p>
+              </article>
+            ))}
+          </div>
+          <a class="pf-more" href="/notes" data-magnetic>
+            <span>{de ? "Was dabei kaputtging — das Engineering-Log" : "What broke along the way — the engineering log"}</span>
+            <i class="ui-arrow" aria-hidden="true"></i>
+          </a>
+        </div>
+      </section>
+
+      <section class="pf-section" aria-labelledby="services-title">
+        <span class="pf-idx">04 — {de ? "LEISTUNGEN" : "SERVICES"}</span>
+        <div class="pf-body">
+          <h2 id="services-title" data-sy-reveal="words">{de ? "Leistungen in Wien und remote" : "Services in Vienna and remotely"}</h2>
+          <ul class="pf-rows plain">
+            {Object.values(serviceContent).map((service) => (
+              <li data-reveal>
+                <span class="pf-period">{service.eyebrow[lang]}</span>
+                <div>
+                  <h3><a href={service.paths[lang]}>{service.title[lang]}<i class="ui-arrow" aria-hidden="true"></i></a></h3>
+                  <p>{service.description[lang]}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section class="pf-section" aria-labelledby="education-title">
+        <span class="pf-idx">05 — {de ? "AUSBILDUNG" : "EDUCATION"}</span>
+        <div class="pf-body">
+          <h2 id="education-title" data-sy-reveal="words">{de ? "Ausbildung & Werkzeuge" : "Education & tools"}</h2>
+          <div class="pf-cards three">
+            {education.map((n) => (
+              <article data-reveal>
+                <span class="pf-meta">{tk(`edu.${n}.period`)}</span>
+                <h3>{tk(`edu.${n}.degree`)}</h3>
+                <p>{tk(`edu.${n}.school`)}</p>
+              </article>
+            ))}
+          </div>
+          <p class="pf-langs" data-reveal><span>{t("edu.stack.label")}</span>{t("edu.stack.value")}</p>
+        </div>
+      </section>
+
+      <section class="pf-outro" data-reveal>
+        <p>{de
+          ? "Offen für Projekte und passende Positionen — in Wien, österreichweit oder remote."
+          : "Open to projects and relevant roles — in Vienna, across Austria or remote."}</p>
+        <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
+          <span>{de ? "Schreiben Sie mir" : "Send me a message"}</span><i class="ui-arrow" aria-hidden="true"></i>
+        </a>
+      </section>
+    </article>
+  </div>
 </Layout>
 
 <style>
-  .profile { max-width: 64rem; padding-top: clamp(7rem, 12vw, 11rem); }
-  header { padding-bottom: 4rem; }
-  .eyebrow { font-size: .7rem; letter-spacing: .12em; color: var(--color-text-alt); }
-  h1 { margin: 1.5rem 0; font: 500 clamp(2.8rem, 7vw, 6.5rem)/1.05 var(--font-display); }
-  h1 span { display: block; color: var(--color-text-alt); }
-  .lead { max-width: 48rem; font-size: clamp(1.1rem, 2vw, 1.45rem); }
-  p { max-width: 50rem; margin: 1rem 0; line-height: 1.65; color: rgba(var(--rgb-text), .75); }
-  .actions { display: flex; flex-wrap: wrap; gap: 1.25rem 2rem; margin-top: 2rem; }
-  a { text-decoration: underline; text-underline-offset: .3em; text-decoration-thickness: 1px; }
-  a:hover { color: var(--color-text-alt); }
-  section { border-top: 1px solid var(--color-line); padding: 3rem 0; }
-  h2 { font: 500 clamp(1.8rem, 4vw, 3rem)/1.15 var(--font-display); margin-bottom: 2rem; }
-  h3 { font: 500 clamp(1.25rem, 2.5vw, 1.8rem)/1.2 var(--font-display); }
-  .entries { display: grid; gap: 2rem; }
-  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
-  .role { color: var(--color-text); }
-  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  /* A CV is a reading page. Body copy over the WebGL sculpture is unreadable
+     on a phone, where the sphere sits directly behind the column — so this page
+     sets `noWebgl` and paints its own ground, and the hero's radial glow stands
+     in for the light the backdrop would have thrown. Skipping the backdrop also
+     means three.js is never fetched here, which is the right trade on the page
+     someone opens from a search result to read. */
+  .pf {
+    position: relative;
+    z-index: 1;
+    background: #030405;
+  }
+  .pf-inner { max-width: 74rem; }
+
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .pf-hero {
+    padding: clamp(7.5rem, 13vw, 11rem) 0 clamp(3rem, 6vw, 4.5rem);
+    background: radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.075), transparent 26rem);
+  }
+  .pf-kicker {
+    display: block;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .pf-title {
+    margin: 1.5rem 0 0;
+    max-width: 15ch;
+    font: 500 clamp(2.9rem, 8vw, 7rem)/0.98 var(--font-display);
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .pf-title span { color: rgba(var(--rgb-text), 0.42); }
+  .pf-lead {
+    max-width: 60ch;
+    margin: 2rem 0 0;
+    color: rgba(var(--rgb-text), 0.72);
+    font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .pf-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.4rem; }
+  .pf-btn {
+    display: inline-flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.95rem 1.5rem;
+    border: 1px solid rgba(var(--rgb-text), 0.22);
+    border-radius: 999px;
+    color: rgb(var(--rgb-text));
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+  }
+  .pf-btn:hover { border-color: rgba(var(--rgb-text), 0.5); background: rgba(var(--rgb-text), 0.06); }
+  .pf-btn.primary { background: rgb(var(--rgb-text)); border-color: rgb(var(--rgb-text)); color: #06070a; }
+  .pf-btn.primary:hover { background: #fff; border-color: #fff; }
+  .pf-btn.ghost { border-color: rgba(var(--rgb-text), 0.14); }
+
+  .pf-facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem 1.5rem;
+    margin: clamp(2.5rem, 5vw, 3.5rem) 0 0;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--color-line);
+  }
+  .pf-facts div { min-width: 0; }
+  .pf-facts dt { font: 500 clamp(1.5rem, 2.6vw, 2.3rem)/1 var(--font-display); white-space: nowrap; }
+  .pf-facts dd {
+    margin: 0.55rem 0 0;
+    color: rgba(var(--rgb-text), 0.5);
+    font-family: var(--font-inter);
+    font-size: 0.68rem;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Sections ──────────────────────────────────────────────────────────── */
+  .pf-section {
+    display: grid;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    padding: clamp(3rem, 6vw, 5rem) 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .pf-idx {
+    font-family: var(--font-inter);
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+  .pf-body h2 {
+    margin: 0 0 1.6rem;
+    max-width: 20ch;
+    font: 500 clamp(1.9rem, 3.6vw, 3.1rem)/1.06 var(--font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .pf-body p {
+    max-width: 64ch;
+    margin: 0 0 1rem;
+    color: rgba(var(--rgb-text), 0.68);
+    font-size: clamp(0.98rem, 1.2vw, 1.06rem);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+  .pf-langs {
+    margin-top: 1.6rem !important;
+    color: rgba(var(--rgb-text), 0.55) !important;
+    font-size: 0.9rem !important;
+  }
+  .pf-langs span {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-family: var(--font-inter);
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  /* ── Rule-separated rows (experience, services) ────────────────────────── */
+  .pf-rows { display: grid; margin: 0; padding: 0; list-style: none; }
+  .pf-rows li {
+    display: grid;
+    grid-template-columns: minmax(0, 9rem) minmax(0, 1fr);
+    gap: 0.4rem clamp(1rem, 3vw, 2.5rem);
+    padding: 1.7rem 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .pf-rows li:last-child { border-bottom: 1px solid var(--color-line); }
+  .pf-period {
+    font-family: var(--font-inter);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.4);
+    padding-top: 0.35rem;
+  }
+  .pf-rows h3 {
+    margin: 0;
+    font: 500 clamp(1.15rem, 1.9vw, 1.5rem)/1.2 var(--font-display);
+    text-wrap: balance;
+  }
+  .pf-rows h3 a { color: inherit; text-decoration: none; display: inline-flex; gap: 0.5rem; align-items: center; }
+  .pf-rows h3 a:hover { color: var(--color-accent); }
+  .pf-role {
+    margin: 0.35rem 0 0.7rem !important;
+    color: rgba(var(--rgb-text), 0.9) !important;
+    font-size: 0.92rem !important;
+  }
+
+  /* ── Cards (projects, education) ───────────────────────────────────────── */
+  .pf-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  .pf-cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pf-cards article {
+    padding: 1.5rem;
+    border: 1px solid var(--color-line);
+    border-radius: 6px;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  }
+  .pf-meta {
+    display: block;
+    margin-bottom: 1.4rem;
+    font-family: var(--font-inter);
+    font-size: 0.56rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .pf-cards h3 {
+    margin: 0 0 0.7rem;
+    font: 500 clamp(1.2rem, 2vw, 1.6rem)/1.15 var(--font-display);
+    text-wrap: balance;
+  }
+  .pf-cards h3 a { color: inherit; text-decoration: none; display: inline-flex; gap: 0.5rem; align-items: center; }
+  .pf-cards h3 a:hover { color: var(--color-accent); }
+  .pf-cards p { margin: 0; font-size: 0.94rem; }
+
+  .pf-more {
+    display: inline-flex;
+    gap: 0.7rem;
+    align-items: center;
+    margin-top: 1.8rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(var(--rgb-text), 0.26);
+    color: rgb(var(--rgb-text));
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.3s;
+  }
+  .pf-more:hover { border-color: rgb(var(--rgb-text)); }
+
+  /* ── Outro ─────────────────────────────────────────────────────────────── */
+  .pf-outro {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(3rem, 6vw, 4.5rem) 0 clamp(5rem, 9vw, 7rem);
+    border-top: 1px solid var(--color-line);
+  }
+  .pf-outro p {
+    max-width: 40ch;
+    margin: 0;
+    color: rgba(var(--rgb-text), 0.7);
+    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 900px) {
+    .pf-cards.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 760px) {
+    /* One column throughout: the index label sits above its section, the
+       period above its entry, and every card gets the full measure. */
+    .pf-section { grid-template-columns: 1fr; gap: 1.25rem; }
+    .pf-rows li { grid-template-columns: 1fr; gap: 0.5rem; }
+    .pf-period { padding-top: 0; }
+    .pf-cards,
+    .pf-cards.three { grid-template-columns: 1fr; }
+    .pf-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem 1rem; }
+    .pf-btn { padding: 0.85rem 1.2rem; }
+    .pf-outro { flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (max-width: 380px) {
+    .pf-actions { flex-direction: column; align-items: stretch; }
+    .pf-btn { justify-content: space-between; }
+  }
 </style>
