@@ -6,7 +6,8 @@
         "dev": "astro dev",
         "build": "astro build",
         "audit:links": "node scripts/audit-links.mjs",
-        "verify": "astro build && node scripts/audit-links.mjs",
+        "audit:seo": "node scripts/audit-seo.mjs",
+        "verify": "astro build && node scripts/audit-links.mjs && node scripts/audit-seo.mjs",
         "preview": "astro preview",
         "astro": "astro"
     },

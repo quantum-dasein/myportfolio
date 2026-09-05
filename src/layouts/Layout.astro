@@ -44,8 +44,8 @@ interface Props {
 }
 
 const {
-  title = t("meta.title"),
-  description = t("meta.description"),
+  title: providedTitle,
+  description: providedDescription,
   image = "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg",
   imageAlt = "Rodion Belousov — Marketing that moves. Websites that convert. Digital Marketer and Creative Developer in Vienna",
   pageType = "website",
@@ -60,6 +60,8 @@ const {
   noWebgl = false,
 } = Astro.props;
 const t = useTranslations(lang);
+const title = providedTitle ?? t("meta.title");
+const description = providedDescription ?? t("meta.description");
 const isDeck = mode === "deck";
 // There is exactly ONE home: "/". The old /en/ and /de/ landings were clones of
 // it, and treating them as the "locale root" is what sent visitors from a
@@ -79,6 +81,15 @@ const localizedAlternates = alternateUrls ? {
 const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 const pageSchemas = Array.isArray(structuredData) ? structuredData : [structuredData];
+if (Astro.url.pathname !== "/" && !noindex && !pageSchemas.some(item => item["@type"] === "BreadcrumbList")) {
+  pageSchemas.push({
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Rodion Belousov Studio", item: site.toString() },
+      { "@type": "ListItem", position: 2, name: title.split("|")[0].trim(), item: canonical },
+    ],
+  });
+}
 const schema = {
   "@context": "https://schema.org",
   "@graph": [
@@ -91,7 +102,6 @@ const schema = {
       // branded query in either script.
       alternateName: "Родион Белоусов",
       url: site.toString(),
-      image: socialImage,
       email: "mailto:rodionbelousov@protonmail.com",
       jobTitle: "Digital Marketing & SEO Specialist",
       hasOccupation: [
@@ -107,11 +117,17 @@ const schema = {
           skills: "Astro, Three.js, WebGL, GLSL, front-end engineering",
         },
       ],
-      description,
+      description: t("meta.description"),
       address: {
         "@type": "PostalAddress",
         addressLocality: "Vienna",
         addressCountry: "AT",
+      },
+      homeLocation: {
+        "@type": "City",
+        name: "Vienna",
+        alternateName: "Wien",
+        containedInPlace: { "@type": "Country", name: "Austria", alternateName: "Österreich" },
       },
       sameAs: [
         "https://www.linkedin.com/in/rodion-belousov-413040228/",
@@ -242,6 +258,14 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     <script type="application/ld+json" is:inline set:html={serializedSchema} />
 
     <script is:inline set:html={bootScript} />
+    <script is:inline>
+      // Apply before layout and history guards can record a stale case offset.
+      // Browser Back/Forward keeps its native restoration behaviour.
+      if (location.pathname.startsWith('/work/') && !location.hash) {
+        const entry = performance.getEntriesByType('navigation')[0];
+        if (entry?.type === 'navigate') history.scrollRestoration = 'manual';
+      }
+    </script>
 
     <title>{title}</title>
   </head>

@@ -135,6 +135,10 @@ body {
   min-height: 100svh;
 }
 
+[id] {
+  scroll-margin-top: 5.25rem;
+}
+
 main,
 section,
 article,
@@ -200,4 +204,16 @@ body.is-preloading {
   overflow: hidden !important;
   overscroll-behavior: none;
   touch-action: none;
+}
+
+/* The intro must never disable native touch scrolling on a phone. */
+@media (pointer: coarse) {
+  html.is-preloading,
+  html.is-preloading body,
+  body.is-preloading {
+    height: auto;
+    overflow-y: visible !important;
+    touch-action: auto;
+    overscroll-behavior-y: auto;
+  }
 }

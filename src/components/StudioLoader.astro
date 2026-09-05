@@ -52,6 +52,7 @@ const isDe = lang === "de";
 
 <style>
   :global(html.rb-loader-seen) rb-studio-loader { display: none; }
+  rb-studio-loader:not(.is-playing) { display: none; }
 
   rb-studio-loader {
     position: fixed;
@@ -430,8 +431,13 @@ const isDe = lang === "de";
   };
 
   class StudioLoader extends HTMLElement {
+    private deadline = 0;
+    private dismissed = false;
+
     connectedCallback() {
-      if (sessionStorage.getItem("rb-loader-seen") === "1") {
+      let seen = false;
+      try { seen = sessionStorage.getItem("rb-loader-seen") === "1"; } catch { /* storage can be unavailable */ }
+      if (seen) {
         document.documentElement.classList.remove("is-preloading");
         document.body.classList.remove("is-preloading");
         document.body.classList.add("is-loaded");
@@ -440,29 +446,25 @@ const isDe = lang === "de";
         return;
       }
 
-      sessionStorage.setItem("rb-loader-seen", "1");
+      try { sessionStorage.setItem("rb-loader-seen", "1"); } catch { /* intro still works */ }
+      this.classList.add("is-playing");
       document.documentElement.classList.add("is-preloading");
       document.body.classList.add("is-preloading");
 
       // ── The lock must never outlive this method ─────────────────────────
       // `is-preloading` is a hard scroll lock (overflow:hidden + touch-action:
-      // none). Everything that releases it used to live inside the rAF tick:
-      // the progress failsafe at 8.5s is itself a line of the tick, so any
-      // path that stops the loop — a throw in play(), a missing node, frames
-      // starved by a saturated main thread — left the page painted but
-      // permanently unscrollable, and only a reload cleared it (the reload
-      // takes the sessionStorage branch above and never locks at all).
-      // This timer runs off setTimeout instead, so it fires whether or not a
-      // single frame is ever served.
-      // Well clear of the 1.6-3.0s budget, but no longer the 9s it was when
-      // the intro itself could legitimately run that long.
-      const deadline = window.setTimeout(() => this.dismiss(), 5000);
-      this.addEventListener("rb:dismissed", () => clearTimeout(deadline), { once: true });
+      // none). Everything that releases it used to live inside the rAF tick —
+      // the progress failsafe included, since it is itself a line of that
+      // loop. Any path that stopped the loop left the page painted but
+      // permanently unscrollable, and only a reload cleared it. This timer
+      // runs off setTimeout, so it fires whether or not a frame is served.
+      // 5s is well clear of the 1.6-3.0s budget below without being the 9s it
+      // needed back when the intro could legitimately run that long.
+      this.deadline = window.setTimeout(() => this.dismiss(), 5000);
 
       try {
         this.play();
       } catch {
-        clearTimeout(deadline);
         this.dismiss();
       }
     }
@@ -538,7 +540,7 @@ const isDe = lang === "de";
       const SPIN_PERIOD = matchMedia("(prefers-reduced-motion: reduce)").matches ? 26 : 8.5;
 
       const tick = () => {
-        if (finished) return;
+        if (finished || this.dismissed) return;
         const elapsed = (performance.now() - start) / 1000;
         if (cube) {
           const turn = (elapsed / SPIN_PERIOD) * 360;
@@ -576,12 +578,11 @@ const isDe = lang === "de";
     }
 
     private dismiss() {
-      if (this.dataset.dismissed) return;
-      this.dataset.dismissed = "1";
-      this.dispatchEvent(new CustomEvent("rb:dismissed"));
+      if (this.dismissed) return;
+      this.dismissed = true;
+      clearTimeout(this.deadline);
       this.classList.add("is-hidden");
       document.body.classList.add("is-loaded");
-      window.dispatchEvent(new CustomEvent("rb:loaded"));
 
       // Unlock scrolling NOW, unconditionally. `is-preloading` puts
       // `overflow:hidden; touch-action:none` on <html> and <body>; its only job
@@ -596,6 +597,8 @@ const isDe = lang === "de";
         document.body.classList.remove("is-preloading");
       };
       unlock();
+      window.__rbLenis?.resize();
+      window.dispatchEvent(new CustomEvent("rb:loaded"));
 
       // Hard failsafe: even if the timeline below never completes, the element
       // is removed and the lock stays off.

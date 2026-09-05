@@ -483,8 +483,21 @@
       ? (isDe ? "INFRASTRUKTUR AUFBAUEN" : "ASSEMBLING INFRASTRUCTURE")
       : (isDe ? "VERTRAGSATLAS ÖFFNEN" : "OPENING CONTRACT ATLAS");
     index.textContent = kind === "bridge" ? "CASE / 01" : "CASE / 02";
-    const object = init(kind);
-    if (!camera) return;
+    // Start the navigation failsafe BEFORE WebGL: unavailable GPU contexts
+    // must not leave the transition overlay blocking the document.
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(safetyTimer);
+      if (done) done();
+      else reset();
+    };
+    safetyTimer = window.setTimeout(finish, 3000);
+    let object: THREE.Group;
+    try { object = init(kind); }
+    catch { finish(); return; }
+    if (!camera) { finish(); return; }
     const pages = animated.filter((item) => item.userData.page);
     const cover = kind === "fidic" ? animated.find((item) => item.userData.cover) : null;
     const baseScale = object.scale.x;
@@ -526,17 +539,11 @@
       camera.position.set(0, .15, returning ? 8.1 : 9.4);
     }
 
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(safetyTimer);
-      done?.();
-    };
     if (reduced) { gsap.to(veil, { opacity: 1, duration: .2, onComplete: finish }); return; }
 
     // Mobile keeps the story but plays it ~1.5x faster (≈1.4–1.8s total).
     const speed = lowPower ? 1.5 : 1;
+    clearTimeout(safetyTimer);
     safetyTimer = window.setTimeout(finish, Math.round((returning ? 2100 : (kind === "bridge" ? 2750 : 2350)) / speed) + 250);
     const tl = gsap.timeline({ defaults: { ease: "power3.inOut" }, onComplete: finish });
     tl.timeScale(speed);
@@ -653,6 +660,26 @@
     }
   }
 
+  function startCaseAtTop() {
+    if (!casePage || location.hash) return;
+    window.__rbLenis?.scrollTo(0, { immediate: true, force: true });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }
+
+  function restoreOriginScroll() {
+    const y = Number(sessionStorage.getItem("rb-case-scroll") || 0);
+    const restore = () => {
+      window.__rbLenis?.resize();
+      window.__rbLenis?.scrollTo(y, { immediate: true, force: true });
+      window.scrollTo({ top: y, left: 0, behavior: "instant" });
+    };
+    restore();
+    // A new document may still resize while eager images and fonts settle.
+    if (document.readyState !== "complete") {
+      addEventListener("pageshow", () => requestAnimationFrame(restore), { once: true });
+    }
+  }
+
   function exitTo(href: string) {
     if (!casePage || running) return;
     const kind = kindFromHref(location.href);
@@ -675,14 +702,14 @@
   function exitBackToOrigin() {
     if (!casePage || running) return;
     const origin = sessionStorage.getItem("rb-case-origin");
-    if (!origin) { history.back(); return; } // no stored origin → best-effort back
+    if (!origin) { location.assign("/#work"); return; }
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
     // Touch: skip the WebGL reverse scene entirely — plain instant navigation,
     // no arrival overlay, nothing that can stall and stick on iOS. Desktop keeps
     // the cinematic reverse below.
     if (lowPower) {
-      sessionStorage.removeItem("rb-case-return");
+      sessionStorage.setItem("rb-case-return", kind);
       location.assign(origin);
       return;
     }
@@ -700,7 +727,10 @@
   window.__rbCaseTransition = navigate;
 
   document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const target = event.target as HTMLElement;
+    const anchor = target.closest<HTMLAnchorElement>("a[href]");
+    if (anchor?.hasAttribute("download") || (anchor?.target && anchor.target !== "_self")) return;
     const back = target.closest<HTMLAnchorElement>("a[data-case-back]");
     if (back && casePage) {
       event.preventDefault();
@@ -736,12 +766,15 @@
       revealPage(directArriving, true);
     } else if (arriving) {
       sessionStorage.removeItem("rb-case-arrive");
+      startCaseAtTop();
+      addEventListener("pageshow", () => requestAnimationFrame(startCaseAtTop), { once: true });
       revealPage(arriving);
       armCaseHistory(arriving);
     } else if (!casePage && sessionStorage.getItem("rb-case-return") && originMatches()) {
       const kind = sessionStorage.getItem("rb-case-return") as CaseKind;
-      scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
-      revealPage(kind, true);
+      restoreOriginScroll();
+      if (lowPower) { reset(); clearCaseTransaction(); }
+      else revealPage(kind, true);
     } else if (sessionStorage.getItem("rb-case-return") && !originMatches()) {
       sessionStorage.removeItem("rb-case-return");
       document.documentElement.classList.remove("rb-case-arriving");

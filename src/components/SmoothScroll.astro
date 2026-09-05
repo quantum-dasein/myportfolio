@@ -17,6 +17,19 @@
   window.scrollVelocity = 0;
   window.scrollDirection = 1;
 
+  // Touch scroll stays entirely browser-owned, including momentum and toolbar
+  // resizing on iOS. Do not write scrollTo from a native scroll/scrollend event.
+  const nativeScroll = matchMedia("(pointer: coarse)").matches;
+  if (nativeScroll) {
+    window.scrollCurrent = scrollY;
+    let previous = scrollY;
+    addEventListener("scroll", () => {
+      window.scrollVelocity = scrollY - previous;
+      if (window.scrollVelocity) window.scrollDirection = Math.sign(window.scrollVelocity);
+      window.scrollCurrent = previous = scrollY;
+      ScrollTrigger.update();
+    }, { passive: true });
+  } else {
   const lenis = new Lenis({
     // syncTouch made Lenis intercept every touchmove to run its own transform
     // scroll — which BLOCKS native horizontal scroll containers (the Behance
@@ -84,6 +97,7 @@
 
   addEventListener("hashchange", () => scrollToHash(location.hash));
   if (location.hash) requestAnimationFrame(() => scrollToHash(location.hash, true));
+  }
 </script>
 
 <style>
