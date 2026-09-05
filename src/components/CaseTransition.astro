@@ -666,6 +666,20 @@
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }
 
+  function restoreOriginScroll() {
+    const y = Number(sessionStorage.getItem("rb-case-scroll") || 0);
+    const restore = () => {
+      window.__rbLenis?.resize();
+      window.__rbLenis?.scrollTo(y, { immediate: true, force: true });
+      window.scrollTo({ top: y, left: 0, behavior: "instant" });
+    };
+    restore();
+    // A new document may still resize while eager images and fonts settle.
+    if (document.readyState !== "complete") {
+      addEventListener("pageshow", () => requestAnimationFrame(restore), { once: true });
+    }
+  }
+
   function exitTo(href: string) {
     if (!casePage || running) return;
     const kind = kindFromHref(location.href);
@@ -688,14 +702,14 @@
   function exitBackToOrigin() {
     if (!casePage || running) return;
     const origin = sessionStorage.getItem("rb-case-origin");
-    if (!origin) { history.back(); return; } // no stored origin → best-effort back
+    if (!origin) { location.assign("/#work"); return; }
     const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
     sessionStorage.removeItem("rb-case-arrive");
     // Touch: skip the WebGL reverse scene entirely — plain instant navigation,
     // no arrival overlay, nothing that can stall and stick on iOS. Desktop keeps
     // the cinematic reverse below.
     if (lowPower) {
-      sessionStorage.removeItem("rb-case-return");
+      sessionStorage.setItem("rb-case-return", kind);
       location.assign(origin);
       return;
     }
@@ -758,8 +772,9 @@
       armCaseHistory(arriving);
     } else if (!casePage && sessionStorage.getItem("rb-case-return") && originMatches()) {
       const kind = sessionStorage.getItem("rb-case-return") as CaseKind;
-      scrollTo(0, Number(sessionStorage.getItem("rb-case-scroll") || 0));
-      revealPage(kind, true);
+      restoreOriginScroll();
+      if (lowPower) { reset(); clearCaseTransaction(); }
+      else revealPage(kind, true);
     } else if (sessionStorage.getItem("rb-case-return") && !originMatches()) {
       sessionStorage.removeItem("rb-case-return");
       document.documentElement.classList.remove("rb-case-arriving");

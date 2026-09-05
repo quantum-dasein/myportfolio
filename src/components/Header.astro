@@ -493,6 +493,19 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
     .toggle > span:last-child { width:1.65rem; height:1.05rem; }
   }
 
+  @media (max-width: 380px) {
+    .logo { font-size: .8rem; }
+    .logo .dot { display: none; }
+    .wrapper { gap: .5rem; }
+    .buttons { gap: .3rem; flex-shrink: 0; }
+    .buttons > * { flex-shrink: 0; }
+    .calm-toggle { padding: .3rem .4rem; }
+    .sound-toggle { width: 1.65rem; height: 1.65rem; }
+    .lang button,
+    .lang a { font-size: .62rem; padding: .27rem .35rem; }
+    .toggle > span:last-child { width: 1.5rem; }
+  }
+
   /* Touch devices drop backdrop-filter for performance — but the plate was only
      64% opaque and relied on that blur, so page content bled straight through
      the header. Without the blur it has to be genuinely opaque. */

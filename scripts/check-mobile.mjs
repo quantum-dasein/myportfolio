@@ -49,6 +49,9 @@ try {
     assert.equal(title.text,'FIDIC.uz');
     assert.ok(title.height < title.line * 1.2, `FIDIC fits one line at ${width}`);
     assert.equal(title.overflow,false, `No horizontal overflow at ${width}`);
+    const controls = await page.$$eval('sy-head .buttons > *', els => els.filter(el=>getComputedStyle(el).display!=='none').map(el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width};}));
+    assert.ok(controls.every(r=>r.x>=0 && r.right<=width && r.width>=20), `Header controls fit at ${width}`);
+    assert.ok(controls.every((r,i)=>!i || r.x>=controls[i-1].right), `Header controls do not overlap at ${width}`);
     await page.screenshot({path:`artifacts/mobile/fidic-${width}.png`});
   }
   console.log('PASS case navigation, return position and 320–430px titles');
