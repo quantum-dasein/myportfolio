@@ -62,8 +62,8 @@ const selectedWork = [
 
 <Layout
   alternateUrls={{ "x-default": "/" }}
-  title="Rodion Belousov | Digital Marketer & Creative Developer Vienna"
-  description="Vienna-based digital marketer Rodion Belousov builds positioning, content systems, technical SEO and high-performance Astro and Three.js websites."
+  title="Rodion Belousov — Digital Marketing & SEO | Vienna / Wien"
+  description="Rodion Belousov in Vienna (Wien), Austria: digital marketing, content, technical SEO and creative web development. Explore projects, experience and get in touch."
   pageType="profile"
   keywords={[
     "Digital Marketer Vienna",
@@ -706,6 +706,11 @@ const selectedWork = [
     /* survive 90% browser zoom / odd widths without clipping long titles */
     overflow-wrap: break-word;
     text-wrap: balance;
+  }
+
+  .work-card h3 {
+    overflow-wrap: normal;
+    hyphens: none;
   }
 
   .pillar p,

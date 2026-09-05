@@ -52,6 +52,7 @@ const isDe = lang === "de";
 
 <style>
   :global(html.rb-loader-seen) rb-studio-loader { display: none; }
+  rb-studio-loader:not(.is-playing) { display: none; }
 
   rb-studio-loader {
     position: fixed;
@@ -430,8 +431,13 @@ const isDe = lang === "de";
   };
 
   class StudioLoader extends HTMLElement {
+    private deadline = 0;
+    private dismissed = false;
+
     connectedCallback() {
-      if (sessionStorage.getItem("rb-loader-seen") === "1") {
+      let seen = false;
+      try { seen = sessionStorage.getItem("rb-loader-seen") === "1"; } catch { /* storage can be unavailable */ }
+      if (seen) {
         document.documentElement.classList.remove("is-preloading");
         document.body.classList.remove("is-preloading");
         document.body.classList.add("is-loaded");
@@ -440,9 +446,12 @@ const isDe = lang === "de";
         return;
       }
 
-      sessionStorage.setItem("rb-loader-seen", "1");
+      try { sessionStorage.setItem("rb-loader-seen", "1"); } catch { /* intro still works */ }
+      this.classList.add("is-playing");
       document.documentElement.classList.add("is-preloading");
       document.body.classList.add("is-preloading");
+      // Independent of requestAnimationFrame and asset callbacks.
+      this.deadline = window.setTimeout(() => this.dismiss(), 9000);
       this.play();
     }
 
@@ -502,7 +511,7 @@ const isDe = lang === "de";
       const SPIN_PERIOD = matchMedia("(prefers-reduced-motion: reduce)").matches ? 26 : 8.5;
 
       const tick = () => {
-        if (finished) return;
+        if (finished || this.dismissed) return;
         const elapsed = (performance.now() - start) / 1000;
         if (cube) {
           const turn = (elapsed / SPIN_PERIOD) * 360;
@@ -538,9 +547,11 @@ const isDe = lang === "de";
     }
 
     private dismiss() {
+      if (this.dismissed) return;
+      this.dismissed = true;
+      clearTimeout(this.deadline);
       this.classList.add("is-hidden");
       document.body.classList.add("is-loaded");
-      window.dispatchEvent(new CustomEvent("rb:loaded"));
 
       // Unlock scrolling NOW, unconditionally. `is-preloading` puts
       // `overflow:hidden; touch-action:none` on <html> and <body>; its only job
@@ -555,6 +566,8 @@ const isDe = lang === "de";
         document.body.classList.remove("is-preloading");
       };
       unlock();
+      window.__rbLenis?.resize();
+      window.dispatchEvent(new CustomEvent("rb:loaded"));
 
       // Hard failsafe: even if the timeline below never completes, the element
       // is removed and the lock stays off.

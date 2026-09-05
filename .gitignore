@@ -1,5 +1,7 @@
 # build output
 dist/
+artifacts/
+mobile-case-before.png
 # generated types
 .astro/
 

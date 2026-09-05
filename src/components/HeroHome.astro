@@ -316,7 +316,7 @@ const t = useTranslations();
     animation: cue 2.4s ease-in-out infinite;
   }
 
-  [data-intro] { opacity: 0; transform: translateY(24px); }
+  [data-intro] { opacity: 1; transform: none; }
 
   @keyframes cue {
     0%, 100% { transform: scaleX(0.25); opacity: 0.35; }
@@ -417,7 +417,7 @@ const t = useTranslations();
     if (!hero || hero.dataset.introPlayed === "true") return;
     hero.dataset.introPlayed = "true";
     const items = hero.querySelectorAll<HTMLElement>("[data-intro]");
-    gsap.to(items, {
+    gsap.fromTo(items, { opacity: 0, y: reduced ? 0 : 24 }, {
       opacity: 1,
       y: 0,
       duration: reduced ? 0 : 1.05,

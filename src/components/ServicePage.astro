@@ -10,6 +10,7 @@ const relatedInsights = Object.values(insightContent).filter((item) => item.rela
 const alternates = { en: service.paths.en, de: service.paths.de, "x-default": service.paths.en };
 const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({ "@type": "Question", name: pick(item.question, lang), acceptedAnswer: { "@type": "Answer", text: pick(item.answer, lang) } })) };
 const serviceSchema = { "@type": "Service", name: pick(service.title, lang), description: pick(service.description, lang), provider: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, areaServed: [{ "@type": "City", name: "Vienna" }, { "@type": "Country", name: "Austria" }] };
+const seoTitle = `${pick(service.eyebrow, lang).replace(" / ", " · ")} | Rodion Belousov`;
 // Unique OG image per service — real case evidence instead of the generic card.
 const og: Record<ServiceKey, { image: string; alt: string }> = {
   "digital-marketing": { image: "/cases/bridge-consult-google-analytics-organic-search-growth-780-percent.jpg", alt: "Google Analytics chart: 780% organic search growth for Bridge Consult" },
@@ -18,7 +19,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 };
 ---
 
-<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(service.title, lang)} description={pick(service.description, lang)} image={og[serviceKey].image} imageAlt={og[serviceKey].alt} pageType="article" structuredData={[serviceSchema, faqSchema]}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={seoTitle} description={pick(service.description, lang)} image={og[serviceKey].image} imageAlt={og[serviceKey].alt} structuredData={[serviceSchema, faqSchema]}>
   <article class="service-page">
     <!-- Always give a way out: back to the Services & Research hub. -->
     <a class="back-link" href="/services" data-cursor="BACK" data-magnetic>

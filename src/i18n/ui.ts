@@ -43,7 +43,7 @@ export const ui = {
     "hero.title.1": "Marketing that moves,",
     "hero.title.2": "websites that convert.",
     "hero.subtitle":
-      "I'm Rodion Belousov: a digital marketer with creative-development range. I shape positioning, content, SEO, motion and websites into one launch system - so the idea does not die between strategy, visuals and execution.",
+      "I'm Rodion Belousov, a digital marketer and creative developer based in Vienna (Wien), Austria. I connect positioning, content, SEO, motion and websites for teams in Austria and internationally.",
     "hero.cta.primary": "View selected work",
     "hero.cta.secondary": "Start a project",
     "hero.scroll": "Scroll",
@@ -118,7 +118,7 @@ export const ui = {
     "work.1.text":
       "Positioning, content architecture, Astro/GSAP code and technical SEO built into one premium corporate system for an international construction consultancy.",
     "work.2.tag": "Astro · Content · Technical SEO",
-    "work.2.title": "FIDIC — fidic.uz",
+    "work.2.title": "FIDIC.uz",
     "work.2.role": "Solo build · Content, code & SEO",
     "work.2.year": "2026",
     "work.2.text":
@@ -190,7 +190,7 @@ export const ui = {
     "case.bridge.workflow.cursor": "Repository-aware implementation, debugging and performance work with Cursor and Codex.",
 
     "case.fidic.kicker": "Case Study / Knowledge Platform",
-    "case.fidic.title": "FIDIC - fidic.uz",
+    "case.fidic.title": "FIDIC.uz",
     "case.fidic.subtitle":
       "A fast, premium knowledge platform around FIDIC contract standards - built to make complex authoritative material feel navigable, trustworthy and modern.",
     "case.fidic.role.value": "Solo build: product strategy, content, SEO, code and art direction",
@@ -425,7 +425,7 @@ export const ui = {
     "hero.title.1": "Marketing, das sich bewegt,",
     "hero.title.2": "Websites, die verkaufen.",
     "hero.subtitle":
-      "Ich bin Rodion Belousov: Digital Marketer mit Creative-Development-Range. Ich verbinde Positionierung, Content, SEO, Motion und Websites zu einem Launch-System - damit eine Idee nicht zwischen Strategie, Visuals und Umsetzung stirbt.",
+      "Ich bin Rodion Belousov, Digital Marketer und Creative Developer in Wien, Österreich. Ich verbinde Positionierung, Content, SEO, Motion und Websites für Teams in Österreich und international.",
     "hero.cta.primary": "Ausgewählte Arbeiten",
     "hero.cta.secondary": "Projekt starten",
     "hero.scroll": "Scrollen",
@@ -499,7 +499,7 @@ export const ui = {
     "work.1.text":
       "Positionierung, Content-Architektur, Astro/GSAP-Code und Technical SEO als ein Premium-System für ein internationales Bauberatungsunternehmen.",
     "work.2.tag": "Astro · Content · Technical SEO",
-    "work.2.title": "FIDIC — fidic.uz",
+    "work.2.title": "FIDIC.uz",
     "work.2.role": "Solo Build · Content, Code & SEO",
     "work.2.year": "2026",
     "work.2.text":
@@ -571,7 +571,7 @@ export const ui = {
     "case.bridge.workflow.cursor": "Repository-nahe Umsetzung, Debugging und Performance-Arbeit mit Cursor und Codex.",
 
     "case.fidic.kicker": "Case Study / Wissensplattform",
-    "case.fidic.title": "FIDIC - fidic.uz",
+    "case.fidic.title": "FIDIC.uz",
     "case.fidic.subtitle":
       "Eine schnelle, hochwertige Wissensplattform rund um FIDIC-Vertragsstandards - gebaut, damit komplexe verbindliche Inhalte navigierbar, vertrauenswürdig und modern wirken.",
     "case.fidic.role.value": "Solo Build: Produktstrategie, Content, SEO, Code und Art Direction",

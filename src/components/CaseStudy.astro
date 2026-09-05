@@ -117,7 +117,7 @@ const caseSchema = {
           <span class="case-kicker" data-i18n={key("kicker")}>
             {tk(key("kicker"))}
           </span>
-          <h1 class="case-title"><a href={liveUrl} target="_blank" rel="noopener" data-i18n={titleKey}>{tk(titleKey)}</a></h1>
+          <h1 class="case-title" translate="no"><a href={liveUrl} target="_blank" rel="noopener" data-i18n={titleKey}>{tk(titleKey)}</a></h1>
           <p class="case-subtitle" data-reveal data-i18n={key("subtitle")}>{tk(key("subtitle"))}</p>
           {liveUrl && <a class="case-live-url" href={liveUrl} target="_blank" rel="noopener"><span>{liveHost}</span><b>LIVE <i class="ui-arrow" aria-hidden="true"></i></b></a>}
         </div>
@@ -1235,15 +1235,15 @@ const caseSchema = {
   }
 
   [data-reveal] {
-    opacity: 0;
-    transform: translateY(28px);
+    opacity: 1;
+    transform: none;
   }
 
   [data-kinetic] {
     --mx: 50%;
     --my: 50%;
-    opacity: 0;
-    transform: translateY(34px) rotateX(5deg) scale(.985);
+    opacity: 1;
+    transform: none;
     transform-origin: center bottom;
     transform-style: preserve-3d;
     will-change: transform, opacity;
@@ -1263,9 +1263,11 @@ const caseSchema = {
     .case-hero-inner { grid-template-columns: 1fr; min-height: auto; padding: 8.5rem 0 4rem; }
     .case-title {
       max-width: 100%;
-      font-size: clamp(3.25rem, 16.5vw, 5.15rem);
-      line-height: .92;
-      overflow-wrap: anywhere;
+      font-size: clamp(2.75rem, 13vw, 5.15rem);
+      line-height: 1.04;
+      overflow-wrap: normal;
+      word-break: normal;
+      hyphens: none;
     }
     .case-subtitle { margin-top: 1.35rem; font-size: 1.05rem; line-height: 1.48; }
     .case-visual { min-height: 31rem; }
@@ -1330,7 +1332,7 @@ const caseSchema = {
 
   @media (max-width: 520px) {
     .case-hero-inner { padding-top: 7.25rem; }
-    .case-title { font-size: clamp(3rem, 16vw, 4.25rem); }
+    .case-title { font-size: clamp(2.5rem, 13vw, 4.25rem); }
     .case-live-url { font-size: .58rem; letter-spacing: .1em; }
     .case-visual { min-height: 26rem; }
     .case-screen { inset-inline: 2%; }
@@ -1420,6 +1422,8 @@ const caseSchema = {
   if (reduced) {
     gsap.set([...reveal, ...kinetic], { opacity: 1, y: 0, rotateX: 0, scale: 1 });
   } else {
+    gsap.set(reveal.filter(item => !item.closest(".case-hero")), { opacity: 0, y: 28 });
+    gsap.set(kinetic, { opacity: 0, y: 34, rotateX: 5, scale: .985 });
     ScrollTrigger.batch(reveal, {
       start: "top 88%",
       once: true,

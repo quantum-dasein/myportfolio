@@ -1,0 +1,107 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { useTranslations, type Lang, type UIKey } from "../i18n/utils";
+import { serviceContent } from "../data/seo-content";
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const de = lang === "de";
+const t = useTranslations(lang);
+const tk = (key: string) => t(key as UIKey);
+const paths = { en: "/en/rodion-belousov-vienna/", de: "/de/rodion-belousov-wien/" };
+const title = de ? "Rodion Belousov in Wien | Digital Marketing & SEO" : "Rodion Belousov in Vienna | Digital Marketing & SEO";
+const description = de
+  ? "Rodion Belousov in Wien: Digital Marketing, Content, technisches SEO und Webentwicklung. Berufserfahrung, Projekte und Kontakt für Unternehmen und Arbeitgeber."
+  : "Rodion Belousov in Vienna, Austria: digital marketing, content, technical SEO and web development. Experience, projects and contact for clients and employers.";
+const breadcrumbs = {
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Rodion Belousov Studio", item: "https://rodionbelousov.studio/" },
+    { "@type": "ListItem", position: 2, name: de ? "Profil & Berufserfahrung" : "Profile & experience", item: `https://rodionbelousov.studio${paths[lang]}` },
+  ],
+};
+---
+
+<Layout lang={lang} lockLang alternateUrls={{ ...paths, "x-default": paths.en }} title={title} description={description} pageType="profile" structuredData={breadcrumbs} noWebgl>
+  <article class="profile u-container">
+    <header>
+      <p class="eyebrow">{de ? "WIEN, ÖSTERREICH · INTERNATIONAL / REMOTE" : "VIENNA, AUSTRIA · INTERNATIONAL / REMOTE"}</p>
+      <h1>Rodion Belousov <span>{de ? "in Wien." : "in Vienna."}</span></h1>
+      <p class="lead">{de
+        ? "Ich bin Digital Marketer und Creative Developer in Wien. Ich verbinde Marketingstrategie, Content, technisches SEO und Webentwicklung — von der Positionierung bis zur veröffentlichten Website."
+        : "I'm a digital marketer and creative developer based in Vienna (Wien), Austria. I connect marketing strategy, content, technical SEO and web development, from positioning to the published website."}</p>
+      <div class="actions">
+        <a href="mailto:rodionbelousov@protonmail.com">{de ? "Kontakt aufnehmen" : "Get in touch"} ↗</a>
+        <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank">LinkedIn ↗</a>
+        <a href="#experience">{de ? "Berufserfahrung" : "Experience"} ↓</a>
+      </div>
+    </header>
+
+    <section aria-labelledby="collaboration-title">
+      <h2 id="collaboration-title">{de ? "Für Unternehmen und Arbeitgeber." : "For clients and employers."}</h2>
+      <p>{de
+        ? "Diese Seite bündelt mein berufliches Profil und ausgewählte Arbeiten für Teams in Wien, ganz Österreich und international. Für ein Projekt oder eine passende Position in Digital Marketing, Content, SEO oder Webentwicklung erreichen Sie mich direkt per E-Mail."
+        : "This page brings together my professional background and selected work for teams in Vienna, across Austria and internationally. For a project or a relevant role in digital marketing, content, SEO or web development, contact me directly by email."}</p>
+      <p>{t("edu.langs.value")}</p>
+    </section>
+
+    <section id="experience" aria-labelledby="experience-title">
+      <h2 id="experience-title">{de ? "Berufserfahrung" : "Professional experience"}</h2>
+      <div class="entries">{[1, 2, 3].map(n => <article>
+        <p class="eyebrow">{tk(`exp.${n}.period`)}</p>
+        <h3>{tk(`exp.${n}.company`)}</h3>
+        <p class="role">{tk(`exp.${n}.role`)}</p>
+        <p>{tk(`exp.${n}.text`)}</p>
+      </article>)}</div>
+    </section>
+
+    <section aria-labelledby="projects-title">
+      <h2 id="projects-title">{de ? "Ausgewählte Projekte" : "Selected projects"}</h2>
+      <div class="grid">{[
+        { n: 1, href: "/work/bridge-consult", title: "Bridge Consult" },
+        { n: 2, href: "/work/fidic", title: "FIDIC.uz" },
+      ].map(item => <article>
+        <h3><a href={item.href} data-case-link translate="no">{item.title} ↗</a></h3>
+        <p>{tk(`work.${item.n}.text`)}</p>
+      </article>)}</div>
+    </section>
+
+    <section aria-labelledby="services-title">
+      <h2 id="services-title">{de ? "Leistungen in Wien und remote" : "Services in Vienna and remotely"}</h2>
+      <div class="entries">{Object.values(serviceContent).map(service => <article>
+        <h3><a href={service.paths[lang]}>{service.eyebrow[lang]} ↗</a></h3>
+        <p>{service.description[lang]}</p>
+      </article>)}</div>
+    </section>
+
+    <section aria-labelledby="education-title">
+      <h2 id="education-title">{de ? "Ausbildung & Werkzeuge" : "Education & tools"}</h2>
+      <div class="grid">{[1, 2].map(n => <article>
+        <p class="eyebrow">{tk(`edu.${n}.period`)}</p>
+        <h3>{tk(`edu.${n}.degree`)}</h3>
+        <p>{tk(`edu.${n}.school`)}</p>
+      </article>)}</div>
+      <p>{t("edu.stack.value")}</p>
+    </section>
+  </article>
+</Layout>
+
+<style>
+  .profile { max-width: 64rem; padding-top: clamp(7rem, 12vw, 11rem); }
+  header { padding-bottom: 4rem; }
+  .eyebrow { font-size: .7rem; letter-spacing: .12em; color: var(--color-text-alt); }
+  h1 { margin: 1.5rem 0; font: 500 clamp(2.8rem, 7vw, 6.5rem)/1.05 var(--font-display); }
+  h1 span { display: block; color: var(--color-text-alt); }
+  .lead { max-width: 48rem; font-size: clamp(1.1rem, 2vw, 1.45rem); }
+  p { max-width: 50rem; margin: 1rem 0; line-height: 1.65; color: rgba(var(--rgb-text), .75); }
+  .actions { display: flex; flex-wrap: wrap; gap: 1.25rem 2rem; margin-top: 2rem; }
+  a { text-decoration: underline; text-underline-offset: .3em; text-decoration-thickness: 1px; }
+  a:hover { color: var(--color-text-alt); }
+  section { border-top: 1px solid var(--color-line); padding: 3rem 0; }
+  h2 { font: 500 clamp(1.8rem, 4vw, 3rem)/1.15 var(--font-display); margin-bottom: 2rem; }
+  h3 { font: 500 clamp(1.25rem, 2.5vw, 1.8rem)/1.2 var(--font-display); }
+  .entries { display: grid; gap: 2rem; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
+  .role { color: var(--color-text); }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+</style>
