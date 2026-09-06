@@ -20,6 +20,10 @@ const seoTitle = `${pick(service.eyebrow, lang).replace(" / ", " · ")} | Rodion
 // These are also purpose-built at 1200x630 and under 100 KB, where the case
 // screenshots were 883 KB and 2 MB at the wrong aspect ratio.
 const og: Record<ServiceKey, { image: string; alt: string }> = {
+  // Shares the default brand card with creative-development. Two service pages
+  // on one card is fine — the title and description are what people read — and
+  // a correct generic card beats a bespoke one with the wrong words on it.
+  websites: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — business websites in Vienna" },
   "digital-marketing": { image: "/og/rodion-belousov-digital-marketer-vienna.jpg", alt: "Rodion Belousov — digital marketing and SEO in Vienna" },
   "technical-seo": { image: "/og/rodion-belousov-services-marketing-seo-creative-development-vienna.jpg", alt: "Rodion Belousov — technical SEO in Vienna" },
   "creative-development": { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — creative development in Vienna" },

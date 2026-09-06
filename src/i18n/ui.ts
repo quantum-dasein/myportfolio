@@ -19,9 +19,8 @@ export const ui = {
     "accessibility.skip-to-content": "Skip to content",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
-    "meta.title": "Rodion Belousov — Digital Marketing & SEO Specialist in Vienna",
-    "meta.description":
-      "Rodion Belousov is a digital marketing and SEO specialist in Vienna — strategy, positioning, content and technical SEO that grow organic traffic and convert. Also a creative developer building the premium websites that carry it.",
+    "meta.title": "Web Developer in Vienna — Websites, Webdesign & SEO | Rodion Belousov",
+    "meta.description": "Websites, Webdesign and SEO in Vienna by Rodion Belousov. A clear business site live in about a week — fixed price, fast, yours to keep — plus interactive builds when a brand needs more.",
 
     // ── Navigation ──────────────────────────────────────────────────────────
     "nav.intro": "Intro",
@@ -39,11 +38,10 @@ export const ui = {
 
     // ── Hero ────────────────────────────────────────────────────────────────
     "hero.status": "Available for select projects · 2026",
-    "hero.eyebrow": "Digital Marketer · Creative Developer",
-    "hero.title.1": "Marketing that moves,",
-    "hero.title.2": "websites that convert.",
-    "hero.subtitle":
-      "I'm Rodion Belousov, a digital marketer and creative developer based in Vienna (Wien), Austria. I connect positioning, content, SEO, motion and websites for teams in Austria and internationally — and stay accountable for what they do in the market afterwards. The proof is two live platforms in three languages, not a deck.",
+    "hero.eyebrow": "Websites · Webdesign · SEO · Vienna",
+    "hero.title.1": "Websites that load fast,",
+    "hero.title.2": "and get found.",
+    "hero.subtitle": "I'm Rodion Belousov, a web developer and digital marketer in Vienna. Most jobs are straightforward: a clear business site, live in about a week, fixed price, fast and yours to keep. When a brand needs more than that, the same hands build the interactive kind — two live multilingual platforms are in the work below.",
     "hero.cta.primary": "View selected work",
     "hero.cta.secondary": "Start a project",
     "hero.scroll": "Scroll",
@@ -67,7 +65,7 @@ export const ui = {
     "objection.2.title": "You can generate an article about FIDIC",
     "objection.2.text": "You cannot tell whether it is correct. That takes knowing the clause, the procurement rule and the practice, and it is the reason the platform can be published at all.",
     "objection.3.title": "You can generate a fast site",
-    "objection.3.text": "You cannot generate the person who notices, months later, that the home page has started shipping 13 MB of video before anyone scrolls.",
+    "objection.3.text": "You cannot generate the person who notices, months later, that the site has quietly got slower — and who can tell you by how much, because it was being measured.",
     "objection.cta": "Read what actually broke",
     "about.pillar.1.title": "Marketing Strategy",
     "about.pillar.1.text":
@@ -199,8 +197,8 @@ export const ui = {
     "case.bridge.workflow.text": "Cinema 4D, Three.js, GSAP, an editor with a model in it — the stack is not the argument, because anyone can have the same stack. These four decisions are the work, and none of them come out of a prompt.",
     "case.bridge.workflow.human": "Deciding what to build and what to leave out. Bridge Consult did not need more pages; it needed a proposition an international decision-maker could verify in thirty seconds. Scope is the first and cheapest place to be wrong.",
     "case.bridge.workflow.gemini": "Knowing when an answer is wrong. Infrastructure contracting is full of checkable facts — FIDIC clauses, procurement rules, what a claim actually requires. Generated text is equally confident either way; being able to reject it is the part that took years.",
-    "case.bridge.workflow.claude": "Removing what the measurement does not justify. Smooth scroll off on phones, page CSS inlined so a dropped request cannot strip the styling, reveal logic kept outside the bundle. Most of the engineering here was subtraction.",
-    "case.bridge.workflow.cursor": "Being the one accountable in six months. The tender pipeline still commits every morning, and someone has to notice when a home page quietly starts shipping 13 MB of video. That is not a deliverable, it is a relationship.",
+    "case.bridge.workflow.claude": "Removing what the measurement does not justify. The interactive layer is held to a budget — meaning is server-rendered first, the 3D arrives after paint, and constrained devices never load it at all. Most of the engineering on a launch like this is subtraction.",
+    "case.bridge.workflow.cursor": "Being the one accountable in six months. A launch is where measurement starts: Core Web Vitals from real visitors, Search Console read as a work list, and regressions caught before a client has to report them.",
 
     "case.fidic.kicker": "Case Study / Knowledge Platform",
     "case.fidic.title": "FIDIC.uz",
@@ -388,8 +386,7 @@ export const ui = {
 
     "services.eyebrow": "Services & Research / Vienna",
     "services.title": "Systems, not deliverables.",
-    "services.lead":
-      "Three disciplines that ship as one launch system — and the research behind why it works. Strategy that survives contact with production, search that survives the design, code that survives the metrics.",
+    "services.lead": "Most of the work is the first one: a clear site, quickly, at a price agreed up front. The other three are what the same person can do when a project needs more — and the research behind why any of it works.",
 
     // ── /services hub: how the three disciplines combine, plus FAQ ──────────
     "services.how.label": "How it works together",
@@ -400,7 +397,7 @@ export const ui = {
     "services.how.2.title": "One content model",
     "services.how.2.text": "Content, search structure and interface share a single typed model, so a missing translation fails the build instead of shipping a half-empty page. Adding a language means adding data, not touching templates — which is how FIDIC.uz reached 429 pages in three languages.",
     "services.how.3.title": "Measured, then cut",
-    "services.how.3.text": "Everything ships, then gets measured on real devices. Smooth scroll came off phones because it cost LCP; a home page that had quietly started sending 12.75 MB of video was caught the same way. Most of the engineering on a mature project is subtraction.",
+    "services.how.3.text": "Everything ships, then gets measured on real devices rather than a laptop — and what does not earn its cost comes back out. That applies to the work as much as to the code: the engineering log on this site records the changes that were measured and then discarded.",
     "services.how.4.title": "Still there afterwards",
     "services.how.4.text": "The launch is where measurement starts. Core Web Vitals come from real visitors split by device, Search Console exports are read as a work list, and both live platforms here are still maintained rather than handed over and forgotten.",
     "services.faq.label": "Questions",
@@ -416,18 +413,22 @@ export const ui = {
     "services.faq.5.q": "Why does this site log its own mistakes?",
     "services.faq.5.a": "Because a finished surface no longer proves much — anyone can generate one. A record of what broke, how it was found and what it measured cannot be generated, and it includes two changes that were measured and then thrown away. That is the part of the job worth showing.",
     "services.open": "Open",
-    "services.1.title": "Digital Marketing",
+    "services.1.title": "Websites",
     "services.1.text":
-      "Positioning, research, content architecture and distribution — built to be measured, maintained and expanded, not to end at a mockup.",
-    "services.1.href": "/en/digital-marketing-vienna/",
-    "services.2.title": "Technical SEO",
+      "A clear business site, live in about a week. Fixed scope and price, static and fast, yours to keep — no builder subscription, no plugin upkeep.",
+    "services.1.href": "/en/website-development-vienna/",
+    "services.2.title": "Digital Marketing",
     "services.2.text":
-      "Crawlable architecture, multilingual routing, structured data and performance budgets — so visual ambition never becomes an indexing problem.",
-    "services.2.href": "/en/technical-seo-vienna/",
-    "services.3.title": "Creative Development",
+      "Positioning, research, content architecture and distribution — built to be measured, maintained and expanded, not to end at a mockup.",
+    "services.2.href": "/en/digital-marketing-vienna/",
+    "services.3.title": "Technical SEO",
     "services.3.text":
+      "Crawlable architecture, multilingual routing, structured data and performance budgets — so visual ambition never becomes an indexing problem.",
+    "services.3.href": "/en/technical-seo-vienna/",
+    "services.4.title": "Creative Development",
+    "services.4.text":
       "Astro, Three.js, GSAP and hand-written GLSL. Real-time 3D and motion that carry the brand without costing the Core Web Vitals.",
-    "services.3.href": "/en/creative-development-vienna/",
+    "services.4.href": "/en/creative-development-vienna/",
 
     "research.label": "Research",
     "research.title": "Receipts, not opinions.",
@@ -510,9 +511,8 @@ export const ui = {
     "accessibility.skip-to-content": "Zum Inhalt springen",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
-    "meta.title": "Rodion Belousov — Digital-Marketing- & SEO-Spezialist in Wien",
-    "meta.description":
-      "Rodion Belousov ist Digital-Marketing- und SEO-Spezialist in Wien — Strategie, Positionierung, Content und technisches SEO, das organischen Traffic steigert und konvertiert. Zugleich Creative Developer für die hochwertigen Websites dahinter.",
+    "meta.title": "Webentwickler in Wien — Website erstellen, Webdesign & SEO | Rodion Belousov",
+    "meta.description": "Websites, Webdesign und SEO in Wien von Rodion Belousov. Eine klare Unternehmens-Website in etwa einer Woche live — Festpreis, schnell, Ihr Eigentum — dazu interaktive Projekte, wenn eine Marke mehr braucht.",
 
     // ── Navigation ──────────────────────────────────────────────────────────
     "nav.intro": "Intro",
@@ -530,11 +530,10 @@ export const ui = {
 
     // ── Hero ────────────────────────────────────────────────────────────────
     "hero.status": "Verfügbar für ausgewählte Projekte · 2026",
-    "hero.eyebrow": "Digital Marketer · Creative Developer",
-    "hero.title.1": "Marketing, das sich bewegt,",
-    "hero.title.2": "Websites, die verkaufen.",
-    "hero.subtitle":
-      "Ich bin Rodion Belousov, Digital Marketer und Creative Developer in Wien, Österreich. Ich verbinde Positionierung, Content, SEO, Motion und Websites für Teams in Österreich und international — und bleibe danach dafür verantwortlich, was sie im Markt tun. Der Beleg sind zwei laufende Plattformen in drei Sprachen, kein Deck.",
+    "hero.eyebrow": "Websites · Webdesign · SEO · Wien",
+    "hero.title.1": "Websites, die schnell laden,",
+    "hero.title.2": "und gefunden werden.",
+    "hero.subtitle": "Ich bin Rodion Belousov, Webentwickler und Digital Marketer in Wien. Die meisten Aufträge sind unkompliziert: eine klare Unternehmens-Website, in etwa einer Woche live, zum Festpreis, schnell und Ihr Eigentum. Braucht eine Marke mehr, bauen dieselben Hände die interaktive Variante — zwei laufende mehrsprachige Plattformen finden Sie unten.",
     "hero.cta.primary": "Ausgewählte Arbeiten",
     "hero.cta.secondary": "Projekt starten",
     "hero.scroll": "Scrollen",
@@ -554,7 +553,7 @@ export const ui = {
     "objection.2.title": "Ein Artikel über FIDIC lässt sich generieren",
     "objection.2.text": "Ob er stimmt, lässt sich damit nicht sagen. Dafür braucht es die Klausel, die Vergaberegel und die Praxis — und genau deshalb ist die Plattform überhaupt veröffentlichbar.",
     "objection.3.title": "Eine schnelle Seite lässt sich generieren",
-    "objection.3.text": "Nicht generieren lässt sich die Person, die Monate später bemerkt, dass die Startseite 13 MB Video ausliefert, bevor überhaupt jemand scrollt.",
+    "objection.3.text": "Nicht generieren lässt sich die Person, die Monate später bemerkt, dass die Seite still langsamer geworden ist — und die sagen kann, um wie viel, weil gemessen wurde.",
     "objection.cta": "Nachlesen, was wirklich kaputtging",
     "about.pillar.1.title": "Marketing-Strategie",
     "about.pillar.1.text":
@@ -686,8 +685,8 @@ export const ui = {
     "case.bridge.workflow.text": "Cinema 4D, Three.js, GSAP, ein Editor mit einem Modell darin — der Stack ist nicht das Argument, denn den gleichen Stack kann jeder haben. Diese vier Entscheidungen sind die Arbeit, und keine davon fällt aus einem Prompt.",
     "case.bridge.workflow.human": "Entscheiden, was gebaut wird und was nicht. Bridge Consult brauchte keine weiteren Seiten, sondern ein Versprechen, das ein internationaler Entscheider in dreißig Sekunden prüfen kann. Der Scope ist die erste und billigste Stelle, an der man falsch liegen kann.",
     "case.bridge.workflow.gemini": "Erkennen, wann eine Antwort falsch ist. Infrastrukturverträge stecken voller prüfbarer Fakten — FIDIC-Klauseln, Vergaberegeln, was eine Claim tatsächlich verlangt. Generierter Text klingt so oder so gleich überzeugt; ihn zurückweisen zu können, ist der Teil, der Jahre gebraucht hat.",
-    "case.bridge.workflow.claude": "Entfernen, was die Messung nicht rechtfertigt. Smooth Scroll auf Telefonen aus, Seiten-CSS inline, damit ein abgebrochener Request das Styling nicht abräumt, Reveal-Logik außerhalb des Bundles. Der größere Teil des Engineerings war Weglassen.",
-    "case.bridge.workflow.cursor": "Derjenige sein, der in sechs Monaten verantwortlich ist. Die Tender-Pipeline committet weiterhin jeden Morgen, und irgendwer muss merken, wenn eine Startseite still 13 MB Video auszuliefern beginnt. Das ist kein Deliverable, das ist eine Beziehung.",
+    "case.bridge.workflow.claude": "Entfernen, was die Messung nicht rechtfertigt. Die interaktive Ebene unterliegt einem Budget: Bedeutung wird zuerst serverseitig gerendert, 3D kommt nach dem Paint, schwache Geräte laden es gar nicht. Der größte Teil des Engineerings bei so einem Launch ist Weglassen.",
+    "case.bridge.workflow.cursor": "Derjenige sein, der in sechs Monaten verantwortlich ist. Ein Launch ist der Anfang der Messung: Core Web Vitals von echten Besuchern, die Search Console als Arbeitsliste gelesen, und Regressionen gefunden, bevor ein Kunde sie melden muss.",
 
     "case.fidic.kicker": "Case Study / Wissensplattform",
     "case.fidic.title": "FIDIC.uz",
@@ -871,8 +870,7 @@ export const ui = {
 
     "services.eyebrow": "Leistungen & Research / Wien",
     "services.title": "Systeme, keine Deliverables.",
-    "services.lead":
-      "Drei Disziplinen, die als ein Launch-System ausgeliefert werden — und die Research dahinter. Strategie, die die Produktion überlebt, Search, das das Design überlebt, Code, der die Metriken überlebt.",
+    "services.lead": "Der größte Teil der Arbeit ist die erste Leistung: eine klare Website, schnell, zum vorab vereinbarten Preis. Die anderen drei sind das, was dieselbe Person kann, wenn ein Projekt mehr braucht — samt der Recherche dahinter.",
 
     // ── /services-Hub: wie die drei Disziplinen zusammenwirken, plus FAQ ────
     "services.how.label": "Wie es zusammenwirkt",
@@ -883,7 +881,7 @@ export const ui = {
     "services.how.2.title": "Ein Content-Modell",
     "services.how.2.text": "Content, Search-Struktur und Interface teilen ein typisiertes Modell, sodass eine fehlende Übersetzung den Build bricht statt eine halbleere Seite auszuliefern. Eine Sprache mehr heißt Daten ergänzen, nicht Templates anfassen — so kam FIDIC.uz auf 429 Seiten in drei Sprachen.",
     "services.how.3.title": "Gemessen, dann gestrichen",
-    "services.how.3.text": "Alles geht live und wird dann auf echten Geräten gemessen. Smooth Scroll flog von den Telefonen, weil er LCP kostete; eine Startseite, die still 12,75 MB Video sendete, wurde genauso gefunden. In einem reifen Projekt ist der größte Teil des Engineerings Weglassen.",
+    "services.how.3.text": "Alles geht live und wird dann auf echten Geräten gemessen, nicht auf einem Laptop — und was seine Kosten nicht rechtfertigt, fliegt wieder raus. Das gilt für die Arbeit wie für den Code: Das Engineering-Log dieser Website hält auch die Änderungen fest, die gemessen und dann verworfen wurden.",
     "services.how.4.title": "Danach noch da",
     "services.how.4.text": "Der Launch ist der Anfang der Messung. Core Web Vitals kommen von echten Besuchern, nach Gerät getrennt, Search-Console-Exporte werden als Arbeitsliste gelesen, und beide Live-Plattformen hier werden weiter gepflegt statt übergeben und vergessen.",
     "services.faq.label": "Fragen",
@@ -899,18 +897,22 @@ export const ui = {
     "services.faq.5.q": "Warum protokolliert diese Website ihre eigenen Fehler?",
     "services.faq.5.a": "Weil eine fertige Oberfläche kaum noch etwas beweist — generieren kann sie jeder. Ein Protokoll darüber, was kaputtging, wie es gefunden wurde und was es gemessen hat, lässt sich nicht generieren, und es enthält zwei Änderungen, die gemessen und dann verworfen wurden. Genau das ist der zeigenswerte Teil der Arbeit.",
     "services.open": "Öffnen",
-    "services.1.title": "Digital Marketing",
+    "services.1.title": "Websites",
     "services.1.text":
-      "Positionierung, Research, Content-Architektur und Distribution — messbar, wartbar und ausbaufähig gebaut, statt beim Mockup zu enden.",
-    "services.1.href": "/de/digital-marketing-wien/",
-    "services.2.title": "Technical SEO",
+      "Eine klare Unternehmens-Website, in etwa einer Woche live. Fester Umfang und Preis, statisch und schnell, Ihr Eigentum — ohne Baukasten-Abo, ohne Plugin-Pflege.",
+    "services.1.href": "/de/website-erstellen-wien/",
+    "services.2.title": "Digital Marketing",
     "services.2.text":
-      "Crawlbare Architektur, mehrsprachiges Routing, strukturierte Daten und Performance-Budgets — damit gestalterischer Anspruch kein Indexierungsproblem wird.",
-    "services.2.href": "/de/technical-seo-wien/",
-    "services.3.title": "Creative Development",
+      "Positionierung, Research, Content-Architektur und Distribution — messbar, wartbar und ausbaufähig gebaut, statt beim Mockup zu enden.",
+    "services.2.href": "/de/digital-marketing-wien/",
+    "services.3.title": "Technical SEO",
     "services.3.text":
+      "Crawlbare Architektur, mehrsprachiges Routing, strukturierte Daten und Performance-Budgets — damit gestalterischer Anspruch kein Indexierungsproblem wird.",
+    "services.3.href": "/de/technical-seo-wien/",
+    "services.4.title": "Creative Development",
+    "services.4.text":
       "Astro, Three.js, GSAP und handgeschriebenes GLSL. Echtzeit-3D und Motion, die die Marke tragen, ohne die Core Web Vitals zu kosten.",
-    "services.3.href": "/de/creative-development-wien/",
+    "services.4.href": "/de/creative-development-wien/",
 
     "research.label": "Research",
     "research.title": "Belege statt Meinungen.",
