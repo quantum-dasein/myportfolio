@@ -1,0 +1,226 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ScopeField — the lattice behind the scope picker on the profile page.
+//
+//  It is not decoration. Every node is one unit of the job the visitor has
+//  currently selected, so picking "landing page" lights a handful and picking
+//  "platform" lights the whole field. The picture answers the question the
+//  buttons ask.
+//
+//  Hand-written 2D canvas with its own perspective projection — no three.js.
+//  This page is the one someone opens from a search result to find out whether
+//  to write, so it must stay light; pulling a 3D library in for a decorative
+//  backdrop would contradict the argument the page is making. Geometry is
+//  computed once on a Fibonacci sphere and only brightness and rotation move,
+//  so the per-frame cost is O(n) with no allocation.
+// ─────────────────────────────────────────────────────────────────────────────
+---
+
+<div class="sf" aria-hidden="true"><canvas data-scope-field></canvas></div>
+
+<style>
+  .sf {
+    /* Sticky, with its own height pulled back out of the flow, so it hangs
+       behind the hero AND the picker without occupying a row of its own. */
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    margin-bottom: -100vh;
+    margin-bottom: -100dvh;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    /* The field is atmosphere behind a reading column, so it never competes
+       with the type: it fades out towards the copy and off every edge. */
+    mask-image: radial-gradient(circle at 68% 44%, #000 0 42%, rgba(0, 0, 0, 0.6) 66%, transparent 88%);
+    -webkit-mask-image: radial-gradient(circle at 68% 44%, #000 0 42%, rgba(0, 0, 0, 0.6) 66%, transparent 88%);
+  }
+  .sf canvas { display: block; width: 100%; height: 100%; }
+
+  :global(html.rb-calm) .sf { opacity: 0.4; }
+
+  /* On a phone the reading column is the whole width, so a field centred behind
+     it turns body copy into texture. Confine it to a band at the top of the
+     viewport instead: still present, still reacting to the picker, but clear of
+     everything anyone has to read. */
+  @media (max-width: 900px) {
+    .sf {
+      opacity: 0.34;
+      mask-image: linear-gradient(to bottom, #000 0 20%, rgba(0, 0, 0, 0.34) 44%, transparent 66%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0 20%, rgba(0, 0, 0, 0.34) 44%, transparent 66%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sf { opacity: 0.5; }
+  }
+</style>
+
+<script>
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-scope-field]");
+  const ctx = canvas?.getContext("2d", { alpha: true });
+
+  if (canvas && ctx) {
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const coarse = matchMedia("(pointer: coarse), (max-width: 760px)").matches;
+    // Same frugal rule the rest of the site uses: a metered connection or a
+    // low-end device gets the layout, not the animation.
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+      deviceMemory?: number;
+    };
+    const frugal =
+      nav.connection?.saveData === true ||
+      /(^|-)2g$/.test(nav.connection?.effectiveType || "") ||
+      (nav.deviceMemory !== undefined && nav.deviceMemory <= 2);
+
+    const COUNT = coarse ? 130 : 260;
+    type Node = { x: number; y: number; z: number; lit: number; target: number };
+
+    // Fibonacci sphere: an even spread with no seams or polar clustering, and
+    // — the reason it is used here — a stable index order, so "the first N
+    // nodes" is always a well distributed subset rather than a patch.
+    const nodes: Node[] = [];
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < COUNT; i++) {
+      const y = 1 - (i / (COUNT - 1)) * 2;
+      const r = Math.sqrt(Math.max(0, 1 - y * y));
+      const theta = golden * i;
+      nodes.push({ x: Math.cos(theta) * r, y, z: Math.sin(theta) * r, lit: 0, target: 0 });
+    }
+
+    let ratio = 0.16; // share of the field the current scope lights
+    let shown = 0.16;
+    let spin = 0;
+    let pointerX = 0;
+    let pointerY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let frame = 0;
+    let visible = true;
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      dpr = Math.min(devicePixelRatio || 1, coarse ? 1.5 : 2);
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const draw = () => {
+      if (!width || !height) return;
+      ctx.clearRect(0, 0, width, height);
+
+      shown += (ratio - shown) * 0.07;
+      const active = shown * COUNT;
+      const scale = Math.min(width, height) * (coarse ? 0.42 : 0.38);
+      const cx = width * (coarse ? 0.5 : 0.68);
+      const cy = height * 0.44;
+
+      const sinY = Math.sin(spin);
+      const cosY = Math.cos(spin);
+      const sinX = Math.sin(pointerY * 0.35);
+      const cosX = Math.cos(pointerY * 0.35);
+
+      for (let i = 0; i < COUNT; i++) {
+        const n = nodes[i];
+        n.target = i < active ? 1 : 0;
+        n.lit += (n.target - n.lit) * 0.06;
+        if (n.lit < 0.004 && n.target === 0) continue;
+
+        // rotate around Y, then tilt by the pointer, then project
+        const rx = n.x * cosY - n.z * sinY;
+        const rz = n.x * sinY + n.z * cosY;
+        const ry = n.y * cosX - rz * sinX;
+        const rz2 = n.y * sinX + rz * cosX;
+
+        const depth = 1 / (2.6 - rz2 * 0.9);
+        const px = cx + rx * scale * depth * 2.2 + pointerX * 16;
+        const py = cy + ry * scale * depth * 2.2;
+        const size = (0.6 + n.lit * 1.9) * depth * 2.4;
+        const fade = (0.3 + rz2 * 0.46) * (0.16 + n.lit * 0.84);
+        if (fade <= 0) continue;
+
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(0.35, size), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(233, 240, 243, ${Math.min(0.95, fade)})`;
+        ctx.fill();
+
+        // A thread to the previous lit node. On the Fibonacci order that is a
+        // neighbour on the spiral, so the field reads as one connected system
+        // getting denser as the job gets bigger — which is the whole point.
+        if (i > 0 && n.lit > 0.5) {
+          const p = nodes[i - 1];
+          if (p.lit > 0.5) {
+            const prx = p.x * cosY - p.z * sinY;
+            const prz = p.x * sinY + p.z * cosY;
+            const pry = p.y * cosX - prz * sinX;
+            const prz2 = p.y * sinX + prz * cosX;
+            const pd = 1 / (2.6 - prz2 * 0.9);
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(cx + prx * scale * pd * 2.2 + pointerX * 16, cy + pry * scale * pd * 2.2);
+            ctx.strokeStyle = `rgba(233, 240, 243, ${Math.min(0.24, fade * 0.32)})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+    };
+
+    const tick = () => {
+      if (!visible) { frame = 0; return; }
+      spin += 0.0016;
+      pointerX += (targetX - pointerX) * 0.05;
+      pointerY += (targetY - pointerY) * 0.05;
+      draw();
+      frame = requestAnimationFrame(tick);
+    };
+
+    const start = () => {
+      if (!frame && visible && !reduced && !frugal) frame = requestAnimationFrame(tick);
+    };
+    const stop = () => { cancelAnimationFrame(frame); frame = 0; };
+
+    resize();
+    addEventListener("resize", () => { resize(); draw(); }, { passive: true });
+
+    // Never burn a frame on a field nobody is looking at.
+    const io = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) start(); else stop();
+    }, { rootMargin: "120px" });
+    io.observe(canvas);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop(); else start();
+    });
+
+    if (!coarse) {
+      addEventListener("pointermove", (event) => {
+        targetX = (event.clientX / innerWidth - 0.5) * 2;
+        targetY = (event.clientY / innerHeight - 0.5) * 2;
+      }, { passive: true });
+    }
+
+    // The picker drives the field. Reduced motion and frugal devices still get
+    // the correct still frame for whatever is selected — they just never spin.
+    addEventListener("rb:scope", (event) => {
+      const detail = (event as CustomEvent<{ ratio: number }>).detail;
+      if (detail && Number.isFinite(detail.ratio)) {
+        ratio = Math.max(0.05, Math.min(1, detail.ratio));
+        if (reduced || frugal) { shown = ratio; draw(); }
+      }
+    });
+
+    draw();
+    start();
+  }
+</script>

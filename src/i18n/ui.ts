@@ -78,6 +78,11 @@ export const ui = {
       "Astro, Three.js, GSAP and motion craft when the brand needs a digital surface that feels alive and still sells.",
 
     // ── Experience ──────────────────────────────────────────────────────────
+    "record.label": "RECORD",
+    "record.title": "The full professional record lives on one page.",
+    "record.text":
+      "Experience, education, languages and the toolkit — plus a scope picker that tells you the timeline for whatever you actually need, from a landing page upward. It is one page rather than four sections here, so this one can stay about the work.",
+    "record.cta": "Experience, education and what I take on",
     "exp.label": "Career",
     "exp.title": "Where I've built.",
     "exp.1.company": "Bridge Consult — Remote",
@@ -566,6 +571,11 @@ export const ui = {
       "Astro, Three.js und GSAP, wenn ein Projekt eine hochwertige digitale Oberfläche braucht - schnell, einprägsam und an Marketingziele gebunden.",
 
     // ── Experience ──────────────────────────────────────────────────────────
+    "record.label": "WERDEGANG",
+    "record.title": "Der vollständige Werdegang steht auf einer Seite.",
+    "record.text":
+      "Berufserfahrung, Ausbildung, Sprachen und das Toolkit — dazu eine Auswahl, die Ihnen den Zeitrahmen für genau das nennt, was Sie brauchen, von der Landingpage aufwärts. Eine Seite statt vier Abschnitte hier, damit es hier um die Arbeit gehen kann.",
+    "record.cta": "Berufserfahrung, Ausbildung und was ich übernehme",
     "exp.label": "Werdegang",
     "exp.title": "Wo ich gebaut habe.",
     "exp.1.company": "Bridge Consult — Remote",

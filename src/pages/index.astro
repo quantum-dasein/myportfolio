@@ -158,66 +158,28 @@ const selectedWork = [
     </div>
   </section>
 
-  <section class="section career" id="career">
+  <!-- The CV used to be two full sections here AND the whole of the profile
+       page, word for word. It belongs on the profile page: that page exists to
+       be the professional record, and repeating it here made both look like
+       padding for search. This band is the pointer, and the home page stays
+       about the work. -->
+  <section class="section record" id="record">
     <div class="u-container section-grid">
-      <span class="s-idx">03 - <span data-i18n="exp.label">{t("exp.label")}</span></span>
+      <span class="s-idx">03 - <span data-i18n="record.label">{t("record.label")}</span></span>
       <div>
-        <h2 class="s-title" data-sy-reveal="words" data-i18n="exp.title">{t("exp.title")}</h2>
-        <div class="jobs">
-          {
-            jobs.map((job) => (
-              <article class="job" data-reveal data-job-card tabindex="0">
-                <span class="job-idx">{String(job.n).padStart(2, "0")}</span>
-                <div>
-                  <h3 data-sy-reveal="words" data-i18n={job.company}>{tk(job.company)}</h3>
-                  <p class="job-role" data-i18n={job.role}>{tk(job.role)}</p>
-                </div>
-                <span class="job-period" data-i18n={job.period}>{tk(job.period)}</span>
-                <p class="job-text" data-i18n={job.text}>{tk(job.text)}</p>
-                {job.link ? (
-                  <a class="job-link" href={job.link.href} target="_blank" rel="noopener" data-cursor="VIEW">
-                    <span data-i18n={job.link.i18n}>{tk(job.link.i18n)}</span>
-                    <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
-                  </a>
-                ) : null}
-              </article>
-            ))
-          }
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="education">
-    <div class="u-container section-grid">
-      <span class="s-idx">04 - <span data-i18n="edu.label">{t("edu.label")}</span></span>
-      <div>
-        <h2 class="s-title" data-sy-reveal="words" data-i18n="edu.title">{t("edu.title")}</h2>
-
-        <div class="edu-list">
-          {
-            edu.map((item) => (
-              <article class="edu-row" data-reveal>
-                <span class="edu-period" data-i18n={item.period}>{tk(item.period)}</span>
-                <div>
-                  <h3 data-sy-reveal="words" data-i18n={item.degree}>{tk(item.degree)}</h3>
-                  <p data-i18n={item.school}>{tk(item.school)}</p>
-                </div>
-              </article>
-            ))
-          }
-        </div>
-
-        <div class="facts" data-reveal>
-          <article>
-            <span data-i18n="edu.langs.label">{t("edu.langs.label")}</span>
-            <p data-i18n="edu.langs.value">{t("edu.langs.value")}</p>
-          </article>
-          <article>
-            <span data-i18n="edu.stack.label">{t("edu.stack.label")}</span>
-            <p data-i18n="edu.stack.value">{t("edu.stack.value")}</p>
-          </article>
-        </div>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="record.title">{t("record.title")}</h2>
+        <p class="record-text" data-reveal data-i18n="record.text">{t("record.text")}</p>
+        <a
+          class="record-link"
+          href={lang === "de" ? "/de/rodion-belousov-wien/" : "/en/rodion-belousov-vienna/"}
+          data-lang-href-en="/en/rodion-belousov-vienna/"
+          data-lang-href-de="/de/rodion-belousov-wien/"
+          data-cursor="OPEN"
+          data-magnetic
+        >
+          <span data-i18n="record.cta">{t("record.cta")}</span>
+          <span class="css-arrow" aria-hidden="true"></span>
+        </a>
       </div>
     </div>
   </section>
@@ -225,7 +187,7 @@ const selectedWork = [
   <section class="section work" id="work">
     <div class="u-container work-composition">
       <div class="work-intro">
-        <span class="s-idx">05 - <span data-i18n="work.label">{t("work.label")}</span></span>
+        <span class="s-idx">04 - <span data-i18n="work.label">{t("work.label")}</span></span>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="work.text">{t("work.text")}</p>
         <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
@@ -303,7 +265,7 @@ const selectedWork = [
        the active language to the matching localized deep-dive. -->
   <section class="section services-teaser" id="services">
     <div class="u-container section-grid">
-      <span class="s-idx">06 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+      <span class="s-idx">05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="services.title">{t("services.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="services.lead">{t("services.lead")}</p>
@@ -364,7 +326,7 @@ const selectedWork = [
   <section class="portal" id="archive">
     <div class="u-container portal-inner">
       <div>
-        <span class="s-idx">08 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <span class="s-idx">06 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
         <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
         <p class="portal-text" data-reveal data-i18n="portal.text">{t("portal.text")}</p>
       </div>
@@ -378,7 +340,7 @@ const selectedWork = [
 
   <section class="section contact legacy-ending" id="legacy-contact">
     <div class="u-container contact-grid">
-      <span class="s-idx">09 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+      <span class="s-idx">07 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
       <div>
         <h2 class="contact-title" data-sy-reveal="words" data-i18n="contact.title">{t("contact.title")}</h2>
         <p class="s-lead" data-reveal data-i18n="contact.text">{t("contact.text")}</p>
@@ -1093,6 +1055,35 @@ const selectedWork = [
     mask-image: linear-gradient(180deg, transparent, #000 32%, transparent 96%);
     transform: perspective(480px) rotateX(64deg);
     transform-origin: bottom;
+  }
+
+  /* ── Record band ───────────────────────────────────────────────────────── */
+  .record-text {
+    max-width: 56ch;
+    margin: 1.6rem 0 0;
+    color: rgba(var(--rgb-text), 0.7);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+  .record-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 2.2rem;
+    padding: 1rem 1.6rem;
+    border: 1px solid rgba(var(--rgb-text), 0.22);
+    border-radius: 999px;
+    color: rgb(var(--rgb-text));
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.3s, background-color 0.3s;
+  }
+  .record-link:hover {
+    border-color: rgba(var(--rgb-text), 0.5);
+    background: rgba(var(--rgb-text), 0.06);
   }
 
   .work-composition {

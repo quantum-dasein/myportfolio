@@ -2,57 +2,190 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  ProfilePage.astro — /en/rodion-belousov-vienna/ and /de/rodion-belousov-wien/
 //
-//  The page an employer or a client lands on from search, so it carries the
-//  professional record rather than the studio's showreel. It was previously a
-//  plain document — no section indices, no mono labels, no reveals, underlined
-//  text links — which read as an unstyled fallback next to the rest of the site.
-//  It now uses the same furniture as the home page and /notes: numbered
-//  sections, monospace labels, rule-separated rows and an opaque reading
-//  surface over the WebGL backdrop, so it belongs to the site it is part of.
+//  This used to be the home page again: the same career rows, the same work
+//  cards, the same service list, restated with nothing added. A visitor who had
+//  already scrolled the home page learned nothing by opening it, and it made
+//  the site look like it was padding for search.
+//
+//  It has one job now that no other page does — answering the question someone
+//  actually arrives with. Not "is he good", which the rest of the site argues
+//  at length, but "would he take MY job, and how long would it take". So the
+//  page leads with a scope picker: pick the size of the thing you need, from a
+//  single landing page upward, and get the timeline, what is included, what I
+//  need from you, and the closest real piece of work. The lattice behind it
+//  lights up in proportion, so the picture states the same thing as the copy.
+//
+//  That ordering is deliberate. The smallest, fastest, cheapest job is the
+//  first thing on the page, because the site's whole risk is reading as a
+//  studio that only takes elaborate WebGL commissions. It takes ordinary work,
+//  and this is where it says so.
+//
+//  The professional record stays — it is why the page ranks for the name and
+//  what a hiring reader came for — but the duplicated work and service blocks
+//  are gone, replaced by one line pointing at the pages that own them.
 //
 //  Both languages live in this one component; the route decides which. It is
 //  lockLang, which means it states its own language and must never write that
 //  into the visitor's stored preference.
 // ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../layouts/Layout.astro";
+import ScopeField from "./ScopeField.astro";
 import { useTranslations, type Lang, type UIKey } from "../i18n/utils";
-import { serviceContent } from "../data/seo-content";
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const de = lang === "de";
 const t = useTranslations(lang);
 const tk = (key: string) => t(key as UIKey);
+const c = (en: string, deText: string) => (de ? deText : en);
 
 const paths = { en: "/en/rodion-belousov-vienna/", de: "/de/rodion-belousov-wien/" };
-const title = de ? "Rodion Belousov in Wien | Digital Marketing & SEO" : "Rodion Belousov in Vienna | Digital Marketing & SEO";
-const description = de
-  ? "Rodion Belousov in Wien: Digital Marketing, Content, technisches SEO und Webentwicklung. Berufserfahrung, Projekte und Kontakt für Unternehmen und Arbeitgeber."
-  : "Rodion Belousov in Vienna, Austria: digital marketing, content, technical SEO and web development. Experience, projects and contact for clients and employers.";
+const title = c(
+  "Rodion Belousov — Web Developer in Vienna | Websites & SEO",
+  "Rodion Belousov — Webentwickler in Wien | Websites & SEO",
+);
+const description = c(
+  "Rodion Belousov in Vienna: websites, online shops, technical SEO and web platforms. Pick the size of the job and see the timeline, what is included and what it costs you to start.",
+  "Rodion Belousov in Wien: Websites, Online-Shops, technisches SEO und Web-Plattformen. Wählen Sie die Größe des Projekts und sehen Sie Zeitrahmen, Leistungsumfang und den Einstieg.",
+);
+
+// ── The scope picker ─────────────────────────────────────────────────────────
+// Ordered smallest first, on purpose. `field` is the share of the lattice that
+// scope lights, so the picture scales with the job.
+// NOTE (Rodion): there is a deliberate empty slot for a price band on each
+// entry — add `price: c("from €900", "ab 900 €")` and it renders itself. Left
+// blank because those are your numbers to set, not mine to invent.
+type Scope = {
+  id: string;
+  label: string;
+  size: string;
+  time: string;
+  field: number;
+  price?: string;
+  gets: string[];
+  needs: string;
+  proof?: { text: string; href: string };
+};
+
+const scopes: Scope[] = [
+  {
+    id: "landing",
+    label: c("Landing page", "Landingpage"),
+    size: c("One page, one action", "Eine Seite, eine Handlung"),
+    time: c("2–4 days", "2–4 Tage"),
+    field: 0.09,
+    gets: [
+      c("One page written around a single action — call, booking or form", "Eine Seite rund um eine einzige Handlung — Anruf, Buchung oder Formular"),
+      c("Form or booking wired to your inbox, with spam handling", "Formular oder Buchung an Ihr Postfach angebunden, inklusive Spam-Schutz"),
+      c("Analytics and conversion tracking installed and verified", "Analytics und Conversion-Tracking eingerichtet und geprüft"),
+      c("Hosting, domain and certificate set up in your own accounts", "Hosting, Domain und Zertifikat in Ihren eigenen Konten eingerichtet"),
+    ],
+    needs: c("Your text and images, or an hour on a call for me to write them.", "Ihre Texte und Bilder — oder eine Stunde Gespräch, damit ich sie schreibe."),
+  },
+  {
+    id: "site",
+    label: c("Business website", "Unternehmens-Website"),
+    size: c("5–10 pages", "5–10 Seiten"),
+    time: c("About a week", "Etwa eine Woche"),
+    field: 0.24,
+    gets: [
+      c("5–10 pages, structured so each one can rank on its own", "5–10 Seiten, so strukturiert, dass jede einzeln ranken kann"),
+      c("German and English, without a second site to maintain", "Deutsch und Englisch, ohne eine zweite Website zu pflegen"),
+      c("On-page SEO, sitemap and Search Console handed over working", "On-Page-SEO, Sitemap und Search Console funktionsfähig übergeben"),
+      c("Editable yourself where you need it — no monthly builder fee", "Selbst editierbar, wo Sie es brauchen — keine monatliche Baukasten-Gebühr"),
+    ],
+    needs: c("Finished content, or a list of what the site has to say.", "Fertige Inhalte — oder eine Liste dessen, was die Website sagen soll."),
+    proof: { text: c("What that looks like", "Wie das aussieht"), href: c("/en/website-development-vienna/", "/de/website-erstellen-wien/") },
+  },
+  {
+    id: "shop",
+    label: c("Online shop", "Online-Shop"),
+    size: c("Catalogue and checkout", "Katalog und Checkout"),
+    time: c("2–3 weeks", "2–3 Wochen"),
+    field: 0.42,
+    gets: [
+      c("Product catalogue, cart and a checkout that works on a phone", "Produktkatalog, Warenkorb und ein Checkout, der auf dem Handy funktioniert"),
+      c("Payment, Austrian VAT and shipping rules configured", "Zahlung, österreichische USt und Versandregeln konfiguriert"),
+      c("Order and dispatch emails, plus a stock view you can run", "Bestell- und Versandmails, dazu eine Bestandsansicht, die Sie selbst bedienen"),
+      c("Product pages built to be found, not just to be browsed", "Produktseiten, die gefunden werden — nicht nur durchgeblättert"),
+    ],
+    needs: c("Your products, prices and shipping rules. I will tell you honestly if a hosted platform is the better buy for your case.", "Ihre Produkte, Preise und Versandregeln. Ich sage Ihnen ehrlich, wenn eine gehostete Plattform für Ihren Fall die bessere Wahl ist."),
+  },
+  {
+    id: "seo",
+    label: c("SEO & content", "SEO & Content"),
+    size: c("On a site that already exists", "Für eine bestehende Website"),
+    time: c("First findings in 2 weeks", "Erste Ergebnisse in 2 Wochen"),
+    field: 0.58,
+    gets: [
+      c("Technical crawl, then the fixes actually made — not a PDF of them", "Technischer Crawl, dann die Fixes tatsächlich umgesetzt — kein PDF davon"),
+      c("Content plan built from what people in your market search for", "Content-Plan auf Basis dessen, wonach Ihr Markt tatsächlich sucht"),
+      c("Indexing, Core Web Vitals and rankings tracked over time", "Indexierung, Core Web Vitals und Rankings laufend verfolgt"),
+      c("Reporting you can read without a marketing degree", "Reporting, das Sie ohne Marketing-Abschluss lesen können"),
+    ],
+    needs: c("Access to the site, Search Console and analytics.", "Zugang zur Website, zur Search Console und zu Analytics."),
+    proof: { text: c("+780% organic search — Bridge Consult", "+780 % organische Suche — Bridge Consult"), href: "/work/bridge-consult" },
+  },
+  {
+    id: "platform",
+    label: c("Web app or platform", "Web-App oder Plattform"),
+    size: c("Live data, accounts, admin", "Live-Daten, Accounts, Verwaltung"),
+    time: c("From 4 weeks", "Ab 4 Wochen"),
+    field: 0.78,
+    gets: [
+      c("A data model that survives the second year, not just the launch", "Ein Datenmodell, das auch das zweite Jahr überlebt — nicht nur den Launch"),
+      c("Admin, roles and an editing workflow your team can actually run", "Verwaltung, Rollen und ein Redaktions-Workflow, den Ihr Team wirklich bedient"),
+      c("Integrations and scheduled jobs against live sources", "Integrationen und geplante Jobs gegen echte Datenquellen"),
+      c("Multi-language handled in the routing, not bolted on afterwards", "Mehrsprachigkeit im Routing gelöst, nicht nachträglich angeflanscht"),
+    ],
+    needs: c("A conversation about what the thing has to do before anyone writes code.", "Ein Gespräch darüber, was das System leisten muss, bevor irgendjemand Code schreibt."),
+    proof: { text: c("429 pages, 3 languages, 2 981 tenders — FIDIC.uz", "429 Seiten, 3 Sprachen, 2 981 Ausschreibungen — FIDIC.uz"), href: "/work/fidic" },
+  },
+  {
+    id: "showreel",
+    label: c("Showreel-grade build", "Showreel-Niveau"),
+    size: c("3D, WebGL, custom motion", "3D, WebGL, eigene Motion"),
+    time: c("From 3 weeks", "Ab 3 Wochen"),
+    field: 1,
+    gets: [
+      c("Real-time 3D and hand-written shaders, not a stock template", "Echtzeit-3D und handgeschriebene Shader, kein Stock-Template"),
+      c("Motion designed as a system, so it holds together page to page", "Motion als System entworfen, damit es über Seiten hinweg zusammenhält"),
+      c("Every effect measured, and cut on devices where it costs more than it gives", "Jeder Effekt gemessen — und dort entfernt, wo er mehr kostet als er bringt"),
+      c("Fast on a mid-range phone, or it does not ship", "Schnell auf einem Mittelklasse-Handy, sonst geht es nicht live"),
+    ],
+    needs: c("A reason for it. If the effect will not earn its weight, I will say so and build the simpler thing.", "Einen Grund dafür. Wenn der Effekt sein Gewicht nicht wert ist, sage ich das und baue die einfachere Variante."),
+    proof: { text: c("This site, taken apart", "Diese Website, auseinandergenommen"), href: "/work/studio" },
+  },
+];
+
+const experience = [1, 2, 3];
+const education = [1, 2, 3];
+
+const steps = [
+  {
+    n: "01",
+    title: c("You write, in a sentence", "Sie schreiben, in einem Satz"),
+    text: c("What you need and when. No brief template, no discovery invoice.", "Was Sie brauchen und bis wann. Kein Briefing-Formular, keine Discovery-Rechnung."),
+  },
+  {
+    n: "02",
+    title: c("Fixed scope and date, within a day", "Fester Umfang und Termin, binnen eines Tages"),
+    text: c("A written scope, a price and a launch date. If I am not the right person for it, I say that instead — and where I would send you.", "Ein schriftlicher Umfang, ein Preis und ein Launch-Termin. Wenn ich nicht der Richtige bin, sage ich das — und wohin ich Sie schicken würde."),
+  },
+  {
+    n: "03",
+    title: c("Build, review, launch", "Bauen, prüfen, launchen"),
+    text: c("You see it on a real URL while it is being built, not at the end. It goes live in your own accounts, and it is yours.", "Sie sehen es während der Arbeit unter einer echten URL, nicht erst am Ende. Es geht in Ihren eigenen Konten live und gehört Ihnen."),
+  },
+];
 
 const breadcrumbs = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Rodion Belousov Studio", item: "https://rodionbelousov.studio/" },
-    { "@type": "ListItem", position: 2, name: de ? "Profil & Berufserfahrung" : "Profile & experience", item: `https://rodionbelousov.studio${paths[lang]}` },
+    { "@type": "ListItem", position: 2, name: c("Profile & experience", "Profil & Berufserfahrung"), item: `https://rodionbelousov.studio${paths[lang]}` },
   ],
 };
-
-// Facts the rest of the site already evidences, restated here because this is
-// the page read by someone deciding whether to make contact.
-const facts = [
-  { v: "+780%", k: de ? "Organic Search nach Launch" : "organic search after launch" },
-  { v: "429", k: de ? "Seiten, FIDIC-Plattform" : "pages, FIDIC platform" },
-  { v: "03", k: de ? "Sprachen im Content-System" : "languages in the content system" },
-  { v: "2 981", k: de ? "Ausschreibungen, täglich aktualisiert" : "tenders, refreshed daily" },
-];
-
-const experience = [1, 2, 3];
-const education = [1, 2, 3];
-const projects = [
-  { n: 1, href: "/work/bridge-consult", title: "Bridge Consult", meta: "ASTRO / GSAP / SEO" },
-  { n: 2, href: "/work/fidic", title: "FIDIC.uz", meta: "429 PAGES / 3 LANGUAGES" },
-];
 ---
 
 <Layout
@@ -66,51 +199,134 @@ const projects = [
   noWebgl
 >
   <div class="pf">
-    <article class="u-container pf-inner">
-      <header class="pf-hero">
-        <span class="pf-kicker">{de ? "WIEN, ÖSTERREICH · INTERNATIONAL / REMOTE" : "VIENNA, AUSTRIA · INTERNATIONAL / REMOTE"}</span>
-        <h1 class="pf-title" data-sy-reveal="words">Rodion Belousov <span>{de ? "in Wien." : "in Vienna."}</span></h1>
-        <p class="pf-lead" data-reveal>{de
-          ? "Digital Marketer und Creative Developer in Wien. Ich verbinde Marketingstrategie, Content, technisches SEO und Webentwicklung — von der Positionierung bis zur veröffentlichten Website, und bleibe danach dafür verantwortlich, was sie im Markt tut."
-          : "Digital marketer and creative developer in Vienna, Austria. I connect marketing strategy, content, technical SEO and web development — from positioning to the published website, and stay accountable for what it does in the market afterwards."}</p>
+    <div class="pf-stage">
+      <ScopeField />
+      <article class="u-container pf-inner">
+        <header class="pf-hero">
+          <span class="pf-kicker">{c("VIENNA, AUSTRIA · INTERNATIONAL / REMOTE", "WIEN, ÖSTERREICH · INTERNATIONAL / REMOTE")}</span>
+          <h1 class="pf-title" data-sy-reveal="words">Rodion Belousov <span>{c("in Vienna.", "in Wien.")}</span></h1>
+          <p class="pf-lead" data-reveal>{c(
+            "I build websites in Vienna — from a landing page in three days to a 429-page platform in three languages. Same person writes the copy, builds it and answers for what it does in the market afterwards. Small jobs are welcome; most weeks they are most of the work.",
+            "Ich baue Websites in Wien — von der Landingpage in drei Tagen bis zur Plattform mit 429 Seiten in drei Sprachen. Dieselbe Person schreibt den Text, baut ihn und steht danach dafür gerade, was er im Markt tut. Kleine Aufträge sind willkommen; in den meisten Wochen sind sie der Großteil der Arbeit.",
+          )}</p>
 
-        <div class="pf-actions" data-reveal>
-          <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
-            <span>{de ? "Kontakt aufnehmen" : "Get in touch"}</span><i class="ui-arrow" aria-hidden="true"></i>
-          </a>
-          <a class="pf-btn" href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank" data-magnetic>
-            <span>LinkedIn</span><i class="ui-arrow" aria-hidden="true"></i>
-          </a>
-          <a class="pf-btn ghost" href="#experience" data-magnetic>
-            <span>{de ? "Berufserfahrung" : "Experience"}</span><i class="ui-arrow ui-arrow-down" aria-hidden="true"></i>
-          </a>
-        </div>
+          <div class="pf-actions" data-reveal>
+            <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
+              <span>{c("Get a fixed quote", "Festes Angebot anfragen")}</span><i class="ui-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="pf-btn ghost" href="#scope" data-magnetic>
+              <span>{c("What do you need?", "Was brauchen Sie?")}</span><i class="ui-arrow ui-arrow-down" aria-hidden="true"></i>
+            </a>
+          </div>
+        </header>
 
-        <dl class="pf-facts" data-reveal>
-          {facts.map((f) => (
-            <div>
-              <dt>{f.v}</dt>
-              <dd>{f.k}</dd>
-            </div>
-          ))}
-        </dl>
-      </header>
-
-      <section class="pf-section" aria-labelledby="collaboration-title">
-        <span class="pf-idx">01 — {de ? "PROFIL" : "PROFILE"}</span>
+      <!-- ── 01 · Scope picker ──────────────────────────────────────────── -->
+      <section class="pf-section" id="scope" aria-labelledby="scope-title">
+        <span class="pf-idx">01 — {c("SCOPE", "UMFANG")}</span>
         <div class="pf-body">
-          <h2 id="collaboration-title" data-sy-reveal="words">{de ? "Für Unternehmen und Arbeitgeber." : "For clients and employers."}</h2>
-          <p data-reveal>{de
-            ? "Diese Seite bündelt mein berufliches Profil und ausgewählte Arbeiten für Teams in Wien, ganz Österreich und international. Für ein Projekt oder eine passende Position in Digital Marketing, Content, SEO oder Webentwicklung erreichen Sie mich direkt per E-Mail."
-            : "This page brings together my professional background and selected work for teams in Vienna, across Austria and internationally. For a project or a relevant role in digital marketing, content, SEO or web development, contact me directly by email."}</p>
-          <p class="pf-langs" data-reveal><span>{t("edu.langs.label")}</span>{t("edu.langs.value")}</p>
+          <h2 id="scope-title" data-sy-reveal="words">{c("What do you actually need?", "Was brauchen Sie wirklich?")}</h2>
+          <p class="pf-sub" data-reveal>{c(
+            "Pick the size of the job. No form, no call required to see this.",
+            "Wählen Sie die Größe des Projekts. Kein Formular, kein Gespräch nötig, um das zu sehen.",
+          )}</p>
+
+          <div class="sc" data-scope-picker>
+            <div class="sc-tabs" role="tablist" aria-label={c("Project size", "Projektgröße")}>
+              {scopes.map((s, i) => (
+                <button
+                  type="button"
+                  role="tab"
+                  id={`sc-tab-${s.id}`}
+                  class="sc-tab"
+                  data-scope-tab={s.id}
+                  data-field={s.field}
+                  aria-selected={i === 0 ? "true" : "false"}
+                  aria-controls={`sc-panel-${s.id}`}
+                  tabindex={i === 0 ? 0 : -1}
+                >
+                  <span class="sc-tab-label">{s.label}</span>
+                  <span class="sc-tab-size">{s.size}</span>
+                </button>
+              ))}
+            </div>
+
+            <div class="sc-panels">
+              {scopes.map((s, i) => (
+                <div
+                  class="sc-panel"
+                  id={`sc-panel-${s.id}`}
+                  role="tabpanel"
+                  aria-labelledby={`sc-tab-${s.id}`}
+                  data-scope-panel={s.id}
+                  hidden={i !== 0}
+                >
+                  <div class="sc-headline">
+                    <div>
+                      <span class="sc-key">{c("Timeline", "Zeitrahmen")}</span>
+                      <strong class="sc-value">{s.time}</strong>
+                    </div>
+                    {s.price && (
+                      <div>
+                        <span class="sc-key">{c("From", "Ab")}</span>
+                        <strong class="sc-value">{s.price}</strong>
+                      </div>
+                    )}
+                    <div>
+                      <span class="sc-key">{c("Reply", "Antwort")}</span>
+                      <strong class="sc-value">{c("Within a day", "Binnen eines Tages")}</strong>
+                    </div>
+                  </div>
+
+                  <ul class="sc-gets">
+                    {s.gets.map((g) => <li>{g}</li>)}
+                  </ul>
+
+                  <p class="sc-needs"><span>{c("What I need from you", "Was ich von Ihnen brauche")}</span>{s.needs}</p>
+
+                  {s.proof && (
+                    <a class="sc-proof" href={s.proof.href}>
+                      <span>{s.proof.text}</span><i class="ui-arrow" aria-hidden="true"></i>
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p class="pf-note" data-reveal>{c(
+            "Not on the list, or you are not sure which one it is? Write anyway — describing it badly is fine, sorting it out is my job.",
+            "Nicht auf der Liste, oder unsicher, was davon zutrifft? Schreiben Sie trotzdem — es unbeholfen zu beschreiben ist völlig in Ordnung, das Sortieren ist mein Job.",
+          )}</p>
+        </div>
+      </section>
+      </article>
+    </div>
+
+    <article class="u-container pf-inner">
+      <!-- ── 02 · How it works ─────────────────────────────────────────── -->
+      <section class="pf-section" aria-labelledby="process-title">
+        <span class="pf-idx">02 — {c("PROCESS", "ABLAUF")}</span>
+        <div class="pf-body">
+          <h2 id="process-title" data-sy-reveal="words">{c("What happens after you write.", "Was passiert, nachdem Sie schreiben.")}</h2>
+          <ol class="pf-steps">
+            {steps.map((s) => (
+              <li data-reveal>
+                <span class="pf-step-n">{s.n}</span>
+                <div>
+                  <h3>{s.title}</h3>
+                  <p>{s.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
+      <!-- ── 03 · The record ───────────────────────────────────────────── -->
       <section class="pf-section" id="experience" aria-labelledby="experience-title">
-        <span class="pf-idx">02 — {de ? "BERUFSERFAHRUNG" : "EXPERIENCE"}</span>
+        <span class="pf-idx">03 — {c("EXPERIENCE", "BERUFSERFAHRUNG")}</span>
         <div class="pf-body">
-          <h2 id="experience-title" data-sy-reveal="words">{de ? "Berufserfahrung" : "Professional experience"}</h2>
+          <h2 id="experience-title" data-sy-reveal="words">{c("Professional experience", "Berufserfahrung")}</h2>
           <ol class="pf-rows">
             {experience.map((n) => (
               <li data-reveal>
@@ -123,51 +339,15 @@ const projects = [
               </li>
             ))}
           </ol>
+          <p class="pf-langs" data-reveal><span>{t("edu.langs.label")}</span>{t("edu.langs.value")}</p>
         </div>
       </section>
 
-      <section class="pf-section" aria-labelledby="projects-title">
-        <span class="pf-idx">03 — {de ? "ARBEITEN" : "WORK"}</span>
-        <div class="pf-body">
-          <h2 id="projects-title" data-sy-reveal="words">{de ? "Ausgewählte Projekte" : "Selected projects"}</h2>
-          <div class="pf-cards">
-            {projects.map((item) => (
-              <article data-reveal>
-                <span class="pf-meta">{item.meta}</span>
-                <h3><a href={item.href} data-case-link translate="no">{item.title}<i class="ui-arrow" aria-hidden="true"></i></a></h3>
-                <p>{tk(`work.${item.n}.text`)}</p>
-              </article>
-            ))}
-          </div>
-          <a class="pf-more" href="/notes" data-magnetic>
-            <span>{de ? "Was dabei kaputtging — das Engineering-Log" : "What broke along the way — the engineering log"}</span>
-            <i class="ui-arrow" aria-hidden="true"></i>
-          </a>
-        </div>
-      </section>
-
-      <section class="pf-section" aria-labelledby="services-title">
-        <span class="pf-idx">04 — {de ? "LEISTUNGEN" : "SERVICES"}</span>
-        <div class="pf-body">
-          <h2 id="services-title" data-sy-reveal="words">{de ? "Leistungen in Wien und remote" : "Services in Vienna and remotely"}</h2>
-          <ul class="pf-rows plain">
-            {Object.values(serviceContent).map((service) => (
-              <li data-reveal>
-                <span class="pf-period">{service.eyebrow[lang]}</span>
-                <div>
-                  <h3><a href={service.paths[lang]}>{service.title[lang]}<i class="ui-arrow" aria-hidden="true"></i></a></h3>
-                  <p>{service.description[lang]}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
+      <!-- ── 04 · Education ────────────────────────────────────────────── -->
       <section class="pf-section" aria-labelledby="education-title">
-        <span class="pf-idx">05 — {de ? "AUSBILDUNG" : "EDUCATION"}</span>
+        <span class="pf-idx">04 — {c("EDUCATION", "AUSBILDUNG")}</span>
         <div class="pf-body">
-          <h2 id="education-title" data-sy-reveal="words">{de ? "Ausbildung & Werkzeuge" : "Education & tools"}</h2>
+          <h2 id="education-title" data-sy-reveal="words">{c("Education & tools", "Ausbildung & Werkzeuge")}</h2>
           <div class="pf-cards three">
             {education.map((n) => (
               <article data-reveal>
@@ -181,25 +361,38 @@ const projects = [
         </div>
       </section>
 
+      <!-- The work and the services have their own pages. Repeating them here
+           is what made this page a duplicate of the home page in the first
+           place, so it points at them instead of restating them. -->
+      <nav class="pf-elsewhere" data-reveal aria-label={c("Elsewhere on this site", "Weiter auf dieser Website")}>
+        <a href="/#work"><span>{c("Selected work", "Ausgewählte Arbeiten")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
+        <a href="/services"><span>{c("Services in detail", "Leistungen im Detail")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
+        <a href="/notes"><span>{c("What broke, and why", "Was kaputtging, und warum")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
+      </nav>
+
       <section class="pf-outro" data-reveal>
-        <p>{de
-          ? "Offen für Projekte und passende Positionen — in Wien, österreichweit oder remote."
-          : "Open to projects and relevant roles — in Vienna, across Austria or remote."}</p>
-        <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
-          <span>{de ? "Schreiben Sie mir" : "Send me a message"}</span><i class="ui-arrow" aria-hidden="true"></i>
-        </a>
+        <p>{c(
+          "Open to projects of any size — in Vienna, across Austria or remote.",
+          "Offen für Projekte jeder Größe — in Wien, österreichweit oder remote.",
+        )}</p>
+        <div class="pf-actions">
+          <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
+            <span>{c("Send me a message", "Schreiben Sie mir")}</span><i class="ui-arrow" aria-hidden="true"></i>
+          </a>
+          <a class="pf-btn" href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank" data-magnetic>
+            <span>LinkedIn</span><i class="ui-arrow" aria-hidden="true"></i>
+          </a>
+        </div>
       </section>
     </article>
   </div>
 </Layout>
 
 <style>
-  /* A CV is a reading page. Body copy over the WebGL sculpture is unreadable
-     on a phone, where the sphere sits directly behind the column — so this page
-     sets `noWebgl` and paints its own ground, and the hero's radial glow stands
-     in for the light the backdrop would have thrown. Skipping the backdrop also
-     means three.js is never fetched here, which is the right trade on the page
-     someone opens from a search result to read. */
+  /* Body copy over the site's WebGL sculpture is unreadable on a phone, where
+     the sphere sits directly behind the column — so this page sets `noWebgl`,
+     paints its own ground, and runs its own much lighter field behind the hero
+     only, where there is nothing to read. */
   .pf {
     position: relative;
     z-index: 1;
@@ -207,11 +400,18 @@ const projects = [
   }
   .pf-inner { max-width: 74rem; }
 
-  /* ── Hero ──────────────────────────────────────────────────────────────── */
-  .pf-hero {
-    padding: clamp(7.5rem, 13vw, 11rem) 0 clamp(3rem, 6vw, 4.5rem);
-    background: radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.075), transparent 26rem);
+  /* Hero and picker share one stage so the field stays on screen while the
+     visitor is choosing — the lattice reacting is the point of it, and a
+     backdrop that has already scrolled away cannot react to anything. */
+  .pf-stage {
+    position: relative;
+    isolation: isolate;
+    background: radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.06), transparent 26rem);
   }
+  .pf-stage > .pf-inner { position: relative; z-index: 1; }
+
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .pf-hero { padding: clamp(7.5rem, 13vw, 11rem) 0 clamp(3rem, 6vw, 4.5rem); }
   .pf-kicker {
     display: block;
     font-family: var(--font-inter);
@@ -229,7 +429,7 @@ const projects = [
   }
   .pf-title span { color: rgba(var(--rgb-text), 0.42); }
   .pf-lead {
-    max-width: 60ch;
+    max-width: 58ch;
     margin: 2rem 0 0;
     color: rgba(var(--rgb-text), 0.72);
     font-size: clamp(1.05rem, 1.6vw, 1.35rem);
@@ -258,181 +458,364 @@ const projects = [
   .pf-btn.primary:hover { background: #fff; border-color: #fff; }
   .pf-btn.ghost { border-color: rgba(var(--rgb-text), 0.14); }
 
-  .pf-facts {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem 1.5rem;
-    margin: clamp(2.5rem, 5vw, 3.5rem) 0 0;
-    padding-top: 1.6rem;
-    border-top: 1px solid var(--color-line);
-  }
-  .pf-facts div { min-width: 0; }
-  .pf-facts dt { font: 500 clamp(1.5rem, 2.6vw, 2.3rem)/1 var(--font-display); white-space: nowrap; }
-  .pf-facts dd {
-    margin: 0.55rem 0 0;
-    color: rgba(var(--rgb-text), 0.5);
-    font-family: var(--font-inter);
-    font-size: 0.68rem;
-    line-height: 1.4;
-    letter-spacing: 0.06em;
-  }
-
   /* ── Sections ──────────────────────────────────────────────────────────── */
   .pf-section {
     display: grid;
-    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
-    gap: clamp(1.5rem, 5vw, 4rem);
-    padding: clamp(3rem, 6vw, 5rem) 0;
-    border-top: 1px solid var(--color-line);
+    grid-template-columns: 12rem 1fr;
+    gap: 2.5rem;
+    padding: clamp(3.2rem, 6vw, 5rem) 0;
+    border-top: 1px solid rgba(var(--rgb-text), 0.1);
   }
   .pf-idx {
     font-family: var(--font-inter);
-    font-size: 0.62rem;
+    font-size: var(--font-size-xs);
     letter-spacing: 0.2em;
-    color: rgba(var(--rgb-text), 0.42);
+    color: rgba(var(--rgb-text), 0.38);
+    padding-top: 0.5rem;
   }
   .pf-body h2 {
-    margin: 0 0 1.6rem;
-    max-width: 20ch;
-    font: 500 clamp(1.9rem, 3.6vw, 3.1rem)/1.06 var(--font-display);
+    margin: 0;
+    font: 500 clamp(1.7rem, 3.4vw, 2.8rem)/1.1 var(--font-display);
     letter-spacing: -0.02em;
-    text-wrap: balance;
   }
-  .pf-body p {
-    max-width: 64ch;
-    margin: 0 0 1rem;
-    color: rgba(var(--rgb-text), 0.68);
-    font-size: clamp(0.98rem, 1.2vw, 1.06rem);
-    line-height: 1.65;
-    text-wrap: pretty;
-  }
-  .pf-langs {
-    margin-top: 1.6rem !important;
+  .pf-body > p,
+  .pf-body li p { color: rgba(var(--rgb-text), 0.7); line-height: 1.65; }
+  .pf-body > p { margin: 1.2rem 0 0; max-width: 62ch; }
+  .pf-sub { font-size: 1.02rem; }
+  .pf-note {
+    margin-top: 2rem !important;
+    font-size: 0.95rem;
     color: rgba(var(--rgb-text), 0.55) !important;
-    font-size: 0.9rem !important;
   }
-  .pf-langs span {
+
+  /* ── Scope picker ──────────────────────────────────────────────────────── */
+  .sc { margin-top: 2.2rem; }
+  .sc-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+  .sc-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.95rem 1.05rem;
+    text-align: left;
+    background: rgba(6, 8, 10, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--rgb-text), 0.11);
+    border-radius: 0.9rem;
+    color: rgba(var(--rgb-text), 0.62);
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s, color 0.25s, transform 0.25s;
+  }
+  .sc-tab:hover { border-color: rgba(var(--rgb-text), 0.26); color: rgba(var(--rgb-text), 0.85); }
+  .sc-tab[aria-selected="true"] {
+    background: rgba(var(--rgb-text), 0.085);
+    border-color: rgba(var(--rgb-text), 0.42);
+    color: rgb(var(--rgb-text));
+  }
+  .sc-tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  .sc-tab-label {
+    font: 600 0.82rem/1.2 var(--font-inter);
+    letter-spacing: 0.02em;
+  }
+  .sc-tab-size {
+    font-family: var(--font-inter);
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+
+  .sc-panels { margin-top: 1.1rem; }
+  .sc-panel {
+    padding: clamp(1.3rem, 3vw, 2rem);
+    background: rgba(6, 8, 10, 0.52);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid rgba(var(--rgb-text), 0.12);
+    border-radius: 1.1rem;
+    animation: sc-in 0.4s var(--ease-out-cubic) both;
+  }
+  @keyframes sc-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sc-panel { animation: none; }
+  }
+
+  .sc-headline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.6rem;
+    padding-bottom: 1.3rem;
+    border-bottom: 1px solid rgba(var(--rgb-text), 0.1);
+  }
+  .sc-key {
+    display: block;
+    font-family: var(--font-inter);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+  .sc-value {
+    display: block;
+    margin-top: 0.35rem;
+    font: 500 clamp(1.15rem, 2.2vw, 1.55rem)/1.1 var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  .sc-gets {
+    list-style: none;
+    margin: 1.4rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .sc-gets li {
+    position: relative;
+    padding-left: 1.5rem;
+    color: rgba(var(--rgb-text), 0.74);
+    line-height: 1.55;
+  }
+  .sc-gets li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.5rem;
+    height: 1px;
+    background: var(--color-accent);
+  }
+
+  .sc-needs {
+    margin: 1.6rem 0 0;
+    padding-top: 1.3rem;
+    border-top: 1px solid rgba(var(--rgb-text), 0.1);
+    color: rgba(var(--rgb-text), 0.66);
+    line-height: 1.6;
+  }
+  .sc-needs span {
     display: block;
     margin-bottom: 0.4rem;
     font-family: var(--font-inter);
-    font-size: 0.58rem;
+    font-size: 0.66rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-accent);
+    color: rgba(var(--rgb-text), 0.42);
   }
 
-  /* ── Rule-separated rows (experience, services) ────────────────────────── */
-  .pf-rows { display: grid; margin: 0; padding: 0; list-style: none; }
-  .pf-rows li {
-    display: grid;
-    grid-template-columns: minmax(0, 9rem) minmax(0, 1fr);
-    gap: 0.4rem clamp(1rem, 3vw, 2.5rem);
-    padding: 1.7rem 0;
-    border-top: 1px solid var(--color-line);
-  }
-  .pf-rows li:last-child { border-bottom: 1px solid var(--color-line); }
-  .pf-period {
+  .sc-proof {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.4rem;
     font-family: var(--font-inter);
-    font-size: 0.62rem;
-    letter-spacing: 0.14em;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(var(--rgb-text), 0.4);
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .sc-proof:hover { color: rgb(var(--rgb-text)); }
+
+  /* ── Process ───────────────────────────────────────────────────────────── */
+  .pf-steps { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; gap: 0; }
+  .pf-steps li {
+    display: grid;
+    grid-template-columns: 4rem 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid rgba(var(--rgb-text), 0.09);
+  }
+  .pf-steps li:first-child { border-top: 0; padding-top: 0; }
+  .pf-step-n {
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.16em;
+    color: var(--color-accent);
     padding-top: 0.35rem;
   }
-  .pf-rows h3 {
-    margin: 0;
-    font: 500 clamp(1.15rem, 1.9vw, 1.5rem)/1.2 var(--font-display);
-    text-wrap: balance;
-  }
-  .pf-rows h3 a { color: inherit; text-decoration: none; display: inline-flex; gap: 0.5rem; align-items: center; }
-  .pf-rows h3 a:hover { color: var(--color-accent); }
-  .pf-role {
-    margin: 0.35rem 0 0.7rem !important;
-    color: rgba(var(--rgb-text), 0.9) !important;
-    font-size: 0.92rem !important;
-  }
+  .pf-steps h3 { margin: 0 0 0.5rem; font: 500 1.15rem/1.25 var(--font-display); }
+  .pf-steps p { margin: 0; }
 
-  /* ── Cards (projects, education) ───────────────────────────────────────── */
-  .pf-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-  .pf-cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .pf-cards article {
-    padding: 1.5rem;
-    border: 1px solid var(--color-line);
-    border-radius: 6px;
-    background: linear-gradient(150deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  /* ── Record ────────────────────────────────────────────────────────────── */
+  .pf-rows { list-style: none; margin: 2rem 0 0; padding: 0; }
+  .pf-rows li {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 1.5rem;
+    padding: 1.6rem 0;
+    border-top: 1px solid rgba(var(--rgb-text), 0.09);
   }
-  .pf-meta {
-    display: block;
-    margin-bottom: 1.4rem;
-    font-family: var(--font-inter);
-    font-size: 0.56rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--color-accent);
-  }
-  .pf-cards h3 {
-    margin: 0 0 0.7rem;
-    font: 500 clamp(1.2rem, 2vw, 1.6rem)/1.15 var(--font-display);
-    text-wrap: balance;
-  }
-  .pf-cards h3 a { color: inherit; text-decoration: none; display: inline-flex; gap: 0.5rem; align-items: center; }
-  .pf-cards h3 a:hover { color: var(--color-accent); }
-  .pf-cards p { margin: 0; font-size: 0.94rem; }
-
-  .pf-more {
-    display: inline-flex;
-    gap: 0.7rem;
-    align-items: center;
-    margin-top: 1.8rem;
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid rgba(var(--rgb-text), 0.26);
-    color: rgb(var(--rgb-text));
+  .pf-rows li:first-child { border-top: 0; padding-top: 0; }
+  .pf-period {
     font-family: var(--font-inter);
     font-size: var(--font-size-xs);
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    text-decoration: none;
-    transition: border-color 0.3s;
+    color: rgba(var(--rgb-text), 0.42);
+    padding-top: 0.3rem;
   }
-  .pf-more:hover { border-color: rgb(var(--rgb-text)); }
+  .pf-rows h3 { margin: 0; font: 500 1.2rem/1.25 var(--font-display); }
+  .pf-role {
+    margin: 0.3rem 0 0.7rem !important;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-accent) !important;
+  }
+  .pf-rows p:last-child { margin: 0; }
 
-  /* ── Outro ─────────────────────────────────────────────────────────────── */
-  .pf-outro {
+  .pf-cards { display: grid; gap: 1rem; margin-top: 2rem; }
+  .pf-cards.three { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  .pf-cards article {
+    padding: 1.4rem;
+    background: rgba(var(--rgb-text), 0.03);
+    border: 1px solid rgba(var(--rgb-text), 0.1);
+    border-radius: 1rem;
+  }
+  .pf-cards h3 { margin: 0.6rem 0 0.4rem; font: 500 1.05rem/1.3 var(--font-display); }
+  .pf-cards p { margin: 0; color: rgba(var(--rgb-text), 0.66); line-height: 1.55; }
+  .pf-meta {
+    font-family: var(--font-inter);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.4);
+  }
+
+  .pf-langs {
+    margin-top: 2rem !important;
+    font-size: 0.95rem;
+    color: rgba(var(--rgb-text), 0.6) !important;
+  }
+  .pf-langs span {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-family: var(--font-inter);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.4);
+  }
+
+  /* ── Elsewhere + outro ─────────────────────────────────────────────────── */
+  .pf-elsewhere {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 0.6rem;
+    padding: clamp(2.4rem, 5vw, 3.4rem) 0 0;
+    border-top: 1px solid rgba(var(--rgb-text), 0.1);
+  }
+  .pf-elsewhere a {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem 2.5rem;
     align-items: center;
     justify-content: space-between;
-    padding: clamp(3rem, 6vw, 4.5rem) 0 clamp(5rem, 9vw, 7rem);
-    border-top: 1px solid var(--color-line);
+    gap: 1rem;
+    padding: 1.1rem 1.3rem;
+    background: rgba(var(--rgb-text), 0.03);
+    border: 1px solid rgba(var(--rgb-text), 0.1);
+    border-radius: 0.9rem;
+    color: rgba(var(--rgb-text), 0.8);
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: border-color 0.25s, background-color 0.25s, color 0.25s;
+  }
+  .pf-elsewhere a:hover {
+    border-color: rgba(var(--rgb-text), 0.3);
+    background: rgba(var(--rgb-text), 0.06);
+    color: rgb(var(--rgb-text));
+  }
+
+  .pf-outro {
+    padding: clamp(3rem, 6vw, 4.5rem) 0 clamp(4rem, 8vw, 6rem);
   }
   .pf-outro p {
+    margin: 0 0 1.8rem;
     max-width: 40ch;
-    margin: 0;
-    color: rgba(var(--rgb-text), 0.7);
-    font-size: clamp(1.05rem, 1.5vw, 1.3rem);
-    line-height: 1.5;
+    font: 500 clamp(1.4rem, 3vw, 2.1rem)/1.2 var(--font-display);
+    letter-spacing: -0.02em;
   }
+  .pf-outro .pf-actions { margin-top: 0; }
 
+  /* ── Narrow ────────────────────────────────────────────────────────────── */
   @media (max-width: 900px) {
-    .pf-cards.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  @media (max-width: 760px) {
-    /* One column throughout: the index label sits above its section, the
-       period above its entry, and every card gets the full measure. */
-    .pf-section { grid-template-columns: 1fr; gap: 1.25rem; }
+    .pf-section { grid-template-columns: 1fr; gap: 1.2rem; }
+    .pf-idx { padding-top: 0; }
     .pf-rows li { grid-template-columns: 1fr; gap: 0.5rem; }
-    .pf-period { padding-top: 0; }
-    .pf-cards,
-    .pf-cards.three { grid-template-columns: 1fr; }
-    .pf-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem 1rem; }
-    .pf-btn { padding: 0.85rem 1.2rem; }
-    .pf-outro { flex-direction: column; align-items: flex-start; }
+    .pf-steps li { grid-template-columns: 2.6rem 1fr; gap: 1rem; }
   }
-
-  @media (max-width: 380px) {
-    .pf-actions { flex-direction: column; align-items: stretch; }
-    .pf-btn { justify-content: space-between; }
+  @media (max-width: 900px) {
+    .sc-tab { background: rgba(6, 8, 10, 0.86); }
+    .sc-panel { background: rgba(6, 8, 10, 0.86); }
+  }
+  @media (max-width: 560px) {
+    .sc-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sc-headline { gap: 1.1rem 1.8rem; }
   }
 </style>
+
+<script>
+  // The picker: plain tablist semantics, arrow-key navigable, and it tells the
+  // lattice how much of itself to light. No framework, no state library — the
+  // selected tab IS the state, which is what `aria-selected` already means.
+  const picker = document.querySelector<HTMLElement>("[data-scope-picker]");
+
+  if (picker) {
+    const tabs = Array.from(picker.querySelectorAll<HTMLButtonElement>("[data-scope-tab]"));
+    const panels = Array.from(picker.querySelectorAll<HTMLElement>("[data-scope-panel]"));
+
+    const select = (id: string, focus = false) => {
+      tabs.forEach((tab) => {
+        const on = tab.dataset.scopeTab === id;
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+        tab.tabIndex = on ? 0 : -1;
+        if (on) {
+          if (focus) tab.focus();
+          const ratio = Number(tab.dataset.field);
+          if (Number.isFinite(ratio)) {
+            dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+          }
+        }
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.scopePanel !== id;
+      });
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => select(tab.dataset.scopeTab!));
+    });
+
+    picker.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (key !== "ArrowRight" && key !== "ArrowLeft" && key !== "Home" && key !== "End") return;
+      const current = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+      if (current < 0) return;
+      event.preventDefault();
+      const next =
+        key === "Home" ? 0
+        : key === "End" ? tabs.length - 1
+        : (current + (key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      select(tabs[next].dataset.scopeTab!, true);
+    });
+
+    // Tell the field what the initially selected tab means, once it is listening.
+    requestAnimationFrame(() => {
+      const first = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+      if (first) {
+        const ratio = Number(first.dataset.field);
+        if (Number.isFinite(ratio)) dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+      }
+    });
+  }
+</script>
