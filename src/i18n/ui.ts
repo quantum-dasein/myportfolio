@@ -313,15 +313,15 @@ export const ui = {
     "studio.eyebrow": "Case / 03 — This site",
     "studio.title": "The proof is the page you're on.",
     "studio.lead":
-      "Every claim here is testable by scrolling it. No template, no page builder — a hand-built Astro site with five bespoke real-time scenes, two languages, and an ambience that ships as code instead of audio.",
-    "studio.metric.1.v": "19",
+      "Every claim here is testable by scrolling it. No template, no page builder — a hand-built Astro site with five bespoke real-time scenes, two languages, and an ambience that stays off the wire until you ask for it.",
+    "studio.metric.1.v": "25",
     "studio.metric.1.l": "production routes",
     "studio.metric.2.v": "02",
     "studio.metric.2.l": "languages, zero routing hacks",
     "studio.metric.3.v": "05",
     "studio.metric.3.l": "bespoke real-time scenes",
-    "studio.metric.4.v": "00",
-    "studio.metric.4.l": "audio files — the ambience is synthesised",
+    "studio.metric.4.v": "03",
+    "studio.metric.4.l": "audio files, none fetched until you turn sound on",
 
     "studio.sys.label": "What is actually running",
     "studio.sys.title": "Five scenes, none of them decoration.",
@@ -339,7 +339,7 @@ export const ui = {
       "Opening Bridge Consult assembles a bridge — deck slabs, pylons and cables in sequence. Opening FIDIC unfolds a contract atlas and turns its pages. Neither one is a modal.",
     "studio.sys.5.title": "The ambience",
     "studio.sys.5.text":
-      "The drone and the interface ticks are synthesised with the Web Audio API — three detuned oscillators under a filter that breathes once every twenty seconds. Zero audio files ship.",
+      "The drone and the interface ticks run through the Web Audio API rather than <audio> elements, so the loop closes without the gap HTMLAudioElement leaves. Three files, about a megabyte — and not one byte is fetched until you turn sound on, which is why the page weighs nothing if you never do.",
     "studio.sys.6.title": "The language system",
     "studio.sys.6.text":
       "Two languages, one home. Copy swaps in place from a dictionary; only genuinely localized content earns its own URL. No locale roots, no redirect traps, no duplicate homepages.",
@@ -799,15 +799,15 @@ export const ui = {
     "studio.eyebrow": "Case / 03 — Diese Website",
     "studio.title": "Der Beweis ist die Seite, auf der du gerade bist.",
     "studio.lead":
-      "Jede Behauptung hier lässt sich durch Scrollen überprüfen. Kein Template, kein Baukasten — eine handgebaute Astro-Website mit fünf eigenen Echtzeit-Szenen, zwei Sprachen und einer Klangkulisse, die als Code statt als Audio ausgeliefert wird.",
-    "studio.metric.1.v": "19",
+      "Jede Behauptung hier lässt sich durch Scrollen überprüfen. Kein Template, kein Baukasten — eine handgebaute Astro-Website mit fünf eigenen Echtzeit-Szenen, zwei Sprachen und einer Klangkulisse, die erst über die Leitung geht, wenn du sie anforderst.",
+    "studio.metric.1.v": "25",
     "studio.metric.1.l": "produktive Routen",
     "studio.metric.2.v": "02",
     "studio.metric.2.l": "Sprachen, null Routing-Hacks",
     "studio.metric.3.v": "05",
     "studio.metric.3.l": "eigene Echtzeit-Szenen",
-    "studio.metric.4.v": "00",
-    "studio.metric.4.l": "Audiodateien — die Klangkulisse ist synthetisiert",
+    "studio.metric.4.v": "03",
+    "studio.metric.4.l": "Audiodateien, keine geladen bevor du den Ton einschaltest",
 
     "studio.sys.label": "Was hier tatsächlich läuft",
     "studio.sys.title": "Fünf Szenen, keine davon Dekoration.",
@@ -825,7 +825,7 @@ export const ui = {
       "Bridge Consult zu öffnen baut eine Brücke — Fahrbahnplatten, Pylone und Seile der Reihe nach. FIDIC zu öffnen klappt einen Vertragsatlas auf und blättert seine Seiten. Beides ist kein Modal.",
     "studio.sys.5.title": "Die Klangkulisse",
     "studio.sys.5.text":
-      "Der Drone-Ton und die Interface-Ticks sind mit der Web Audio API synthetisiert — drei verstimmte Oszillatoren unter einem Filter, der alle zwanzig Sekunden einmal atmet. Es wird keine einzige Audiodatei ausgeliefert.",
+      "Der Drone-Ton und die Interface-Ticks laufen über die Web Audio API statt über <audio>-Elemente, damit die Schleife ohne die Lücke schließt, die HTMLAudioElement lässt. Drei Dateien, etwa ein Megabyte — und kein einziges Byte wird geladen, bevor du den Ton einschaltest. Deshalb wiegt die Seite nichts, wenn du es nie tust.",
     "studio.sys.6.title": "Das Sprachsystem",
     "studio.sys.6.text":
       "Zwei Sprachen, ein Zuhause. Texte werden aus einem Wörterbuch an Ort und Stelle getauscht; nur echt lokalisierte Inhalte bekommen eine eigene URL. Keine Locale-Roots, keine Redirect-Fallen, keine doppelten Startseiten.",

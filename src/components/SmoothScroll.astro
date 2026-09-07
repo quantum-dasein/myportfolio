@@ -130,17 +130,106 @@
 
   addEventListener("hashchange", () => scrollToHash(location.hash));
 
-  // Arriving on a hash needs re-applying, not one shot. The browser jumps to the
-  // anchor before this runs, and the target then moves as eager images and fonts
-  // change the height above it — which is exactly how a tap on "Work" ended up
-  // near the bottom of the page.
-  if (location.hash) {
-    const settle = () => scrollToHash(location.hash, true);
-    requestAnimationFrame(settle);
-    if (document.readyState !== "complete") {
-      addEventListener("load", () => requestAnimationFrame(settle), { once: true });
+  // ── Where a new document lands ─────────────────────────────────────────────
+  // Following a link must land at the top of the new page, or on the section its
+  // hash names. Restoring a remembered position is for Back and Forward only —
+  // the browser already does that on a back_forward entry, so nothing here may
+  // touch one.
+  //
+  // Doing it once on arrival is not enough, and that was the bug. The position
+  // was measured while the document was still assembling — Three.js scenes
+  // mounting, ScrollTrigger inserting pin spacers, eager images landing — so the
+  // three shots (rAF, load, fonts.ready) all fired against a layout that then
+  // moved underneath them. Measured across the site, the same "/#work" resolved
+  // to 5929px from one page and 0 from another, and "/#about" to 851 or 252.
+  // When the intermediate layout is TALLER than the final one the same race
+  // resolves past the end of the document and the browser clamps it to the
+  // bottom — the "it throws me to the end of the page" report.
+  //
+  // So hold the landing instead: re-assert it every frame until the target stops
+  // moving, then stop. The visitor's own scroll always wins — the first real
+  // input hands the page back to them.
+  const settleFrom = (resolve: () => number | null) => {
+    const setScroll = (y: number) => {
+      lenis?.scrollTo(y, { immediate: true, force: true });
+      window.scrollTo({ top: y, left: 0, behavior: "auto" });
+    };
+
+    let done = false;
+    const inputs = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+    const release = () => {
+      if (done) return;
+      done = true;
+      inputs.forEach((type) => removeEventListener(type, release));
+    };
+    // Passive: these only ever cancel our own correction, never the gesture.
+    inputs.forEach((type) => addEventListener(type, release, { passive: true, once: true }));
+
+    // Give up well before this becomes a page that fights the finger. The budget
+    // only counts frames the document could actually scroll on — see below.
+    const BUDGET = 2600;
+    let spent = 0;
+    let last = performance.now();
+    let previous = Number.NaN;
+    let stable = 0;
+
+    const tick = (now: number) => {
+      if (done) return;
+      const frame = now - last;
+      last = now;
+
+      // While the intro lock is up, `overflow: hidden` clamps every scroll to 0,
+      // so a correction applied now is silently discarded. Wait it out rather
+      // than spend the budget on frames that cannot take effect.
+      const locked = document.documentElement.classList.contains("is-preloading");
+      if (!locked) {
+        spent += frame;
+        const y = resolve();
+        if (y !== null) {
+          // Two things have to hold before we let go: the target has stopped
+          // moving, and the page is actually sitting where we put it.
+          stable = Math.abs(y - previous) < 2 && Math.abs(window.scrollY - y) < 2 ? stable + 1 : 0;
+          previous = y;
+          setScroll(y);
+        }
+      }
+
+      if (stable >= 4 || spent > BUDGET) release();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  {
+    const entry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    // A reload keeps your place, and back/forward is the browser's to restore.
+    const followedALink = !entry || entry.type === "navigate";
+
+    // The case and archive transitions load the origin page fresh and put the
+    // visitor back exactly where they left it. That is a Back in everything but
+    // navigation type, so it owns the landing position — stay out of its way.
+    let returning = false;
+    try {
+      returning = !!(sessionStorage.getItem("rb-case-return") || sessionStorage.getItem("rb-warp-return"));
+    } catch {
+      returning = false; // private mode
     }
-    document.fonts?.ready.then(() => requestAnimationFrame(settle));
+
+    if (followedALink && !returning) {
+      if (location.hash) {
+        settleFrom(() => {
+          let target: HTMLElement | null = null;
+          try {
+            target = document.querySelector<HTMLElement>(location.hash);
+          } catch {
+            return null;
+          }
+          return target ? anchorTop(target) : null;
+        });
+      } else {
+        settleFrom(() => 0);
+      }
+    }
   }
 </script>
 
