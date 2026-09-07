@@ -91,6 +91,25 @@ const ogEntry = og[insight.key];
   /* ── Reveal base ───────────────────────────────────────────────────────── */
   [data-reveal] { opacity: 0; transform: translateY(26px); will-change: transform, opacity; }
   @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1; transform: none; } }
+
+  /* The pill is fixed, so once the article scrolled up under it, it sat alone
+     on top of running body copy — a floating chip over a paragraph. It belongs
+     with the rest of the top furniture: it stays for the hero, where nothing is
+     behind it, and steps aside as soon as the reader is into the page. The
+     header carries the wordmark and Work from there on, so nothing is lost. */
+  .back-link {
+    transition:
+      color .35s var(--ease-out-expo),
+      border-color .35s var(--ease-out-expo),
+      opacity .32s var(--ease-out-cubic),
+      transform .32s var(--ease-out-cubic);
+  }
+  :global(body.is-nav-small) .back-link,
+  :global(body.is-nav-hidden) .back-link {
+    opacity: 0;
+    transform: translate3d(0, -150%, 0);
+    pointer-events: none;
+  }
 </style>
 
 <script>

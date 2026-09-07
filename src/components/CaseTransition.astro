@@ -204,7 +204,8 @@
     document.documentElement.classList.remove("rb-transitioning", "rb-case-arriving");
     root.classList.remove("is-active", "is-bridge", "is-fidic");
     gsap.killTweensOf([root, canvas, veil, destination, hud, meter, animated]);
-    gsap.set([root, canvas], { clearProps: "opacity" });
+    gsap.set(root, { clearProps: "opacity,transform" });
+    gsap.set(canvas, { clearProps: "opacity" });
     gsap.set([hud, veil, destination, label], { clearProps: "opacity,transform,letterSpacing" });
     gsap.set(meter, { clearProps: "transform" });
     disposeScene();
@@ -462,8 +463,13 @@
     };
     const reveal = () => requestAnimationFrame(() => requestAnimationFrame(() => {
       if (reduced) { finish(); return; }
-      safetyTimer = window.setTimeout(finish, 1300);
-      gsap.to(root, { opacity: 0, duration: .82, ease: "power2.out", onComplete: finish });
+      safetyTimer = window.setTimeout(finish, 1500);
+      // The departure sealed to black and this page opens on the same black, so
+      // the document swap itself is now invisible. Letting the plate drift open
+      // as it dissolves carries the arrival out of the flight instead of
+      // cross-fading a flat rectangle away.
+      gsap.set(root, { scale: 1 });
+      gsap.to(root, { opacity: 0, scale: 1.07, duration: .95, ease: "power2.inOut", onComplete: finish });
     }));
     const fontsReady = (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
     if (fontsReady) Promise.race([fontsReady, new Promise((resolve) => setTimeout(resolve, 180))]).then(reveal);
@@ -571,9 +577,21 @@
         lanes.forEach((item, i) => tl.to(item.position, { z: item.userData.finalZ, duration: .58 }, .18 + i * .009));
         towers.forEach((item, i) => tl.to(item.scale, { y: 1, duration: .85, ease: "power4.out" }, .48 + i * .16));
         cables.forEach((item, i) => tl.to(item.scale, { y: 1, duration: .34, ease: "power2.out" }, .72 + i * .018));
+        // The departure used to stop dead. The camera finished its run a beat
+        // before the timeline did, and the veil is a VIGNETTE — transparent
+        // through the middle 20% — so it never actually covered anything. The
+        // last fifth of a second was a frozen, fully-lit bridge sitting on
+        // screen, and then the document was replaced under it: a hard cut from
+        // a still image to a different composition.
+        // Two changes. The camera now keeps flying past the moment the screen
+        // is sealed, so the last thing visible is still in motion. And the
+        // canvas dissolves into the overlay's own black, which is what actually
+        // seals it — so the navigation happens black-to-black and the cut has
+        // nothing left to show.
         tl.to(label, { letterSpacing: ".5em", opacity: 0, scaleX: 1.22, duration: .75, ease: "power3.in" }, .88)
-          .to(camera.position, { z: -8.7, y: .42, duration: 2.2, ease: "power3.in", onUpdate: () => camera?.lookAt(0, -.12, -28) }, .08)
-          .to(veil, { opacity: 1, duration: .42 }, 2.08);
+          .to(camera.position, { z: -10.4, y: .42, duration: 2.5, ease: "power3.in", onUpdate: () => camera?.lookAt(0, -.12, -28) }, .08)
+          .to(veil, { opacity: 1, duration: .5, ease: "power2.in" }, 1.78)
+          .to(canvas, { opacity: 0, duration: .46, ease: "power2.in" }, 1.98);
       } else {
         cables.slice().reverse().forEach((item, i) => tl.to(item.scale, { y: .001, duration: .24, ease: "power2.in" }, .22 + i * .008));
         decks.forEach((item, i) => {
@@ -592,9 +610,12 @@
           .to(canvas, { opacity: 0, duration: .3 }, 1.26);
       }
     } else if (!returning) {
+      // Same seal as the bridge: the book keeps moving through the cut, and the
+      // canvas dissolves to black rather than leaving the last frame standing.
       tl.to(object.rotation, { y: .04, duration: 1.45 }, 0)
-        .to(camera.position, { z: 3.35, duration: 1.7, ease: "power4.in" }, .08)
-        .to(veil, { opacity: 1, duration: .5, ease: "power2.in" }, 1.52);
+        .to(camera.position, { z: 3.05, duration: 2.05, ease: "power4.in" }, .08)
+        .to(veil, { opacity: 1, duration: .5, ease: "power2.in" }, 1.35)
+        .to(canvas, { opacity: 0, duration: .45, ease: "power2.in" }, 1.5);
       if (cover) tl.to(cover.rotation, { y: -Math.PI * .92, duration: 1.02, ease: "power3.inOut" }, .12);
       pages.forEach((page, i) => tl.to(page.rotation, { y: -Math.PI * (.62 + i * .025), duration: .76, ease: "power2.inOut" }, .32 + i * .05));
     } else {

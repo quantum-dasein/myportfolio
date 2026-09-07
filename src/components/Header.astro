@@ -115,25 +115,41 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
       transform: translate3d(0, -100%, 0);
     }
 
-    /* scroll-triggered frosted backdrop */
+    /* Scroll-triggered backdrop.
+       It used to be a hard-edged bar that only appeared once the whole hero had
+       passed (`is-nav-small`). Two things went wrong with that. Over a tall hero
+       the header sat fully transparent while copy scrolled straight through the
+       wordmark and the nav; and once the bar did appear, its bottom edge
+       guillotined whatever passed under it — headings lost their tops on a dead
+       straight line.
+       So it now comes in on any real scroll, and it dissolves instead of
+       cutting: the fill and the blur fade out together over a tail that hangs
+       below the bar, so content slips under it rather than being sliced. The
+       header is still completely clean at rest, which is the point of it. */
     &::after {
       content: "";
-      width: 100%;
-      height: 100%;
       position: absolute;
       top: 0;
       left: 0;
+      right: 0;
+      height: calc(100% + 1.75rem);
       z-index: -1;
-      background: rgba(2, 2, 3, 0.64);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-      transform: scaleY(0);
-      transform-origin: top;
-      transition: transform 0.3s var(--ease-out-cubic);
-      backdrop-filter: blur(16px);
+      background: linear-gradient(
+        to bottom,
+        rgba(2, 2, 3, 0.88) 0%,
+        rgba(2, 2, 3, 0.8) 46%,
+        rgba(2, 2, 3, 0) 100%
+      );
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.32s var(--ease-out-cubic);
     }
 
-    :global(body.is-nav-small) &::after {
-      transform: scaleY(1);
+    :global(body.is-nav-veiled) &::after {
+      opacity: 1;
     }
   }
 
@@ -582,6 +598,14 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
       const shouldBeSmall = y > this.smallThreshold;
       if (shouldBeSmall !== classList.contains("is-nav-small")) {
         classList.toggle("is-nav-small", shouldBeSmall);
+      }
+
+      // The backdrop is a separate question from the size. Content can pass
+      // under the header long before the hero has cleared it, so veil on any
+      // real scroll and keep the bar clean only at rest.
+      const shouldBeVeiled = y > 18;
+      if (shouldBeVeiled !== classList.contains("is-nav-veiled")) {
+        classList.toggle("is-nav-veiled", shouldBeVeiled);
       }
 
       if (this.prevY < 0) {

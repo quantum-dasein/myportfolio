@@ -167,10 +167,11 @@
 
     // Give up well before this becomes a page that fights the finger. The budget
     // only counts frames the document could actually scroll on — see below.
-    const BUDGET = 2600;
+    const BUDGET = 3400;
     let spent = 0;
     let last = performance.now();
     let previous = Number.NaN;
+    let previousHeight = -1;
     let stable = 0;
 
     const tick = (now: number) => {
@@ -184,12 +185,28 @@
       const locked = document.documentElement.classList.contains("is-preloading");
       if (!locked) {
         spent += frame;
-        const y = resolve();
-        if (y !== null) {
-          // Two things have to hold before we let go: the target has stopped
-          // moving, and the page is actually sitting where we put it.
-          stable = Math.abs(y - previous) < 2 && Math.abs(window.scrollY - y) < 2 ? stable + 1 : 0;
+        const raw = resolve();
+        if (raw !== null) {
+          const height = document.documentElement.scrollHeight;
+          // Clamp to what the document can actually reach. A target resolved
+          // against a page that has not finished growing routinely lands past
+          // the end; the browser then clamps the scroll, and comparing the
+          // request against the clamped result can never agree — which left the
+          // hold running out its budget pinned to the very bottom. Exactly the
+          // failure this whole thing exists to prevent, reintroduced one level
+          // down.
+          const y = Math.min(raw, Math.max(0, height - window.innerHeight));
+          // Three things have to hold before we let go: the target has stopped
+          // moving, the page is sitting where we put it, and the document has
+          // stopped growing underneath both of them.
+          stable =
+            Math.abs(y - previous) < 2 &&
+            Math.abs(window.scrollY - y) < 2 &&
+            height === previousHeight
+              ? stable + 1
+              : 0;
           previous = y;
+          previousHeight = height;
           setScroll(y);
         }
       }
