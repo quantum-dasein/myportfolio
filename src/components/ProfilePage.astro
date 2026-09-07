@@ -173,9 +173,9 @@ const experience = [1, 2, 3];
 const education = [1, 2, 3];
 
 const steps = [
-  { n: "01", label: c("WRITE", "SCHREIBEN"), line: c("Tell me what you need, and when.", "Sagen Sie mir, was Sie brauchen — und bis wann.") },
-  { n: "02", label: c("SCOPE", "UMFANG"), line: c("Scope, price and launch date — fixed, within a day.", "Umfang, Preis und Launch-Termin — fest, binnen eines Tages.") },
-  { n: "03", label: c("LAUNCH", "LAUNCH"), line: c("Review it on a real URL while it is built.", "Unter einer echten URL mitverfolgen, während gebaut wird.") },
+  { n: "01", label: c("WRITE", "SCHREIBEN"), line: c("Tell me what you need and when.", "Sagen Sie mir, was Sie brauchen — und bis wann.") },
+  { n: "02", label: c("SCOPE", "UMFANG"), line: c("Scope, price and launch date — fixed within a day.", "Umfang, Preis und Launch-Termin — innerhalb eines Tages vereinbart.") },
+  { n: "03", label: c("LAUNCH", "LAUNCH"), line: c("Review it live while it is built.", "Die Website live mitverfolgen, während sie entsteht.") },
 ];
 
 const breadcrumbs = {
@@ -330,20 +330,15 @@ const breadcrumbs = {
 
     <article class="u-container pf-inner">
       <!-- ── 02 · How it works ─────────────────────────────────────────── -->
-      <section class="pf-section" aria-labelledby="process-title">
+      <section class="pf-section pf-process" aria-labelledby="process-title">
         <span class="pf-idx">02 — {c("PROCESS", "ABLAUF")}</span>
         <div class="pf-body">
           <h2 id="process-title" data-sy-reveal="words">{c("What happens after you write.", "Was passiert, nachdem Sie schreiben.")}</h2>
           <ProcessFlow
+            lang={lang}
             steps={steps}
             typed={c("I need a website for my project…", "Ich brauche eine Website für mein Projekt…")}
             rows={[c("Scope", "Umfang"), c("Price", "Preis"), c("Launch date", "Launch-Termin")]}
-            liveTag={c("LIVE", "LIVE")}
-            live={c("Live. In your accounts. Yours.", "Live. In Ihren Konten. Ihres.")}
-            note={c(
-              "No brief template, no discovery invoice, and no form that asks for your budget before it tells you anything. If I am not the right person for the job, you hear that the same day — along with where I would send you.",
-              "Kein Briefing-Formular, keine Discovery-Rechnung und kein Formular, das nach Ihrem Budget fragt, bevor es Ihnen irgendetwas sagt. Wenn ich nicht der Richtige bin, hören Sie das noch am selben Tag — samt der Adresse, an die ich Sie schicken würde.",
-            )}
           />
         </div>
       </section>
@@ -353,9 +348,11 @@ const breadcrumbs = {
         <span class="pf-idx">03 — {c("EXPERIENCE", "BERUFSERFAHRUNG")}</span>
         <div class="pf-body">
           <h2 id="experience-title" data-sy-reveal="words">{c("Professional experience", "Berufserfahrung")}</h2>
-          <ol class="pf-rows">
+          <ol class="pf-rows" data-career-timeline>
             {experience.map((n) => (
-              <li data-reveal>
+              <li>
+                <span class="pf-track" aria-hidden="true"><span></span></span>
+                <span class="pf-dot" aria-hidden="true"></span>
                 <span class="pf-period">{tk(`exp.${n}.period`)}</span>
                 <div>
                   <h3>{tk(`exp.${n}.company`)}</h3>
@@ -529,6 +526,8 @@ const breadcrumbs = {
     color: rgba(var(--rgb-text), 0.38);
     padding-top: 0.5rem;
   }
+  .pf-process { display: block; }
+  .pf-process > .pf-idx { display: block; margin-bottom: 1.8rem; }
   .pf-body h2 {
     margin: 0;
     font: 500 clamp(1.7rem, 3.4vw, 2.8rem)/1.1 var(--font-display);
@@ -804,7 +803,7 @@ const breadcrumbs = {
   /* The record was three unstructured rows separated by hairlines, which is how
      a CV looks when nobody has designed it. A drawn rail with a node per role
      gives it a spine and reads as a timeline at a glance. */
-  .pf-rows { list-style: none; margin: 2.4rem 0 0; padding: 0; }
+  .pf-rows { position: relative; list-style: none; margin: 2.4rem 0 0; padding: 0; }
   .pf-rows li {
     position: relative;
     display: grid;
@@ -812,28 +811,38 @@ const breadcrumbs = {
     gap: 1.5rem;
     padding: 0 0 2.6rem 2rem;
   }
-  .pf-rows li::before {
-    content: "";
+  .pf-track {
     position: absolute;
     left: 0;
-    top: 0.55rem;
-    bottom: 0;
+    top: 0.6rem;
+    height: 100%;
     width: 1px;
     background: rgba(var(--rgb-text), 0.14);
   }
+  .pf-track > span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scaleY(var(--career-progress, 0));
+    transform-origin: top;
+    background: #e4ebf7;
+    box-shadow: 0 0 8px rgba(201,220,247,.7);
+  }
   .pf-rows li:last-child { padding-bottom: 0; }
-  .pf-rows li:last-child::before { bottom: auto; height: 1.6rem; }
-  .pf-rows li::after {
-    content: "";
+  .pf-rows li:last-child .pf-track { display: none; }
+  .pf-dot {
     position: absolute;
-    left: -0.22rem;
+    left: calc(0.5px - 0.25rem);
     top: 0.35rem;
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: #31353d;
+    box-shadow: 0 0 0 3px #06070a, 0 0 0 4px rgba(var(--rgb-text),.18);
+    transition: background .2s, box-shadow .2s;
   }
-  .pf-rows li:not(:first-child)::after { background: rgba(var(--rgb-text), 0.34); }
+  .pf-rows li.is-reached .pf-dot { background: #eff4ff; box-shadow: 0 0 0 3px #06070a, 0 0 0 4px #aebfd677, 0 0 15px #bbd2f499; }
+  @media (prefers-reduced-motion: reduce) { .pf-dot { transition: none; } }
   .pf-period {
     font-family: var(--font-inter);
     font-size: var(--font-size-xs);
@@ -950,6 +959,42 @@ const breadcrumbs = {
 </style>
 
 <script>
+  // Each segment spans exactly two node centres. Progress follows the viewport
+  // in both directions; measuring only on scroll/resize avoids an idle loop.
+  const career = document.querySelector<HTMLOListElement>("[data-career-timeline]");
+  if (career) {
+    const items = Array.from(career.querySelectorAll<HTMLLIElement>("li"));
+    const dots = items.map((item) => item.querySelector<HTMLElement>(".pf-dot")!);
+    let careerFrame = 0;
+    const updateCareer = () => {
+      careerFrame = 0;
+      const cursor = innerHeight * .64;
+      const centres = dots.map((dot) => {
+        const rect = dot.getBoundingClientRect();
+        return rect.top + rect.height / 2;
+      });
+      items.forEach((item, index) => {
+        item.classList.toggle("is-reached", centres[index] <= cursor);
+        const distance = centres[index + 1] - centres[index];
+        const progress = distance > 0 ? Math.max(0, Math.min(1, (cursor - centres[index]) / distance)) : 0;
+        item.style.setProperty("--career-progress", String(progress));
+      });
+    };
+    const scheduleCareer = () => { if (!careerFrame) careerFrame = requestAnimationFrame(updateCareer); };
+    const careerResize = new ResizeObserver(scheduleCareer);
+    careerResize.observe(career);
+    window.addEventListener("scroll", scheduleCareer, { passive: true });
+    window.addEventListener("resize", scheduleCareer, { passive: true });
+    document.fonts.ready.then(scheduleCareer);
+    scheduleCareer();
+    document.addEventListener("astro:before-swap", () => {
+      careerResize.disconnect();
+      window.removeEventListener("scroll", scheduleCareer);
+      window.removeEventListener("resize", scheduleCareer);
+      cancelAnimationFrame(careerFrame);
+    }, { once: true });
+  }
+
   // The picker: plain tablist semantics, arrow-key navigable, and it tells the
   // lattice how much of itself to light. No framework, no state library — the
   // selected tab IS the state, which is what `aria-selected` already means.

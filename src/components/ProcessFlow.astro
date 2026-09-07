@@ -1,829 +1,246 @@
 ---
-// ─────────────────────────────────────────────────────────────────────────────
-//  ProcessFlow — "what happens after you write", as one cinematic scene.
-//
-//  Two rebuilds got here. The first was three equal columns — a concept mockup.
-//  The second had the right composition but the wrong material: everything was
-//  made of borders, so it read as a wireframe diagram, one thin SVG line between
-//  three flat boxes. The difference that matters is
-//      object → light → object → light → object
-//  rather than
-//      box → line → box → line → box.
-//  This pass is about mass, depth, light and flow. The structure and the
-//  ScrollTrigger sequence from the previous pass are unchanged.
-//
-//  What carries it now:
-//   · Objects roughly 40% larger and close enough to OVERLAP in depth. SCOPE
-//     overhangs both neighbours and sits highest in the stack — it is the hero
-//     of the section, not one of three.
-//   · Real optical surfaces: a lit top edge, an internal vertical gradient, a
-//     specular sheen across the corner, inner glow, and ambient occlusion under
-//     each object. Dark acrylic photographed in a black studio, not frosted white.
-//   · The flow is four strands of differing weight and opacity plus a pulse that
-//     travels the filament, not a single stroke.
-//   · Four depth layers moving at different rates under the pointer: the
-//     generative contour field, distant dust, the flow, then the objects.
-//   · A light zone behind each object — SCOPE brightest, LAUNCH second, WRITE
-//     faintest — so the eye is told where to look without a single colour.
-//   · LAUNCH is an actual site preview (nav, hero, sphere, cards) instead of the
-//     grey skeleton bars, which were the single cheapest thing in the scene.
-//
-//  Still no Three.js and no pin: nothing here has depth a WebGL context would
-//  earn, and pinning would cost ~150vh of page for an animation that reads fine
-//  as it passes.
-// ─────────────────────────────────────────────────────────────────────────────
 interface Step { n: string; label: string; line: string }
-interface Props { steps: Step[]; typed: string; rows: string[]; note: string; live: string; liveTag: string }
-const { steps, typed, rows, note, live, liveTag } = Astro.props;
+interface Props { steps: Step[]; typed: string; rows: string[]; lang: "en" | "de" }
+const { steps, typed, rows, lang } = Astro.props;
+const c = (en: string, de: string) => lang === "de" ? de : en;
+const previews = [
+  { label: "BRIDGE", src: "/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp" },
+  { label: "FIDIC", src: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp" },
+  { label: "SPATIAL", src: "/portfolio/rodion-belousov-luxury-interior-lighting-3d-visualization.webp" },
+];
 ---
 
 <div class="pv" data-process-flow>
   <div class="pv-stage" data-pv-stage>
-    <!-- Layer 1 — the generative contour field, drawn on canvas so it is one
-         continuous system of overlapping arcs rather than three identical
-         targets parked behind three cards. -->
-    <canvas class="pv-field" data-pv-field aria-hidden="true"></canvas>
-
-    <!-- Light zones. The only hierarchy tool available in a monochrome palette. -->
-    <span class="pv-glow pv-glow--write" aria-hidden="true"></span>
-    <span class="pv-glow pv-glow--scope" aria-hidden="true"></span>
-    <span class="pv-glow pv-glow--launch" aria-hidden="true"></span>
-
-    <!-- Layer 3 — the flow -->
-    <svg class="pv-path" data-pv-svg aria-hidden="true" preserveAspectRatio="none">
-      <path class="pv-strand pv-strand--1" data-pv-strand fill="none" />
-      <path class="pv-strand pv-strand--2" data-pv-strand fill="none" />
-      <path class="pv-strand pv-strand--3" data-pv-strand fill="none" />
-      <path class="pv-filament" data-pv-line data-pv-strand fill="none" />
-      <path class="pv-pulse" data-pv-pulse fill="none" />
+    <svg class="pv-field" viewBox="0 0 1600 660" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs><radialGradient id="process-fade"><stop stop-color="white"/><stop offset="1" stop-color="black"/></radialGradient><mask id="process-mask"><rect width="1600" height="660" fill="url(#process-fade)"/></mask></defs>
+      <g mask="url(#process-mask)" fill="none" stroke="currentColor" stroke-width=".65">
+        {Array.from({ length: 34 }, (_, i) => <ellipse cx={250 + i * 14} cy={410 - i * 3} rx={80 + i * 20} ry={48 + i * 15} transform={`rotate(-24 ${250 + i * 14} ${410 - i * 3})`}/>)}
+        {Array.from({ length: 30 }, (_, i) => <ellipse cx={1290 - i * 8} cy={320 + i * 3} rx={64 + i * 17} ry={48 + i * 16} transform={`rotate(30 ${1290 - i * 8} ${320 + i * 3})`}/>)}
+      </g>
     </svg>
-    <canvas class="pv-dust" data-pv-dust aria-hidden="true"></canvas>
+    <span class="pv-halo pv-halo--write" aria-hidden="true"></span>
+    <span class="pv-halo pv-halo--scope" aria-hidden="true"></span>
+    <span class="pv-halo pv-halo--launch" aria-hidden="true"></span>
+    <svg class="pv-current" data-pv-svg aria-hidden="true" preserveAspectRatio="none">
+      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4 }]} data-flow-strand={i} fill="none"/>)}
+      <path class="pv-pulse" data-flow-pulse pathLength="1000" fill="none"/>
+      <path class="pv-pulse pv-pulse--second" data-flow-pulse pathLength="1000" fill="none"/>
+    </svg>
+    <svg class="pv-current pv-current--front" data-pv-front aria-hidden="true" preserveAspectRatio="none">
+      <path class="pv-front-strand" data-flow-front fill="none"/>
+      <path class="pv-pulse" data-flow-front pathLength="1000" fill="none"/>
+    </svg>
+    <div class="pv-dust" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i style={`left:${(i * 37 + 11) % 100}%;top:${(i * 23 + 9) % 100}%;animation-delay:-${i * .7}s`}/>)}</div>
 
-    <!-- 01 · WRITE -->
-    <div class="pv-node pv-node--write" data-pv-layer="3">
-      <span class="pv-n" aria-hidden="true">{steps[0].n}</span>
-      <span class="pv-label">{steps[0].label}</span>
-      <div class="pv-obj pv-pill" data-pv-tilt data-pv-write>
-        <span class="pv-pill-text" data-pv-type data-text={typed}></span>
-        <span class="pv-send" data-pv-send>
-          <span class="pv-shock" data-pv-shock></span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 2 11 13" /><path d="M22 2l-7 20-4-9-9-4 20-7z" />
+    <div class="pv-node pv-write">
+      <div class="pv-step"><span aria-hidden="true">{steps[0].n}</span><h3>{steps[0].label.toLowerCase()}</h3></div>
+      <div class="pv-message pv-glass" data-flow-object="write">
+        <span>{typed}</span>
+        <span class="pv-send" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m4 11 16-7-6 17-3-7-7-3Z"/><path d="m11 14 9-10"/></svg></span>
+      </div>
+      <p class="pv-caption">{steps[0].line}</p>
+    </div>
+
+    <div class="pv-node pv-scope">
+      <div class="pv-step"><span aria-hidden="true">{steps[1].n}</span><h3>{steps[1].label.toLowerCase()}</h3></div>
+      <div class="pv-sheet pv-glass" data-flow-object="scope">
+        <div class="pv-sheet-heading"><span>RB / {c("PROJECT BRIEF", "PROJEKTBRIEFING")}</span><span>02</span></div>
+        {rows.map((row, i) => <div class="pv-row">
+          <svg class="pv-row-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+            {i === 0 ? <><path d="M6 3h11l5 5v17H6Z M17 3v6h5 M10 13h8 M10 17h8 M10 21h5"/></> : i === 1 ? <><ellipse cx="14" cy="6" rx="9" ry="4"/><path d="M5 6v15c0 5 18 5 18 0V6 M5 11c0 5 18 5 18 0 M5 16c0 5 18 5 18 0"/></> : <><rect x="4" y="6" width="20" height="18" rx="2"/><path d="M4 12h20 M9 3v6 M19 3v6 M9 17h3 M16 17h3 M9 21h3"/></>}
           </svg>
-        </span>
+          <div class="pv-row-copy"><span>{row}</span><i></i><i></i></div>
+          <span class="pv-check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m5 10 3 3 7-8"/></svg></span>
+        </div>)}
       </div>
-      <p class="pv-line">{steps[0].line}</p>
+      <p class="pv-caption">{steps[1].line}</p>
     </div>
 
-    <!-- 02 · SCOPE — the hero of the scene -->
-    <div class="pv-node pv-node--scope" data-pv-layer="4">
-      <span class="pv-n" aria-hidden="true">{steps[1].n}</span>
-      <span class="pv-label">{steps[1].label}</span>
-      <div class="pv-obj pv-sheet" data-pv-tilt data-pv-sheet>
-        {rows.map((row, r) => (
-          <div class="pv-row" data-pv-row={r}>
-            <span class="pv-row-label">{row}</span>
-            <span class="pv-row-rule"><i></i></span>
-            <span class="pv-row-tick">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m5 12.5 4.5 4.5L19 7" />
-              </svg>
-            </span>
+    <div class="pv-node pv-launch">
+      <div class="pv-step"><span aria-hidden="true">{steps[2].n}</span><h3>{steps[2].label.toLowerCase()}</h3></div>
+      <div class="pv-browser pv-glass" data-flow-object="launch" role="img" aria-label={c("A finished website: clear typography, a sculpted sphere and three selected projects.", "Eine fertige Website: klare Typografie, eine skulpturale Kugel und drei ausgewählte Projekte.")}>
+        <div class="pv-chrome" aria-hidden="true"><span><i></i><i></i><i></i></span><span class="pv-live"><i></i>LIVE</span></div>
+        <div class="pv-site" aria-hidden="true">
+          <div class="pv-nav"><span>RB® STUDIO</span><span>— &nbsp; 2026</span></div>
+          <div class="pv-site-hero">
+            <div class="pv-sphere"></div>
+            <span class="pv-site-kicker">{c("IDEAS INTO EXPERIENCES", "IDEEN WERDEN ERLEBNISSE")}</span>
+            <p>{c("Clear thinking.", "Klar gedacht.")}<br/><span>{c("Made tangible.", "Stark gemacht.")}</span></p>
+            <span class="pv-site-link">{c("Explore the work", "Projekte entdecken")} <span>↗</span></span>
           </div>
-        ))}
+          <div class="pv-projects">{previews.map(({ label, src }) => <div><img src={src} alt="" width="150" height="90" loading="lazy" decoding="async"/><span>{label}<i>↗</i></span></div>)}</div>
+        </div>
       </div>
-      <p class="pv-line">{steps[1].line}</p>
+      <p class="pv-caption">{steps[2].line}</p>
     </div>
-
-    <!-- 03 · LAUNCH — a finished site, not a loading skeleton -->
-    <div class="pv-node pv-node--launch" data-pv-layer="3">
-      <span class="pv-n" aria-hidden="true">{steps[2].n}</span>
-      <span class="pv-label">{steps[2].label}</span>
-      <div class="pv-obj pv-win" data-pv-tilt data-pv-win>
-        <span class="pv-win-bar">
-          <i></i><i></i><i></i>
-          <b>{liveTag}</b>
-        </span>
-        <span class="pv-win-body">
-          <span class="pv-nav" data-pv-block><i></i><i></i><i></i></span>
-          <span class="pv-hero">
-            <span class="pv-hero-copy">
-              <span class="pv-h1" data-pv-block></span>
-              <span class="pv-h2" data-pv-block></span>
-              <span class="pv-cta" data-pv-block></span>
-            </span>
-            <span class="pv-sphere" data-pv-block></span>
-          </span>
-          <span class="pv-cards">
-            <i data-pv-block></i><i data-pv-block></i><i data-pv-block></i>
-          </span>
-        </span>
-      </div>
-      <p class="pv-line">{steps[2].line}</p>
-    </div>
-
-    <span class="pv-terminus" data-pv-terminus aria-hidden="true"></span>
-    <p class="pv-live" data-pv-live>{live}</p>
+    <span class="pv-terminus" data-flow-end aria-hidden="true"></span>
   </div>
-
-  <p class="pv-note">{note}</p>
 </div>
 
 <style>
-  .pv { margin-top: clamp(2.6rem, 5vw, 4rem); }
-
-  .pv-stage {
-    position: relative;
-    height: clamp(28rem, 33vw, 35rem);
-    isolation: isolate;
-    /* Everything here is sized to bleed. Clipping the horizontal axis only stops
-       that becoming the page's overflow while leaving the numerals, which sit
-       above their objects, visible. `clip` so no scroll container is created. */
-    overflow-x: clip;
-  }
-
-  /* ── Layer 1 · contour field, and the light zones ────────────────────────── */
-  .pv-field,
-  .pv-dust {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-  .pv-field { z-index: 0; }
+  .pv { width: min(1600px, calc(100vw - 4rem)); margin: 2rem 0 0; margin-left: calc((100% - min(1600px, calc(100vw - 4rem))) / 2); color: #eef1f5; }
+  .pv-stage { position: relative; height: clamp(650px, 45vw, 720px); isolation: isolate; }
+  .pv-field, .pv-current, .pv-dust { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .pv-field { color: #9eacbb; opacity: .24; z-index: -2; }
+  .pv-halo { position: absolute; width: 42%; aspect-ratio: 1; pointer-events: none; background: radial-gradient(ellipse, rgba(190,205,225,.12), transparent 66%); z-index: -1; }
+  .pv-halo--write { left: 0; top: 15%; opacity: .55; }
+  .pv-halo--scope { left: 29%; top: 0; }
+  .pv-halo--launch { right: 0; top: 9%; opacity: .75; }
+  .pv-current { z-index: 1; overflow: visible; }
+  .pv-current--front { z-index: 5; opacity: .45; }
+  .pv-front-strand { stroke: #d5e2f3; stroke-width: .65; filter: drop-shadow(0 0 4px #a6bad7); }
+  .pv-current--front .pv-pulse { animation-delay: -5s; stroke-width: 1.2; }
+  .pv-strand { stroke: #c1d0e3; stroke-width: .6; opacity: .22; }
+  .pv-filament { stroke: #e9f1ff; stroke-width: 1; opacity: .75; filter: drop-shadow(0 0 5px #a6bad7); }
+  .pv-pulse { stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 2 998; filter: drop-shadow(0 0 6px #d3e0f3); animation: pv-travel 8s linear infinite; animation-play-state: paused; }
+  .pv-pulse--second { stroke-width: 1.4; animation-delay: -3.4s; }
+  .pv.is-visible .pv-pulse, .pv.is-visible .pv-dust i { animation-play-state: running; }
   .pv-dust { z-index: 2; }
-
-  .pv-glow {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 0;
-    will-change: transform;
-  }
-  .pv-glow--write {
-    left: -6%; top: 26%; width: 46%; aspect-ratio: 1;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.035), transparent 62%);
-  }
-  .pv-glow--scope {
-    left: 20%; top: -20%; width: 62%; aspect-ratio: 1;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02) 38%, transparent 65%);
-  }
-  .pv-glow--launch {
-    left: 50%; top: 6%; width: 56%; aspect-ratio: 1;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 62%);
-  }
-
-  /* ── Layer 3 · the flow ──────────────────────────────────────────────────── */
-  .pv-path { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; overflow: visible; pointer-events: none; }
-  .pv-strand { stroke: rgba(var(--rgb-text), 0.1); stroke-width: 0.75; }
-  .pv-strand--1 { stroke: rgba(var(--rgb-text), 0.075); stroke-width: 0.6; }
-  .pv-strand--2 { stroke: rgba(var(--rgb-text), 0.13); stroke-width: 0.9; }
-  .pv-strand--3 { stroke: rgba(var(--rgb-text), 0.06); stroke-width: 0.5; }
-  .pv-filament {
-    stroke: rgba(255, 255, 255, 0.42);
-    stroke-width: 1.15;
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.16));
-  }
-  .pv-pulse {
-    stroke: rgba(255, 255, 255, 0.95);
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.4));
-  }
-
-  /* ── Layer 4 · the objects ───────────────────────────────────────────────── */
-  .pv-node { position: absolute; }
-  /* Close enough to overlap, so the scene has depth instead of three islands.
-     SCOPE overhangs both neighbours and stacks above them. */
-  .pv-node--write  { left: 0;   top: 43%; width: 30%; z-index: 3; }
-  .pv-node--scope  { left: 40%; top: 2%;  width: 38%; z-index: 5; }
-  .pv-node--launch { left: 68%; top: 28%; width: 29%; z-index: 4; }
-
-  /* Atmospheric typography: large, very faint, and partly behind its object. */
-  .pv-n {
-    position: absolute;
-    left: -0.05em;
-    top: -0.34em;
-    font: 400 clamp(4.5rem, 9vw, 9rem)/0.78 var(--font-display);
-    letter-spacing: -0.055em;
-    color: transparent;
-    -webkit-text-stroke: 1px rgba(var(--rgb-text), 0.075);
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-    z-index: -1;
-  }
-  .pv-label {
-    position: relative;
-    display: block;
-    margin-bottom: 0.9rem;
-    font-family: var(--font-inter);
-    font-size: 0.62rem;
-    font-weight: 500;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: rgba(var(--rgb-text), 0.45);
-  }
-  .pv-line {
-    position: relative;
-    margin: 1.1rem 0 0 !important;
-    max-width: 26ch;
-    font-size: 0.84rem !important;
-    line-height: 1.5;
-    color: rgba(var(--rgb-text), 0.5) !important;
-  }
-
-  /* Optical glass: a lit top edge, an internal gradient, a specular corner,
-     inner glow, and occlusion beneath. Dark acrylic in a black studio. */
-  .pv-obj {
-    position: relative;
-    background:
-      linear-gradient(142deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.018) 20%, transparent 44%),
-      radial-gradient(130% 80% at 50% -12%, rgba(255, 255, 255, 0.055), transparent 62%),
-      linear-gradient(168deg, #0d1117 0%, #080b10 52%, #04060a 100%);
-    border: 1px solid rgba(255, 255, 255, 0.085);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.19),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.035),
-      inset 0 0 44px rgba(255, 255, 255, 0.022),
-      0 44px 90px -46px rgba(0, 0, 0, 1),
-      0 8px 26px -14px rgba(0, 0, 0, 0.9);
-    will-change: transform;
-  }
-  /* A slow specular streak across the surface — the give-away that it is glass
-     and not a rectangle with a border. */
-  .pv-obj::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(114deg, transparent 34%, rgba(255, 255, 255, 0.035) 48%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* 01 — the message */
-  .pv-pill {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.62rem 0.62rem 0.62rem 1.2rem;
-    border-radius: 999px;
-  }
-  .pv-pill-text {
-    flex: 1 1 auto;
-    min-width: 0;
-    font-family: var(--font-inter);
-    font-size: clamp(0.66rem, 0.86vw, 0.82rem);
-    color: rgba(var(--rgb-text), 0.66);
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  .pv-pill-text::after {
-    content: "";
-    display: inline-block;
-    width: 1px; height: 1em;
-    margin-left: 2px; vertical-align: -0.15em;
-    background: rgba(var(--rgb-text), 0.78);
-    animation: pv-caret 1.1s steps(1) infinite;
-  }
-  @keyframes pv-caret { 0%, 50% { opacity: 1 } 50.01%, 100% { opacity: 0 } }
-  /* The send button reads as a small lens, not a bordered circle. */
-  .pv-send {
-    position: relative;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    width: 2.4rem; height: 2.4rem;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background:
-      radial-gradient(110% 110% at 34% 26%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 46%, transparent 70%),
-      rgba(255, 255, 255, 0.045);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 16px rgba(255, 255, 255, 0.07);
-    color: rgba(var(--rgb-text), 0.95);
-    will-change: transform;
-  }
-  .pv-send svg { width: 0.95rem; height: 0.95rem; }
-  .pv-shock {
-    position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  /* 02 — the sheet */
-  .pv-sheet {
-    padding: 0.5rem 1.35rem;
-    border-radius: 1.35rem;
-    transform: perspective(1600px) rotateX(1.2deg) rotateY(-2.2deg);
-  }
-  /* Rows are inset glass, not text on a rule. */
-  .pv-row {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 1rem;
-    margin: 0.5rem 0;
-    padding: 0.95rem 1rem;
-    border-radius: 0.75rem;
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 0 0 1px rgba(255, 255, 255, 0.028);
-  }
-  .pv-row-label {
-    font-family: var(--font-inter);
-    font-size: clamp(0.7rem, 0.92vw, 0.83rem);
-    letter-spacing: 0.01em;
-    color: rgba(var(--rgb-text), 0.9);
-    white-space: nowrap;
-  }
-  .pv-row-rule { display: block; height: 1px; background: rgba(var(--rgb-text), 0.07); overflow: hidden; }
-  .pv-row-rule i {
-    display: block; height: 100%; width: 100%;
-    background: linear-gradient(90deg, rgba(var(--rgb-text), 0.15), rgba(255, 255, 255, 0.6));
-    transform: scaleX(0);
-    transform-origin: left center;
-  }
-  .pv-row-tick {
-    display: grid;
-    place-items: center;
-    width: 1.5rem; height: 1.5rem;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: radial-gradient(110% 110% at 34% 26%, rgba(255, 255, 255, 0.14), transparent 68%);
-    color: rgba(var(--rgb-text), 0.95);
-  }
-  .pv-row-tick svg { width: 0.8rem; height: 0.8rem; stroke-dasharray: 26; stroke-dashoffset: 26; }
-
-  /* 03 — a finished site */
-  .pv-win {
-    border-radius: 1rem;
-    overflow: hidden;
-    transform: perspective(1600px) rotateX(1deg) rotateY(-2.6deg);
-  }
-  .pv-win-bar {
-    display: flex; align-items: center; gap: 0.3rem;
-    padding: 0.6rem 0.8rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent);
-  }
-  .pv-win-bar i { width: 0.34rem; height: 0.34rem; border-radius: 50%; background: rgba(var(--rgb-text), 0.3); }
-  .pv-win-bar b {
-    margin-left: auto;
-    display: inline-flex; align-items: center; gap: 0.34rem;
-    font-family: var(--font-inter);
-    font-size: 0.5rem; font-weight: 600; letter-spacing: 0.22em;
-    color: rgba(var(--rgb-text), 0.6);
-  }
-  .pv-win-bar b::before {
-    content: "";
-    width: 0.3rem; height: 0.3rem; border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 7px rgba(255, 255, 255, 0.85);
-  }
-  .pv-win-body { display: block; padding: 0.9rem 1rem 1.05rem; }
-
-  .pv-nav { display: flex; gap: 0.65rem; margin-bottom: 1.1rem; transform-origin: left center; }
-  .pv-nav i { width: 1.5rem; height: 3px; border-radius: 3px; background: rgba(var(--rgb-text), 0.22); }
-  .pv-nav i:first-child { width: 2.4rem; background: rgba(var(--rgb-text), 0.5); }
-
-  .pv-hero { display: flex; align-items: center; gap: 0.9rem; }
-  .pv-hero-copy { flex: 1 1 auto; display: block; }
-  .pv-h1 { display: block; height: 9px; width: 88%; border-radius: 5px; background: rgba(var(--rgb-text), 0.42); transform-origin: left center; }
-  .pv-h2 { display: block; height: 5px; width: 62%; margin-top: 0.42rem; border-radius: 4px; background: rgba(var(--rgb-text), 0.2); transform-origin: left center; }
-  .pv-cta {
-    display: block; height: 1.15rem; width: 3.6rem; margin-top: 0.7rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.82);
-    transform-origin: left center;
-  }
-  /* The dark sphere — the one moment of real form inside the preview. */
-  .pv-sphere {
-    flex: 0 0 auto;
-    display: block;
-    width: 4.6rem; height: 4.6rem;
-    border-radius: 50%;
-    background:
-      radial-gradient(circle at 33% 27%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.1) 30%, rgba(4, 6, 10, 0.98) 66%),
-      #04060a;
-    box-shadow: inset -7px -9px 20px rgba(0, 0, 0, 0.95), 0 0 30px rgba(255, 255, 255, 0.1);
-  }
-
-  .pv-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 1rem; }
-  .pv-cards i {
-    display: block; height: 2.5rem;
-    border-radius: 0.4rem;
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-    transform-origin: center bottom;
-  }
-
-  /* Where the flow ends. */
-  .pv-terminus {
-    position: absolute;
-    right: 0.5%;
-    top: 62%;
-    width: 0.6rem; height: 0.6rem;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06), 0 0 24px rgba(255, 255, 255, 0.65);
-    z-index: 6;
-    will-change: transform, opacity;
-  }
-  .pv-live {
-    position: absolute;
-    right: 0; bottom: 0;
-    margin: 0 !important;
-    max-width: 14rem;
-    font-family: var(--font-inter);
-    font-size: 0.58rem !important;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    text-align: right;
-    color: rgba(var(--rgb-text), 0.5) !important;
-    z-index: 6;
-  }
-
-  /* Out of the scene entirely — inside it, it turned the composition back into
-     an ordinary website section. */
-  .pv-note {
-    max-width: 60ch;
-    margin: clamp(2.4rem, 4vw, 3.4rem) 0 0 !important;
-    font-size: 0.86rem !important;
-    line-height: 1.65;
-    color: rgba(var(--rgb-text), 0.4) !important;
-  }
-
-  /* ── Narrow ──────────────────────────────────────────────────────────────── */
+  .pv-dust i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #d7e2ef; opacity: .35; box-shadow: 0 0 5px #aabbd2; animation: pv-drift 9s ease-in-out infinite alternate paused; }
+  .pv-node { position: absolute; z-index: 3; }
+  .pv-write { left: 1%; top: 45%; width: 28%; }
+  .pv-scope { left: 32%; top: 22%; width: 34%; z-index: 4; }
+  .pv-launch { left: 70%; top: 34%; width: 28%; }
+  .pv-step { position: absolute; bottom: calc(100% + 24px); left: 5%; }
+  .pv-step > span { position: absolute; bottom: -34px; left: -5px; font: 500 clamp(90px, 9.5vw, 150px)/1 var(--font-inter, sans-serif); letter-spacing: -.07em; color: transparent; -webkit-text-stroke: 1px rgba(218,229,242,.25); z-index: -1; }
+  .pv-step h3 { margin: 0; font-size: clamp(18px, 1.6vw, 25px); font-weight: 400; letter-spacing: -.02em; transform: translateY(17px); text-shadow: 0 2px 15px #000; }
+  .pv-glass { position: relative; border: 1px solid rgba(206,222,242,.58); background: linear-gradient(145deg, rgba(231,239,253,.15), transparent 30%), linear-gradient(165deg,#20252c 0%,#0b0e12 48%,#14191f 100%); box-shadow: inset 0 1px 1px rgba(255,255,255,.4), inset 0 -1px 2px rgba(196,216,242,.16), 0 25px 45px -18px #000, 0 0 28px -12px rgba(191,212,242,.32); }
+  .pv-message { display: flex; align-items: center; gap: 16px; min-height: 82px; padding: 14px 16px 14px 28px; border-radius: 999px; box-shadow: inset -3px 0 13px rgba(211,229,255,.3), inset 0 1px 1px rgba(255,255,255,.35), 0 18px 28px -12px #000, 5px 0 20px -8px #b5c9e9; }
+  .pv-message > span:first-child { font-size: clamp(12px, 1vw, 16px); line-height: 1.5; color: #d2d5db; }
+  .pv-send { flex: 0 0 44px; height: 44px; display: grid; place-items: center; margin-left: auto; border-radius: 50%; border: 1px solid #bbc9da; background: linear-gradient(135deg,#0e131a,#303b49); box-shadow: 0 0 13px #b0c6e333; }
+  .pv-send svg { width: 23px; }
+  .pv-sheet { padding: 22px; border-radius: 20px; transform: perspective(1400px) rotateY(-7deg) rotateZ(-3deg); }
+  .pv-sheet-heading { display: flex; justify-content: space-between; margin: 0 3px 15px; font: 9px/1.5 var(--font-mono,monospace); letter-spacing: .14em; color: #a7b3c2; }
+  .pv-row { display: grid; grid-template-columns: 32px 1fr 34px; gap: 18px; align-items: center; padding: 20px 17px; border: 1px solid rgba(196,212,235,.1); border-radius: 13px; background: linear-gradient(115deg,rgba(208,221,241,.085),rgba(80,97,121,.04)); box-shadow: inset 0 1px 0 #ffffff05,0 8px 14px -10px #000; }
+  .pv-row + .pv-row { margin-top: 12px; }
+  .pv-row-icon { width: 28px; }
+  .pv-row-copy > span { display: block; margin-bottom: 10px; font-size: clamp(13px,1.1vw,17px); }
+  .pv-row-copy i { display: block; width: 65%; height: 3px; margin-top: 6px; background: #929dac30; }
+  .pv-row-copy i:last-child { width: 39%; opacity: .6; }
+  .pv-check { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #a8b8cd; display: grid; place-items: center; box-shadow: inset 0 0 10px #a0b9db16; }
+  .pv-check svg { width: 20px; }
+  .pv-browser { border-radius: 17px; overflow: hidden; transform: perspective(1400px) rotateY(-8deg) rotateZ(2deg); }
+  .pv-chrome { height: 32px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #bdcee51a; background: linear-gradient(110deg,#30394570,#10151c); }
+  .pv-chrome > span:first-child { display: flex; gap: 5px; }
+  .pv-chrome i { display: block; width: 4px; height: 4px; background: #a7b5c5; border-radius: 50%; }
+  .pv-live { display: flex; gap: 5px; align-items: center; font: 7px/1 var(--font-mono,monospace); letter-spacing: .13em; }
+  .pv-live i { background: white; box-shadow: 0 0 5px #dfeafa; }
+  .pv-site { padding: 17px; background: radial-gradient(ellipse at 85% 40%,#202a3759,transparent 55%),#06090d; }
+  .pv-nav { display: flex; justify-content: space-between; position: relative; z-index: 2; color: #c8ced8; font: 7px/1.3 var(--font-mono,monospace); letter-spacing: .12em; }
+  .pv-site-hero { position: relative; padding: 29px 0 25px; isolation: isolate; }
+  .pv-site-kicker { font: 6px/1.4 var(--font-mono,monospace); letter-spacing: .12em; color: #a5b1c2; }
+  .pv-site-hero > p { position: relative; z-index: 1; font-size: clamp(18px,1.8vw,29px); line-height: 1.14; letter-spacing: -.045em; margin: 12px 0 17px; font-weight: 500; }
+  .pv-site-hero > p > span { color: #a3acb9; }
+  .pv-site-link { position: relative; z-index: 1; display: inline-flex; gap: 16px; font-size: 8px; border-bottom: 1px solid #b7c5d780; padding-bottom: 5px; }
+  .pv-sphere { position: absolute; width: 54%; aspect-ratio: 1; right: -7%; top: 14%; border-radius: 50%; background: radial-gradient(ellipse at 31% 24%,#d2dbe6 0%,#647181 4%,#202a37 14%,#080c13 39%,#010207 65%); box-shadow: inset -1px 1px 1px #e9f2ff, inset -7px 5px 12px #829bc160, 6px -4px 20px #b1c8ea16; transform: rotate(-22deg); }
+  .pv-sphere::after { content: ""; position: absolute; inset: 20% -25%; border: 1px solid #b6c7df40; border-radius: 50%; transform: rotate(-18deg); }
+  .pv-projects { position: relative; display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; z-index: 1; }
+  .pv-projects > div { min-width: 0; border-radius: 5px; overflow: hidden; border: 1px solid #a4b7d021; background: #10151c; }
+  .pv-projects img { width: 100%; height: 47px; object-fit: cover; filter: grayscale(1); opacity: .8; }
+  .pv-projects span { display: flex; align-items: center; justify-content: space-between; padding: 7px 6px; font: 6px/1 var(--font-mono,monospace); letter-spacing: .06em; }
+  .pv-projects i { font-style: normal; }
+  .pv-caption { max-width: 32ch; margin: 26px 5% 0; color: #aeb6c2; font-size: clamp(12px,1vw,15px); line-height: 1.6; text-wrap: pretty; }
+  .pv-scope .pv-caption { margin-top: 32px; }
+  .pv-terminus { position: absolute; right: -.25%; top: 59%; width: 8px; height: 8px; border-radius: 50%; background: #f5f8ff; box-shadow: 0 0 10px #eef5ff,0 0 24px #a6bad7,0 0 45px #a6bad775; z-index: 4; }
+  .pv-terminus::before, .pv-terminus::after { content: ""; position: absolute; inset: -13px; border: 1px solid #b6c8e23d; border-radius: 50%; }
+  .pv-terminus::after { inset: -27px; border-color: #b6c8e21c; }
+  @keyframes pv-travel { to { stroke-dashoffset: -1000; } }
+  @keyframes pv-drift { to { transform: translate(5px,-12px); opacity: .8; } }
   @media (max-width: 1040px) {
-    .pv-stage { height: auto; display: grid; gap: 3.8rem; }
-    .pv-path, .pv-dust, .pv-field { display: none; }
-    .pv-node { position: relative; left: auto; top: auto; width: 100%; max-width: 25rem; }
-    .pv-n { font-size: clamp(3.4rem, 16vw, 5.5rem); top: -0.3em; }
-    .pv-line { max-width: 34ch; }
-    .pv-sheet, .pv-win { transform: none; }
-    .pv-glow--write  { left: -30%; top: 2%;  width: 90%; }
-    .pv-glow--scope  { left: 6%;   top: 30%; width: 100%; }
-    .pv-glow--launch { left: -6%;  top: 64%; width: 92%; }
-    .pv-terminus { position: relative; right: auto; top: auto; margin-left: 0.2rem; }
-    .pv-live { position: relative; right: auto; bottom: auto; text-align: left; margin-top: 0.9rem !important; }
+    .pv { width: 100%; margin: 4rem 0 0; }
+    .pv-stage { height: auto; display: grid; gap: 100px; padding: 40px 0 50px; }
+    .pv-node { position: relative; left: auto; top: auto; width: 87%; max-width: 470px; }
+    .pv-scope { width: 91%; justify-self: center; }
+    .pv-launch { justify-self: end; }
+    .pv-step { bottom: calc(100% + 13px); }
+    .pv-step > span { font-size: 95px; }
+    .pv-step h3 { font-size: 21px; transform: translateY(10px); }
+    .pv-message { min-height: 78px; padding-left: 22px; }
+    .pv-message > span:first-child { font-size: 14px; }
+    .pv-row-copy > span { font-size: 16px; }
+    .pv-caption { font-size: 14px; margin-top: 21px; }
+    .pv-site-hero > p { font-size: 29px; }
+    .pv-site { padding: 19px; }
+    .pv-site-hero { padding: 29px 0; }
+    .pv-projects img { height: 60px; }
+    .pv-field { opacity: .19; }
+    .pv-halo { width: 100%; left: 0; }
+    .pv-halo--write { top: -4%; }
+    .pv-halo--scope { top: 30%; }
+    .pv-halo--launch { top: 64%; }
+    .pv-terminus { right: 9%; top: auto; bottom: 0; }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .pv-pill-text::after { animation: none; }
+  @media (max-width: 480px) {
+    .pv-stage { gap: 90px; }
+    .pv-message { min-height: 78px; padding: 12px 12px 12px 18px; gap: 10px; }
+    .pv-message > span:first-child { font-size: 12px; }
+    .pv-send { flex-basis: 35px; height: 35px; }
+    .pv-sheet { padding: 15px; border-radius: 17px; }
+    .pv-sheet-heading { font-size: 7px; }
+    .pv-row { grid-template-columns: 25px 1fr 27px; gap: 12px; padding: 16px 12px; }
+    .pv-row-icon { width: 24px; }
+    .pv-row-copy > span { font-size: 14px; }
+    .pv-check { width: 26px; height: 26px; }
+    .pv-caption { font-size: 13px; }
+    .pv-site { padding: 14px; }
+    .pv-site-hero > p { font-size: 25px; }
+    .pv-site-hero { padding: 24px 0; }
+    .pv-projects img { height: 42px; }
   }
+  @media (prefers-reduced-motion: reduce) { .pv-pulse, .pv-dust i { animation: none; } }
+  :global(html.rb-calm) .pv-pulse, :global(html.rb-calm) .pv-dust i { animation: none; }
 </style>
 
 <script>
-  import gsap from "gsap";
-  import ScrollTrigger from "gsap/ScrollTrigger";
-
-  const root = document.querySelector<HTMLElement>("[data-process-flow]");
-
-  if (root) {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const stage = root.querySelector<HTMLElement>("[data-pv-stage]")!;
-    const svg = root.querySelector<SVGSVGElement>("[data-pv-svg]")!;
-    const strands = Array.from(root.querySelectorAll<SVGPathElement>("[data-pv-strand]"));
-    const line = root.querySelector<SVGPathElement>("[data-pv-line]")!;
-    const pulse = root.querySelector<SVGPathElement>("[data-pv-pulse]")!;
-    const field = root.querySelector<HTMLCanvasElement>("[data-pv-field]")!;
-    const dust = root.querySelector<HTMLCanvasElement>("[data-pv-dust]")!;
-    const typeEl = root.querySelector<HTMLElement>("[data-pv-type]")!;
-    const write = root.querySelector<HTMLElement>("[data-pv-write]")!;
-    const send = root.querySelector<HTMLElement>("[data-pv-send]")!;
-    const shock = root.querySelector<HTMLElement>("[data-pv-shock]")!;
-    const sheet = root.querySelector<HTMLElement>("[data-pv-sheet]")!;
-    const win = root.querySelector<HTMLElement>("[data-pv-win]")!;
-    const rows = Array.from(root.querySelectorAll<HTMLElement>("[data-pv-row]"));
-    const blocks = Array.from(root.querySelectorAll<HTMLElement>("[data-pv-block]"));
-    const terminus = root.querySelector<HTMLElement>("[data-pv-terminus]")!;
-    const liveText = root.querySelector<HTMLElement>("[data-pv-live]")!;
-    const glows = Array.from(root.querySelectorAll<HTMLElement>(".pv-glow"));
-    const tilts = Array.from(root.querySelectorAll<HTMLElement>("[data-pv-tilt]"));
-    const rules = rows.map((r) => r.querySelector<HTMLElement>(".pv-row-rule i")!);
-    const ticks = rows.map((r) => r.querySelector<SVGElement>(".pv-row-tick svg")!);
-    const rings = rows.map((r) => r.querySelector<HTMLElement>(".pv-row-tick")!);
-
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const narrow = matchMedia("(max-width: 1040px)").matches;
-    const nav = navigator as Navigator & {
-      connection?: { saveData?: boolean; effectiveType?: string };
-      deviceMemory?: number;
-    };
-    const frugal =
-      nav.connection?.saveData === true ||
-      /(^|-)2g$/.test(nav.connection?.effectiveType || "") ||
-      (nav.deviceMemory !== undefined && nav.deviceMemory <= 2);
-    const still = reduced || frugal;
-
-    const full = typeEl.dataset.text || "";
-    let progress = 0;
-
-    // ── The flow ─────────────────────────────────────────────────────────────
-    // Anchors are measured from the objects themselves, so the strands meet each
-    // one at its own edge however the composition is sized.
-    const anchors = (): [number, number][] => {
-      const h = stage.clientHeight;
-      const s0 = stage.getBoundingClientRect();
-      const box = (el: Element) => {
-        const b = el.getBoundingClientRect();
-        return { l: b.left - s0.left, r: b.right - s0.left, b: b.bottom - s0.top,
-                 cy: b.top - s0.top + b.height / 2 };
+  function initProcessFlow() {
+    document.querySelectorAll<HTMLElement>("[data-process-flow]").forEach((root) => {
+      if (root.dataset.ready) return;
+      root.dataset.ready = "true";
+      const stage = root.querySelector<HTMLElement>("[data-pv-stage]")!;
+      const svg = root.querySelector<SVGSVGElement>("[data-pv-svg]")!;
+      const foreground = root.querySelector<SVGSVGElement>("[data-pv-front]")!;
+      const objects = ["write", "scope", "launch"].map((name) => root.querySelector<HTMLElement>(`[data-flow-object="${name}"]`)!);
+      const end = root.querySelector<HTMLElement>("[data-flow-end]")!;
+      let frame = 0;
+      const draw = () => {
+        frame = 0;
+        const bounds = stage.getBoundingClientRect();
+        const box = (el: HTMLElement) => {
+          const r = el.getBoundingClientRect();
+          return { x: r.left - bounds.left, y: r.top - bounds.top, w: r.width, h: r.height };
+        };
+        const [a, b, c] = objects.map(box);
+        const e = box(end);
+        svg.setAttribute("viewBox", `0 0 ${bounds.width} ${bounds.height}`);
+        foreground.setAttribute("viewBox", `0 0 ${bounds.width} ${bounds.height}`);
+        const path = (offset: number) => {
+          if (matchMedia("(max-width: 1040px)").matches) {
+            const right = Math.min(bounds.width - 4, a.x + a.w + 20 + offset);
+            return `M ${a.x+a.w*.8} ${a.y+a.h*.5} C ${right} ${a.y+a.h+65}, ${b.x+20+offset} ${b.y-55}, ${b.x+b.w*.5} ${b.y+b.h*.5} S ${c.x+c.w-15+offset} ${c.y-45}, ${c.x+c.w*.8} ${c.y+c.h*.5} S ${e.x+offset} ${e.y-35}, ${e.x+4} ${e.y+4}`;
+          }
+          return `M ${a.x+a.w-15} ${a.y+a.h*.5} C ${a.x+a.w+70} ${a.y+a.h*.5+offset}, ${b.x-65} ${b.y+b.h*.6+offset}, ${b.x+b.w*.5} ${b.y+b.h*.55} S ${c.x-85} ${c.y+c.h*.65+offset}, ${c.x+c.w*.48} ${c.y+c.h*.57} S ${e.x-35} ${e.y+offset}, ${e.x+4} ${e.y+4}`;
+        };
+        root.querySelectorAll<SVGPathElement>("[data-flow-strand]").forEach((strand, i) => strand.setAttribute("d", path((i - 4) * 9)));
+        root.querySelectorAll<SVGPathElement>("[data-flow-pulse]").forEach((pulse) => pulse.setAttribute("d", path(0)));
+        // A fine reflection crosses the lower rim; the main current stays behind
+        // the glass. Keep the reflection clear of the text inside both objects.
+        const front = matchMedia("(max-width: 1040px)").matches
+          ? `M ${b.x+b.w*.84} ${b.y+b.h*.98} C ${b.x+b.w*.96} ${b.y+b.h+28}, ${c.x+c.w*.96} ${c.y-25}, ${c.x+c.w*.99} ${c.y+20}`
+          : `M ${b.x+b.w*.86} ${b.y+b.h*.97} C ${b.x+b.w+30} ${b.y+b.h+12}, ${c.x-25} ${c.y+c.h*.85}, ${c.x+3} ${c.y+c.h*.74}`;
+        root.querySelectorAll<SVGPathElement>("[data-flow-front]").forEach((strand) => strand.setAttribute("d", front));
       };
-      const S = box(send), H = box(sheet), W = box(win), T = box(terminus);
-      return [
-        [S.r + 6, S.cy],
-        [S.r + (H.l - S.r) * 0.34, S.cy - h * 0.03],
-        [S.r + (H.l - S.r) * 0.72, H.cy + h * 0.09],
-        [H.l - 8, H.cy],
-        [H.r + 8, H.cy + h * 0.06],
-        [W.l + (W.r - W.l) * 0.45, W.b + h * 0.1],
-        [W.r + (T.l - W.r) * 0.5, W.b + h * 0.04],
-        [T.l + 3, T.cy],
-      ];
-    };
-
-    const toPath = (p: [number, number][]) => {
-      let d = `M ${p[0][0]} ${p[0][1]}`;
-      for (let i = 0; i < p.length - 1; i++) {
-        const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p[i + 1];
-        d += ` C ${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6},` +
-             ` ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6},` +
-             ` ${p2[0]} ${p2[1]}`;
-      }
-      return d;
-    };
-
-    // Each strand is the same journey at a slightly different altitude, which is
-    // what makes it read as a current rather than a wire.
-    const OFFSETS = [-9, 5, 13, 0];
-
-    const buildPath = () => {
-      const w = stage.clientWidth, h = stage.clientHeight;
-      if (!w || !h) return;
-      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-      const base = anchors();
-      strands.forEach((el, i) => {
-        const off = OFFSETS[i] ?? 0;
-        const wob = (n: number) => Math.sin(n * 1.7 + i) * off * 0.5;
-        el.setAttribute("d", toPath(base.map(([x, y], n) => [x, y + off * (n === 0 || n === base.length - 1 ? 0.15 : 1) + wob(n)])));
-      });
-      const len = line.getTotalLength();
-      line.style.strokeDasharray = String(len);
-      line.style.strokeDashoffset = String(len * (1 - Math.min(1, progress / 0.88)));
-      strands.forEach((el) => {
-        if (el === line) return;
-        const l = el.getTotalLength();
-        el.style.strokeDasharray = String(l);
-        el.style.strokeDashoffset = String(l * (1 - Math.min(1, progress / 0.88)));
-      });
-      // The pulse is a short lit dash riding the filament.
-      pulse.setAttribute("d", line.getAttribute("d") || "");
-      pulse.style.strokeDasharray = `${Math.max(30, len * 0.05)} ${len}`;
-    };
-
-    // ── Layers 1 and 2 · contour field and dust ──────────────────────────────
-    let dw = 0, dh = 0, raf = 0, onScreen = false, t0 = 0;
-    const SWARM = narrow || still ? 0 : 34;
-    const MOTES = narrow || still ? 0 : 54;
-    const swarm = Array.from({ length: SWARM }, (_, i) => ({
-      t: i / Math.max(1, SWARM),
-      speed: 0.0018 + Math.random() * 0.0028,
-      off: (Math.random() - 0.5) * 22,
-      size: 0.5 + Math.random() * 1.4,
-      lead: Math.random() < 0.24,
-    }));
-    const motes = Array.from({ length: MOTES }, () => ({
-      x: Math.random(), y: Math.random(),
-      r: 0.4 + Math.random() * 1.2,
-      a: 0.1 + Math.random() * 0.3,
-      vx: (Math.random() - 0.5) * 0.0002,
-      vy: (Math.random() - 0.5) * 0.00015,
-    }));
-    // One field of overlapping ellipses at three loose centres, rotated apart,
-    // so it reads as terrain rather than three targets behind three cards.
-    const ARCS = Array.from({ length: 22 }, (_, i) => ({
-      cx: [0.16, 0.5, 0.82][i % 3] + (Math.random() - 0.5) * 0.14,
-      cy: [0.62, 0.3, 0.5][i % 3] + (Math.random() - 0.5) * 0.16,
-      r: 0.08 + (i % 7) * 0.055 + Math.random() * 0.03,
-      squash: 0.5 + Math.random() * 0.4,
-      rot: Math.random() * Math.PI,
-      a: 0.012 + Math.random() * 0.03,
-      from: Math.random() * Math.PI * 2,
-      span: Math.PI * (0.7 + Math.random() * 1.1),
-    }));
-
-    const fctx = field.getContext("2d", { alpha: true });
-    const dctx = dust.getContext("2d", { alpha: true });
-
-    const sizeCanvases = () => {
-      const w = stage.clientWidth, h = stage.clientHeight;
-      if (!w || !h) return;
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      dw = w; dh = h;
-      for (const [c, cx] of [[field, fctx], [dust, dctx]] as const) {
-        if (!cx) continue;
-        c.width = Math.round(w * dpr);
-        c.height = Math.round(h * dpr);
-        cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      drawField();
-    };
-
-    let px = 0, py = 0, tx = 0, ty = 0;
-
-    // The contour field is static geometry, so it is drawn once per resize and
-    // only translated by the pointer — no per-frame cost at all.
-    const drawField = () => {
-      if (!fctx || !dw) return;
-      fctx.clearRect(0, 0, dw, dh);
-      const R = Math.max(dw, dh);
-      for (const a of ARCS) {
-        fctx.save();
-        fctx.translate(a.cx * dw, a.cy * dh);
-        fctx.rotate(a.rot);
-        fctx.beginPath();
-        fctx.ellipse(0, 0, a.r * R, a.r * R * a.squash, 0, a.from, a.from + a.span);
-        fctx.strokeStyle = `rgba(233, 240, 243, ${a.a})`;
-        fctx.lineWidth = 1;
-        fctx.stroke();
-        fctx.restore();
-      }
-    };
-
-    const paint = () => {
-      if (!dctx || !dw) return;
-      dctx.clearRect(0, 0, dw, dh);
-
-      for (const m of motes) {
-        m.x += m.vx; m.y += m.vy;
-        if (m.x < 0) m.x = 1; if (m.x > 1) m.x = 0;
-        if (m.y < 0) m.y = 1; if (m.y > 1) m.y = 0;
-        dctx.beginPath();
-        dctx.arc(m.x * dw + px * 8, m.y * dh + py * 5, m.r, 0, Math.PI * 2);
-        dctx.fillStyle = `rgba(233, 240, 243, ${m.a})`;
-        dctx.fill();
-      }
-
-      if (!swarm.length) return;
-      const len = line.getTotalLength();
-      if (!len) return;
-      const reach = Math.max(0.02, Math.min(1, progress / 0.88));
-      for (const p of swarm) {
-        p.t += p.speed;
-        if (p.t > 1) p.t -= 1;
-        const t = p.t * reach;
-        const a = line.getPointAtLength(t * len);
-        const b = line.getPointAtLength(Math.max(0, t - 0.012) * len);
-        const dx = a.x - b.x, dy = a.y - b.y;
-        const l = Math.hypot(dx, dy) || 1;
-        const spread = Math.sin(p.t * Math.PI) * p.off;
-        const ox = (-dy / l) * spread + px * 14;
-        const oy = (dx / l) * spread + py * 9;
-
-        if (p.lead) {
-          const c = line.getPointAtLength(Math.max(0, t - 0.05) * len);
-          const g = dctx.createLinearGradient(c.x + ox, c.y + oy, a.x + ox, a.y + oy);
-          g.addColorStop(0, "rgba(255,255,255,0)");
-          g.addColorStop(1, "rgba(255,255,255,0.65)");
-          dctx.beginPath();
-          dctx.moveTo(c.x + ox, c.y + oy);
-          dctx.lineTo(a.x + ox, a.y + oy);
-          dctx.strokeStyle = g;
-          dctx.lineWidth = 1.25;
-          dctx.stroke();
-        }
-        dctx.beginPath();
-        dctx.arc(a.x + ox, a.y + oy, p.size, 0, Math.PI * 2);
-        dctx.fillStyle = `rgba(255,255,255,${p.lead ? 0.92 : 0.44})`;
-        dctx.fill();
-      }
-    };
-
-    const loop = (now: number) => {
-      if (!onScreen) { raf = 0; return; }
-      if (!t0) t0 = now;
-      px += (tx - px) * 0.045;
-      py += (ty - py) * 0.045;
-      // Four layers, four rates. Small numbers on purpose — 4px to 18px.
-      const t = `perspective(1600px) rotateY(${(px * 2.4).toFixed(2)}deg) rotateX(${(-py * 1.6).toFixed(2)}deg)`;
-      for (const el of tilts) el.style.transform = `${t} ${el === sheet ? "rotateX(1.2deg) rotateY(-2.2deg)" : el === win ? "rotateX(1deg) rotateY(-2.6deg)" : ""}`;
-      field.style.transform = `translate3d(${(px * 4).toFixed(1)}px, ${(py * 3).toFixed(1)}px, 0)`;
-      glows.forEach((el, i) => { el.style.transform = `translate3d(${(px * (7 + i * 4)).toFixed(1)}px, ${(py * (4 + i * 3)).toFixed(1)}px, 0)`; });
-      // the pulse rides the filament once the line exists
-      const len = line.getTotalLength();
-      if (len) pulse.style.strokeDashoffset = String(-(((now - t0) * 0.09) % (len * 1.05)));
-      paint();
-      raf = requestAnimationFrame(loop);
-    };
-    const play = () => { if (!raf && onScreen && !still && !narrow) raf = requestAnimationFrame(loop); };
-    const halt = () => { cancelAnimationFrame(raf); raf = 0; };
-
-    // ── Rest, then the scrubbed sequence ─────────────────────────────────────
-    const setFinal = () => {
-      gsap.set([write, sheet, win], { opacity: 1, y: 0, scale: 1 });
-      gsap.set(rules, { scaleX: 1 });
-      gsap.set(ticks, { strokeDashoffset: 0 });
-      gsap.set(rings, { borderColor: "rgba(255,255,255,0.45)" });
-      gsap.set(rows, { backgroundColor: "rgba(255,255,255,0.05)" });
-      gsap.set(blocks, { scaleX: 1, scaleY: 1, opacity: 1 });
-      gsap.set(terminus, { opacity: 1, scale: 1 });
-      gsap.set(liveText, { opacity: 1, y: 0 });
-      typeEl.textContent = full;
-      progress = 1;
-      strands.forEach((el) => { el.style.strokeDashoffset = "0"; });
-    };
-
-    buildPath();
-    sizeCanvases();
-
-    if (still) {
-      setFinal();
-      paint();
-      gsap.set(pulse, { opacity: 0 });
-    } else {
-      gsap.set([write, win], { opacity: 0, y: 22 });
-      gsap.set(sheet, { opacity: 0, y: 30, scale: 0.96 });
-      gsap.set(rules, { scaleX: 0 });
-      gsap.set(ticks, { strokeDashoffset: 26 });
-      gsap.set(blocks, { scaleX: 0, opacity: 0 });
-      gsap.set(terminus, { opacity: 0, scale: 0.4 });
-      gsap.set(liveText, { opacity: 0, y: 6 });
-      gsap.set(pulse, { opacity: 0 });
-      typeEl.textContent = "";
-
-      const typer = { v: 0 };
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: stage,
-          start: "top 84%",
-          end: "bottom 56%",
-          scrub: 0.7,
-          onUpdate: (self) => { progress = self.progress; },
-        },
-        defaults: { ease: "none" },
-      });
-
-      tl
-        .to(write, { opacity: 1, y: 0, duration: 0.08, ease: "power2.out" }, 0)
-        .to(typer, {
-          v: 1, duration: 0.16,
-          onUpdate: () => { typeEl.textContent = full.slice(0, Math.round(typer.v * full.length)); },
-        }, 0.06)
-        // the message leaves: the button flares, a shockwave rings off it
-        .to(send, { scale: 1.16, duration: 0.03, ease: "power2.out" }, 0.24)
-        .fromTo(shock, { opacity: 0.75, scale: 1 }, { opacity: 0, scale: 2.6, duration: 0.07, ease: "power2.out" }, 0.245)
-        .to(send, { scale: 1, duration: 0.06, ease: "power2.inOut" }, 0.27)
-        .to(pulse, { opacity: 1, duration: 0.02 }, 0.26);
-
-      // every strand carries it, the heaviest slightly ahead
-      strands.forEach((el, i) => {
-        tl.to(el, { strokeDashoffset: 0, duration: 0.6 + i * 0.03 }, 0.26 + i * 0.012);
-      });
-
-      tl.to(sheet, { opacity: 1, y: 0, scale: 1, duration: 0.1, ease: "power2.out" }, 0.4);
-
-      rows.forEach((row, i) => {
-        const at = 0.5 + i * 0.075;
-        tl.to(rules[i], { scaleX: 1, duration: 0.055, ease: "power2.inOut" }, at)
-          .to(row, { backgroundColor: "rgba(255,255,255,0.05)", duration: 0.05 }, at + 0.02)
-          .to(ticks[i], { strokeDashoffset: 0, duration: 0.04 }, at + 0.03)
-          .to(rings[i], { borderColor: "rgba(255,255,255,0.45)", duration: 0.04 }, at + 0.03);
-      });
-
-      // the site assembles, chrome first
-      tl.to(win, { opacity: 1, y: 0, duration: 0.09, ease: "power2.out" }, 0.72);
-      blocks.forEach((b, i) => {
-        const card = b.parentElement?.classList.contains("pv-cards");
-        tl.to(b, card ? { scaleY: 1, opacity: 1, duration: 0.05, ease: "power2.out" }
-                      : { scaleX: 1, opacity: 1, duration: 0.05, ease: "power2.out" }, 0.77 + i * 0.019);
-      });
-      tl.to(terminus, { opacity: 1, scale: 1, duration: 0.05, ease: "back.out(2.4)" }, 0.94)
-        .to(liveText, { opacity: 1, y: 0, duration: 0.05, ease: "power2.out" }, 0.96);
-    }
-
-    // ── Wiring ───────────────────────────────────────────────────────────────
-    addEventListener("resize", () => { buildPath(); sizeCanvases(); paint(); ScrollTrigger.refresh(); }, { passive: true });
-    document.fonts?.ready.then(() => { buildPath(); sizeCanvases(); ScrollTrigger.refresh(); });
-
-    if (!narrow && !still) {
-      addEventListener("pointermove", (e) => {
-        const r = stage.getBoundingClientRect();
-        tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
-        ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
-      }, { passive: true });
-    }
-
-    const io = new IntersectionObserver(([entry]) => {
-      onScreen = entry.isIntersecting;
-      if (onScreen) play(); else halt();
-    }, { rootMargin: "160px" });
-    io.observe(stage);
-
-    document.addEventListener("visibilitychange", () => { if (document.hidden) halt(); else play(); });
-    paint();
+      const schedule = () => { if (!frame) frame = requestAnimationFrame(draw); };
+      const resize = new ResizeObserver(schedule);
+      resize.observe(stage);
+      objects.forEach((el) => resize.observe(el));
+      const visibility = new IntersectionObserver(([entry]) => root.classList.toggle("is-visible", entry.isIntersecting), { rootMargin: "80px" });
+      visibility.observe(stage);
+      schedule();
+      document.fonts.ready.then(schedule);
+      document.addEventListener("astro:before-swap", () => { resize.disconnect(); visibility.disconnect(); cancelAnimationFrame(frame); }, { once: true });
+    });
   }
+  initProcessFlow();
+  document.addEventListener("astro:page-load", initProcessFlow);
 </script>
