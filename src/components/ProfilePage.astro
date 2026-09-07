@@ -158,6 +158,16 @@ const scopes: Scope[] = [
   },
 ];
 
+// Four numbers the rest of the site evidences. They are here because the hero
+// is where someone decides whether to keep reading, and a claim with a figure
+// on it survives that decision better than a paragraph.
+const facts = [
+  { v: "+780", suffix: "%", k: c("organic search after launch", "organische Suche nach Launch") },
+  { v: "429", suffix: "", k: c("pages, FIDIC platform", "Seiten, FIDIC-Plattform") },
+  { v: "2 981", suffix: "", k: c("tenders, refreshed daily", "Ausschreibungen, täglich aktualisiert") },
+  { v: "03", suffix: "", k: c("languages in one content system", "Sprachen in einem Content-System") },
+];
+
 const experience = [1, 2, 3];
 const education = [1, 2, 3];
 
@@ -218,6 +228,15 @@ const breadcrumbs = {
               <span>{c("What do you need?", "Was brauchen Sie?")}</span><i class="ui-arrow ui-arrow-down" aria-hidden="true"></i>
             </a>
           </div>
+
+          <dl class="pf-facts" data-reveal>
+            {facts.map((f) => (
+              <div>
+                <dt><span>{f.v}</span>{f.suffix && <em>{f.suffix}</em>}</dt>
+                <dd>{f.k}</dd>
+              </div>
+            ))}
+          </dl>
         </header>
 
       <!-- ── 01 · Scope picker ──────────────────────────────────────────── -->
@@ -231,6 +250,23 @@ const breadcrumbs = {
           )}</p>
 
           <div class="sc" data-scope-picker>
+            <!-- The rail is the argument in one line: these six sit on one
+                 continuum from a couple of days to a couple of months, and the
+                 marker says where the visitor's job falls on it. "Any
+                 complexity" is a claim; this is a picture of it. -->
+            <div class="sc-rail" aria-hidden="true">
+              <span class="sc-rail-line"></span>
+              <span class="sc-rail-fill" data-scope-fill></span>
+              {scopes.map((_, i) => (
+                <span class="sc-rail-tick" style={`--at:${(i / (scopes.length - 1)) * 100}%`}></span>
+              ))}
+              <span class="sc-rail-marker" data-scope-marker></span>
+            </div>
+            <div class="sc-rail-ends" aria-hidden="true">
+              <span>{c("a few days", "wenige Tage")}</span>
+              <span>{c("a few months", "wenige Monate")}</span>
+            </div>
+
             <div class="sc-tabs" role="tablist" aria-label={c("Project size", "Projektgröße")}>
               {scopes.map((s, i) => (
                 <button
@@ -244,6 +280,7 @@ const breadcrumbs = {
                   aria-controls={`sc-panel-${s.id}`}
                   tabindex={i === 0 ? 0 : -1}
                 >
+                  <span class="sc-tab-n">{String(i + 1).padStart(2, "0")}</span>
                   <span class="sc-tab-label">{s.label}</span>
                   <span class="sc-tab-size">{s.size}</span>
                 </button>
@@ -438,6 +475,36 @@ const breadcrumbs = {
   }
 
   .pf-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.4rem; }
+
+  /* The hero needs one moment of scale that is not the name. Four measured
+     figures at display size do that, and they are the only numbers on the page
+     that are not about what something costs in time. */
+  .pf-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1.6rem 2rem;
+    margin: clamp(3rem, 6vw, 4.5rem) 0 0;
+    padding-top: clamp(2rem, 4vw, 2.8rem);
+    border-top: 1px solid rgba(var(--rgb-text), 0.12);
+  }
+  .pf-facts dt {
+    display: flex;
+    align-items: baseline;
+    gap: 0.1em;
+    font: 500 clamp(2rem, 4.4vw, 3.4rem)/0.95 var(--font-display);
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+  }
+  .pf-facts dt em { font-style: normal; font-size: 0.46em; color: rgba(var(--rgb-text), 0.4); }
+  .pf-facts dd {
+    margin: 0.7rem 0 0;
+    max-width: 20ch;
+    font-family: var(--font-inter);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    line-height: 1.45;
+    color: rgba(var(--rgb-text), 0.5);
+  }
   .pf-btn {
     display: inline-flex;
     gap: 0.75rem;
@@ -490,6 +557,64 @@ const breadcrumbs = {
 
   /* ── Scope picker ──────────────────────────────────────────────────────── */
   .sc { margin-top: 2.2rem; }
+
+  /* ── Scale rail ────────────────────────────────────────────────────────── */
+  .sc-rail {
+    position: relative;
+    height: 1.5rem;
+    margin-bottom: 0.45rem;
+    --at: 0%;
+  }
+  .sc-rail-line,
+  .sc-rail-fill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 1px;
+    transform: translateY(-50%);
+  }
+  .sc-rail-line { right: 0; background: rgba(var(--rgb-text), 0.16); }
+  .sc-rail-fill {
+    width: var(--at);
+    background: linear-gradient(90deg, rgba(var(--rgb-text), 0.2), var(--color-accent));
+    transition: width 0.55s var(--ease-out-expo);
+  }
+  .sc-rail-tick {
+    position: absolute;
+    top: 50%;
+    left: var(--at);
+    width: 1px;
+    height: 0.42rem;
+    margin-left: -0.5px;
+    transform: translateY(-50%);
+    background: rgba(var(--rgb-text), 0.26);
+  }
+  .sc-rail-marker {
+    position: absolute;
+    top: 50%;
+    left: var(--at);
+    width: 0.6rem;
+    height: 0.6rem;
+    margin: -0.3rem 0 0 -0.3rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(var(--rgb-text), 0.1), 0 0 14px rgba(255, 255, 255, 0.5);
+    transition: left 0.55s var(--ease-out-expo);
+  }
+  .sc-rail-ends {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.4rem;
+    font-family: var(--font-inter);
+    font-size: 0.64rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.38);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sc-rail-fill,
+    .sc-rail-marker { transition: none; }
+  }
   .sc-tabs {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -512,9 +637,28 @@ const breadcrumbs = {
   }
   .sc-tab:hover { border-color: rgba(var(--rgb-text), 0.26); color: rgba(var(--rgb-text), 0.85); }
   .sc-tab[aria-selected="true"] {
-    background: rgba(var(--rgb-text), 0.085);
-    border-color: rgba(var(--rgb-text), 0.42);
+    background: rgba(var(--rgb-text), 0.1);
+    border-color: rgba(var(--rgb-text), 0.55);
     color: rgb(var(--rgb-text));
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+  }
+  .sc-tab[aria-selected="true"] .sc-tab-n {
+    color: rgb(var(--rgb-text));
+    border-color: rgba(var(--rgb-text), 0.55);
+  }
+  .sc-tab-n {
+    align-self: flex-start;
+    margin-bottom: 0.15rem;
+    padding: 0.12rem 0.38rem;
+    border: 1px solid rgba(var(--rgb-text), 0.16);
+    border-radius: 0.3rem;
+    font-family: var(--font-inter);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: rgba(var(--rgb-text), 0.38);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.25s, border-color 0.25s;
   }
   .sc-tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
   .sc-tab-label {
@@ -538,13 +682,28 @@ const breadcrumbs = {
     border: 1px solid rgba(var(--rgb-text), 0.12);
     border-radius: 1.1rem;
     animation: sc-in 0.4s var(--ease-out-cubic) both;
+    overflow: hidden;
   }
+  /* A hairline that draws itself across the top on every change — the panel
+     swapping needs a beat of motion, or the switch reads as a page jump. */
+  .sc-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    animation: sc-rule 0.7s var(--ease-out-expo) both;
+  }
+  .sc-panel { position: relative; }
+  @keyframes sc-rule { from { width: 0; } to { width: 100%; } }
   @keyframes sc-in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .sc-panel { animation: none; }
+    .sc-panel,
+    .sc-panel::before { animation: none; }
+    .sc-panel::before { width: 100%; }
   }
 
   .sc-headline {
@@ -564,10 +723,17 @@ const breadcrumbs = {
   }
   .sc-value {
     display: block;
-    margin-top: 0.35rem;
-    font: 500 clamp(1.15rem, 2.2vw, 1.55rem)/1.1 var(--font-display);
-    letter-spacing: -0.01em;
+    margin-top: 0.4rem;
+    font: 500 clamp(1.05rem, 2vw, 1.4rem)/1.05 var(--font-display);
+    letter-spacing: -0.02em;
   }
+  /* The timeline is what the visitor came to the picker for, so it is the
+     largest thing in the panel rather than one field among three. */
+  .sc-headline > :first-child .sc-value {
+    font-size: clamp(2rem, 4.6vw, 3.2rem);
+    letter-spacing: -0.035em;
+  }
+  .sc-headline > :first-child { flex: 0 0 auto; min-width: 11rem; }
 
   .sc-gets {
     list-style: none;
@@ -627,32 +793,58 @@ const breadcrumbs = {
   .pf-steps { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; gap: 0; }
   .pf-steps li {
     display: grid;
-    grid-template-columns: 4rem 1fr;
-    gap: 1.5rem;
-    padding: 1.5rem 0;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 1.8rem;
+    padding: 2rem 0;
     border-top: 1px solid rgba(var(--rgb-text), 0.09);
   }
   .pf-steps li:first-child { border-top: 0; padding-top: 0; }
+  /* Outlined numerals at display scale. A mono "01" is a label; this is a
+     landmark, and the section needed one to stop reading as a paragraph list. */
   .pf-step-n {
-    font-family: var(--font-inter);
-    font-size: var(--font-size-xs);
-    letter-spacing: 0.16em;
-    color: var(--color-accent);
-    padding-top: 0.35rem;
+    font: 500 clamp(2.4rem, 5vw, 3.6rem)/0.85 var(--font-display);
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(var(--rgb-text), 0.3);
+    font-variant-numeric: tabular-nums;
   }
   .pf-steps h3 { margin: 0 0 0.5rem; font: 500 1.15rem/1.25 var(--font-display); }
   .pf-steps p { margin: 0; }
 
   /* ── Record ────────────────────────────────────────────────────────────── */
-  .pf-rows { list-style: none; margin: 2rem 0 0; padding: 0; }
+  /* The record was three unstructured rows separated by hairlines, which is how
+     a CV looks when nobody has designed it. A drawn rail with a node per role
+     gives it a spine and reads as a timeline at a glance. */
+  .pf-rows { list-style: none; margin: 2.4rem 0 0; padding: 0; }
   .pf-rows li {
+    position: relative;
     display: grid;
-    grid-template-columns: 12rem 1fr;
+    grid-template-columns: 11rem 1fr;
     gap: 1.5rem;
-    padding: 1.6rem 0;
-    border-top: 1px solid rgba(var(--rgb-text), 0.09);
+    padding: 0 0 2.6rem 2rem;
   }
-  .pf-rows li:first-child { border-top: 0; padding-top: 0; }
+  .pf-rows li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55rem;
+    bottom: 0;
+    width: 1px;
+    background: rgba(var(--rgb-text), 0.14);
+  }
+  .pf-rows li:last-child { padding-bottom: 0; }
+  .pf-rows li:last-child::before { bottom: auto; height: 1.6rem; }
+  .pf-rows li::after {
+    content: "";
+    position: absolute;
+    left: -0.22rem;
+    top: 0.35rem;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+  .pf-rows li:not(:first-child)::after { background: rgba(var(--rgb-text), 0.34); }
   .pf-period {
     font-family: var(--font-inter);
     font-size: var(--font-size-xs);
@@ -752,11 +944,15 @@ const breadcrumbs = {
     .pf-section { grid-template-columns: 1fr; gap: 1.2rem; }
     .pf-idx { padding-top: 0; }
     .pf-rows li { grid-template-columns: 1fr; gap: 0.5rem; }
-    .pf-steps li { grid-template-columns: 2.6rem 1fr; gap: 1rem; }
+    .pf-steps li { grid-template-columns: 3.6rem 1fr; gap: 1.1rem; }
   }
   @media (max-width: 900px) {
     .sc-tab { background: rgba(6, 8, 10, 0.86); }
     .sc-panel { background: rgba(6, 8, 10, 0.86); }
+    /* One figure per row turned four numbers into four screens of scrolling. */
+    .pf-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.8rem 1.2rem; }
+    .pf-facts dt { font-size: clamp(1.7rem, 8vw, 2.4rem); }
+    .pf-facts dd { font-size: 0.72rem; }
   }
   @media (max-width: 560px) {
     .sc-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -773,8 +969,13 @@ const breadcrumbs = {
   if (picker) {
     const tabs = Array.from(picker.querySelectorAll<HTMLButtonElement>("[data-scope-tab]"));
     const panels = Array.from(picker.querySelectorAll<HTMLElement>("[data-scope-panel]"));
+    const rail = picker.querySelector<HTMLElement>(".sc-rail");
 
     const select = (id: string, focus = false) => {
+      const index = tabs.findIndex((tab) => tab.dataset.scopeTab === id);
+      if (rail && index >= 0) {
+        rail.style.setProperty("--at", `${(index / Math.max(1, tabs.length - 1)) * 100}%`);
+      }
       tabs.forEach((tab) => {
         const on = tab.dataset.scopeTab === id;
         tab.setAttribute("aria-selected", on ? "true" : "false");
@@ -793,7 +994,7 @@ const breadcrumbs = {
     };
 
     tabs.forEach((tab) => {
-      tab.addEventListener("click", () => select(tab.dataset.scopeTab!));
+      tab.addEventListener("click", () => { announced = true; select(tab.dataset.scopeTab!); });
     });
 
     picker.addEventListener("keydown", (event) => {
@@ -809,13 +1010,24 @@ const breadcrumbs = {
       select(tabs[next].dataset.scopeTab!, true);
     });
 
-    // Tell the field what the initially selected tab means, once it is listening.
-    requestAnimationFrame(() => {
-      const first = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
-      if (first) {
-        const ratio = Number(first.dataset.field);
-        if (Number.isFinite(ratio)) dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
-      }
-    });
+    // Position the rail immediately, but hold the field's contraction until the
+    // picker is actually on screen — the hero is entitled to the whole range,
+    // and the field narrowing to one scope should be something the visitor sees
+    // happen rather than something already over by the time they arrive.
+    const first = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+    if (first && rail) {
+      rail.style.setProperty("--at", `${(tabs.indexOf(first) / Math.max(1, tabs.length - 1)) * 100}%`);
+    }
+    let announced = false;
+    const announce = () => {
+      if (announced || !first) return;
+      announced = true;
+      const ratio = Number(first.dataset.field);
+      if (Number.isFinite(ratio)) dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+    };
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { announce(); io.disconnect(); }
+    }, { threshold: 0.35 });
+    io.observe(picker);
   }
 </script>

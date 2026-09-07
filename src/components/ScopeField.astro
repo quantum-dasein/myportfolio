@@ -33,8 +33,8 @@
     pointer-events: none;
     /* The field is atmosphere behind a reading column, so it never competes
        with the type: it fades out towards the copy and off every edge. */
-    mask-image: radial-gradient(circle at 68% 44%, #000 0 42%, rgba(0, 0, 0, 0.6) 66%, transparent 88%);
-    -webkit-mask-image: radial-gradient(circle at 68% 44%, #000 0 42%, rgba(0, 0, 0, 0.6) 66%, transparent 88%);
+    mask-image: radial-gradient(circle at 70% 46%, #000 0 46%, rgba(0, 0, 0, 0.62) 70%, transparent 92%);
+    -webkit-mask-image: radial-gradient(circle at 70% 46%, #000 0 46%, rgba(0, 0, 0, 0.62) 70%, transparent 92%);
   }
   .sf canvas { display: block; width: 100%; height: 100%; }
 
@@ -90,8 +90,11 @@
       nodes.push({ x: Math.cos(theta) * r, y, z: Math.sin(theta) * r, lit: 0, target: 0 });
     }
 
-    let ratio = 0.16; // share of the field the current scope lights
-    let shown = 0.16;
+    // Full until the picker announces itself. The hero says "from a landing
+    // page to a 429-page platform", so the hero gets the whole field; the
+    // contraction to one scope is a moment that belongs to the picker.
+    let ratio = 1;
+    let shown = 1;
     let spin = 0;
     let pointerX = 0;
     let pointerY = 0;
@@ -101,6 +104,7 @@
     let height = 0;
     let dpr = 1;
     let frame = 0;
+    let kick = 0;
     let visible = true;
 
     const resize = () => {
@@ -120,7 +124,7 @@
 
       shown += (ratio - shown) * 0.07;
       const active = shown * COUNT;
-      const scale = Math.min(width, height) * (coarse ? 0.42 : 0.38);
+      const scale = Math.min(width, height) * (coarse ? 0.46 : 0.44);
       const cx = width * (coarse ? 0.5 : 0.68);
       const cy = height * 0.44;
 
@@ -177,7 +181,9 @@
 
     const tick = () => {
       if (!visible) { frame = 0; return; }
-      spin += 0.0016;
+      spin += 0.0016 + kick;
+      kick *= 0.9;
+      if (kick < 0.0002) kick = 0;
       pointerX += (targetX - pointerX) * 0.05;
       pointerY += (targetY - pointerY) * 0.05;
       draw();
@@ -215,7 +221,11 @@
     addEventListener("rb:scope", (event) => {
       const detail = (event as CustomEvent<{ ratio: number }>).detail;
       if (detail && Number.isFinite(detail.ratio)) {
-        ratio = Math.max(0.05, Math.min(1, detail.ratio));
+        const next = Math.max(0.05, Math.min(1, detail.ratio));
+        // A short spin kick on change, so the field visibly answers the click
+        // instead of quietly settling while the visitor is reading the panel.
+        if (Math.abs(next - ratio) > 0.01) kick = 0.055;
+        ratio = next;
         if (reduced || frugal) { shown = ratio; draw(); }
       }
     });
