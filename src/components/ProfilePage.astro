@@ -30,6 +30,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../layouts/Layout.astro";
 import ScopeField from "./ScopeField.astro";
+import ProcessFlow from "./ProcessFlow.astro";
 import { useTranslations, type Lang, type UIKey } from "../i18n/utils";
 
 interface Props { lang: Lang }
@@ -174,18 +175,27 @@ const education = [1, 2, 3];
 const steps = [
   {
     n: "01",
-    title: c("You write, in a sentence", "Sie schreiben, in einem Satz"),
-    text: c("What you need and when. No brief template, no discovery invoice.", "Was Sie brauchen und bis wann. Kein Briefing-Formular, keine Discovery-Rechnung."),
+    title: c("Write", "Schreiben"),
+    text: c(
+      "One sentence: what you need and when. No brief template, no discovery invoice, no form that asks for your budget before it tells you anything.",
+      "Ein Satz: was Sie brauchen und bis wann. Kein Briefing-Formular, keine Discovery-Rechnung, kein Formular, das nach Ihrem Budget fragt, bevor es Ihnen irgendetwas sagt.",
+    ),
   },
   {
     n: "02",
-    title: c("Fixed scope and date, within a day", "Fester Umfang und Termin, binnen eines Tages"),
-    text: c("A written scope, a price and a launch date. If I am not the right person for it, I say that instead — and where I would send you.", "Ein schriftlicher Umfang, ein Preis und ein Launch-Termin. Wenn ich nicht der Richtige bin, sage ich das — und wohin ich Sie schicken würde."),
+    title: c("Scope", "Umfang"),
+    text: c(
+      "Within a day: a written scope, a price and a launch date — all three, fixed. If I am not the right person for it, I say that instead, and where I would send you.",
+      "Binnen eines Tages: ein schriftlicher Umfang, ein Preis und ein Launch-Termin — alle drei, fest. Wenn ich nicht der Richtige bin, sage ich das — und wohin ich Sie schicken würde.",
+    ),
   },
   {
     n: "03",
-    title: c("Build, review, launch", "Bauen, prüfen, launchen"),
-    text: c("You see it on a real URL while it is being built, not at the end. It goes live in your own accounts, and it is yours.", "Sie sehen es während der Arbeit unter einer echten URL, nicht erst am Ende. Es geht in Ihren eigenen Konten live und gehört Ihnen."),
+    title: c("Launch", "Launch"),
+    text: c(
+      "You watch it on a real URL while it is being built, not at the end. It goes live in your own accounts, on your own domain, and it is yours.",
+      "Sie sehen es während der Arbeit unter einer echten URL, nicht erst am Ende. Es geht in Ihren eigenen Konten und auf Ihrer eigenen Domain live und gehört Ihnen.",
+    ),
   },
 ];
 
@@ -345,17 +355,12 @@ const breadcrumbs = {
         <span class="pf-idx">02 — {c("PROCESS", "ABLAUF")}</span>
         <div class="pf-body">
           <h2 id="process-title" data-sy-reveal="words">{c("What happens after you write.", "Was passiert, nachdem Sie schreiben.")}</h2>
-          <ol class="pf-steps">
-            {steps.map((s) => (
-              <li data-reveal>
-                <span class="pf-step-n">{s.n}</span>
-                <div>
-                  <h3>{s.title}</h3>
-                  <p>{s.text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <ProcessFlow
+            steps={steps}
+            lang={lang}
+            typed={c("I need a website for my project…", "Ich brauche eine Website für mein Projekt…")}
+            rows={[c("Scope", "Umfang"), c("Price", "Preis"), c("Date", "Termin")]}
+          />
         </div>
       </section>
 
