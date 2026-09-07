@@ -22,16 +22,23 @@ try {
   const state = () => page.evaluate(() => {
     const q = selector => document.querySelector(selector);
     const style = (selector, property) => getComputedStyle(q(selector))[property];
+    const centre = selector => { const r = q(selector).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+    const send = centre('.pv-send');
+    const icon = centre('.pv-send svg');
     return {
       progress: Number(q('.pv').dataset.motionProgress),
-      text: q('.pv-type-ink').textContent,
+      text: [...q('.pv-type-ink').childNodes].map(node => node.nodeType === 3 ? node.textContent : [...node.children].filter(glyph => Number(getComputedStyle(glyph).opacity) > .5).map(glyph => glyph.textContent).join('')).join('').trimEnd(),
       fullText: q('.pv-typed').getAttribute('aria-label'),
       checks: [...document.querySelectorAll('.pv-check-mark')].map(el => parseFloat(getComputedStyle(el).strokeDashoffset)),
+      glows: [...document.querySelectorAll('.pv-check')].map(el => parseFloat(getComputedStyle(el).getPropertyValue('--check-glow'))),
       live: Number(style('.pv-live', 'opacity')),
       browser: Number(style('.pv-browser', 'opacity')),
       projects: [...document.querySelectorAll('.pv-projects > div')].map(el => Number(getComputedStyle(el).opacity)),
       complete: q('.pv').classList.contains('is-complete'),
       overflow: document.documentElement.scrollWidth > innerWidth,
+      glyphRows: [...document.querySelectorAll('.pv-letter')].map(glyph => glyph.offsetTop),
+      iconOffset: Math.hypot(send.x - icon.x, send.y - icon.y),
+      textOffset: Math.abs(centre('.pv-typed').y - send.y),
     };
   });
   for (const width of [1440, 393]) {
@@ -41,19 +48,23 @@ try {
     const bounds = await page.$eval('.pv', el => { const r = el.getBoundingClientRect(); return { top: r.top + scrollY, height: r.height, viewport: innerHeight }; });
     const at = async progress => {
       await jump(bounds.top - bounds.viewport * .82 + bounds.height * progress);
-      await sleep(850);
+      await sleep(1400);
       const result = await state();
       assert.ok(Math.abs(result.progress - Math.min(1, Math.max(0, progress))) < .02, `Scrub follows scroll: ${width} ${progress}, actual ${result.progress}`);
       assert.equal(result.overflow, false, `No overflow during motion at ${width}`);
       return result;
     };
     let current = await at(0);
+    const reservedRows = current.glyphRows;
     assert.equal(current.text, '');
     assert.equal(current.live, 0);
     assert.ok(current.checks.every(value => value > .99));
     current = await at(.1);
+    assert.deepEqual(current.glyphRows, reservedRows, 'Typing preserves every word wrap');
     assert.ok(current.text.length > 0 && current.text.length < current.fullText.length, 'Typing progresses without changing layout');
-    current = await at(.4);
+    current = await at(.42);
+    assert.deepEqual(current.glyphRows, reservedRows, 'Completed typing preserves the original line positions');
+    assert.ok(current.iconOffset < 1 && current.textOffset < 1, 'Message text and send icon stay centred');
     assert.equal(current.text, current.fullText);
     assert.ok(current.checks[0] < .1 && current.checks[1] > .99, 'Scope confirms one module at a time');
     current = await at(.58);
@@ -65,6 +76,7 @@ try {
     current = await at(1);
     assert.equal(current.complete, true);
     assert.ok(current.projects.every(value => value > .99));
+    assert.ok(current.glows.every(value => value > .99), 'Confirmed checks keep a visible glow');
     await page.$$eval('.pv-projects img', images => Promise.all(images.map(image => image.decode())));
     await page.screenshot({ path: `artifacts/profile-motion/completed-${width}.png` });
     current = await at(.1);
@@ -116,6 +128,31 @@ try {
   await sleep(1800);
   restored = await state();
   assert.equal(restored.text, restored.fullText, 'Reloading below the scene keeps its message visible');
+  // A real wheel event exercises the follower together with desktop Lenis.
+  await page.setViewport({ width: 1440, height: 950, isMobile: false, hasTouch: false });
+  await page.goto(`${base}/en/rodion-belousov-vienna/`, { waitUntil: 'networkidle0' });
+  await sleep(1800);
+  const wheelStart = await page.$eval('.pv', el => {
+    const rect = el.getBoundingClientRect();
+    return rect.top + scrollY - innerHeight * .82 + rect.height * .15;
+  });
+  await jump(wheelStart);
+  await sleep(1400);
+  const recording = page.evaluate(() => new Promise(resolve => {
+    const samples = [];
+    const start = performance.now();
+    const sample = time => {
+      samples.push(Number(document.querySelector('.pv').dataset.motionProgress));
+      if (time - start > 2000) resolve(samples);
+      else requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  }));
+  await page.mouse.wheel({ deltaY: 420 });
+  const samples = await recording;
+  const jumps = samples.slice(1).map((progress, index) => progress - samples[index]);
+  assert.ok(Math.max(...jumps) < .065, 'Large wheel input does not jump through a stage');
+  assert.ok(samples.at(-1) - samples[0] > .3, 'Smoothed scene still follows the wheel');
   assert.deepEqual(errors, [], 'No animation errors in browser');
   console.log('All profile motion checks passed.');
 } finally { await browser.close(); }

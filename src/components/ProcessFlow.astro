@@ -37,7 +37,7 @@ const previews = [
     <div class="pv-node pv-write">
       <div class="pv-step"><span aria-hidden="true">{steps[0].n}</span><h3>{steps[0].label.toLowerCase()}</h3></div>
       <div class="pv-message pv-glass" data-flow-object="write">
-        <span class="pv-typed" aria-label={typed}><span class="pv-type-reserve" aria-hidden="true">{typed}</span><span class="pv-type-ink" aria-hidden="true">{typed}</span></span>
+        <span class="pv-typed" aria-label={typed}><span class="pv-type-ink" aria-hidden="true">{typed}</span></span>
         <span class="pv-send" aria-hidden="true"><span class="pv-shockwave"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m4 11 16-7-6 17-3-7-7-3Z"/><path d="m11 14 9-10"/></svg></span>
       </div>
       <p class="pv-caption">{steps[0].line}</p>
@@ -94,10 +94,11 @@ const previews = [
   .pv-front-strand { stroke: #d5e2f3; stroke-width: .65; filter: drop-shadow(0 0 4px #a6bad7); }
   .pv-current--front .pv-pulse { animation-delay: -5s; stroke-width: 1.2; }
   .pv-traveller { fill: #fff; opacity: 0; filter: drop-shadow(0 0 6px #eff5ff) drop-shadow(0 0 12px #a9bad1); }
-  .pv-typed { display: grid; min-width: 0; }
-  .pv-type-reserve, .pv-type-ink { grid-area: 1 / 1; }
-  .pv-type-reserve { visibility: hidden; }
-  .pv-type-ink::after { content: ""; display: inline-block; width: 0; height: 1em; border-left: 1px solid #e8eff9; margin-left: 2px; vertical-align: -.12em; opacity: var(--caret, 0); }
+  .pv-typed { flex: 1; min-width: 0; display: block; }
+  .pv-type-ink { display: block; }
+  .pv-type-ink :global(.pv-word) { display: inline-block; white-space: nowrap; }
+  .pv-type-ink :global(.pv-letter) { position: relative; }
+  .pv-type-ink :global(.pv-letter.is-caret)::after { content: ""; position: absolute; left: 100%; top: .05em; height: .9em; border-left: 1px solid #e8eff9; pointer-events: none; opacity: var(--caret, 0); }
   .pv-send { position: relative; }
   .pv-shockwave { position: absolute; inset: -1px; border-radius: 50%; border: 1px solid #d5e5fa; opacity: 0; pointer-events: none; }
   .pv-glass::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at calc(var(--light-x, 35%) + var(--pointer-x, 0%)) calc(var(--light-y, 15%) + var(--pointer-y, 0%)), #e2edff18, transparent 58%); opacity: calc(var(--reflection, .12) + var(--pointer-reflection, 0)); }
@@ -122,13 +123,13 @@ const previews = [
   .pv-scope { left: 32%; top: 22%; width: 34%; z-index: 4; }
   .pv-launch { left: 70%; top: 34%; width: 28%; }
   .pv-step { position: absolute; bottom: calc(100% + 24px); left: 5%; }
-  .pv-step > span { position: absolute; bottom: -34px; left: -5px; font: 500 clamp(90px, 9.5vw, 150px)/1 var(--font-inter, sans-serif); letter-spacing: -.07em; color: transparent; -webkit-text-stroke: 1px rgba(218,229,242,.25); z-index: -1; }
+  .pv-step > span { position: absolute; bottom: -34px; left: -5px; font: 500 clamp(90px, 9.5vw, 150px)/1 var(--font-inter, sans-serif); letter-spacing: -.07em; color: rgba(225,235,250,.025); -webkit-text-stroke: 1px rgba(218,229,242,.58); text-shadow: 0 0 24px rgba(208,225,249,.08); z-index: -1; }
   .pv-step h3 { margin: 0; font-size: clamp(18px, 1.6vw, 25px); font-weight: 400; letter-spacing: -.02em; transform: translateY(17px); text-shadow: 0 2px 15px #000; }
   .pv-glass { position: relative; border: 1px solid rgba(206,222,242,.58); background: linear-gradient(145deg, rgba(231,239,253,.15), transparent 30%), linear-gradient(165deg,#20252c 0%,#0b0e12 48%,#14191f 100%); box-shadow: inset 0 1px 1px rgba(255,255,255,.4), inset 0 -1px 2px rgba(196,216,242,.16), 0 25px 45px -18px #000, 0 0 28px -12px rgba(191,212,242,.32); }
   .pv-message { display: flex; align-items: center; gap: 16px; min-height: 82px; padding: 14px 16px 14px 28px; border-radius: 999px; box-shadow: inset -3px 0 13px rgba(211,229,255,.3), inset 0 1px 1px rgba(255,255,255,.35), 0 18px 28px -12px #000, 5px 0 20px -8px #b5c9e9; }
   .pv-message > span:first-child { font-size: clamp(12px, 1vw, 16px); line-height: 1.5; color: #d2d5db; }
   .pv-send { flex: 0 0 44px; height: 44px; display: grid; place-items: center; margin-left: auto; border-radius: 50%; border: 1px solid #bbc9da; background: linear-gradient(135deg,#0e131a,#303b49); box-shadow: 0 0 13px #b0c6e333; }
-  .pv-send svg { width: 23px; }
+  .pv-send svg { width: 22px; height: 22px; display: block; overflow: visible; }
   .pv-sheet { padding: 22px; border-radius: 20px; transform: perspective(1400px) rotateY(-7deg) rotateZ(-3deg); }
   .pv-sheet-heading { display: flex; justify-content: space-between; margin: 0 3px 15px; font: 9px/1.5 var(--font-mono,monospace); letter-spacing: .14em; color: #a7b3c2; }
   .pv-row { display: grid; grid-template-columns: 32px 1fr 34px; gap: 18px; align-items: center; padding: 20px 17px; border: 1px solid rgba(196,212,235,.1); border-radius: 13px; background: linear-gradient(115deg,rgba(208,221,241,.085),rgba(80,97,121,.04)); box-shadow: inset 0 1px 0 #ffffff05,0 8px 14px -10px #000; }
@@ -138,8 +139,9 @@ const previews = [
   .pv-row-copy i { display: block; width: 65%; height: 3px; margin-top: 6px; background: #929dac30; }
   .pv-row-copy i:last-child { width: 39%; opacity: .6; }
   .pv-check { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #a8b8cd; display: grid; place-items: center; box-shadow: inset 0 0 10px #a0b9db16; }
-  .pv-check { border: 0; }
-  .pv-check svg { width: 100%; height: 100%; }
+  .pv-check { position: relative; border: 0; color: #eff6ff; }
+  .pv-check::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; box-shadow: 0 0 13px #c5ddff66, inset 0 0 9px #dfedff20; opacity: var(--check-glow, 1); pointer-events: none; }
+  .pv-check svg { width: 100%; height: 100%; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(206,229,255,calc(var(--check-glow, 1) * .75))); }
   .pv-browser { border-radius: 17px; overflow: hidden; transform: perspective(1400px) rotateY(-8deg) rotateZ(2deg); }
   .pv-chrome { height: 32px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #bdcee51a; background: linear-gradient(110deg,#30394570,#10151c); }
   .pv-chrome > span:first-child { display: flex; gap: 5px; }
