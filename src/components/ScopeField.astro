@@ -25,7 +25,13 @@
   .sf-hold {
     position: absolute;
     inset: 0;
-    overflow: hidden;
+    /* `clip`, NOT `hidden`. `hidden` makes this a scroll container, and the
+       sticky field then sticks to THIS box — which never scrolls — instead of
+       to the viewport. The field stopped following the page entirely and had
+       scrolled off screen by the time the picker came into view, so the whole
+       point of it reacting to the selection was invisible. `clip` clips without
+       creating a scroll container, so sticky keeps working against the page. */
+    overflow: clip;
     pointer-events: none;
     z-index: 0;
   }
