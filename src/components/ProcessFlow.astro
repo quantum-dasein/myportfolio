@@ -69,9 +69,9 @@ const previews = [
             <div class="pv-sphere"><span class="pv-sphere-light"></span></div>
             <span class="pv-site-kicker">{c("IDEAS INTO EXPERIENCES", "IDEEN WERDEN ERLEBNISSE")}</span>
             <p>{c("Clear thinking.", "Klar gedacht.")}<br/><span>{c("Made tangible.", "Stark gemacht.")}</span></p>
-            <span class="pv-site-link">{c("Explore the work", "Projekte entdecken")} <span>↗</span></span>
+            <span class="pv-site-link">{c("Explore the work", "Projekte entdecken")} <svg class="pv-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8.5 3.5M4.6 3.5h3.9v3.9"/></svg></span>
           </div>
-          <div class="pv-projects">{previews.map(({ label, src }) => <div><img src={src} alt="" width="150" height="90" loading="lazy" decoding="async"/><span>{label}<i>↗</i></span></div>)}</div>
+          <div class="pv-projects">{previews.map(({ label, src }) => <div><img src={src} alt="" width="150" height="90" loading="lazy" decoding="async"/><span>{label}<svg class="pv-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8.5 3.5M4.6 3.5h3.9v3.9"/></svg></span></div>)}</div>
         </div>
       </div>
       <p class="pv-caption">{steps[2].line}</p>
@@ -154,7 +154,8 @@ const previews = [
   .pv-site-kicker { font: 6px/1.4 var(--font-mono,monospace); letter-spacing: .12em; color: #a5b1c2; }
   .pv-site-hero > p { position: relative; z-index: 1; font-size: clamp(18px,1.8vw,29px); line-height: 1.14; letter-spacing: -.045em; margin: 12px 0 17px; font-weight: 500; }
   .pv-site-hero > p > span { color: #a3acb9; }
-  .pv-site-link { position: relative; z-index: 1; display: inline-flex; gap: 16px; font-size: 8px; border-bottom: 1px solid #b7c5d780; padding-bottom: 5px; }
+  .pv-site-link { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 10px; font-size: 8px; border-bottom: 1px solid #b7c5d780; padding-bottom: 5px; white-space: nowrap; }
+  .pv-arrow { width: 1.05em; height: 1.05em; flex: none; }
   .pv-sphere { position: absolute; width: 54%; aspect-ratio: 1; right: -7%; top: 14%; border-radius: 50%; background: radial-gradient(ellipse at 31% 24%,#d2dbe6 0%,#647181 4%,#202a37 14%,#080c13 39%,#010207 65%); box-shadow: inset -1px 1px 1px #e9f2ff, inset -7px 5px 12px #829bc160, 6px -4px 20px #b1c8ea16; transform: rotate(-22deg); }
   .pv-sphere::after { content: ""; position: absolute; inset: 20% -25%; border: 1px solid #b6c7df40; border-radius: 50%; transform: rotate(-18deg); }
   .pv-projects { position: relative; display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; z-index: 1; }
@@ -195,6 +196,10 @@ const previews = [
     .pv-site { padding: 19px; }
     .pv-site-hero { padding: 29px 0; }
     .pv-projects img { height: 60px; }
+    /* These two were never scaled with the rest of the preview: 8px and 6px on
+       a phone, next to a 29px headline. */
+    .pv-site-link { font-size: 12px; gap: 9px; padding-bottom: 6px; }
+    .pv-projects span { font-size: 9px; padding: 9px 8px; }
     .pv-field { opacity: .19; }
     .pv-halo { width: 100%; left: 0; }
     .pv-halo--write { top: -4%; }
@@ -218,7 +223,26 @@ const previews = [
     .pv-site-hero > p { font-size: 25px; }
     .pv-site-hero { padding: 24px 0; }
     .pv-projects img { height: 42px; }
+    .pv-site-link { font-size: 11px; }
+    .pv-projects span { font-size: 8px; padding: 8px 7px; }
   }
+  /* ── Touch: keep the picture, drop what a phone GPU pays for ─────────────── */
+  @media (max-width: 1040px), (pointer: coarse) {
+    /* Flat, not perspective-projected — the single biggest cost in the scene. */
+    .pv-sheet, .pv-browser { transform: none; }
+    /* Plain strokes instead of filtered ones; the glow is compensated in the
+       stroke itself, and nothing has to repaint a filter region per frame. */
+    .pv-front-strand, .pv-traveller, .pv-filament, .pv-pulse, .pv-check svg { filter: none; }
+    .pv-filament { opacity: .9; }
+    .pv-front-strand { stroke-width: .8; }
+    /* Continuous animation on a scene that is already scrubbing is where the
+       frames actually go. The dust stays as atmosphere; it just holds still. */
+    .pv-pulse { animation: none; }
+    .pv-dust i { animation: none; box-shadow: none; }
+    /* A 45px shadow blur across three large panels, rasterized on every step. */
+    .pv-glass { box-shadow: inset 0 1px 1px rgba(255,255,255,.4), 0 14px 24px -14px #000; }
+  }
+
   @media (prefers-reduced-motion: reduce) { .pv-pulse, .pv-dust i { animation: none; } }
   :global(html.rb-calm) .pv-pulse, :global(html.rb-calm) .pv-dust i,
   :global(html.rb-calm) .pv-sphere-light, :global(html.rb-calm) .pv-sphere::after,
