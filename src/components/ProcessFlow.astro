@@ -23,12 +23,13 @@ const previews = [
     <span class="pv-halo pv-halo--scope" aria-hidden="true"></span>
     <span class="pv-halo pv-halo--launch" aria-hidden="true"></span>
     <svg class="pv-current" data-pv-svg aria-hidden="true" preserveAspectRatio="none">
-      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4 }]} data-flow-strand={i} fill="none"/>)}
+      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4 }]} data-flow-strand={i} pathLength="1000" fill="none"/>)}
+      <circle class="pv-traveller" r="3" cx="0" cy="0"/>
       <path class="pv-pulse" data-flow-pulse pathLength="1000" fill="none"/>
       <path class="pv-pulse pv-pulse--second" data-flow-pulse pathLength="1000" fill="none"/>
     </svg>
     <svg class="pv-current pv-current--front" data-pv-front aria-hidden="true" preserveAspectRatio="none">
-      <path class="pv-front-strand" data-flow-front fill="none"/>
+      <path class="pv-front-strand" data-flow-front pathLength="1000" fill="none"/>
       <path class="pv-pulse" data-flow-front pathLength="1000" fill="none"/>
     </svg>
     <div class="pv-dust" aria-hidden="true">{Array.from({ length: 18 }, (_, i) => <i style={`left:${(i * 37 + 11) % 100}%;top:${(i * 23 + 9) % 100}%;animation-delay:-${i * .7}s`}/>)}</div>
@@ -36,8 +37,8 @@ const previews = [
     <div class="pv-node pv-write">
       <div class="pv-step"><span aria-hidden="true">{steps[0].n}</span><h3>{steps[0].label.toLowerCase()}</h3></div>
       <div class="pv-message pv-glass" data-flow-object="write">
-        <span>{typed}</span>
-        <span class="pv-send" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m4 11 16-7-6 17-3-7-7-3Z"/><path d="m11 14 9-10"/></svg></span>
+        <span class="pv-typed" aria-label={typed}><span class="pv-type-reserve" aria-hidden="true">{typed}</span><span class="pv-type-ink" aria-hidden="true">{typed}</span></span>
+        <span class="pv-send" aria-hidden="true"><span class="pv-shockwave"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m4 11 16-7-6 17-3-7-7-3Z"/><path d="m11 14 9-10"/></svg></span>
       </div>
       <p class="pv-caption">{steps[0].line}</p>
     </div>
@@ -51,7 +52,7 @@ const previews = [
             {i === 0 ? <><path d="M6 3h11l5 5v17H6Z M17 3v6h5 M10 13h8 M10 17h8 M10 21h5"/></> : i === 1 ? <><ellipse cx="14" cy="6" rx="9" ry="4"/><path d="M5 6v15c0 5 18 5 18 0V6 M5 11c0 5 18 5 18 0 M5 16c0 5 18 5 18 0"/></> : <><rect x="4" y="6" width="20" height="18" rx="2"/><path d="M4 12h20 M9 3v6 M19 3v6 M9 17h3 M16 17h3 M9 21h3"/></>}
           </svg>
           <div class="pv-row-copy"><span>{row}</span><i></i><i></i></div>
-          <span class="pv-check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m5 10 3 3 7-8"/></svg></span>
+          <span class="pv-check" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width=".85"><circle class="pv-check-ring" cx="10" cy="10" r="9" pathLength="1"/><path class="pv-check-mark" d="m5 10 3 3 7-8" pathLength="1"/></svg></span>
         </div>)}
       </div>
       <p class="pv-caption">{steps[1].line}</p>
@@ -60,11 +61,12 @@ const previews = [
     <div class="pv-node pv-launch">
       <div class="pv-step"><span aria-hidden="true">{steps[2].n}</span><h3>{steps[2].label.toLowerCase()}</h3></div>
       <div class="pv-browser pv-glass" data-flow-object="launch" role="img" aria-label={c("A finished website: clear typography, a sculpted sphere and three selected projects.", "Eine fertige Website: klare Typografie, eine skulpturale Kugel und drei ausgewählte Projekte.")}>
+        <svg class="pv-frame" aria-hidden="true"><rect x="1" y="1" width="100%" height="100%" rx="16" pathLength="1"/></svg>
         <div class="pv-chrome" aria-hidden="true"><span><i></i><i></i><i></i></span><span class="pv-live"><i></i>LIVE</span></div>
         <div class="pv-site" aria-hidden="true">
           <div class="pv-nav"><span>RB® STUDIO</span><span>— &nbsp; 2026</span></div>
           <div class="pv-site-hero">
-            <div class="pv-sphere"></div>
+            <div class="pv-sphere"><span class="pv-sphere-light"></span></div>
             <span class="pv-site-kicker">{c("IDEAS INTO EXPERIENCES", "IDEEN WERDEN ERLEBNISSE")}</span>
             <p>{c("Clear thinking.", "Klar gedacht.")}<br/><span>{c("Made tangible.", "Stark gemacht.")}</span></p>
             <span class="pv-site-link">{c("Explore the work", "Projekte entdecken")} <span>↗</span></span>
@@ -91,11 +93,28 @@ const previews = [
   .pv-current--front { z-index: 5; opacity: .45; }
   .pv-front-strand { stroke: #d5e2f3; stroke-width: .65; filter: drop-shadow(0 0 4px #a6bad7); }
   .pv-current--front .pv-pulse { animation-delay: -5s; stroke-width: 1.2; }
+  .pv-traveller { fill: #fff; opacity: 0; filter: drop-shadow(0 0 6px #eff5ff) drop-shadow(0 0 12px #a9bad1); }
+  .pv-typed { display: grid; min-width: 0; }
+  .pv-type-reserve, .pv-type-ink { grid-area: 1 / 1; }
+  .pv-type-reserve { visibility: hidden; }
+  .pv-type-ink::after { content: ""; display: inline-block; width: 0; height: 1em; border-left: 1px solid #e8eff9; margin-left: 2px; vertical-align: -.12em; opacity: var(--caret, 0); }
+  .pv-send { position: relative; }
+  .pv-shockwave { position: absolute; inset: -1px; border-radius: 50%; border: 1px solid #d5e5fa; opacity: 0; pointer-events: none; }
+  .pv-glass::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at calc(var(--light-x, 35%) + var(--pointer-x, 0%)) calc(var(--light-y, 15%) + var(--pointer-y, 0%)), #e2edff18, transparent 58%); opacity: calc(var(--reflection, .12) + var(--pointer-reflection, 0)); }
+  .pv-sheet::before { content: ""; position: absolute; inset: 5px; border: 1px solid #d2e2f70c; border-radius: 15px; pointer-events: none; box-shadow: inset 0 1px 0 #edf4ff16; }
+  .pv-row { position: relative; overflow: hidden; }
+  .pv-row::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 15%, #e8f1ff12 47%, transparent 75%); transform: translateX(var(--row-sheen, -110%)); }
+  .pv-row-copy i { transform-origin: left; }
+  .pv-check-ring, .pv-check-mark { stroke-dasharray: 1; stroke-dashoffset: 0; }
+  .pv-frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+  .pv-frame rect { width: calc(100% - 2px); height: calc(100% - 2px); fill: none; stroke: #e1edff; stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 0; opacity: .38; }
+  .pv-sphere-light { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse at 35% 22%,#ebf3ff21,transparent 38%); }
   .pv-strand { stroke: #c1d0e3; stroke-width: .6; opacity: .22; }
   .pv-filament { stroke: #e9f1ff; stroke-width: 1; opacity: .75; filter: drop-shadow(0 0 5px #a6bad7); }
   .pv-pulse { stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 2 998; filter: drop-shadow(0 0 6px #d3e0f3); animation: pv-travel 8s linear infinite; animation-play-state: paused; }
   .pv-pulse--second { stroke-width: 1.4; animation-delay: -3.4s; }
-  .pv.is-visible .pv-pulse, .pv.is-visible .pv-dust i { animation-play-state: running; }
+  .pv.is-visible:not(.is-sequenced) .pv-pulse, .pv.is-visible.is-complete .pv-pulse, .pv.is-visible .pv-dust i { animation-play-state: running; }
+  .pv.is-sequenced:not(.is-complete) .pv-pulse { opacity: 0; }
   .pv-dust { z-index: 2; }
   .pv-dust i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #d7e2ef; opacity: .35; box-shadow: 0 0 5px #aabbd2; animation: pv-drift 9s ease-in-out infinite alternate paused; }
   .pv-node { position: absolute; z-index: 3; }
@@ -119,7 +138,8 @@ const previews = [
   .pv-row-copy i { display: block; width: 65%; height: 3px; margin-top: 6px; background: #929dac30; }
   .pv-row-copy i:last-child { width: 39%; opacity: .6; }
   .pv-check { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #a8b8cd; display: grid; place-items: center; box-shadow: inset 0 0 10px #a0b9db16; }
-  .pv-check svg { width: 20px; }
+  .pv-check { border: 0; }
+  .pv-check svg { width: 100%; height: 100%; }
   .pv-browser { border-radius: 17px; overflow: hidden; transform: perspective(1400px) rotateY(-8deg) rotateZ(2deg); }
   .pv-chrome { height: 32px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #bdcee51a; background: linear-gradient(110deg,#30394570,#10151c); }
   .pv-chrome > span:first-child { display: flex; gap: 5px; }
@@ -147,6 +167,15 @@ const previews = [
   .pv-terminus::after { inset: -27px; border-color: #b6c8e21c; }
   @keyframes pv-travel { to { stroke-dashoffset: -1000; } }
   @keyframes pv-drift { to { transform: translate(5px,-12px); opacity: .8; } }
+  @keyframes pv-orbit { to { transform: rotate(360deg); } }
+  @keyframes pv-breathe { to { opacity: .65; } }
+  @keyframes pv-field-drift { to { transform: translate(3px,-3px) rotate(.25deg); } }
+  @media (min-width: 1041px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .pv.is-visible.is-complete .pv-sphere-light { animation: pv-orbit 55s linear infinite; }
+    .pv.is-visible.is-complete .pv-sphere::after { animation: pv-orbit 85s linear infinite; }
+    .pv.is-visible.is-complete .pv-terminus { animation: pv-breathe 4.5s ease-in-out infinite alternate; }
+    .pv.is-visible.is-complete .pv-field g { transform-origin: center; animation: pv-field-drift 28s ease-in-out infinite alternate; }
+  }
   @media (max-width: 1040px) {
     .pv { width: 100%; margin: 4rem 0 0; }
     .pv-stage { height: auto; display: grid; gap: 100px; padding: 40px 0 50px; }
@@ -189,10 +218,13 @@ const previews = [
     .pv-projects img { height: 42px; }
   }
   @media (prefers-reduced-motion: reduce) { .pv-pulse, .pv-dust i { animation: none; } }
-  :global(html.rb-calm) .pv-pulse, :global(html.rb-calm) .pv-dust i { animation: none; }
+  :global(html.rb-calm) .pv-pulse, :global(html.rb-calm) .pv-dust i,
+  :global(html.rb-calm) .pv-sphere-light, :global(html.rb-calm) .pv-sphere::after,
+  :global(html.rb-calm) .pv-terminus, :global(html.rb-calm) .pv-field g { animation: none !important; }
 </style>
 
 <script>
+  import { setupProcessMotion } from "../utils/processMotion";
   function initProcessFlow() {
     document.querySelectorAll<HTMLElement>("[data-process-flow]").forEach((root) => {
       if (root.dataset.ready) return;
@@ -207,8 +239,9 @@ const previews = [
         frame = 0;
         const bounds = stage.getBoundingClientRect();
         const box = (el: HTMLElement) => {
-          const r = el.getBoundingClientRect();
-          return { x: r.left - bounds.left, y: r.top - bounds.top, w: r.width, h: r.height };
+          // Layout coordinates stay stable while the glass tilts or scales.
+          const node = el.closest<HTMLElement>(".pv-node");
+          return { x: el.offsetLeft + (node?.offsetLeft || 0), y: el.offsetTop + (node?.offsetTop || 0), w: el.offsetWidth, h: el.offsetHeight };
         };
         const [a, b, c] = objects.map(box);
         const e = box(end);
@@ -229,6 +262,7 @@ const previews = [
           ? `M ${b.x+b.w*.84} ${b.y+b.h*.98} C ${b.x+b.w*.96} ${b.y+b.h+28}, ${c.x+c.w*.96} ${c.y-25}, ${c.x+c.w*.99} ${c.y+20}`
           : `M ${b.x+b.w*.86} ${b.y+b.h*.97} C ${b.x+b.w+30} ${b.y+b.h+12}, ${c.x-25} ${c.y+c.h*.85}, ${c.x+3} ${c.y+c.h*.74}`;
         root.querySelectorAll<SVGPathElement>("[data-flow-front]").forEach((strand) => strand.setAttribute("d", front));
+        root.dispatchEvent(new Event("pv:geometry"));
       };
       const schedule = () => { if (!frame) frame = requestAnimationFrame(draw); };
       const resize = new ResizeObserver(schedule);
@@ -236,9 +270,10 @@ const previews = [
       objects.forEach((el) => resize.observe(el));
       const visibility = new IntersectionObserver(([entry]) => root.classList.toggle("is-visible", entry.isIntersecting), { rootMargin: "80px" });
       visibility.observe(stage);
-      schedule();
+      draw();
+      const disposeMotion = setupProcessMotion(root);
       document.fonts.ready.then(schedule);
-      document.addEventListener("astro:before-swap", () => { resize.disconnect(); visibility.disconnect(); cancelAnimationFrame(frame); }, { once: true });
+      document.addEventListener("astro:before-swap", () => { disposeMotion(); resize.disconnect(); visibility.disconnect(); cancelAnimationFrame(frame); }, { once: true });
     });
   }
   initProcessFlow();

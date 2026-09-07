@@ -959,6 +959,13 @@ const breadcrumbs = {
 </style>
 
 <script>
+  import { setupProfileMotion } from "../utils/profileMotion";
+  const profile = document.querySelector<HTMLElement>(".pf");
+  if (profile) {
+    const disposeProfileMotion = setupProfileMotion(profile);
+    document.addEventListener("astro:before-swap", disposeProfileMotion, { once: true });
+  }
+
   // Each segment spans exactly two node centres. Progress follows the viewport
   // in both directions; measuring only on scroll/resize avoids an idle loop.
   const career = document.querySelector<HTMLOListElement>("[data-career-timeline]");
