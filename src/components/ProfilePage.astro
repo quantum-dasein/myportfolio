@@ -173,30 +173,9 @@ const experience = [1, 2, 3];
 const education = [1, 2, 3];
 
 const steps = [
-  {
-    n: "01",
-    title: c("Write", "Schreiben"),
-    text: c(
-      "One sentence: what you need and when. No brief template, no discovery invoice, no form that asks for your budget before it tells you anything.",
-      "Ein Satz: was Sie brauchen und bis wann. Kein Briefing-Formular, keine Discovery-Rechnung, kein Formular, das nach Ihrem Budget fragt, bevor es Ihnen irgendetwas sagt.",
-    ),
-  },
-  {
-    n: "02",
-    title: c("Scope", "Umfang"),
-    text: c(
-      "Within a day: a written scope, a price and a launch date — all three, fixed. If I am not the right person for it, I say that instead, and where I would send you.",
-      "Binnen eines Tages: ein schriftlicher Umfang, ein Preis und ein Launch-Termin — alle drei, fest. Wenn ich nicht der Richtige bin, sage ich das — und wohin ich Sie schicken würde.",
-    ),
-  },
-  {
-    n: "03",
-    title: c("Launch", "Launch"),
-    text: c(
-      "You watch it on a real URL while it is being built, not at the end. It goes live in your own accounts, on your own domain, and it is yours.",
-      "Sie sehen es während der Arbeit unter einer echten URL, nicht erst am Ende. Es geht in Ihren eigenen Konten und auf Ihrer eigenen Domain live und gehört Ihnen.",
-    ),
-  },
+  { n: "01", label: c("WRITE", "SCHREIBEN"), line: c("Tell me what you need, and when.", "Sagen Sie mir, was Sie brauchen — und bis wann.") },
+  { n: "02", label: c("SCOPE", "UMFANG"), line: c("Scope, price and launch date — fixed, within a day.", "Umfang, Preis und Launch-Termin — fest, binnen eines Tages.") },
+  { n: "03", label: c("LAUNCH", "LAUNCH"), line: c("Review it on a real URL while it is built.", "Unter einer echten URL mitverfolgen, während gebaut wird.") },
 ];
 
 const breadcrumbs = {
@@ -357,9 +336,14 @@ const breadcrumbs = {
           <h2 id="process-title" data-sy-reveal="words">{c("What happens after you write.", "Was passiert, nachdem Sie schreiben.")}</h2>
           <ProcessFlow
             steps={steps}
-            lang={lang}
             typed={c("I need a website for my project…", "Ich brauche eine Website für mein Projekt…")}
-            rows={[c("Scope", "Umfang"), c("Price", "Preis"), c("Date", "Termin")]}
+            rows={[c("Scope", "Umfang"), c("Price", "Preis"), c("Launch date", "Launch-Termin")]}
+            liveTag={c("LIVE", "LIVE")}
+            live={c("Live. In your accounts. Yours.", "Live. In Ihren Konten. Ihres.")}
+            note={c(
+              "No brief template, no discovery invoice, and no form that asks for your budget before it tells you anything. If I am not the right person for the job, you hear that the same day — along with where I would send you.",
+              "Kein Briefing-Formular, keine Discovery-Rechnung und kein Formular, das nach Ihrem Budget fragt, bevor es Ihnen irgendetwas sagt. Wenn ich nicht der Richtige bin, hören Sie das noch am selben Tag — samt der Adresse, an die ich Sie schicken würde.",
+            )}
           />
         </div>
       </section>
