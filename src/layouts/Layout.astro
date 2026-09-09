@@ -273,7 +273,11 @@ const nav: Link[] = isDeck
       // call was to bin the work — earns a top-level slot rather than living
       // as a section on /work/studio.
       { title: t("nav.notes"), url: "/notes", i18n: "nav.notes" },
-      { title: t("nav.contact"), url: `${homePrefix}#contact-cta`, i18n: "nav.contact" },
+      // Was an anchor to the footer's finale card, whose button then went to the
+      // form — two steps to reach the one thing this link promises. Points at
+      // the form directly; the finale card still leads there for anyone who
+      // arrives at the bottom of a page the long way.
+      { title: t("nav.contact"), url: "/contact", i18n: "nav.contact" },
     ];
 const cta = isDeck
   ? { title: t("portal.back"), url: "/", i18n: "portal.back", tunnel: true }
