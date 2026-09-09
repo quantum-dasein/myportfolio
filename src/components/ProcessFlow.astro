@@ -23,7 +23,8 @@ const previews = [
     <span class="pv-halo pv-halo--scope" aria-hidden="true"></span>
     <span class="pv-halo pv-halo--launch" aria-hidden="true"></span>
     <svg class="pv-current" data-pv-svg aria-hidden="true" preserveAspectRatio="none">
-      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4, "pv-strand--minor": i !== 2 && i !== 4 && i !== 6 }]} data-flow-strand={i} pathLength="1000" fill="none"/>)}
+      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4 }]} data-flow-strand={i} pathLength="1000" fill="none"/>)}
+      {Array.from({ length: 3 }, (_, i) => <path class="pv-segment" data-flow-segment={i} pathLength="1000" fill="none"/>)}
       <circle class="pv-traveller" r="3" cx="0" cy="0"/>
       <path class="pv-pulse" data-flow-pulse pathLength="1000" fill="none"/>
       <path class="pv-pulse pv-pulse--second" data-flow-pulse pathLength="1000" fill="none"/>
@@ -111,6 +112,9 @@ const previews = [
   .pv-frame rect { width: calc(100% - 2px); height: calc(100% - 2px); fill: none; stroke: #e1edff; stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 0; opacity: .38; }
   .pv-sphere-light { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse at 35% 22%,#ebf3ff21,transparent 38%); }
   .pv-strand { stroke: #c1d0e3; stroke-width: .6; opacity: .22; }
+  /* Only the stacked layout draws these; the wide layout keeps its nine-strand
+     bundle. Weighted like the filament, since here it is the whole current. */
+  .pv-segment { display: none; stroke: #e9f1ff; stroke-width: 1; opacity: .8; }
   .pv-filament { stroke: #e9f1ff; stroke-width: 1; opacity: .75; filter: drop-shadow(0 0 5px #a6bad7); }
   .pv-pulse { stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 2 998; filter: drop-shadow(0 0 6px #d3e0f3); animation: pv-travel 8s linear infinite; animation-play-state: paused; }
   .pv-pulse--second { stroke-width: 1.4; animation-delay: -3.4s; }
@@ -240,12 +244,17 @@ const previews = [
     .pv-pulse { animation: none; }
     .pv-dust i { animation: none; box-shadow: none; }
     /* The real per-frame cost on a phone. The stage is 361×1165 here instead of
-       1360×650, and the current spans all of it: nine strokes whose dash offset
-       changes every scroll frame, so the whole stage-sized SVG is invalidated
-       nine times over per frame. Six of the nine only ever read as thickness at
-       this width — three lines draw the same picture for a third of the paint.
-       processMotion drops the same six from the scrub, so they cost nothing. */
-    .pv-strand--minor { display: none; }
+       1360×650, and the nine-strand bundle spans all of it, so one dash-offset
+       write dirtied the whole stage nine times over. At this width the bundle
+       only ever read as one line anyway: draw one, cut into three spans that
+       take turns being dirty. */
+    .pv-strand:not(.pv-segment) { display: none; }
+    .pv-segment { display: inline; }
+    /* The three objects fade from .12 to 1 across the scene. Un-promoted, each
+       of those steps repaints the panel and the field behind it; on their own
+       layers the fade is the compositor's job and costs nothing. Their contents
+       still re-raster when they actually change, which is what we want. */
+    .pv-message, .pv-sheet, .pv-browser { will-change: opacity; }
     /* The field is painted once, but it is painted at 361×1165 through an SVG
        mask, and that is a texture a phone has to keep. Its arcs come in pairs
        roughly 4px apart at the slice scale a phone gets; dropping every second
@@ -302,6 +311,28 @@ const previews = [
           return `M ${a.x+a.w-15} ${a.y+a.h*.5} C ${a.x+a.w+70} ${a.y+a.h*.5+offset}, ${b.x-65} ${b.y+b.h*.6+offset}, ${b.x+b.w*.5} ${b.y+b.h*.55} S ${c.x-85} ${c.y+c.h*.65+offset}, ${c.x+c.w*.48} ${c.y+c.h*.57} S ${e.x-35} ${e.y+offset}, ${e.x+4} ${e.y+4}`;
         };
         root.querySelectorAll<SVGPathElement>("[data-flow-strand]").forEach((strand, i) => strand.setAttribute("d", path((i - 4) * 9)));
+        // Stacked layout: the same curve, cut into its three natural spans. One
+        // path from the pill to the terminus has a bounding box the size of the
+        // whole stage, so scrubbing its dash offset invalidates all of it on
+        // every frame. Cut at the joins and only the span currently filling is
+        // ever dirty — the other two hold a value they already have. The two `S`
+        // commands are expanded to explicit `C`, mirroring the previous control
+        // point by hand, so the three elements draw exactly one curve.
+        const A = { x: a.x + a.w * .8, y: a.y + a.h * .5 };
+        const B = { x: b.x + b.w * .5, y: b.y + b.h * .5 };
+        const C = { x: c.x + c.w * .8, y: c.y + c.h * .5 };
+        const E = { x: e.x + 4, y: e.y + 4 };
+        const r1 = { x: Math.min(bounds.width - 4, a.x + a.w + 20), y: a.y + a.h + 65 };
+        const r2 = { x: b.x + 20, y: b.y - 55 };
+        const s2 = { x: c.x + c.w - 15, y: c.y - 45 };
+        const s3 = { x: e.x, y: e.y - 35 };
+        const mirror = (point: { x: number; y: number }, about: { x: number; y: number }) => `${about.x * 2 - point.x} ${about.y * 2 - point.y}`;
+        const spans = [
+          `M ${A.x} ${A.y} C ${r1.x} ${r1.y}, ${r2.x} ${r2.y}, ${B.x} ${B.y}`,
+          `M ${B.x} ${B.y} C ${mirror(r2, B)}, ${s2.x} ${s2.y}, ${C.x} ${C.y}`,
+          `M ${C.x} ${C.y} C ${mirror(s2, C)}, ${s3.x} ${s3.y}, ${E.x} ${E.y}`,
+        ];
+        root.querySelectorAll<SVGPathElement>("[data-flow-segment]").forEach((span, i) => span.setAttribute("d", spans[i]));
         root.querySelectorAll<SVGPathElement>("[data-flow-pulse]").forEach((pulse) => pulse.setAttribute("d", path(0)));
         // A fine reflection crosses the lower rim; the main current stays behind
         // the glass. Keep the reflection clear of the text inside both objects.

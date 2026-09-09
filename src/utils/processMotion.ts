@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger);
  * of animated transforms, so resizing midway never changes the composition. */
 export function setupProcessMotion(root: HTMLElement) {
   const q = <T extends Element = HTMLElement>(selector: string) => root.querySelector<T>(selector)!;
-  const qa = (selector: string) => Array.from(root.querySelectorAll<HTMLElement>(selector));
+  const qa = <T extends Element = HTMLElement>(selector: string) => Array.from(root.querySelectorAll<T>(selector));
   const ink = q(".pv-type-ink");
   const message = ink.textContent || "";
   // Lay out the complete sentence once. Revealing glyphs preserves word wraps
@@ -50,11 +50,17 @@ export function setupProcessMotion(root: HTMLElement) {
       const clock = { typed: 0, energy: 0, end: 0 };
       const path = q<SVGPathElement>(".pv-filament");
       const traveller = q<SVGCircleElement>(".pv-traveller");
-      // Only scrub what is on screen. The touch stylesheet hides `.pv-strand--minor`,
-    // and setting a dash offset on a hidden path still costs a style pass, so the
-    // two have to agree about which six are gone.
-    const compact = matchMedia("(max-width: 1040px), (pointer: coarse)").matches;
-    const strands = qa("[data-flow-strand]").filter((strand) => !compact || !strand.classList.contains("pv-strand--minor"));
+      // The stacked layout draws the current as three spans instead of one bundle
+    // (see the geometry in ProcessFlow.astro). Each span owns exactly one unit of
+    // `clock.energy`, which is also how the timeline already moves: 0→1 write to
+    // scope, 1→2 scope to launch, 2→3 launch to terminus. So the span that is
+    // filling is the only one written to, and the only one whose box goes dirty.
+    const spans = qa<SVGPathElement>("[data-flow-segment]");
+    const segmented = matchMedia("(max-width: 1040px), (pointer: coarse)").matches && spans.length === 3;
+    const strands = segmented ? [] : qa<SVGPathElement>("[data-flow-strand]");
+    const scrubbed = segmented ? spans : strands;
+    const spanLengths = [1, 1, 1];
+    const spanOffsets = ["", "", ""];
       const fronts = qa(".pv-front-strand");
       let length = 1;
       let scopeStop = .4;
@@ -65,21 +71,46 @@ export function setupProcessMotion(root: HTMLElement) {
       let lastComplete = false;
       const alphas = new Float32Array(glyphs.length).fill(-1);
       let refreshFrame = 0;
+      const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
       const drawEnergy = () => {
         const phase = clock.energy;
         if (phase === lastEnergy) return;
         lastEnergy = phase;
-        const progress = phase <= 1 ? phase * scopeStop
-          : phase <= 2 ? scopeStop + (phase - 1) * (launchStop - scopeStop)
-          : launchStop + (phase - 2) * (1 - launchStop);
-        const point = path.getPointAtLength(Math.min(1, Math.max(0, progress)) * length);
-        traveller.setAttribute("cx", String(point.x));
-        traveller.setAttribute("cy", String(point.y));
-        strands.forEach((strand) => { strand.style.strokeDashoffset = String(1000 * (1 - progress)); });
-        fronts.forEach((strand) => { strand.style.strokeDashoffset = String(1000 * (1 - Math.min(1, Math.max(0, phase - 1)))); });
+        if (segmented) {
+          for (let i = 0; i < 3; i++) {
+            const offset = String(1000 * (1 - clamp01(phase - i)));
+            // A span that is already full or still empty must not be written to:
+            // an unchanged value still marks its box dirty for the next frame.
+            if (spanOffsets[i] === offset) continue;
+            spanOffsets[i] = offset;
+            spans[i].style.strokeDashoffset = offset;
+          }
+          const index = Math.min(2, Math.max(0, Math.floor(phase)));
+          const point = spans[index].getPointAtLength(clamp01(phase - index) * spanLengths[index]);
+          traveller.setAttribute("cx", String(point.x));
+          traveller.setAttribute("cy", String(point.y));
+        } else {
+          const progress = phase <= 1 ? phase * scopeStop
+            : phase <= 2 ? scopeStop + (phase - 1) * (launchStop - scopeStop)
+            : launchStop + (phase - 2) * (1 - launchStop);
+          const point = path.getPointAtLength(clamp01(progress) * length);
+          traveller.setAttribute("cx", String(point.x));
+          traveller.setAttribute("cy", String(point.y));
+          strands.forEach((strand) => { strand.style.strokeDashoffset = String(1000 * (1 - progress)); });
+        }
+        fronts.forEach((strand) => { strand.style.strokeDashoffset = String(1000 * (1 - clamp01(phase - 1))); });
       };
       const measure = () => {
         lastEnergy = -1;
+        spanOffsets[0] = spanOffsets[1] = spanOffsets[2] = "";
+        if (segmented) {
+          // Each span already ends where the next begins, so there is nothing to
+          // search for — the two 200-step nearest-point scans below are a wide
+          // layout problem only.
+          spans.forEach((span, i) => { spanLengths[i] = span.getTotalLength() || 1; });
+          drawEnergy();
+          return;
+        }
         length = path.getTotalLength() || 1;
         const nearest = (name: string) => {
           const node = q(`.pv-${name}`);
@@ -99,7 +130,7 @@ export function setupProcessMotion(root: HTMLElement) {
         launchStop = nearest("launch");
         drawEnergy();
       };
-      gsap.set(strands.concat(fronts), { strokeDasharray: "1000", strokeDashoffset: 1000 });
+      gsap.set([...scrubbed, ...fronts], { strokeDasharray: "1000", strokeDashoffset: 1000 });
       gsap.set(".pv-step", { opacity: 0, y: 7 });
       gsap.set(".pv-step > span", { opacity: .75 });
       gsap.set(".pv-caption", { opacity: 0, y: 8 });
@@ -205,20 +236,7 @@ export function setupProcessMotion(root: HTMLElement) {
       let targetProgress = 0;
       let following = false;
       let initialized = false;
-      // On a phone the stage is 361×1165 instead of 1360×650, and one step of
-      // this timeline repaints most of it: the current's dash offsets, the glass
-      // panels' opacity, the sheet's rows. Stepping it 60 times a second is what
-      // costs the frames — so on touch the scene advances about 33 times a
-      // second instead. The page still scrolls on the compositor at full rate;
-      // only the drawing inside the scene is coarser, and a scrub this slow does
-      // not read as choppy at 30fps. Desktop keeps every frame.
-      const SCENE_FRAME = compact ? 30 : 0;
-      let carry = 0;
       const followScroll = (_time: number, deltaMs: number) => {
-        carry += deltaMs;
-        if (carry < SCENE_FRAME) return;
-        const elapsed = carry;
-        carry = 0;
         const current = timeline.progress();
         const remaining = targetProgress - current;
         if (Math.abs(remaining) < .0004) {
@@ -229,16 +247,12 @@ export function setupProcessMotion(root: HTMLElement) {
         }
         // A delayed frame must not fast-forward a whole stage. Damping uses a
         // bounded frame delta and a bounded step, local to this scene.
-        // Bounds scale with the frame the follow actually runs at, so a coarser
-        // scene still catches up in the same wall-clock time. Desktop, running
-        // every frame, keeps exactly the numbers it had.
-        const blend = 1 - Math.exp(-Math.min(elapsed, compact ? 48 : 32) / 140);
-        const cap = compact ? .06 : .04;
-        const step = gsap.utils.clamp(-cap, cap, remaining * blend);
+        const blend = 1 - Math.exp(-Math.min(deltaMs, 32) / 140);
+        const step = gsap.utils.clamp(-.04, .04, remaining * blend);
         timeline.progress(current + step);
       };
       const follow = () => {
-        if (!following) { following = true; carry = 0; gsap.ticker.add(followScroll); }
+        if (!following) { following = true; gsap.ticker.add(followScroll); }
       };
       // Attach only after all steps exist. A restored/deep-linked scroll can
       // otherwise render an empty timeline at its end before typing is added.
