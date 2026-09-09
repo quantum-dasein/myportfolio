@@ -32,6 +32,7 @@ import Layout from "../layouts/Layout.astro";
 import ScopeField from "./ScopeField.astro";
 import ProcessFlow from "./ProcessFlow.astro";
 import { useTranslations, type Lang, type UIKey } from "../i18n/utils";
+import { formatPrice } from "../data/pricing";
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -74,7 +75,7 @@ type Scope = {
 const scopes: Scope[] = [
   {
     id: "landing",
-    price: c("€690", "690 €"),
+    price: formatPrice("landing", lang),
     label: c("Landing page", "Landingpage"),
     size: c("One page, one action", "Eine Seite, eine Handlung"),
     time: c("2–4 days", "2–4 Tage"),
@@ -89,7 +90,7 @@ const scopes: Scope[] = [
   },
   {
     id: "site",
-    price: c("€1,490", "1.490 €"),
+    price: formatPrice("site", lang),
     label: c("Business website", "Unternehmens-Website"),
     size: c("5–10 pages", "5–10 Seiten"),
     time: c("About a week", "Etwa eine Woche"),
@@ -105,7 +106,7 @@ const scopes: Scope[] = [
   },
   {
     id: "shop",
-    price: c("€2,900", "2.900 €"),
+    price: formatPrice("shop", lang),
     label: c("Online shop", "Online-Shop"),
     size: c("Catalogue and checkout", "Katalog und Checkout"),
     time: c("2–3 weeks", "2–3 Wochen"),
@@ -120,7 +121,7 @@ const scopes: Scope[] = [
   },
   {
     id: "seo",
-    price: c("€490 / month", "490 € / Monat"),
+    price: formatPrice("seo", lang),
     label: c("SEO & content", "SEO & Content"),
     size: c("On a site that already exists", "Für eine bestehende Website"),
     time: c("First findings in 2 weeks", "Erste Ergebnisse in 2 Wochen"),
@@ -136,7 +137,7 @@ const scopes: Scope[] = [
   },
   {
     id: "platform",
-    price: c("€4,900", "4.900 €"),
+    price: formatPrice("platform", lang),
     label: c("Web app or platform", "Web-App oder Plattform"),
     size: c("Live data, accounts, admin", "Live-Daten, Accounts, Verwaltung"),
     time: c("From 4 weeks", "Ab 4 Wochen"),
@@ -152,7 +153,7 @@ const scopes: Scope[] = [
   },
   {
     id: "showreel",
-    price: c("€3,900", "3.900 €"),
+    price: formatPrice("showreel", lang),
     label: c("Showreel-grade build", "Showreel-Niveau"),
     size: c("3D, WebGL, custom motion", "3D, WebGL, eigene Motion"),
     time: c("From 3 weeks", "Ab 3 Wochen"),

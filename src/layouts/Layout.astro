@@ -1,5 +1,6 @@
 ---
 import Header from "../components/Header.astro";
+import { pricing, formatPrice, type OfferId } from "../data/pricing";
 import Footer from "../components/Footer.astro";
 import SmoothScroll from "../components/SmoothScroll.astro";
 import Tunnel from "../components/Tunnel.astro";
@@ -90,6 +91,33 @@ if (Astro.url.pathname !== "/" && !noindex && !pageSchemas.some(item => item["@t
     ],
   });
 }
+// The six things someone can actually buy, priced from the same table the
+// scope picker reads. `UnitPriceSpecification` with a billing duration is how
+// a monthly retainer is distinguished from a one-off project price.
+const offerNames: Record<OfferId, { name: string; description: string }> = {
+  landing: { name: "Landing page", description: "One page written around a single action, live in 2–4 days." },
+  site: { name: "Business website", description: "5–10 pages in German and English, live in about a week." },
+  shop: { name: "Online shop", description: "Catalogue, cart and checkout with Austrian VAT and shipping rules." },
+  seo: { name: "SEO and content", description: "Technical fixes made rather than reported, on a site that already exists." },
+  platform: { name: "Web app or platform", description: "Live data, accounts and an admin your team can run." },
+  showreel: { name: "Showreel-grade build", description: "Real-time 3D, hand-written shaders and motion designed as a system." },
+};
+
+const offerCatalogue = (Object.keys(pricing) as OfferId[]).map((id) => ({
+  "@type": "Offer",
+  name: offerNames[id].name,
+  description: offerNames[id].description,
+  priceSpecification: {
+    "@type": "UnitPriceSpecification",
+    price: pricing[id].from,
+    priceCurrency: "EUR",
+    valueAddedTaxIncluded: false,
+    ...(pricing[id].monthly ? { billingDuration: 1, billingIncrement: 1, unitCode: "MON" } : {}),
+  },
+  availability: "https://schema.org/InStock",
+  url: new URL("/contact", site).toString(),
+}));
+
 const schema = {
   "@context": "https://schema.org",
   "@graph": [
@@ -152,6 +180,48 @@ const schema = {
         "Motion design",
         "Cinema 4D",
         "Redshift Renderer",
+      ],
+    },
+    // Local search is decided by a business entity, not by a Person node. This
+    // is the one search engines match against "Webdesigner Wien" and friends,
+    // and the offer catalogue carries the same starting prices the scope picker
+    // shows — structured data that contradicts the visible page is worse than
+    // none. It does not replace a Google Business Profile, which only Rodion
+    // can create; it is what makes the site agree with one once it exists.
+    {
+      "@type": "ProfessionalService",
+      "@id": `${site}#studio`,
+      name: "Rodion Belousov.studio",
+      url: site.toString(),
+      image: new URL("/brand/rodion-belousov-rb-monogram.png", site).toString(),
+      email: "mailto:rodionbelousov@protonmail.com",
+      founder: { "@id": `${site}#rodion-belousov` },
+      employee: { "@id": `${site}#rodion-belousov` },
+      description: t("meta.description"),
+      address: { "@type": "PostalAddress", addressLocality: "Vienna", addressRegion: "Wien", addressCountry: "AT" },
+      areaServed: [
+        { "@type": "City", name: "Vienna", alternateName: "Wien" },
+        { "@type": "Country", name: "Austria", alternateName: "Österreich" },
+      ],
+      availableLanguage: ["de", "en", "ru"],
+      priceRange: `${formatPrice("landing", "en")}–${formatPrice("platform", "en")}`,
+      currenciesAccepted: "EUR",
+      serviceType: [
+        "Web development",
+        "Web design",
+        "Search engine optimization",
+        "Digital marketing",
+        "Creative development",
+      ],
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Websites, shops and SEO",
+        itemListElement: offerCatalogue,
+      },
+      sameAs: [
+        "https://www.linkedin.com/in/rodion-belousov-413040228/",
+        "https://www.behance.net/gallery/146849483/Meine-3D-Projekte",
+        "https://github.com/quantum-dasein",
       ],
     },
     {
