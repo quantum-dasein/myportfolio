@@ -1,0 +1,120 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  /contact — where the enquiry actually gets written.
+//
+//  Until now the only way to reach Rodion was a `mailto:` link. On a phone that
+//  hands the visitor to a mail app many of them have never configured, and the
+//  enquiry dies there. This page asks the three things a quote needs — what,
+//  when, roughly how much — and sends them, so a half-finished thought still
+//  arrives instead of evaporating.
+//
+//  Bilingual the same way the home page is: rendered in English, swapped in
+//  place by the client controller. It is not a locale-prefixed route, so the
+//  switcher stays a copy swap and never sends anyone to a duplicate URL.
+// ─────────────────────────────────────────────────────────────────────────────
+import Layout from "../layouts/Layout.astro";
+import ContactForm from "../components/ContactForm.astro";
+import { useTranslations } from "../i18n/utils";
+
+const t = useTranslations("en");
+---
+
+<Layout
+  title="Contact — get a fixed price for your website | Rodion Belousov, Vienna"
+  description="Tell me what you need, when you need it and your budget range. You get a fixed price and a launch date back, usually the same day. Websites, shops and SEO in Vienna."
+  image="/og/rodion-belousov-web-developer-vienna.jpg"
+  imageAlt="Contact Rodion Belousov — web developer in Vienna"
+  keywords={[
+    "contact web developer Vienna",
+    "Website Angebot Wien",
+    "Webdesigner Wien Kontakt",
+    "get a website quote Vienna",
+  ]}
+  structuredData={{
+    "@type": "ContactPage",
+    name: "Contact — Rodion Belousov",
+    description:
+      "Enquiry form for websites, online shops and SEO in Vienna. Fixed price and launch date, usually within a day.",
+    mainEntity: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+  }}
+>
+  <section class="section ct">
+    <div class="u-container ct-grid">
+      <span class="s-idx">01 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+
+      <div class="ct-body">
+        <h1 class="ct-title" data-sy-reveal="words" data-i18n="form.title">{t("form.title")}</h1>
+        <p class="s-lead" data-reveal data-i18n="form.text">{t("form.text")}</p>
+
+        <div class="ct-form" data-reveal>
+          <ContactForm lang="en" />
+        </div>
+
+        <aside class="ct-aside" data-reveal>
+          <span class="ct-aside-label" data-i18n="contact.label">{t("contact.label")}</span>
+          <a href="mailto:rodionbelousov@protonmail.com">rodionbelousov@protonmail.com</a>
+          <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn</a>
+          <span data-i18n="contact.location">{t("contact.location")}</span>
+        </aside>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* Same treatment as /notes and the insight articles: an opaque surface above
+     the site-wide WebGL backdrop. The sculpture sits exactly where the form
+     does on a phone, and grey type over a chrome sphere is unfillable. The
+     radial glow keeps the light the backdrop was giving. */
+  .ct {
+    position: relative;
+    z-index: 1;
+    padding-top: clamp(7rem, 14vh, 11rem);
+    padding-bottom: clamp(5rem, 12vh, 9rem);
+    background:
+      radial-gradient(circle at 78% 12%, rgba(255, 255, 255, 0.075), transparent 30rem),
+      #030405;
+  }
+  .ct-grid { display: grid; gap: 2rem; }
+
+  .ct-title {
+    max-width: 16ch;
+    margin: 0 0 1.4rem;
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+  }
+
+  .ct-body { display: grid; gap: 2.6rem; }
+  .ct-body > .s-lead { max-width: 46ch; margin: 0; }
+
+  .ct-aside {
+    display: grid;
+    /* Next to a tall form column this is a grid item that would otherwise
+       stretch, spreading three short lines over the whole height. */
+    align-content: start;
+    gap: 0.6rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--color-line);
+    font-size: 0.92rem;
+    color: var(--color-text-alt);
+  }
+  .ct-aside-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .ct-aside a { width: fit-content; color: var(--color-text); }
+  .ct-aside a:hover { color: var(--color-accent); }
+
+  /* Wide enough for two columns: the form on the left, the fallback ways to
+     reach him on the right, so neither is buried under the other. */
+  @media (min-width: 900px) {
+    .ct-grid { grid-template-columns: 12rem 1fr; align-items: start; }
+    .ct-body { grid-template-columns: minmax(0, 34rem) 1fr; gap: 3rem 4rem; }
+    .ct-title { grid-column: 1 / -1; }
+    .ct-body > .s-lead { grid-column: 1 / -1; }
+    .ct-aside { border-top: none; padding-top: 0.4rem; }
+  }
+</style>

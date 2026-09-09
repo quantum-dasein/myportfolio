@@ -63,6 +63,13 @@ function syncSwitcher(lang: string) {
 // wordmark and menu at /en/ or /de/, which is exactly how visitors ended up on
 // a duplicate homepage with no way back. Kept as a no-op-free deletion.
 
+/** Look a key up in the language currently on screen. Scripts that build a
+ *  string at runtime — a form's status line, the body of an enquiry — cannot
+ *  use `data-i18n`, because there is no node to hang it on until it exists. */
+export function t(key: string): string {
+  return I18N[current]?.[key] ?? I18N[DEFAULT_LANG]?.[key] ?? "";
+}
+
 export function setLang(lang: string, opts: { persist?: boolean } = {}) {
   if (LOCKED_LANG && lang !== LOCKED_LANG) return;
   if (!AVAILABLE.includes(lang)) return;

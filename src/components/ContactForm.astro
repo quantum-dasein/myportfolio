@@ -1,0 +1,273 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ContactForm — the thing that replaces `mailto:`.
+//
+//  A mailto link is a dead end on a phone: it hands the visitor off to a mail
+//  app that half of them have never set up, and whatever they were going to
+//  write is lost. Three answers — what, when, roughly how much — are enough to
+//  quote from, which is the promise the process scene makes elsewhere on the
+//  site, so the form asks for exactly those and nothing else.
+//
+//  Delivery: the site is a static build with no server of its own, so the POST
+//  goes to Web3Forms, which forwards it to Rodion's inbox. The access key is
+//  public by design (it only permits submissions to one address) and comes from
+//  PUBLIC_W3F_KEY at build time. Without that variable the form still works —
+//  it composes the same message into a prefilled mail draft — so the page is
+//  never broken, it just falls back to where it started.
+// ─────────────────────────────────────────────────────────────────────────────
+import { useTranslations, type Lang } from "../i18n/utils";
+
+interface Props { lang?: Lang }
+const { lang = "en" } = Astro.props;
+const t = useTranslations(lang);
+
+const key = import.meta.env.PUBLIC_W3F_KEY ?? "";
+const MAIL = "rodionbelousov@protonmail.com";
+
+const what = ["landing", "site", "shop", "seo", "platform", "showreel", "other"] as const;
+const when = ["asap", "month", "quarter", "open"] as const;
+const budget = ["small", "mid", "large", "xl", "unsure"] as const;
+---
+
+<form class="cf" data-contact-form data-endpoint={key} data-mail={MAIL} novalidate>
+  <div class="cf-field">
+    <label for="cf-what" data-i18n="form.what.label">{t("form.what.label")}</label>
+    <select id="cf-what" name="what" required>
+      {what.map((id) => (
+        <option value={id} data-i18n={`form.what.${id}`}>{t(`form.what.${id}` as any)}</option>
+      ))}
+    </select>
+  </div>
+
+  <div class="cf-row">
+    <div class="cf-field">
+      <label for="cf-when" data-i18n="form.when.label">{t("form.when.label")}</label>
+      <select id="cf-when" name="when" required>
+        {when.map((id) => (
+          <option value={id} data-i18n={`form.when.${id}`}>{t(`form.when.${id}` as any)}</option>
+        ))}
+      </select>
+    </div>
+    <div class="cf-field">
+      <label for="cf-budget" data-i18n="form.budget.label">{t("form.budget.label")}</label>
+      <select id="cf-budget" name="budget" required>
+        {budget.map((id) => (
+          <option value={id} data-i18n={`form.budget.${id}`}>{t(`form.budget.${id}` as any)}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+
+  <div class="cf-field">
+    <label for="cf-email" data-i18n="form.email.label">{t("form.email.label")}</label>
+    <input
+      id="cf-email"
+      name="email"
+      type="email"
+      required
+      autocomplete="email"
+      inputmode="email"
+      placeholder={t("form.email.placeholder")}
+      data-i18n-attr="placeholder:form.email.placeholder"
+    />
+  </div>
+
+  <div class="cf-field">
+    <label for="cf-message" data-i18n="form.message.label">{t("form.message.label")}</label>
+    <textarea
+      id="cf-message"
+      name="message"
+      rows="3"
+      placeholder={t("form.message.placeholder")}
+      data-i18n-attr="placeholder:form.message.placeholder"
+    ></textarea>
+  </div>
+
+  {/* Bots fill every field they can see. This one they can, and people cannot. */}
+  <input class="cf-trap" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+  <button class="cf-send" type="submit">
+    <span data-i18n="form.submit">{t("form.submit")}</span>
+    <span class="cf-arrow" aria-hidden="true"></span>
+  </button>
+
+  <p class="cf-note" data-i18n="form.privacy">{t("form.privacy")}</p>
+  <p class="cf-status" role="status" aria-live="polite"></p>
+</form>
+
+<style>
+  .cf { display: grid; gap: 1.15rem; max-width: 34rem; }
+  .cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem; }
+  .cf-field { display: grid; gap: 0.5rem; min-width: 0; }
+
+  .cf-field label {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-alt);
+  }
+
+  .cf select,
+  .cf input,
+  .cf textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 0.92rem;
+    color: var(--color-text);
+    background: rgba(var(--rgb-white), 0.03);
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    padding: 0.85rem 0.95rem;
+    /* iOS zooms the page in on focus for anything under 16px, and never zooms
+       back out. The visual size stays small; only the computed size is 16. */
+    -webkit-text-size-adjust: 100%;
+  }
+  .cf textarea { resize: vertical; min-height: 5.5rem; }
+
+  /* Native selects inherit the OS palette on some platforms and come out white
+     text on white. Naming both sides keeps the dropdown readable everywhere. */
+  .cf select { appearance: none; background-image: none; color-scheme: dark; }
+  .cf select option { background: #0d1013; color: #f4f6f9; }
+
+  .cf select:focus-visible,
+  .cf input:focus-visible,
+  .cf textarea:focus-visible {
+    outline: none;
+    border-color: rgba(var(--rgb-text), 0.55);
+    background: rgba(var(--rgb-white), 0.06);
+  }
+  .cf input:user-invalid { border-color: rgba(226, 128, 128, 0.6); }
+
+  .cf-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+  .cf-send {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    justify-self: start;
+    margin-top: 0.35rem;
+    padding: 0.95rem 1.6rem;
+    font: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #0b0e12;
+    background: var(--color-text);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .cf-send:hover { opacity: 0.86; }
+  .cf-send[disabled] { opacity: 0.5; cursor: progress; }
+  .cf-arrow {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+    transform: rotate(45deg);
+  }
+
+  .cf-note { margin: 0; font-size: 0.76rem; color: var(--color-text-alt); }
+  .cf-status { margin: 0; font-size: 0.88rem; min-height: 1.2em; }
+  .cf-status.is-ok { color: var(--color-text); }
+  .cf-status.is-bad { color: rgb(226, 150, 150); }
+
+  @media (max-width: 560px) {
+    .cf-row { grid-template-columns: 1fr; }
+    /* Anything under 16px makes iOS zoom in on focus and stay there. */
+    .cf select, .cf input, .cf textarea { font-size: 16px; }
+  }
+</style>
+
+<script>
+  import { t as translate } from "../utils/i18n";
+
+  function initContactForm() {
+    document.querySelectorAll<HTMLFormElement>("[data-contact-form]").forEach((form) => {
+      if (form.dataset.wired) return;
+      form.dataset.wired = "true";
+
+      const status = form.querySelector<HTMLParagraphElement>(".cf-status")!;
+      const button = form.querySelector<HTMLButtonElement>(".cf-send")!;
+      const label = button.querySelector("span")!;
+      const endpoint = form.dataset.endpoint || "";
+      const mail = form.dataset.mail || "";
+
+      const say = (key: string, ok: boolean) => {
+        status.textContent = translate(key);
+        status.classList.toggle("is-ok", ok);
+        status.classList.toggle("is-bad", !ok);
+      };
+
+      // What the visitor picked, in words rather than in slugs — this is the
+      // body of the mail Rodion actually reads, so it has to stand on its own.
+      const compose = () => {
+        const value = (name: string) => (form.elements.namedItem(name) as HTMLSelectElement | HTMLInputElement)?.value || "";
+        const spell = (group: string, id: string) => translate(`form.${group}.${id}`) || id;
+        const extra = value("message").trim();
+        return [
+          `${translate("form.what.label")} ${spell("what", value("what"))}`,
+          `${translate("form.when.label")} ${spell("when", value("when"))}`,
+          `${translate("form.budget.label")}: ${spell("budget", value("budget"))}`,
+          "",
+          extra,
+        ].join("\n").trim();
+      };
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        // The honeypot is invisible and unlabelled, so only a bot fills it.
+        // Answer those exactly like a success: nothing sent, nothing learned.
+        if ((form.elements.namedItem("company") as HTMLInputElement)?.value) {
+          say("form.success", true);
+          return;
+        }
+
+        const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
+        const body = compose();
+
+        // No key configured yet: hand the composed message to a mail draft
+        // rather than losing it. Same destination, one more tap.
+        if (!endpoint) {
+          const subject = encodeURIComponent(`Website enquiry — ${email}`);
+          location.href = `mailto:${mail}?subject=${subject}&body=${encodeURIComponent(body)}`;
+          say("form.success", true);
+          return;
+        }
+
+        button.disabled = true;
+        const idle = label.textContent;
+        label.textContent = translate("form.sending");
+        status.textContent = "";
+
+        try {
+          const response = await fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              access_key: endpoint,
+              subject: `Website enquiry — ${email}`,
+              from_name: "rodionbelousov.studio",
+              replyto: email,
+              email,
+              message: body,
+            }),
+          });
+          if (!response.ok) throw new Error(String(response.status));
+          form.reset();
+          say("form.success", true);
+        } catch {
+          say("form.error", false);
+        } finally {
+          button.disabled = false;
+          label.textContent = idle;
+        }
+      });
+    });
+  }
+
+  initContactForm();
+  document.addEventListener("astro:page-load", initContactForm);
+</script>

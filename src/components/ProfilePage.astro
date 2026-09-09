@@ -53,9 +53,12 @@ const description = c(
 // ── The scope picker ─────────────────────────────────────────────────────────
 // Ordered smallest first, on purpose. `field` is the share of the lattice that
 // scope lights, so the picture scales with the job.
-// NOTE (Rodion): there is a deliberate empty slot for a price band on each
-// entry — add `price: c("from €900", "ab 900 €")` and it renders itself. Left
-// blank because those are your numbers to set, not mine to invent.
+// NOTE (Rodion): these are starting prices, not quotes — the promise the
+// process scene makes two sections below is that the real number is fixed
+// within a day, once the scope is known. They sit deliberately under a Vienna
+// agency (which asks 3–8k for a small business site) and under a mid-level
+// local freelancer, because the job right now is to get the enquiry, not to
+// win the margin. Change any of them here and the panel re-renders itself.
 type Scope = {
   id: string;
   label: string;
@@ -71,6 +74,7 @@ type Scope = {
 const scopes: Scope[] = [
   {
     id: "landing",
+    price: c("€690", "690 €"),
     label: c("Landing page", "Landingpage"),
     size: c("One page, one action", "Eine Seite, eine Handlung"),
     time: c("2–4 days", "2–4 Tage"),
@@ -85,6 +89,7 @@ const scopes: Scope[] = [
   },
   {
     id: "site",
+    price: c("€1,490", "1.490 €"),
     label: c("Business website", "Unternehmens-Website"),
     size: c("5–10 pages", "5–10 Seiten"),
     time: c("About a week", "Etwa eine Woche"),
@@ -100,6 +105,7 @@ const scopes: Scope[] = [
   },
   {
     id: "shop",
+    price: c("€2,900", "2.900 €"),
     label: c("Online shop", "Online-Shop"),
     size: c("Catalogue and checkout", "Katalog und Checkout"),
     time: c("2–3 weeks", "2–3 Wochen"),
@@ -114,6 +120,7 @@ const scopes: Scope[] = [
   },
   {
     id: "seo",
+    price: c("€490 / month", "490 € / Monat"),
     label: c("SEO & content", "SEO & Content"),
     size: c("On a site that already exists", "Für eine bestehende Website"),
     time: c("First findings in 2 weeks", "Erste Ergebnisse in 2 Wochen"),
@@ -129,6 +136,7 @@ const scopes: Scope[] = [
   },
   {
     id: "platform",
+    price: c("€4,900", "4.900 €"),
     label: c("Web app or platform", "Web-App oder Plattform"),
     size: c("Live data, accounts, admin", "Live-Daten, Accounts, Verwaltung"),
     time: c("From 4 weeks", "Ab 4 Wochen"),
@@ -144,6 +152,7 @@ const scopes: Scope[] = [
   },
   {
     id: "showreel",
+    price: c("€3,900", "3.900 €"),
     label: c("Showreel-grade build", "Showreel-Niveau"),
     size: c("3D, WebGL, custom motion", "3D, WebGL, eigene Motion"),
     time: c("From 3 weeks", "Ab 3 Wochen"),
@@ -210,7 +219,7 @@ const breadcrumbs = {
           )}</p>
 
           <div class="pf-actions" data-reveal>
-            <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
+            <a class="pf-btn primary" href="/contact" data-magnetic>
               <span>{c("Get a fixed quote", "Festes Angebot anfragen")}</span><i class="ui-arrow" aria-hidden="true"></i>
             </a>
             <a class="pf-btn ghost" href="#scope" data-magnetic>
@@ -399,7 +408,7 @@ const breadcrumbs = {
           "Offen für Projekte jeder Größe — in Wien, österreichweit oder remote.",
         )}</p>
         <div class="pf-actions">
-          <a class="pf-btn primary" href="mailto:rodionbelousov@protonmail.com" data-magnetic>
+          <a class="pf-btn primary" href="/contact" data-magnetic>
             <span>{c("Send me a message", "Schreiben Sie mir")}</span><i class="ui-arrow" aria-hidden="true"></i>
           </a>
           <a class="pf-btn" href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank" data-magnetic>
