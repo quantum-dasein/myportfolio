@@ -14,7 +14,7 @@ interface Props { id: CaseId }
 
 const { id } = Astro.props;
 const config = cases[id];
-const { image, nextHref, liveUrl, stack, year, impact, chapters = {}, specimen, seo } = config;
+const { image, card, nextHref, liveUrl, stack, year, impact, chapters = {}, specimen, seo } = config;
 const nextId = (Object.values(cases).find((item) => `/work/${item.slug}` === nextHref)?.id ?? "bridge") as CaseId;
 const liveHost = liveUrl ? new URL(liveUrl).hostname.replace(/^www\./, "") : "";
 const t = useTranslations();
@@ -109,7 +109,7 @@ const caseSchema = {
 <Layout
   title={seoTitle}
   description={seoDescription}
-  image={image}
+  image={card}
   imageAlt={`${tk(titleKey)} digital marketing, technical SEO and creative web development case study`}
   pageType="article"
   keywords={seoKeywords}

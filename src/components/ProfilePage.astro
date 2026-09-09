@@ -98,6 +98,12 @@ const breadcrumbs = {
   description={description}
   pageType="profile"
   structuredData={breadcrumbs}
+  {/* Separate DE and EN URLs, so the poster a crawler sees can be in the
+      language of the link that was pasted. Built by `npm run og`. */}
+  image={`/og/profile-vienna-${lang}.jpg`}
+  imageAlt={lang === "de"
+    ? "Rodion Belousov — Websites, Shops und SEO in Wien"
+    : "Rodion Belousov — websites, shops and SEO in Vienna"}
   noWebgl
 >
   <div class="pf">

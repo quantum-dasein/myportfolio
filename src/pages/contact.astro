@@ -22,7 +22,10 @@ const t = useTranslations("en");
 <Layout
   title="Contact — get a fixed price for your website | Rodion Belousov, Vienna"
   description="Tell me what you need, when you need it and your budget range. You get a fixed price and a launch date back, usually the same day. Websites, shops and SEO in Vienna."
-  image="/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg"
+  {/* One URL, so one poster: the language switcher runs in the browser and a
+      crawler never sees it. The German half exists as contact-de.jpg for the
+      day this page gets a /de/kontakt/ route of its own. */}
+  image="/og/contact-en.jpg"
   imageAlt="Contact Rodion Belousov — web developer in Vienna"
   keywords={[
     "contact web developer Vienna",

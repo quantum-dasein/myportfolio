@@ -8,6 +8,15 @@ const service = serviceContent[insight.relatedService];
 const alternates = { en: insight.paths.en, de: insight.paths.de, "x-default": insight.paths.en };
 const articleSchema = { "@type": "Article", headline: pick(insight.title, lang), description: pick(insight.description, lang), author: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, datePublished: "2026-07-14", dateModified: "2026-07-14" };
 // Unique OG image per insight — the artifact the article is actually about.
+// A DE/EN pair each, so the card follows the language of the URL that was
+// pasted. Built by `npm run og`; the map below stays as the alt text source.
+const localizedCard: Record<string, string> = {
+  "bridge-growth": "insight-bridge-growth",
+  "fidic-platform": "insight-fidic-platform",
+  "threejs-marketing": "insight-threejs",
+  "ai-development": "insight-ai",
+};
+
 const og: Record<string, { image: string; alt: string }> = {
   "bridge-growth": { image: "/cases/bridge-consult-google-analytics-organic-search-growth-780-percent.jpg", alt: "Google Analytics chart: 780% organic search growth for Bridge Consult" },
   // An article about a project may show that project, but as a real share card:
@@ -19,7 +28,7 @@ const og: Record<string, { image: string; alt: string }> = {
 };
 const ogEntry = og[insight.key];
 ---
-<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(insight.seoTitle ?? insight.title, lang)} description={pick(insight.description, lang)} image={ogEntry?.image} imageAlt={ogEntry?.alt} pageType="article" structuredData={articleSchema}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={pick(insight.seoTitle ?? insight.title, lang)} description={pick(insight.description, lang)} image={localizedCard[insight.key] ? `/og/${localizedCard[insight.key]}-${lang}.jpg` : ogEntry?.image} imageAlt={ogEntry?.alt} pageType="article" structuredData={articleSchema}>
   <div class="read-progress" aria-hidden="true"><span data-read-bar></span></div>
 
   <article class="insight">

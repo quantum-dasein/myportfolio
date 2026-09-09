@@ -24,6 +24,20 @@ const seoTitle = `${pick(service.eyebrow, lang).replace(" / ", " · ")} | Rodion
 // Work samples belong on the case studies; a service page gets its own card.
 // These are also purpose-built at 1200x630 and under 100 KB, where the case
 // screenshots were 883 KB and 2 MB at the wrong aspect ratio.
+// A social crawler never runs the language switcher — it reads the URL it was
+// given. These are separate DE and EN URLs, so each one can and should carry a
+// card in its own language. `card` names a pair built by `npm run og`; `image`
+// stays for the keys that still share one illustration.
+const localizedCard: Partial<Record<ServiceKey, string>> = {
+  websites: "websites",
+  "digital-marketing": "digital-marketing",
+  "technical-seo": "technical-seo",
+  "creative-development": "creative-development",
+  arztpraxis: "niche-arztpraxis",
+  restaurant: "niche-restaurant",
+  handwerker: "niche-handwerker",
+};
+
 const og: Record<ServiceKey, { image: string; alt: string }> = {
   // Shares the default brand card with creative-development. Two service pages
   // on one card is fine — the title and description are what people read — and
@@ -41,7 +55,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 };
 ---
 
-<Layout lang={lang} alternateUrls={alternates} lockLang title={seoTitle} description={pick(service.description, lang)} image={og[serviceKey].image} imageAlt={og[serviceKey].alt} structuredData={[serviceSchema, faqSchema]}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={seoTitle} description={pick(service.description, lang)} image={localizedCard[serviceKey] ? `/og/${localizedCard[serviceKey]}-${lang}.jpg` : og[serviceKey].image} imageAlt={og[serviceKey].alt} structuredData={[serviceSchema, faqSchema]}>
   <article class="service-page">
     <!-- Always give a way out: back to the Services & Research hub. -->
     <a class="back-link" href="/services" data-cursor="BACK" data-magnetic>

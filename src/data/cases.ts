@@ -49,6 +49,10 @@ export interface CaseConfig {
   stack: string;
   year: string;
   liveUrl?: string;
+  /** The 1200x630 social card. Separate from `image`, which is the portrait
+   *  poster on the page: that one is 3:4 WebP, which a 1.91:1 slot crops to
+   *  nothing and which LinkedIn does not render at all. */
+  card: string;
   nextHref: string;
   /** Corner label inside the hero screen, e.g. "BC / 01". */
   screenIndex: string;
@@ -74,6 +78,7 @@ export const cases: Record<CaseId, CaseConfig> = {
     stack: "Astro / Three.js / GSAP",
     year: "2026",
     liveUrl: "https://www.bridgeconsult.uz/EN/index.html",
+    card: "/og/case-bridge-consult.jpg",
     nextHref: "/work/fidic",
     screenIndex: "BC / 01",
     specimen: { name: "BRIDGE CONSULT", moduleB: "NOIR GLASS", moduleC: "CHROME SIGNAL" },
@@ -117,6 +122,7 @@ export const cases: Record<CaseId, CaseConfig> = {
     stack: "Astro / MDX / Serverless",
     year: "2026",
     liveUrl: "https://fidic.uz",
+    card: "/og/case-fidic.jpg",
     nextHref: "/work/academy",
     screenIndex: "FIDIC / 02",
     specimen: { name: "FIDIC.UZ", moduleB: "CONTRACT ATLAS", moduleC: "FIDIC GOLD" },
@@ -157,6 +163,7 @@ export const cases: Record<CaseId, CaseConfig> = {
     stack: "Astro / CSS",
     year: "2026",
     liveUrl: "https://www.bridgeconsult.uz/academy/",
+    card: "/og/case-academy.jpg",
     nextHref: "/work/bridge-consult",
     screenIndex: "ACADEMY / 03",
     specimen: { name: "BRIDGE ACADEMY", moduleB: "EDITORIAL SERIF", moduleC: "DESERT LIGHT" },

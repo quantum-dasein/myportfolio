@@ -320,6 +320,20 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={socialImage} />
+    {/* Stating the size and type lets a crawler lay the card out on the first
+        pass instead of fetching and measuring it, which is the usual reason a
+        freshly pasted link shows a blank box for a few seconds — or forever, if
+        the crawler gave up. Only the generated cards under /og/ are guaranteed
+        1200x630 JPEG, so only those declare it: announcing dimensions an image
+        does not have is worse than announcing none. */}
+    {image.startsWith("/og/") && (
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/jpeg" />
+      </>
+    )}
+    <meta property="og:image:secure_url" content={socialImage} />
     <meta property="og:image:alt" content={imageAlt} />
     <meta property="og:locale" content={lang === "de" ? "de_AT" : "en_US"} />
     <meta property="og:locale:alternate" content={lang === "de" ? "en_US" : "de_AT"} />
