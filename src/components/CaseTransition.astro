@@ -173,7 +173,22 @@
   let safetyTimer = 0;
 
   const normalize = (value: string) => new URL(value, location.href).href;
-  const kindFromHref = (href: string): CaseKind => new URL(href, location.href).pathname.includes("fidic") ? "fidic" : "bridge";
+  // There are exactly two of these scenes, one drawn for each project. This used
+  // to answer "bridge" for every path that was not fidic, which meant any link
+  // routed through here — a third case, anything added later — silently played
+  // Bridge Consult's animation. It answers null for anything it has no scene
+  // for, and every caller now checks before intercepting the click.
+  const kindFromHref = (href: string): CaseKind | null => {
+    const path = new URL(href, location.href).pathname;
+    if (path.includes("fidic")) return "fidic";
+    if (path.includes("bridge-consult")) return "bridge";
+    return null;
+  };
+
+  // The call sites below only run on a page that already declared itself a case
+  // page, which after the gating above means bridge or fidic. The fallback is
+  // there so a null can never reach the scene code, not because it is expected.
+  const kindHere = (): CaseKind => kindFromHref(location.href) ?? "bridge";
 
   const originMatches = () => {
     const origin = sessionStorage.getItem("rb-case-origin");
@@ -652,7 +667,7 @@
     if (!sessionStorage.getItem("rb-case-origin") && history.state.rbCaseOrigin) {
       sessionStorage.setItem("rb-case-origin", history.state.rbCaseOrigin);
       sessionStorage.setItem("rb-case-scroll", String(history.state.rbCaseScroll || 0));
-      sessionStorage.setItem("rb-case-kind", history.state.rbCaseKind || kindFromHref(location.href));
+      sessionStorage.setItem("rb-case-kind", history.state.rbCaseKind || kindHere());
     }
   }
 
@@ -703,7 +718,7 @@
 
   function exitTo(href: string) {
     if (!casePage || running) return;
-    const kind = kindFromHref(location.href);
+    const kind = kindHere();
     sessionStorage.removeItem("rb-case-arrive");
     sessionStorage.removeItem("rb-case-return");
     // Touch: no WebGL exit scene — navigate straight, it can't freeze on iOS.
@@ -724,7 +739,7 @@
     if (!casePage || running) return;
     const origin = sessionStorage.getItem("rb-case-origin");
     if (!origin) { location.assign("/#work"); return; }
-    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
+    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindHere();
     sessionStorage.removeItem("rb-case-arrive");
     // Touch: skip the WebGL reverse scene entirely — plain instant navigation,
     // no arrival overlay, nothing that can stall and stick on iOS. Desktop keeps
@@ -774,8 +789,13 @@
     if (!link) return;
     const url = new URL(link.href, location.href);
     if (url.origin !== location.origin) return;
+    // No scene for this destination: leave the click alone so it takes the
+    // ordinary page transition rather than borrowing one that belongs to a
+    // different project.
+    const kind = kindFromHref(url.href);
+    if (!kind) return;
     event.preventDefault();
-    navigate({ href: url.href, kind: kindFromHref(url.href), title: link.textContent || undefined });
+    navigate({ href: url.href, kind, title: link.textContent || undefined });
   });
 
   {
@@ -801,7 +821,7 @@
       document.documentElement.classList.remove("rb-case-arriving");
     } else if (casePage && navigationType?.type === "back_forward" && history.state?.rbCaseEntry) {
       restoreCaseEntry();
-      const kind = (history.state.rbCaseKind as CaseKind) || kindFromHref(location.href);
+      const kind = (history.state.rbCaseKind as CaseKind) || kindHere();
       revealPage(kind);
       armCaseHistory(kind);
     }
@@ -811,7 +831,7 @@
     if (!casePage || completingBack || !sessionStorage.getItem("rb-case-origin")) return;
     completingBack = true;
     const origin = sessionStorage.getItem("rb-case-origin")!;
-    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindFromHref(location.href);
+    const kind = (sessionStorage.getItem("rb-case-kind") as CaseKind) || kindHere();
     // Touch: never play the WebGL reverse scene on a back — it stalls and sticks
     // on iOS. Reset any overlay and complete the back cleanly.
     if (lowPower) {
@@ -859,7 +879,7 @@
       // (an overlay reveal can stall and stick on iOS).
       if (lowPower) return;
       restoreCaseEntry();
-      const kind = (history.state?.rbCaseKind as CaseKind) || kindFromHref(location.href);
+      const kind = (history.state?.rbCaseKind as CaseKind) || kindHere();
       revealPage(kind);
       armCaseHistory(kind);
       return;

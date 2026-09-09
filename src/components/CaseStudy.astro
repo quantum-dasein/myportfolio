@@ -15,6 +15,7 @@ interface Props { id: CaseId }
 const { id } = Astro.props;
 const config = cases[id];
 const { image, nextHref, liveUrl, stack, year, impact, chapters = {}, specimen, seo } = config;
+const nextId = (Object.values(cases).find((item) => `/work/${item.slug}` === nextHref)?.id ?? "bridge") as CaseId;
 const liveHost = liveUrl ? new URL(liveUrl).hostname.replace(/^www\./, "") : "";
 const t = useTranslations();
 const tk = (key: string) => t(key as UIKey);
@@ -115,14 +116,19 @@ const caseSchema = {
   structuredData={caseSchema}
   theme={id === "bridge" || id === "fidic" ? id : undefined}
 >
-  <article class="case" data-case-page>
+  {/* Only the two projects the warp was drawn for announce themselves to the
+      transition system. Without this the Academy case was a "case page" too,
+      and since the transition only knows bridge and fidic it played Bridge
+      Consult's animation for a project that is not Bridge Consult — going in
+      and coming back. */}
+  <article class="case" data-case-page={config.warp ? true : undefined}>
     <section class="case-hero">
       <div class="case-bg" aria-hidden="true">
         <img src={image} alt="" />
       </div>
 
       <div class="u-container case-hero-inner">
-        <a class="back-link" href="/#work" data-case-back data-i18n="case.back" data-magnetic>{t("case.back")}</a>
+        <a class="back-link" href="/#work" data-case-back={config.warp ? true : undefined} data-i18n="case.back" data-magnetic>{t("case.back")}</a>
 
         <div class="case-title-wrap">
           <span class="case-kicker" data-i18n={key("kicker")}>
@@ -454,7 +460,7 @@ const caseSchema = {
             <span class="ui-arrow" aria-hidden="true"></span>
           </a>
         )}
-        <a class="case-button" href={nextHref} data-case-link data-magnetic>
+        <a class="case-button" href={nextHref} data-case-link={cases[nextId].warp ? true : undefined} data-magnetic>
           <span data-i18n="case.next">{t("case.next")}</span>
           <span aria-hidden="true">-></span>
         </a>

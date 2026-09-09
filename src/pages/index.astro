@@ -38,6 +38,10 @@ const edu = [1, 2, 3].map((n) => ({
   period: `edu.${n}.period`,
 }));
 
+// `warp` marks the two projects the bespoke WebGL departure was drawn for.
+// Everything else navigates with the ordinary page transition: the warp only
+// knows "bridge" and "fidic", so a third case handed to it silently played
+// Bridge Consult's animation for a project that is not Bridge Consult.
 const selectedWork = [
   {
     title: "work.1.title",
@@ -47,6 +51,7 @@ const selectedWork = [
     text: "work.1.text",
     img: "/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp",
     href: "/work/bridge-consult",
+    warp: true,
   },
   {
     title: "work.2.title",
@@ -56,6 +61,7 @@ const selectedWork = [
     text: "work.2.text",
     img: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp",
     href: "/work/fidic",
+    warp: true,
   },
   // Third on purpose, and small on purpose. Two studies about multilingual
   // platforms tell a business that needs five pages it is the wrong size of
@@ -68,6 +74,7 @@ const selectedWork = [
     text: "work.3.text",
     img: "/cases/rodion-belousov-bridge-consult-academy-one-page-course-landing.webp",
     href: "/work/academy",
+    warp: false,
   },
 ];
 ---
@@ -243,7 +250,7 @@ const selectedWork = [
                   href={work.href}
                   target={work.href.startsWith("http") ? "_blank" : undefined}
                   rel={work.href.startsWith("http") ? "noopener" : undefined}
-                  data-case-link={!work.href.startsWith("http") ? true : undefined}
+                  data-case-link={work.warp ? true : undefined}
                   data-cursor="OPEN"
                 >
                   <figure>

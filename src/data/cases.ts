@@ -58,6 +58,12 @@ export interface CaseConfig {
   impact?: CaseImpact;
   /** The long-form chapters that only the two platform cases have. */
   chapters?: Partial<Record<"systemMap" | "buildSystem" | "platform" | "data" | "runtime" | "perf", true>>;
+  /** The bespoke WebGL departure and return, and there are exactly two of them:
+   *  one drawn for Bridge Consult and one for FIDIC. A case without this uses
+   *  the ordinary page transition every other page on the site uses. It must
+   *  never fall back to one of the two — borrowing Bridge's animation for a
+   *  different project is what this field exists to prevent. */
+  warp?: "bridge" | "fidic";
 }
 
 export const cases: Record<CaseId, CaseConfig> = {
@@ -101,6 +107,7 @@ export const cases: Record<CaseId, CaseConfig> = {
       ],
     },
     chapters: { systemMap: true, buildSystem: true },
+    warp: "bridge",
   },
 
   fidic: {
@@ -136,6 +143,7 @@ export const cases: Record<CaseId, CaseConfig> = {
       ],
     },
     chapters: { platform: true, data: true, runtime: true, perf: true },
+    warp: "fidic",
   },
 
   // The small one, and the reason the template had to be generalised. Two case
