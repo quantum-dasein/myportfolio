@@ -131,23 +131,28 @@ export function setupProcessMotion(root: HTMLElement) {
         drawEnergy();
       };
       gsap.set([...scrubbed, ...fronts], { strokeDasharray: "1000", strokeDashoffset: 1000 });
-      gsap.set(".pv-step", { opacity: 0, y: 7 });
-      gsap.set(".pv-step > span", { opacity: .75 });
-      gsap.set(".pv-caption", { opacity: 0, y: 8 });
-      gsap.set(".pv-message", { opacity: .28, scale: .995 });
-      gsap.set(".pv-sheet", { opacity: .24, y: 5, scale: .995 });
-      gsap.set(".pv-browser", { opacity: .26, y: 4 });
+      // The complete composition is present from the first frame. Scroll moves
+      // the light and focus through it instead of making cards pop in like a UI
+      // loading sequence.
+      gsap.set(".pv-step", { opacity: .38, y: 4 });
+      gsap.set(".pv-step > span", { opacity: .68 });
+      gsap.set(".pv-caption", { opacity: .34, y: 4 });
+      gsap.set(".pv-message", { opacity: .58, scale: .998 });
+      gsap.set(".pv-sheet", { opacity: .5, y: 3, scale: .998 });
+      gsap.set(".pv-browser", { opacity: .48, y: 3 });
       gsap.set(glyphs, { opacity: 0 });
       gsap.set(".pv-check", { "--check-glow": 0 });
-      gsap.set(".pv-row", { opacity: .68, y: 6 });
-      gsap.set(".pv-row-copy i", { scaleX: 0 });
-      gsap.set(".pv-row-icon", { opacity: .4 });
+      gsap.set(".pv-row", { opacity: .74, y: 3 });
+      gsap.set(".pv-row-copy i", { scaleX: .34 });
+      gsap.set(".pv-row-icon", { opacity: .55 });
       gsap.set(".pv-check-ring, .pv-check-mark", { strokeDashoffset: 1 });
       gsap.set(".pv-frame rect", { strokeDashoffset: 1 });
-      gsap.set(".pv-chrome, .pv-nav, .pv-live, .pv-site-kicker, .pv-site-hero > p, .pv-site-link, .pv-sphere, .pv-projects > div, .pv-terminus", { opacity: 0 });
-      gsap.set(".pv-projects > div", { y: 5 });
-      gsap.set(".pv-site-hero > p", { y: 4 });
-      gsap.set(".pv-sphere", { scale: .98 });
+      gsap.set(".pv-chrome, .pv-nav, .pv-live, .pv-site-kicker", { opacity: .28 });
+      gsap.set(".pv-site-hero > p, .pv-site-link", { opacity: .24 });
+      gsap.set(".pv-sphere", { opacity: .3, scale: .992 });
+      gsap.set(".pv-projects > div", { opacity: .22, y: 3 });
+      gsap.set(".pv-terminus", { opacity: 0 });
+      gsap.set(".pv-site-hero > p", { y: 2 });
 
       const render = () => {
           if (lastTyped !== clock.typed) {
@@ -176,74 +181,70 @@ export function setupProcessMotion(root: HTMLElement) {
           const complete = timeline.progress() > .985;
           if (complete !== lastComplete) { root.classList.toggle("is-complete", complete); lastComplete = complete; }
       };
-      const timeline = gsap.timeline({ paused: true, defaults: { ease: "power2.out" }, onUpdate: render });
+      const timeline = gsap.timeline({ paused: true, defaults: { ease: "sine.inOut" }, onUpdate: render });
       timeline.to(clock, { end: 1, duration: 100, ease: "none" }, 0)
-        .to(".pv-write .pv-step", { opacity: 1, y: 0, duration: 6 }, 0)
-        .to(".pv-write .pv-step > span", { opacity: 1, duration: 5 }, 0)
-        .to(".pv-message", { opacity: 1, scale: 1, duration: 8 }, 1)
-        .set(".pv-type-ink", { "--caret": 1 }, 5)
-        .to(clock, { typed: glyphs.length, duration: 13, ease: "none" }, 4)
-        .to(".pv-type-ink", { "--caret": 0, duration: .5, repeat: 3, yoyo: true }, 15)
-        .set(".pv-type-ink", { "--caret": 0 }, 18)
-        .to(".pv-send", { scale: .985, boxShadow: "0 0 16px #d5e6ff44", duration: 3 }, 16)
-        .to(".pv-send", { scale: 1, duration: 4 }, 19)
-        .fromTo(".pv-shockwave", { scale: 1, opacity: .3 }, { scale: 1.65, opacity: 0, duration: 8, immediateRender: false }, 18)
-        .to(".pv-write .pv-caption", { opacity: 1, y: 0, duration: 5 }, 17)
-        .to(traveller, { opacity: 1, duration: 1 }, 19)
-        .to(clock, { energy: 1, duration: 9, ease: "power1.inOut" }, 19)
-        .to(traveller, { opacity: 0, duration: 2 }, 27)
-        .to(".pv-write .pv-step > span", { opacity: .82, duration: 9 }, 26)
-        .to(".pv-scope .pv-step", { opacity: 1, y: 0, duration: 5 }, 25)
-        .to(".pv-scope .pv-step > span", { opacity: 1, duration: 5 }, 25)
-        .to(".pv-sheet", { opacity: 1, scale: 1, y: 0, duration: 9 }, 25)
-        .fromTo(".pv-sheet", { "--reflection": .1 }, { "--reflection": .55, duration: 6, immediateRender: false }, 27);
+        .to(".pv-write .pv-step", { opacity: 1, y: 0, duration: 11 }, 0)
+        .to(".pv-write .pv-step > span", { opacity: 1, duration: 11 }, 0)
+        .to(".pv-message", { opacity: 1, scale: 1, duration: 14 }, 0)
+        .set(".pv-type-ink", { "--caret": 1 }, 4)
+        .to(clock, { typed: glyphs.length, duration: 15, ease: "none" }, 4)
+        .to(".pv-type-ink", { "--caret": 0, duration: .7, repeat: 1, yoyo: true }, 17)
+        .set(".pv-type-ink", { "--caret": 0 }, 19)
+        .to(".pv-send", { scale: .99, boxShadow: "0 0 14px #d5e6ff36", duration: 5 }, 15)
+        .to(".pv-send", { scale: 1, boxShadow: "0 0 13px #b0c6e333", duration: 7 }, 20)
+        .fromTo(".pv-shockwave", { scale: 1, opacity: .22 }, { scale: 1.5, opacity: 0, duration: 11, ease: "sine.out", immediateRender: false }, 18)
+        .to(".pv-write .pv-caption", { opacity: 1, y: 0, duration: 10 }, 15)
+        .to(traveller, { opacity: 1, duration: 3 }, 18)
+        .to(clock, { energy: 1, duration: 13, ease: "sine.inOut" }, 18)
+        .to(traveller, { opacity: 0, duration: 3 }, 29)
+        .to(".pv-write .pv-step > span", { opacity: .72, duration: 13 }, 25)
+        .to(".pv-scope .pv-step", { opacity: 1, y: 0, duration: 12 }, 23)
+        .to(".pv-scope .pv-step > span", { opacity: 1, duration: 12 }, 23)
+        .to(".pv-sheet", { opacity: 1, scale: 1, y: 0, duration: 16 }, 22)
+        .fromTo(".pv-sheet", { "--reflection": .08 }, { "--reflection": .48, duration: 14, ease: "sine.inOut", immediateRender: false }, 23);
 
       qa(".pv-row").forEach((row, index) => {
-        const at = 33 + index * 8;
-        timeline.to(row, { opacity: 1, y: 0, duration: 5 }, at)
-          .fromTo(row, { "--row-sheen": "-110%" }, { "--row-sheen": "110%", duration: 6, immediateRender: false }, at)
-          .to(row.querySelectorAll(".pv-row-copy i"), { scaleX: 1, duration: 3.5, stagger: .6 }, at + 1)
-          .to(row.querySelector(".pv-row-icon"), { opacity: 1, duration: 3 }, at + 2)
-          .to(row.querySelector(".pv-check-ring"), { strokeDashoffset: 0, duration: 3, ease: "none" }, at + 3)
-          .to(row.querySelector(".pv-check-mark"), { strokeDashoffset: 0, duration: 3, ease: "none" }, at + 5)
-          .to(row.querySelector(".pv-check"), { "--check-glow": 1, duration: 5 }, at + 5);
+        const at = 31 + index * 8;
+        timeline.to(row, { opacity: 1, y: 0, duration: 10 }, at)
+          .fromTo(row, { "--row-sheen": "-110%" }, { "--row-sheen": "110%", duration: 11, ease: "sine.inOut", immediateRender: false }, at)
+          .to(row.querySelectorAll(".pv-row-copy i"), { scaleX: 1, duration: 7, stagger: .45 }, at + 1)
+          .to(row.querySelector(".pv-row-icon"), { opacity: 1, duration: 7 }, at + 1)
+          .to(row.querySelector(".pv-check-ring"), { strokeDashoffset: 0, duration: 6, ease: "sine.inOut" }, at + 2)
+          .to(row.querySelector(".pv-check-mark"), { strokeDashoffset: 0, duration: 5, ease: "sine.inOut" }, at + 5)
+          .to(row.querySelector(".pv-check"), { "--check-glow": .72, duration: 8 }, at + 5);
       });
-      timeline.to(".pv-sheet", { "--reflection": .25, duration: 3 }, 55)
-        .to(".pv-sheet", { "--reflection": .6, duration: 4, repeat: 1, yoyo: true }, 56)
-        .to(".pv-scope .pv-caption", { opacity: 1, y: 0, duration: 4 }, 56)
-        .to(traveller, { opacity: 1, duration: 1 }, 61)
-        .to(clock, { energy: 2, duration: 9, ease: "power1.inOut" }, 61)
-        .to(traveller, { opacity: 0, duration: 2 }, 69)
-        .to(".pv-scope .pv-step > span", { opacity: .82, duration: 10 }, 64)
-        .to(".pv-launch .pv-step", { opacity: 1, y: 0, duration: 5 }, 67)
-        .to(".pv-launch .pv-step > span", { opacity: 1, duration: 5 }, 67)
-        .to(".pv-browser", { opacity: 1, y: 0, duration: 8 }, 67)
-        .to(".pv-frame rect", { strokeDashoffset: 0, duration: 7, ease: "power1.inOut" }, 69)
-        .to(".pv-chrome, .pv-nav", { opacity: 1, duration: 6, stagger: 1 }, 71)
-        .to(".pv-live", { opacity: 1, duration: 5 }, 75)
-        .to(".pv-site-kicker", { opacity: 1, duration: 5 }, 73)
-        .to(".pv-site-hero > p", { opacity: 1, y: 0, duration: 7 }, 74)
-        .to(".pv-site-link", { opacity: 1, duration: 5 }, 79)
-        .to(".pv-sphere", { opacity: 1, scale: 1, duration: 9 }, 73)
-        .to(".pv-projects > div", { opacity: 1, y: 0, duration: 6, stagger: 2 }, 80)
-        .to(".pv-launch .pv-caption", { opacity: 1, y: 0, duration: 4 }, 91)
-        .to(traveller, { opacity: 1, duration: 1 }, 93)
-        .to(clock, { energy: 3, duration: 5, ease: "power1.inOut" }, 93)
-        .to(".pv-terminus", { opacity: 1, duration: 3 }, 96)
-        .to(traveller, { opacity: 0, duration: 1 }, 99);
+      timeline.to(".pv-sheet", { "--reflection": .24, duration: 10 }, 52)
+        .to(".pv-sheet", { "--reflection": .52, duration: 8, repeat: 1, yoyo: true, ease: "sine.inOut" }, 54)
+        .to(".pv-scope .pv-caption", { opacity: 1, y: 0, duration: 10 }, 52)
+        .to(traveller, { opacity: 1, duration: 3 }, 58)
+        .to(clock, { energy: 2, duration: 14, ease: "sine.inOut" }, 58)
+        .to(traveller, { opacity: 0, duration: 3 }, 70)
+        .to(".pv-scope .pv-step > span", { opacity: .72, duration: 14 }, 61)
+        .to(".pv-launch .pv-step", { opacity: 1, y: 0, duration: 13 }, 64)
+        .to(".pv-launch .pv-step > span", { opacity: 1, duration: 13 }, 64)
+        .to(".pv-browser", { opacity: 1, y: 0, duration: 17 }, 62)
+        .to(".pv-frame rect", { strokeDashoffset: 0, duration: 14, ease: "sine.inOut" }, 64)
+        .to(".pv-chrome, .pv-nav, .pv-live, .pv-site-kicker", { opacity: 1, duration: 12, stagger: .35 }, 66)
+        .to(".pv-site-hero > p, .pv-site-link", { opacity: 1, y: 0, duration: 14, stagger: .5 }, 68)
+        .to(".pv-sphere", { opacity: 1, scale: 1, duration: 17 }, 65)
+        .to(".pv-projects > div", { opacity: 1, y: 0, duration: 13, stagger: .7 }, 72)
+        .to(".pv-launch .pv-caption", { opacity: 1, y: 0, duration: 10 }, 86)
+        .to(traveller, { opacity: 1, duration: 3 }, 90)
+        .to(clock, { energy: 3, duration: 10, ease: "sine.inOut" }, 90)
+        .to(".pv-terminus", { opacity: 1, duration: 6 }, 94)
+        .to(traveller, { opacity: 0, duration: 2 }, 99);
 
       root.addEventListener("pv:geometry", measure);
       measure();
       let initialized = false;
-      // Lenis already smooths the desktop wheel, while touch devices provide
-      // native momentum. Binding the narrative directly avoids a second
-      // animation loop that used to chase the scroll position and look laggy.
+      // One short, bounded scrub softens wheel/touch steps without bringing back
+      // the long custom chase loop that made the section feel delayed.
       ScrollTrigger.create({
         animation: timeline,
         trigger: root,
         start: "top 82%",
         end: "bottom 82%",
-        scrub: true,
+        scrub: desktop.matches ? .16 : .28,
         onRefresh: (trigger) => {
           cancelAnimationFrame(refreshFrame);
           refreshFrame = requestAnimationFrame(() => {
