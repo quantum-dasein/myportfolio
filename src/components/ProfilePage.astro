@@ -137,16 +137,12 @@ const breadcrumbs = {
         <div class="pf-body">
           <h2 id="scope-title" data-sy-reveal="words">{c("What do you actually need?", "Was brauchen Sie wirklich?")}</h2>
           <p class="pf-sub" data-reveal>{c(
-            "Pick the size of the job. No form, no call required to see this.",
-            "Wählen Sie die Größe des Projekts. Kein Formular, kein Gespräch nötig, um das zu sehen.",
+            "Pick the size of the job and see the shape of it — how long, from how much, what you end up with. The full breakdown of any one of them is a click away.",
+            "Wählen Sie die Größe des Projekts und sehen Sie, worauf es hinausläuft — wie lange, ab wie viel, was am Ende steht. Die vollen Leistungen sind einen Klick entfernt.",
           )}</p>
 
-          <ScopePicker lang={lang} />
+          <ScopePicker lang={lang} variant="compact" />
 
-          <p class="pf-note" data-reveal>{c(
-            "Not on the list, or you are not sure which one it is? Write anyway — describing it badly is fine, sorting it out is my job.",
-            "Nicht auf der Liste, oder unsicher, was davon zutrifft? Schreiben Sie trotzdem — es unbeholfen zu beschreiben ist völlig in Ordnung, das Sortieren ist mein Job.",
-          )}</p>
         </div>
       </section>
       </article>

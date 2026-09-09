@@ -47,7 +47,11 @@ const previews = [
     <div class="pv-node pv-scope">
       <div class="pv-step"><span aria-hidden="true">{steps[1].n}</span><h3>{steps[1].label.toLowerCase()}</h3></div>
       <div class="pv-sheet pv-glass" data-flow-object="scope">
-        <div class="pv-sheet-heading"><span>RB / {c("PROJECT BRIEF", "PROJEKTBRIEFING")}</span><span>02</span></div>
+        {/* The right-hand slot names whatever the visitor picked in the scope
+            selector above, so the briefing in this scene is about their job
+            rather than a generic one. It holds the step number until a choice
+            is made, and on any page without a picker it simply stays that. */}
+        <div class="pv-sheet-heading"><span>RB / {c("PROJECT BRIEF", "PROJEKTBRIEFING")}</span><span data-pv-brief>02</span></div>
         {rows.map((row, i) => <div class="pv-row">
           <svg class="pv-row-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
             {i === 0 ? <><path d="M6 3h11l5 5v17H6Z M17 3v6h5 M10 13h8 M10 17h8 M10 21h5"/></> : i === 1 ? <><ellipse cx="14" cy="6" rx="9" ry="4"/><path d="M5 6v15c0 5 18 5 18 0V6 M5 11c0 5 18 5 18 0 M5 16c0 5 18 5 18 0"/></> : <><rect x="4" y="6" width="20" height="18" rx="2"/><path d="M4 12h20 M9 3v6 M19 3v6 M9 17h3 M16 17h3 M9 21h3"/></>}
@@ -346,12 +350,22 @@ const previews = [
       const resize = new ResizeObserver(schedule);
       resize.observe(stage);
       objects.forEach((el) => resize.observe(el));
+      // `rb:scope` is raised by the scope picker further up the page and carries
+      // the label of the chosen job. Only this one small field reacts to it —
+      // the scene stays one story, not six.
+      const brief = root.querySelector<HTMLElement>("[data-pv-brief]");
+      const onScope = (event: Event) => {
+        const detail = (event as CustomEvent<{ label?: string }>).detail;
+        if (brief && detail?.label) brief.textContent = detail.label.toUpperCase();
+      };
+      addEventListener("rb:scope", onScope);
+
       const visibility = new IntersectionObserver(([entry]) => root.classList.toggle("is-visible", entry.isIntersecting), { rootMargin: "80px" });
       visibility.observe(stage);
       draw();
       const disposeMotion = setupProcessMotion(root);
       document.fonts.ready.then(schedule);
-      document.addEventListener("astro:before-swap", () => { disposeMotion(); resize.disconnect(); visibility.disconnect(); cancelAnimationFrame(frame); }, { once: true });
+      document.addEventListener("astro:before-swap", () => { disposeMotion(); resize.disconnect(); visibility.disconnect(); removeEventListener("rb:scope", onScope); cancelAnimationFrame(frame); }, { once: true });
     });
   }
   initProcessFlow();

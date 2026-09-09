@@ -14,8 +14,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { scopes, pickScope, type ScopeLang } from "../data/scopes";
 
-interface Props { lang?: ScopeLang }
-const { lang = "en" } = Astro.props;
+interface Props {
+  lang?: ScopeLang;
+  /** `full` is the commercial page: everything a quote is made of. `compact` is
+   *  the profile page, where the same six choices and the same reacting lattice
+   *  belong to the storytelling, but the breakdown does not — that would be a
+   *  second services page with the same text on a different URL. Compact shows
+   *  the timeline, the price and one line of outcome, then hands the visitor to
+   *  /services with the choice already carried in the URL. */
+  variant?: "full" | "compact";
+}
+const { lang = "en", variant = "full" } = Astro.props;
+const full = variant === "full";
 const p = <T,>(value: { en: T; de: T }): T => pickScope(value, lang);
 // /services renders in English and is swapped to German in place by the client
 // controller, which only knows how to translate nodes carrying `data-i18n` —
@@ -26,7 +36,7 @@ const p = <T,>(value: { en: T; de: T }): T => pickScope(value, lang);
 const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "data-loc-de": value.de });
 ---
 
-  <div class="sc" data-scope-picker>
+  <div class:list={["sc", `sc--${variant}`]} data-scope-picker data-scope-variant={variant}>
     <!-- The rail is the argument in one line: these six sit on one
          continuum from a couple of days to a couple of months, and the
          marker says where the visitor's job falls on it. "Any
@@ -91,13 +101,22 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
             </div>
           </div>
 
-          <ul class="sc-gets">
-            {s.gets.map((g) => <li {...loc(g)}>{p(g)}</li>)}
-          </ul>
+          {full ? (
+            <ul class="sc-gets">
+              {s.gets.map((g) => <li {...loc(g)}>{p(g)}</li>)}
+            </ul>
+          ) : (
+            <p class="sc-outcome">
+              <span {...loc({ en: "Result", de: "Ergebnis" })}>{p({ en: "Result", de: "Ergebnis" })}</span>
+              <strong {...loc(s.outcome)}>{p(s.outcome)}</strong>
+            </p>
+          )}
 
-          <p class="sc-needs"><span {...loc({ en: "What I need from you", de: "Was ich von Ihnen brauche" })}>{p({ en: "What I need from you", de: "Was ich von Ihnen brauche" })}</span><span {...loc(s.needs)}>{p(s.needs)}</span></p>
+          {full && (
+            <p class="sc-needs"><span {...loc({ en: "What I need from you", de: "Was ich von Ihnen brauche" })}>{p({ en: "What I need from you", de: "Was ich von Ihnen brauche" })}</span><span {...loc(s.needs)}>{p(s.needs)}</span></p>
+          )}
 
-          {s.proof && (
+          {full && s.proof && (
             <a
               class="sc-proof"
               href={typeof s.proof.href === "string" ? s.proof.href : p(s.proof.href)}
@@ -110,6 +129,13 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
         </div>
       ))}
     </div>
+
+    {!full && (
+      <a class="sc-more" href="/services#scope" data-scope-more data-cursor="OPEN" data-magnetic>
+        <span {...loc({ en: "See scope and pricing", de: "Leistungen & Umfang ansehen" })}>{p({ en: "See scope and pricing", de: "Leistungen & Umfang ansehen" })}</span>
+        <i class="ui-arrow" aria-hidden="true"></i>
+      </a>
+    )}
   </div>
 
 <style>
@@ -232,6 +258,46 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
     text-transform: uppercase;
     color: rgba(var(--rgb-text), 0.42);
   }
+
+  /* ── Compact view ───────────────────────────────────────────────────────
+     Same six choices, same lattice reacting behind them; what it drops is the
+     breakdown, which belongs on the page that sells. */
+  .sc-outcome {
+    display: grid;
+    gap: 0.45rem;
+    /* The headline above already carries a bottom rule; a border here as well
+       drew two hairlines a few pixels apart. */
+    margin: 1.4rem 0 0;
+  }
+  .sc-outcome > span {
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+  .sc-outcome > strong {
+    max-width: 46ch;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+    line-height: 1.3;
+  }
+
+  .sc-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.6rem;
+    padding: 0.9rem 1.5rem;
+    border: 1px solid rgba(var(--rgb-text), 0.32);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+  .sc-more:hover { border-color: rgba(var(--rgb-text), 0.7); background: rgba(var(--rgb-text), 0.06); }
 
   .sc-panels { margin-top: 1.1rem; }
   .sc-panel {
@@ -376,14 +442,19 @@ if (picker) {
       if (on) {
         if (focus) tab.focus();
         const ratio = Number(tab.dataset.field);
+        // `rb:scope` is the lattice's signal and carries the share to light; it
+        // now also names the scope, so the process scene further down the page
+        // can label its briefing with what the visitor actually picked.
+        const label = tab.querySelector<HTMLElement>(".sc-tab-label")?.textContent?.trim() || id;
         if (Number.isFinite(ratio)) {
-          dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+          dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio, id, label } }));
         }
       }
     });
     panels.forEach((panel) => {
       panel.hidden = panel.dataset.scopePanel !== id;
     });
+    picker.dispatchEvent(new CustomEvent("rb:scopechange", { detail: { id } }));
   };
 
   tabs.forEach((tab) => {
@@ -440,6 +511,40 @@ if (picker) {
     });
   };
   applyLang(document.documentElement.lang.startsWith("de") ? "de" : "en");
+
+  // Carrying the choice between the two pages. On the profile page the CTA's
+  // href follows the selection, so arriving on /services opens on the same
+  // scope; on /services the parameter is read once on load and then kept in
+  // step with `replaceState`, which leaves the back button alone.
+  const isFull = picker.dataset.scopeVariant !== "compact";
+  const more = picker.querySelector<HTMLAnchorElement>("[data-scope-more]");
+
+  const currentId = () => picker.querySelector<HTMLElement>("[data-scope-tab][aria-selected='true']")?.dataset.scopeTab || "";
+
+  const syncHandoff = () => {
+    const id = currentId();
+    if (!id) return;
+    if (more) {
+      more.setAttribute("href", `/services?project=${encodeURIComponent(id)}#scope`);
+      return;
+    }
+    if (!isFull) return;
+    const url = new URL(location.href);
+    url.searchParams.set("project", id);
+    history.replaceState(history.state, "", `${url.pathname}${url.search}${location.hash}`);
+  };
+
+  // Read the incoming choice BEFORE the first sync. Syncing first wrote the
+  // default back into the URL and then read its own value, so arriving from the
+  // profile page always landed on the first scope whatever had been picked.
+  if (isFull) {
+    const wanted = new URLSearchParams(location.search).get("project");
+    // An unknown or missing value falls back to whatever is already selected,
+    // so a stale or hand-edited link never lands on an empty panel.
+    if (wanted && picker.querySelector(`[data-scope-tab="${CSS.escape(wanted)}"]`)) select(wanted);
+  }
+  picker.addEventListener("rb:scopechange", syncHandoff);
+  syncHandoff();
   addEventListener("rb:langchange", (event) => {
     applyLang((event as CustomEvent<{ lang: string }>).detail.lang);
   });

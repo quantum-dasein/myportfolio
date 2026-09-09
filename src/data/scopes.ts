@@ -32,6 +32,10 @@ export interface Scope {
   /** Share of the lattice this scope lights, 0–1. */
   field: number;
   price?: Localized;
+  /** One line naming what the client ends up with. The compact picker on the
+   *  profile page shows this instead of the full deliverables list — enough to
+   *  make the choice mean something, not enough to be a second services page. */
+  outcome: Localized;
   gets: Localized[];
   needs: Localized;
   proof?: { text: Localized; href: Localized | string };
@@ -41,6 +45,7 @@ export const scopes: Scope[] = [
   {
     id: "landing",
     price: priceOf("landing"),
+    outcome: copy("One focused page, live and measurable.", "Eine fokussierte Seite, live und messbar."),
     label: copy("Landing page", "Landingpage"),
     size: copy("One page, one action", "Eine Seite, eine Handlung"),
     time: copy("2–4 days", "2–4 Tage"),
@@ -56,6 +61,7 @@ export const scopes: Scope[] = [
   {
     id: "site",
     price: priceOf("site"),
+    outcome: copy("A site that ranks for your own name and stays yours.", "Eine Website, die für Ihren Namen rankt — und Ihnen gehört."),
     label: copy("Business website", "Unternehmens-Website"),
     size: copy("5–10 pages", "5–10 Seiten"),
     time: copy("About a week", "Etwa eine Woche"),
@@ -72,6 +78,7 @@ export const scopes: Scope[] = [
   {
     id: "shop",
     price: priceOf("shop"),
+    outcome: copy("A checkout that works on a phone, VAT included.", "Ein Checkout, der am Handy funktioniert — USt inklusive."),
     label: copy("Online shop", "Online-Shop"),
     size: copy("Catalogue and checkout", "Katalog und Checkout"),
     time: copy("2–3 weeks", "2–3 Wochen"),
@@ -87,6 +94,7 @@ export const scopes: Scope[] = [
   {
     id: "seo",
     price: priceOf("seo"),
+    outcome: copy("The fixes made, not a PDF listing them.", "Die Fixes umgesetzt — kein PDF, das sie auflistet."),
     label: copy("SEO & content", "SEO & Content"),
     size: copy("On a site that already exists", "Für eine bestehende Website"),
     time: copy("First findings in 2 weeks", "Erste Ergebnisse in 2 Wochen"),
@@ -103,6 +111,7 @@ export const scopes: Scope[] = [
   {
     id: "platform",
     price: priceOf("platform"),
+    outcome: copy("A system your team can still run in year two.", "Ein System, das Ihr Team auch im zweiten Jahr bedient."),
     label: copy("Web app or platform", "Web-App oder Plattform"),
     size: copy("Live data, accounts, admin", "Live-Daten, Accounts, Verwaltung"),
     time: copy("From 4 weeks", "Ab 4 Wochen"),
@@ -119,6 +128,7 @@ export const scopes: Scope[] = [
   {
     id: "showreel",
     price: priceOf("showreel"),
+    outcome: copy("Real-time 3D that a mid-range phone survives.", "Echtzeit-3D, das ein Mittelklasse-Handy aushält."),
     label: copy("Showreel-grade build", "Showreel-Niveau"),
     size: copy("3D, WebGL, custom motion", "3D, WebGL, eigene Motion"),
     time: copy("From 3 weeks", "Ab 3 Wochen"),
