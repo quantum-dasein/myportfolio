@@ -429,8 +429,14 @@ export const ui = {
     "studio.cta.live": "Open the archive",
 
     "services.eyebrow": "Services & Research / Vienna",
-    "services.title": "Systems, not deliverables.",
-    "services.lead": "Most of the work is the first one: a clear site, quickly, at a price agreed up front. The other three are what the same person can do when a project needs more — and the research behind why any of it works.",
+    "services.title": "What it is, and what it costs.",
+    "services.lead": "Pick the size of the job below and you get the timeline and a starting price without filling in anything. Most of the work is the small end of that list — a clear site, quickly, at a price agreed up front. The rest is what the same person can do when a project needs more.",
+    "services.scope.label": "What you need",
+    "services.scope.title": "Six sizes of job, priced.",
+    "services.scope.lead": "Starting prices, not quotes: the real number is fixed within a day once the scope is clear. No form and no call needed to see this.",
+    "services.scope.note": "Not on the list, or not sure which one it is? Write anyway — describing it badly is fine, sorting it out is my job.",
+    "services.scope.cta": "Get a fixed price",
+    "services.disciplines.label": "The disciplines behind it",
 
     // ── /services hub: how the three disciplines combine, plus FAQ ──────────
     "services.how.label": "How it works together",
@@ -990,8 +996,14 @@ export const ui = {
     "studio.cta.live": "Archiv öffnen",
 
     "services.eyebrow": "Leistungen & Research / Wien",
-    "services.title": "Systeme, keine Deliverables.",
-    "services.lead": "Der größte Teil der Arbeit ist die erste Leistung: eine klare Website, schnell, zum vorab vereinbarten Preis. Die anderen drei sind das, was dieselbe Person kann, wenn ein Projekt mehr braucht — samt der Recherche dahinter.",
+    "services.title": "Was es ist — und was es kostet.",
+    "services.lead": "Wählen Sie unten die Größe des Projekts und Sie sehen Zeitrahmen und Startpreis, ohne irgendetwas auszufüllen. Der größte Teil der Arbeit ist das kleine Ende dieser Liste — eine klare Website, schnell, zum vorab vereinbarten Preis. Der Rest ist das, was dieselbe Person kann, wenn ein Projekt mehr braucht.",
+    "services.scope.label": "Was Sie brauchen",
+    "services.scope.title": "Sechs Projektgrößen, mit Preis.",
+    "services.scope.lead": "Startpreise, keine Angebote: Die echte Zahl steht binnen eines Tages fest, sobald der Umfang klar ist. Kein Formular, kein Gespräch nötig, um das zu sehen.",
+    "services.scope.note": "Nicht auf der Liste, oder unsicher, was zutrifft? Schreiben Sie trotzdem — es unbeholfen zu beschreiben ist völlig in Ordnung, das Sortieren ist mein Job.",
+    "services.scope.cta": "Festpreis anfragen",
+    "services.disciplines.label": "Die Disziplinen dahinter",
 
     // ── /services-Hub: wie die drei Disziplinen zusammenwirken, plus FAQ ────
     "services.how.label": "Wie es zusammenwirkt",

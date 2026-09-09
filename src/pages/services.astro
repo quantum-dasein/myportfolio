@@ -9,6 +9,7 @@
 //  without touching the route of this page. Back is always the wordmark → /.
 // ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../layouts/Layout.astro";
+import ScopePicker from "../components/ScopePicker.astro";
 import { useTranslations, type UIKey } from "../i18n/utils";
 
 const lang = "en";
@@ -83,10 +84,31 @@ const research = [1, 2, 3, 4].map((n) => ({
     </div>
   </section>
 
-  <!-- ── Services ─────────────────────────────────────────────────────────── -->
+  <!-- ── What you need, priced ────────────────────────────────────────────
+       This page is the one in the nav and the one a visitor opens to find out
+       what things cost. Until now the prices were on the Vienna profile page,
+       reachable only through a small link in the footer. Same component, same
+       table — see src/data/scopes.ts. -->
+  <section class="svc-section" id="scope">
+    <div class="u-container">
+      <span class="svc-idx">01 - <span data-i18n="services.scope.label">{t("services.scope.label")}</span></span>
+      <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.scope.title">{t("services.scope.title")}</h2>
+      <p class="svc-section-lead" data-reveal data-i18n="services.scope.lead">{t("services.scope.lead")}</p>
+
+      <ScopePicker lang="en" />
+
+      <p class="svc-scope-note" data-reveal data-i18n="services.scope.note">{t("services.scope.note")}</p>
+      <a class="svc-scope-cta" href="/contact" data-reveal data-cursor="OPEN" data-magnetic>
+        <span data-i18n="services.scope.cta">{t("services.scope.cta")}</span>
+        <i aria-hidden="true">→</i>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── Disciplines ──────────────────────────────────────────────────────── -->
   <section class="svc-section" id="services">
     <div class="u-container">
-      <span class="svc-idx">01 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+      <span class="svc-idx">02 - <span data-i18n="services.disciplines.label">{t("services.disciplines.label")}</span></span>
 
       <div class="cards">
         {
@@ -121,7 +143,7 @@ const research = [1, 2, 3, 4].map((n) => ({
   <!-- ── Research ─────────────────────────────────────────────────────────── -->
   <section class="svc-section" id="research">
     <div class="u-container">
-      <span class="svc-idx">02 - <span data-i18n="research.label">{t("research.label")}</span></span>
+      <span class="svc-idx">03 - <span data-i18n="research.label">{t("research.label")}</span></span>
       <h2 class="svc-h2" data-sy-reveal="words" data-i18n="research.title">
         {t("research.title")}
       </h2>
@@ -157,7 +179,7 @@ const research = [1, 2, 3, 4].map((n) => ({
   <!-- ── 03 How the three combine ──────────────────────────────────────── -->
   <section class="svc-section" id="how">
     <div class="u-container">
-      <span class="svc-idx">03 - <span data-i18n="services.how.label">{t("services.how.label")}</span></span>
+      <span class="svc-idx">04 - <span data-i18n="services.how.label">{t("services.how.label")}</span></span>
       <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.how.title">{t("services.how.title")}</h2>
       <p class="svc-section-lead" data-reveal data-i18n="services.how.lead">{t("services.how.lead")}</p>
 
@@ -180,7 +202,7 @@ const research = [1, 2, 3, 4].map((n) => ({
   <!-- ── 04 FAQ ───────────────────────────────────────────────────────────  -->
   <section class="svc-section" id="faq">
     <div class="u-container">
-      <span class="svc-idx">04 - <span data-i18n="services.faq.label">{t("services.faq.label")}</span></span>
+      <span class="svc-idx">05 - <span data-i18n="services.faq.label">{t("services.faq.label")}</span></span>
       <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.faq.title">{t("services.faq.title")}</h2>
 
       <div class="svc-faq">
@@ -289,6 +311,41 @@ const research = [1, 2, 3, 4].map((n) => ({
   }
 
   /* ── Service cards ─────────────────────────────────────────────────────── */
+  /* The site-wide sculpture sits exactly where the picker does, and a chrome
+     sphere behind six option cards makes them unreadable. Same opaque-surface
+     treatment /notes and /contact use, with the radial glow keeping the light
+     the backdrop was giving. */
+  #scope {
+    position: relative;
+    z-index: 1;
+    background:
+      radial-gradient(circle at 84% 8%, rgba(255, 255, 255, 0.07), transparent 32rem),
+      #030405;
+  }
+
+  .svc-scope-note {
+    max-width: 54ch;
+    margin: 2.4rem 0 0;
+    color: var(--color-text-alt);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  .svc-scope-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1.6rem;
+    padding: 0.95rem 1.7rem;
+    border-radius: 999px;
+    background: var(--color-text);
+    color: #0b0e12;
+    font-size: 0.76rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: opacity 0.25s ease;
+  }
+  .svc-scope-cta:hover { opacity: 0.86; }
+
   .cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

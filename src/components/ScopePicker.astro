@@ -1,0 +1,447 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ScopePicker — the six things someone can buy, with what each one costs.
+//
+//  It used to live inside ProfilePage.astro, which is why the services page —
+//  the one in the nav, the one a visitor opens to find out what things cost —
+//  had no prices on it at all, and the only route to them was a small link in
+//  the footer. Extracted so both pages render the same table.
+//
+//  Plain tablist semantics, arrow-key navigable, no framework: the selected tab
+//  IS the state, which is what `aria-selected` already means. Selecting a scope
+//  also announces `rb:scope` so the lattice behind it can light the matching
+//  share of itself.
+// ─────────────────────────────────────────────────────────────────────────────
+import { scopes, pickScope, type ScopeLang } from "../data/scopes";
+
+interface Props { lang?: ScopeLang }
+const { lang = "en" } = Astro.props;
+const p = <T,>(value: { en: T; de: T }): T => pickScope(value, lang);
+// /services renders in English and is swapped to German in place by the client
+// controller, which only knows how to translate nodes carrying `data-i18n` —
+// and these strings live in scopes.ts, not in the dictionary. So every
+// localized node ships both languages and the picker's own script flips them
+// on `rb:langchange`. On a hard-localized route (the Vienna profile pages)
+// nothing ever fires and the server-rendered language simply stays.
+const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "data-loc-de": value.de });
+---
+
+  <div class="sc" data-scope-picker>
+    <!-- The rail is the argument in one line: these six sit on one
+         continuum from a couple of days to a couple of months, and the
+         marker says where the visitor's job falls on it. "Any
+         complexity" is a claim; this is a picture of it. -->
+    <div class="sc-rail" aria-hidden="true">
+      <span class="sc-rail-line"></span>
+      <span class="sc-rail-fill" data-scope-fill></span>
+      {scopes.map((_, i) => (
+        <span class="sc-rail-tick" style={`--at:${(i / (scopes.length - 1)) * 100}%`}></span>
+      ))}
+      <span class="sc-rail-marker" data-scope-marker></span>
+    </div>
+    <div class="sc-rail-ends" aria-hidden="true">
+      <span {...loc({ en: "a few days", de: "wenige Tage" })}>{p({ en: "a few days", de: "wenige Tage" })}</span>
+      <span {...loc({ en: "a few months", de: "wenige Monate" })}>{p({ en: "a few months", de: "wenige Monate" })}</span>
+    </div>
+
+    <div class="sc-tabs" role="tablist" aria-label={p({ en: "Project size", de: "Projektgröße" })}>
+      {scopes.map((s, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`sc-tab-${s.id}`}
+          class="sc-tab"
+          data-scope-tab={s.id}
+          data-field={s.field}
+          aria-selected={i === 0 ? "true" : "false"}
+          aria-controls={`sc-panel-${s.id}`}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          <span class="sc-tab-n">{String(i + 1).padStart(2, "0")}</span>
+          <span class="sc-tab-label" {...loc(s.label)}>{p(s.label)}</span>
+          <span class="sc-tab-size" {...loc(s.size)}>{p(s.size)}</span>
+        </button>
+      ))}
+    </div>
+
+    <div class="sc-panels">
+      {scopes.map((s, i) => (
+        <div
+          class="sc-panel"
+          id={`sc-panel-${s.id}`}
+          role="tabpanel"
+          aria-labelledby={`sc-tab-${s.id}`}
+          data-scope-panel={s.id}
+          hidden={i !== 0}
+        >
+          <div class="sc-headline">
+            <div>
+              <span class="sc-key" {...loc({ en: "Timeline", de: "Zeitrahmen" })}>{p({ en: "Timeline", de: "Zeitrahmen" })}</span>
+              <strong class="sc-value" {...loc(s.time)}>{p(s.time)}</strong>
+            </div>
+            {p(s.price!) && (
+              <div>
+                <span class="sc-key" {...loc({ en: "From", de: "Ab" })}>{p({ en: "From", de: "Ab" })}</span>
+                <strong class="sc-value" {...loc(s.price!)}>{p(s.price!)}</strong>
+              </div>
+            )}
+            <div>
+              <span class="sc-key" {...loc({ en: "Reply", de: "Antwort" })}>{p({ en: "Reply", de: "Antwort" })}</span>
+              <strong class="sc-value" {...loc({ en: "Within a day", de: "Binnen eines Tages" })}>{p({ en: "Within a day", de: "Binnen eines Tages" })}</strong>
+            </div>
+          </div>
+
+          <ul class="sc-gets">
+            {s.gets.map((g) => <li {...loc(g)}>{p(g)}</li>)}
+          </ul>
+
+          <p class="sc-needs"><span {...loc({ en: "What I need from you", de: "Was ich von Ihnen brauche" })}>{p({ en: "What I need from you", de: "Was ich von Ihnen brauche" })}</span><span {...loc(s.needs)}>{p(s.needs)}</span></p>
+
+          {s.proof && (
+            <a
+              class="sc-proof"
+              href={typeof s.proof.href === "string" ? s.proof.href : p(s.proof.href)}
+              data-loc-href-en={typeof s.proof.href === "string" ? s.proof.href : s.proof.href.en}
+              data-loc-href-de={typeof s.proof.href === "string" ? s.proof.href : s.proof.href.de}
+            >
+              <span {...loc(s.proof.text)}>{p(s.proof.text)}</span><i class="ui-arrow" aria-hidden="true"></i>
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+
+<style>
+
+
+  /* ── Scope picker ──────────────────────────────────────────────────────── */
+  .sc { margin-top: 2.2rem; }
+
+  /* ── Scale rail ────────────────────────────────────────────────────────── */
+  .sc-rail {
+    position: relative;
+    height: 1.5rem;
+    margin-bottom: 0.45rem;
+    --at: 0%;
+  }
+  .sc-rail-line,
+  .sc-rail-fill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 1px;
+    transform: translateY(-50%);
+  }
+  .sc-rail-line { right: 0; background: rgba(var(--rgb-text), 0.16); }
+  .sc-rail-fill {
+    width: var(--at);
+    background: linear-gradient(90deg, rgba(var(--rgb-text), 0.2), var(--color-accent));
+    transition: width 0.55s var(--ease-out-expo);
+  }
+  .sc-rail-tick {
+    position: absolute;
+    top: 50%;
+    left: var(--at);
+    width: 1px;
+    height: 0.42rem;
+    margin-left: -0.5px;
+    transform: translateY(-50%);
+    background: rgba(var(--rgb-text), 0.26);
+  }
+  .sc-rail-marker {
+    position: absolute;
+    top: 50%;
+    left: var(--at);
+    width: 0.6rem;
+    height: 0.6rem;
+    margin: -0.3rem 0 0 -0.3rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(var(--rgb-text), 0.1), 0 0 14px rgba(255, 255, 255, 0.5);
+    transition: left 0.55s var(--ease-out-expo);
+  }
+  .sc-rail-ends {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.4rem;
+    font-family: var(--font-inter);
+    font-size: 0.64rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.38);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sc-rail-fill,
+    .sc-rail-marker { transition: none; }
+  }
+  .sc-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+  .sc-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.95rem 1.05rem;
+    text-align: left;
+    background: rgba(6, 8, 10, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--rgb-text), 0.11);
+    border-radius: 0.9rem;
+    color: rgba(var(--rgb-text), 0.62);
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s, color 0.25s, transform 0.25s;
+  }
+  .sc-tab:hover { border-color: rgba(var(--rgb-text), 0.26); color: rgba(var(--rgb-text), 0.85); }
+  .sc-tab[aria-selected="true"] {
+    background: rgba(var(--rgb-text), 0.1);
+    border-color: rgba(var(--rgb-text), 0.55);
+    color: rgb(var(--rgb-text));
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+  }
+  .sc-tab[aria-selected="true"] .sc-tab-n {
+    color: rgb(var(--rgb-text));
+    border-color: rgba(var(--rgb-text), 0.55);
+  }
+  .sc-tab-n {
+    align-self: flex-start;
+    margin-bottom: 0.15rem;
+    padding: 0.12rem 0.38rem;
+    border: 1px solid rgba(var(--rgb-text), 0.16);
+    border-radius: 0.3rem;
+    font-family: var(--font-inter);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: rgba(var(--rgb-text), 0.38);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.25s, border-color 0.25s;
+  }
+  .sc-tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  .sc-tab-label {
+    font: 600 0.82rem/1.2 var(--font-inter);
+    letter-spacing: 0.02em;
+  }
+  .sc-tab-size {
+    font-family: var(--font-inter);
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+
+  .sc-panels { margin-top: 1.1rem; }
+  .sc-panel {
+    padding: clamp(1.3rem, 3vw, 2rem);
+    background: rgba(6, 8, 10, 0.52);
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid rgba(var(--rgb-text), 0.12);
+    border-radius: 1.1rem;
+    animation: sc-in 0.4s var(--ease-out-cubic) both;
+    overflow: hidden;
+  }
+  /* A hairline that draws itself across the top on every change — the panel
+     swapping needs a beat of motion, or the switch reads as a page jump. */
+  .sc-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-accent), transparent);
+    animation: sc-rule 0.7s var(--ease-out-expo) both;
+  }
+  .sc-panel { position: relative; }
+  @media (prefers-reduced-motion: reduce) {
+    .sc-panel,
+    .sc-panel::before { animation: none; }
+    .sc-panel::before { width: 100%; }
+  }
+
+  .sc-headline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.6rem;
+    padding-bottom: 1.3rem;
+    border-bottom: 1px solid rgba(var(--rgb-text), 0.1);
+  }
+  .sc-key {
+    display: block;
+    font-family: var(--font-inter);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+  .sc-value {
+    display: block;
+    margin-top: 0.4rem;
+    font: 500 clamp(1.05rem, 2vw, 1.4rem)/1.05 var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  /* The timeline is what the visitor came to the picker for, so it is the
+     largest thing in the panel rather than one field among three. */
+  .sc-headline > :first-child .sc-value {
+    font-size: clamp(2rem, 4.6vw, 3.2rem);
+    letter-spacing: -0.035em;
+  }
+  .sc-headline > :first-child { flex: 0 0 auto; min-width: 11rem; }
+
+  .sc-gets {
+    list-style: none;
+    margin: 1.4rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .sc-gets li {
+    position: relative;
+    padding-left: 1.5rem;
+    color: rgba(var(--rgb-text), 0.74);
+    line-height: 1.55;
+  }
+  .sc-gets li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.5rem;
+    height: 1px;
+    background: var(--color-accent);
+  }
+
+  .sc-needs {
+    margin: 1.6rem 0 0;
+    padding-top: 1.3rem;
+    border-top: 1px solid rgba(var(--rgb-text), 0.1);
+    color: rgba(var(--rgb-text), 0.66);
+    line-height: 1.6;
+  }
+  .sc-needs span {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-family: var(--font-inter);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+
+  .sc-proof {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.4rem;
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .sc-proof:hover { color: rgb(var(--rgb-text)); }
+  @media (max-width: 900px) {
+    .sc-tab { background: rgba(6, 8, 10, 0.86); }
+    .sc-panel { background: rgba(6, 8, 10, 0.86); }
+  }
+  @media (max-width: 560px) {
+    .sc-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sc-headline { gap: 1.1rem 1.8rem; }
+  }
+</style>
+
+<script>
+// The picker: plain tablist semantics, arrow-key navigable, and it tells the
+// lattice how much of itself to light. No framework, no state library — the
+// selected tab IS the state, which is what `aria-selected` already means.
+const picker = document.querySelector<HTMLElement>("[data-scope-picker]");
+
+if (picker) {
+  const tabs = Array.from(picker.querySelectorAll<HTMLButtonElement>("[data-scope-tab]"));
+  const panels = Array.from(picker.querySelectorAll<HTMLElement>("[data-scope-panel]"));
+  const rail = picker.querySelector<HTMLElement>(".sc-rail");
+
+  const select = (id: string, focus = false) => {
+    const index = tabs.findIndex((tab) => tab.dataset.scopeTab === id);
+    if (rail && index >= 0) {
+      rail.style.setProperty("--at", `${(index / Math.max(1, tabs.length - 1)) * 100}%`);
+    }
+    tabs.forEach((tab) => {
+      const on = tab.dataset.scopeTab === id;
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+      tab.tabIndex = on ? 0 : -1;
+      if (on) {
+        if (focus) tab.focus();
+        const ratio = Number(tab.dataset.field);
+        if (Number.isFinite(ratio)) {
+          dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+        }
+      }
+    });
+    panels.forEach((panel) => {
+      panel.hidden = panel.dataset.scopePanel !== id;
+    });
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => { announced = true; select(tab.dataset.scopeTab!); });
+  });
+
+  picker.addEventListener("keydown", (event) => {
+    const key = event.key;
+    if (key !== "ArrowRight" && key !== "ArrowLeft" && key !== "Home" && key !== "End") return;
+    const current = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+    if (current < 0) return;
+    event.preventDefault();
+    const next =
+      key === "Home" ? 0
+      : key === "End" ? tabs.length - 1
+      : (current + (key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    select(tabs[next].dataset.scopeTab!, true);
+  });
+
+  // Position the rail immediately, but hold the field's contraction until the
+  // picker is actually on screen — the hero is entitled to the whole range,
+  // and the field narrowing to one scope should be something the visitor sees
+  // happen rather than something already over by the time they arrive.
+  const first = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+  if (first && rail) {
+    rail.style.setProperty("--at", `${(tabs.indexOf(first) / Math.max(1, tabs.length - 1)) * 100}%`);
+  }
+  let announced = false;
+  const announce = () => {
+    if (announced || !first) return;
+    announced = true;
+    const ratio = Number(first.dataset.field);
+    if (Number.isFinite(ratio)) dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+  };
+  const io = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting) { announce(); io.disconnect(); }
+  }, { threshold: 0.35 });
+  io.observe(picker);
+
+  // Text and hrefs for both languages ship with the markup; apply whichever the
+  // page is showing. `rb:langchange` fires when the nav switcher swaps copy in
+  // place — the case /services is in, and the one the profile pages never are:
+  // there the server already rendered the right language, so this runs once
+  // over values that already match and changes nothing.
+  const applyLang = (next: string) => {
+    const key = next === "de" ? "locDe" : "locEn";
+    picker.querySelectorAll<HTMLElement>("[data-loc-en]").forEach((el) => {
+      const value = el.dataset[key];
+      if (value != null) el.textContent = value;
+    });
+    picker.querySelectorAll<HTMLAnchorElement>("[data-loc-href-en]").forEach((el) => {
+      const value = el.dataset[next === "de" ? "locHrefDe" : "locHrefEn"];
+      if (value) el.setAttribute("href", value);
+    });
+  };
+  applyLang(document.documentElement.lang.startsWith("de") ? "de" : "en");
+  addEventListener("rb:langchange", (event) => {
+    applyLang((event as CustomEvent<{ lang: string }>).detail.lang);
+  });
+}
+</script>
