@@ -7,6 +7,11 @@ const { lang, serviceKey } = Astro.props;
 const service = serviceContent[serviceKey];
 const de = lang === "de";
 const relatedInsights = Object.values(insightContent).filter((item) => item.relatedService === serviceKey || item.key === "bridge-growth").slice(0, 3);
+// Niche pages exist to be found by someone who does not search for "website
+// development". They only earn that if the parent links down to them and they
+// link back — an orphan page with nothing pointing at it is a page nobody,
+// including a crawler, has a reason to reach.
+const siblings = (service.siblings ?? []).map((sibling) => serviceContent[sibling]);
 const alternates = { en: service.paths.en, de: service.paths.de, "x-default": service.paths.en };
 const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({ "@type": "Question", name: pick(item.question, lang), acceptedAnswer: { "@type": "Answer", text: pick(item.answer, lang) } })) };
 const serviceSchema = { "@type": "Service", name: pick(service.title, lang), description: pick(service.description, lang), provider: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, areaServed: [{ "@type": "City", name: "Vienna" }, { "@type": "Country", name: "Austria" }] };
@@ -27,6 +32,12 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
   "digital-marketing": { image: "/og/rodion-belousov-digital-marketer-vienna.jpg", alt: "Rodion Belousov — digital marketing and SEO in Vienna" },
   "technical-seo": { image: "/og/rodion-belousov-services-marketing-seo-creative-development-vienna.jpg", alt: "Rodion Belousov — technical SEO in Vienna" },
   "creative-development": { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — creative development in Vienna" },
+  // The niche pages share the websites card: the title and description are what
+  // a reader sees in a share preview, and a correct generic image beats a
+  // bespoke one carrying the wrong words.
+  arztpraxis: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — websites for medical practices in Vienna" },
+  restaurant: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — websites for restaurants in Vienna" },
+  handwerker: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — websites for tradespeople in Vienna" },
 };
 ---
 
@@ -75,6 +86,23 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       </div>
     </section>
 
+    {siblings.length > 0 && (
+      <section class="siblings">
+        <div class="u-container">
+          <span class="eyebrow" data-reveal>{de ? "Für Ihre Branche" : "For your trade"}</span>
+          <div class="siblings-list">
+            {siblings.map((item) => (
+              <a href={item.paths[lang]} data-reveal data-cursor="OPEN">
+                <strong>{pick(item.eyebrow, lang)}</strong>
+                <span>{pick(item.title, lang)}</span>
+                <i class="ui-arrow" aria-hidden="true"></i>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
     <section class="faq">
       <div class="u-container"><span class="eyebrow" data-reveal>FAQ</span>{service.faq.map((item) => <details data-reveal><summary>{pick(item.question, lang)}</summary><p>{pick(item.answer, lang)}</p></details>)}</div>
     </section>
@@ -92,7 +120,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
 <style>
   .service-page{position:relative;z-index:1;background:#030405}.service-hero{min-height:88svh;display:grid;align-items:end;padding:10rem 0 6rem;background:radial-gradient(circle at 74% 26%,rgba(255,255,255,.1),transparent 24rem)}.eyebrow{display:block;color:rgba(var(--rgb-text),.53);font:.64rem var(--font-inter);letter-spacing:.22em;text-transform:uppercase}.service-hero h1{max-width:12ch;margin:1.5rem 0;font:500 clamp(4rem,8vw,8rem)/.9 var(--font-display);letter-spacing:0}.service-hero p{max-width:48rem;color:rgba(var(--rgb-text),.76);font-size:clamp(1.2rem,2vw,1.65rem);line-height:1.55}.service-hero a{display:inline-block;margin-top:2rem;padding-bottom:.4rem;border-bottom:1px solid rgba(255,255,255,.35)}section{padding:clamp(5rem,9vw,9rem) 0;border-top:1px solid rgba(255,255,255,.08)}.capability-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.capability-grid>div{min-height:22rem;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.008))}.capability-grid span,.case-links span{font:.62rem var(--font-inter);letter-spacing:.16em;color:rgba(var(--rgb-text),.45)}.capability-grid h2{margin:7rem 0 1rem;font:500 clamp(1.7rem,2.2vw,2.6rem)/1.04 var(--font-display);overflow-wrap:anywhere;hyphens:auto}.capability-grid p,.metrics p{color:rgba(var(--rgb-text),.65);line-height:1.55}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2rem 0 4rem}.metrics>div{padding:2rem;border-top:1px solid rgba(255,255,255,.28)}.metrics strong{font:500 clamp(3rem,6vw,6rem)/1 var(--font-display)}.case-links{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.case-links a{min-height:17rem;display:flex;flex-direction:column;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.025)}.case-links strong{margin:auto 0;font:500 clamp(2rem,4vw,4rem)/1 var(--font-display)}.case-links b{font:.65rem var(--font-inter);letter-spacing:.12em;text-transform:uppercase}.research-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:5rem}.research h2{max-width:9ch;font:500 clamp(3rem,5vw,5.5rem)/.95 var(--font-display)}.research-grid>div:last-child{border-top:1px solid rgba(255,255,255,.14)}.research-grid a{display:flex;justify-content:space-between;gap:2rem;padding:1.5rem 0;border-bottom:1px solid rgba(255,255,255,.14);font:500 clamp(1.2rem,2vw,1.8rem)/1.2 var(--font-display)}.faq .u-container{max-width:70rem}.faq details{border-bottom:1px solid rgba(255,255,255,.14)}.faq summary{cursor:pointer;padding:1.5rem 0;font:500 clamp(1.2rem,2vw,1.7rem) var(--font-display)}.faq details p{max-width:50rem;padding:0 0 1.7rem;color:rgba(var(--rgb-text),.68);line-height:1.6}
-  @media(max-width:800px){.capability-grid,.metrics,.case-links,.research-grid{grid-template-columns:1fr}.capability-grid h2{margin-top:4rem}.service-hero{min-height:72svh;padding:8rem 0 4rem}.service-hero h1{max-width:100%;font-size:clamp(2.9rem,13vw,5.6rem);line-height:.93;overflow-wrap:anywhere}.capability-grid>div{min-height:18rem}.metrics strong{font-size:clamp(2.7rem,14vw,5rem);overflow-wrap:anywhere}.research h2{max-width:100%;overflow-wrap:anywhere}.research-grid a strong{min-width:0;overflow-wrap:anywhere}}@media(pointer:coarse){.capability-grid>div,.case-links a{background:rgba(9,10,11,.92)}}
+  @media(max-width:800px){.capability-grid,.metrics,.case-links,.research-grid{grid-template-columns:1fr}.capability-grid h2{margin-top:4rem}.service-hero{min-height:72svh;padding:8rem 0 4rem}.service-hero h1{max-width:100%;font-size:clamp(2.6rem,11.5vw,5.6rem);line-height:.93;overflow-wrap:anywhere;hyphens:auto}.capability-grid>div{min-height:18rem}.metrics strong{font-size:clamp(2.7rem,14vw,5rem);overflow-wrap:anywhere}.research h2{max-width:100%;overflow-wrap:anywhere;hyphens:auto}.research-grid a strong{min-width:0;overflow-wrap:anywhere;hyphens:auto}}@media(pointer:coarse){.capability-grid>div,.case-links a{background:rgba(9,10,11,.92)}}
 
   /* ── Back to the hub ───────────────────────────────────────────────────── */
   .back-link {
@@ -126,6 +154,35 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
   }
 
   /* ── Outro ─────────────────────────────────────────────────────────────── */
+  .siblings { padding: clamp(3rem, 6vw, 5rem) 0 0; }
+  .siblings-list {
+    display: grid;
+    gap: 1px;
+    margin-top: 1.6rem;
+    background: var(--color-line);
+    border-block: 1px solid var(--color-line);
+  }
+  .siblings-list a {
+    display: grid;
+    gap: 0.35rem;
+    padding: clamp(1.2rem, 2.5vw, 1.8rem) 0;
+    background: var(--color-bg, #030405);
+    color: var(--color-text);
+  }
+  .siblings-list a strong {
+    font-family: var(--font-inter);
+    font-size: var(--font-size-xs);
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-text-alt);
+  }
+  .siblings-list a span { font-size: clamp(1.05rem, 2vw, 1.4rem); max-width: 44ch; }
+  .siblings-list a:hover span { color: var(--color-accent); }
+  @media (min-width: 900px) {
+    .siblings-list a { grid-template-columns: 18rem minmax(0, 1fr) auto; align-items: baseline; gap: 2rem; }
+  }
+
   .service-outro { padding: clamp(3rem, 6vw, 5rem) 0 clamp(4rem, 8vw, 7rem); border-top: 1px solid rgba(255, 255, 255, .08); }
   .outro-link {
     display: inline-flex;

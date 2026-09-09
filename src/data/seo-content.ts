@@ -1,5 +1,17 @@
 export type SeoLang = "en" | "de";
-export type ServiceKey = "websites" | "digital-marketing" | "technical-seo" | "creative-development";
+export type ServiceKey =
+  | "websites"
+  | "digital-marketing"
+  | "technical-seo"
+  | "creative-development"
+  // Niche pages. A Vienna business does not search for "website development" —
+  // it searches for "Website Arztpraxis Wien". These are children of `websites`,
+  // not a fifth practice area, and each one is written around the constraints
+  // that trade actually has. If two of them could swap a noun and still read
+  // correctly, they are doorway pages and should be deleted instead.
+  | "arztpraxis"
+  | "restaurant"
+  | "handwerker";
 export type InsightKey = "bridge-growth" | "fidic-platform" | "threejs-marketing" | "ai-development";
 
 export interface LocalizedCopy {
@@ -17,6 +29,9 @@ export interface ServiceContent {
   capabilities: Array<{ title: LocalizedCopy; text: LocalizedCopy }>;
   proof: Array<{ value: string; label: LocalizedCopy }>;
   faq: Array<{ question: LocalizedCopy; answer: LocalizedCopy }>;
+  /** Pages worth reading next. Rendered as a link list and, more to the point,
+   *  what ties the niche pages to their parent in both directions. */
+  siblings?: ServiceKey[];
 }
 
 const c = (en: string, de: string): LocalizedCopy => ({ en, de });
@@ -61,6 +76,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       { question: c("What do you need from me to start?", "Was brauchen Sie von mir für den Start?"), answer: c("What you do, who it is for, and any text and photos you already have. If the text does not exist yet, writing it is part of the job — that is the marketing half of this practice, and it is usually where a site actually gets won or lost.", "Was Sie tun, für wen, und alle vorhandenen Texte und Fotos. Wenn der Text noch nicht existiert, gehört das Schreiben dazu — das ist die Marketing-Hälfte dieser Arbeit und meist die Stelle, an der eine Website tatsächlich gewonnen oder verloren wird.") },
       { question: c("Do you work in German?", "Arbeiten Sie auf Deutsch?"), answer: c("German C2 and English C1, so the site can ship in either or both. A bilingual site is built properly here — real separate pages with the right language signals, not a flag icon that machine-translates the page.", "Deutsch C2 und Englisch C1 — die Website kann in einer oder beiden Sprachen erscheinen. Zweisprachig wird hier richtig gebaut: echte getrennte Seiten mit korrekten Sprachsignalen, nicht ein Flaggen-Icon, das die Seite maschinell übersetzt.") },
     ],
+    siblings: ["arztpraxis", "restaurant", "handwerker"],
   },
   "digital-marketing": {
     key: "digital-marketing",
@@ -161,6 +177,283 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       { question: c("How is a project like this run?", "Wie läuft so ein Projekt ab?"), answer: c("Scope first, in writing, including what is deliberately not being built. Then a working page rather than a mockup, because a static comp cannot tell you whether a transition feels right or what it costs on a phone. Then measurement, and a list of what to cut. Both live projects here were built and shipped solo, so there is no handover where the intent gets lost.", "Zuerst der Scope, schriftlich, inklusive dessen, was bewusst nicht gebaut wird. Dann eine funktionierende Seite statt eines Mockups, denn ein statischer Entwurf sagt weder, ob sich ein Übergang richtig anfühlt, noch was er auf einem Telefon kostet. Dann Messung und eine Liste dessen, was gestrichen wird. Beide Live-Projekte hier entstanden solo — es gibt keine Übergabe, bei der die Absicht verloren geht.") },
     ],
   },
+
+  // ── Niche pages ───────────────────────────────────────────────────────────
+  //  Written around what each trade is actually bound by, because that is the
+  //  part a template agency gets wrong and the part the client can verify.
+
+  arztpraxis: {
+    key: "arztpraxis",
+    paths: { en: "/en/website-for-doctors-vienna/", de: "/de/website-arztpraxis-wien/" },
+    title: c(
+      "A practice website that answers the question patients came with.",
+      "Eine Praxis-Website, die beantwortet, weswegen Patienten gekommen sind.",
+    ),
+    description: c(
+      "Websites for medical practices in Vienna: opening hours, Kassenvertrag or Wahlarzt and how to book, readable on a phone in seconds. Built within the advertising limits of the Ärztegesetz.",
+      "Websites für Arztpraxen in Wien: Ordinationszeiten, Kassenvertrag oder Wahlarzt und wie man einen Termin bekommt — am Handy in Sekunden lesbar. Gebaut innerhalb der Werbeschranken des Ärztegesetzes.",
+    ),
+    eyebrow: c("Website for a medical practice / Vienna", "Website Arztpraxis / Wien"),
+    lead: c(
+      "Nearly everyone arriving on a practice website wants one of four things: when you are open, whether you take their insurance, where you are, and how to get an appointment. Most practice sites in Vienna hide at least two of those behind a PDF. This one puts all four above the fold and stays inside what the Ärztegesetz permits a doctor to say.",
+      "Fast alle, die auf einer Praxis-Website landen, wollen eines von vier Dingen: wann Sie offen haben, ob Sie ihre Kasse nehmen, wo Sie sind und wie man einen Termin bekommt. Die meisten Wiener Praxis-Websites verstecken mindestens zwei davon in einem PDF. Diese stellt alle vier nach oben — und bleibt in dem, was das Ärztegesetz einem Arzt zu sagen erlaubt.",
+    ),
+    capabilities: [
+      {
+        title: c("Hours as text, not as a PDF", "Ordinationszeiten als Text, nicht als PDF"),
+        text: c(
+          "Opening hours are the single most requested thing on a practice site and the thing most often published as a scan. A search engine cannot read a scan, a phone renders it at 30% zoom, and a screen reader gets nothing. Written as real text with opening-hours structured data, the hours can show up in the search result itself — which is where a patient standing on the street actually looks.",
+          "Ordinationszeiten sind das meistgesuchte Element einer Praxis-Website und das am häufigsten als Scan veröffentlichte. Eine Suchmaschine kann einen Scan nicht lesen, ein Handy zeigt ihn auf 30 % verkleinert, ein Screenreader bekommt gar nichts. Als echter Text mit Opening-Hours-Markup können die Zeiten direkt im Suchergebnis erscheinen — dort, wo ein Patient auf der Straße tatsächlich nachsieht.",
+        ),
+      },
+      {
+        title: c("Kassenvertrag or Wahlarzt, said plainly", "Kassenvertrag oder Wahlarzt, klar gesagt"),
+        text: c(
+          "This is the question that decides whether someone calls, and the one most sites answer somewhere on page three. It belongs in the first screen, in the words patients use — which ÖGK, BVAEB or SVS contracts you hold, or that you are a Wahlarzt and what reimbursement usually looks like. Being direct about it costs you the calls you were never going to convert and wins the ones you were.",
+          "Das ist die Frage, die darüber entscheidet, ob jemand anruft — und die, die die meisten Websites irgendwo auf Seite drei beantworten. Sie gehört in den ersten Bildschirm, in den Worten der Patienten: welche Verträge mit ÖGK, BVAEB oder SVS bestehen, oder dass Sie Wahlarzt sind und wie die Rückerstattung üblicherweise aussieht. Diese Klarheit kostet Sie die Anrufe, aus denen ohnehin nichts geworden wäre.",
+        ),
+      },
+      {
+        title: c("Inside §53 Ärztegesetz", "Innerhalb von § 53 Ärztegesetz"),
+        text: c(
+          "Austrian doctors may inform, not advertise. No superlatives, no comparison with colleagues, no before-and-after gallery used as a sales argument, no testimonials collected as promotion. An agency that writes 'Vienna\u2019s best practice' hands you a problem with the Ärztekammer. The copy here is written to be persuasive within those limits — the argument is specificity, not adjectives.",
+          "Österreichische Ärzte dürfen informieren, nicht werben. Keine Superlative, kein Vergleich mit Kolleginnen und Kollegen, keine Vorher-Nachher-Galerie als Verkaufsargument, keine als Werbung gesammelten Patientenstimmen. Eine Agentur, die „beste Praxis Wiens“ schreibt, beschert Ihnen ein Problem mit der Ärztekammer. Die Texte hier überzeugen innerhalb dieser Grenzen — das Argument ist Genauigkeit, nicht Adjektive.",
+        ),
+      },
+      {
+        title: c("Health data kept off the form", "Gesundheitsdaten bleiben aus dem Formular"),
+        text: c(
+          "An appointment request is not the place for symptoms. Health data is a special category under the DSGVO, and a free-text box inviting people to describe their complaint quietly turns your website into a system that processes it. The request form asks for a name, a way to reach them and a preferred time, and nothing that would make the practice liable for storing a diagnosis on a hosting provider.",
+          "Eine Terminanfrage ist nicht der Ort für Symptome. Gesundheitsdaten sind eine besondere Kategorie nach DSGVO, und ein Freitextfeld, das zur Beschwerdenbeschreibung einlädt, macht Ihre Website still zu einem System, das solche Daten verarbeitet. Das Anfrageformular fragt nach Name, Erreichbarkeit und Wunschzeit — und nach nichts, wofür die Praxis eine Diagnose bei einem Hoster gespeichert verantworten müsste.",
+        ),
+      },
+      {
+        title: c("Found in your district, not in general", "Gefunden in Ihrem Bezirk, nicht im Allgemeinen"),
+        text: c(
+          "Nobody searches for 'general practitioner Austria'. They search for the specialty and the district — Hausarzt 1070, Kinderarzt Floridsdorf — usually on a phone, usually within about a kilometre. That means a Google Business Profile that matches the site exactly, correct medical-practice structured data, and the district named on the page rather than implied by the address in the footer.",
+          "Niemand sucht „Allgemeinmediziner Österreich“. Gesucht wird nach Fach und Bezirk — Hausarzt 1070, Kinderarzt Floridsdorf — meist am Handy, meist im Umkreis von etwa einem Kilometer. Das heißt: ein Google-Unternehmensprofil, das exakt zur Website passt, korrektes MedicalClinic-Markup und der Bezirk auf der Seite benannt, statt ihn aus der Adresse im Footer zu erahnen.",
+        ),
+      },
+    ],
+    proof: [
+      { value: "4", label: c("questions answered before a patient scrolls", "Fragen beantwortet, bevor ein Patient scrollt") },
+      { value: "1.0s", label: c("largest contentful paint, measured on this site", "Largest Contentful Paint, auf dieser Website gemessen") },
+      { value: "0", label: c("plugins to keep updated, and no monthly builder fee", "Plugins zu aktualisieren, keine monatliche Baukastengebühr") },
+    ],
+    faq: [
+      {
+        question: c("What may a practice website say under Austrian law?", "Was darf eine Praxis-Website nach österreichischem Recht sagen?"),
+        answer: c(
+          "It may inform: your specialty, training, methods, hours, insurance contracts, languages, accessibility and how to reach you. It may not advertise comparatively or with superlatives, and patient testimonials used as promotion are a risk. In practice this is a smaller limit than it sounds — being concrete about what you treat and how you work is more convincing than a superlative anyway.",
+          "Sie darf informieren: Fachgebiet, Ausbildung, Methoden, Zeiten, Kassenverträge, Sprachen, Barrierefreiheit und Erreichbarkeit. Sie darf nicht vergleichend oder superlativisch werben, und als Werbung eingesetzte Patientenstimmen sind ein Risiko. In der Praxis ist das eine kleinere Einschränkung, als es klingt — konkret zu sagen, was Sie behandeln und wie Sie arbeiten, überzeugt ohnehin mehr als ein Superlativ.",
+        ),
+      },
+      {
+        question: c("Can patients book online?", "Können Patienten online buchen?"),
+        answer: c(
+          "Yes, in one of two ways. If you already use a system such as a practice-management booking tool, the site links into it so nothing is duplicated. If you do not, a simple request form sends a name, a phone number and a preferred window to your inbox, and your assistant confirms by phone as they do today. Real-time booking into a practice calendar is a bigger project and is quoted separately.",
+          "Ja, auf zwei Wegen. Nutzen Sie bereits ein System, etwa ein Terminmodul Ihrer Praxissoftware, verlinkt die Website dorthin, damit nichts doppelt geführt wird. Falls nicht, schickt ein einfaches Anfrageformular Name, Telefonnummer und Wunschzeitraum an Ihr Postfach, und Ihre Assistenz bestätigt telefonisch wie bisher. Echtzeit-Buchung in den Praxiskalender ist ein größeres Projekt und wird separat kalkuliert.",
+        ),
+      },
+      {
+        question: c("Does the site have to be accessible?", "Muss die Website barrierefrei sein?"),
+        answer: c(
+          "Plan for yes. The European Accessibility Act has applied in Austria since mid-2025 and its reach into private services keeps widening, and a practice serving older and impaired patients has an obvious reason regardless of the letter of the law. Contrast, keyboard operation, real headings and text that scales are built in from the start — retrofitting them later costs several times more.",
+          "Gehen Sie von ja aus. Der European Accessibility Act gilt in Österreich seit Mitte 2025 und sein Zugriff auf private Dienstleistungen wird laufend breiter — und eine Praxis mit älteren und beeinträchtigten Patienten hat unabhängig vom Gesetzestext einen offensichtlichen Grund. Kontrast, Tastaturbedienung, echte Überschriften und skalierbarer Text sind von Anfang an eingebaut; sie nachzurüsten kostet ein Vielfaches.",
+        ),
+      },
+      {
+        question: c("We already have a website. Is it worth replacing?", "Wir haben schon eine Website. Lohnt der Austausch?"),
+        answer: c(
+          "Send the address and you get an honest answer, including 'keep it'. The usual findings are hours locked in a PDF, no mobile layout, the insurance question unanswered, and a contact form that has been silently failing for months. If those are the problems, replacing is cheaper than repairing — the pages are the work, and there are rarely many of them.",
+          "Schicken Sie die Adresse, Sie bekommen eine ehrliche Antwort — auch „behalten“. Die üblichen Befunde: Zeiten in einem PDF eingesperrt, kein mobiles Layout, die Kassenfrage unbeantwortet und ein Kontaktformular, das seit Monaten still ins Leere läuft. Wenn das die Probleme sind, ist Ersetzen günstiger als Reparieren — die Arbeit sind die Seiten, und viele sind es selten.",
+        ),
+      },
+    ],
+    siblings: ["websites", "handwerker", "restaurant"],
+  },
+
+  restaurant: {
+    key: "restaurant",
+    paths: { en: "/en/website-for-restaurants-vienna/", de: "/de/website-restaurant-wien/" },
+    title: c(
+      "A restaurant website built for someone standing outside, hungry.",
+      "Eine Restaurant-Website für jemanden, der hungrig davor steht.",
+    ),
+    description: c(
+      "Websites for restaurants and cafés in Vienna: the menu as real text, hours, address and reservation on the first screen. Allergen information handled properly, and a menu search engines can actually read.",
+      "Websites für Restaurants und Cafés in Wien: die Karte als echter Text, Öffnungszeiten, Adresse und Reservierung auf dem ersten Bildschirm. Allergeninformation sauber gelöst, und eine Karte, die Suchmaschinen wirklich lesen können.",
+    ),
+    eyebrow: c("Website for a restaurant / Vienna", "Website Restaurant / Wien"),
+    lead: c(
+      "A restaurant site has one job and about eight seconds to do it: show what is on the menu, what it costs, whether you are open and how to get a table. It is looked at on a phone, one-handed, often on mobile data outside your door. Everything that does not serve that moment is decoration you are paying for.",
+      "Eine Restaurant-Website hat eine Aufgabe und rund acht Sekunden dafür: zeigen, was auf der Karte steht, was es kostet, ob offen ist und wie man einen Tisch bekommt. Angesehen wird sie am Handy, einhändig, oft im Mobilfunknetz direkt vor Ihrer Tür. Alles, was diesem Moment nicht dient, ist Dekoration, für die Sie zahlen.",
+    ),
+    capabilities: [
+      {
+        title: c("The menu as text, not as a PDF", "Die Karte als Text, nicht als PDF"),
+        text: c(
+          "A PDF menu is the most common and most expensive mistake in this trade. It downloads instead of opening, renders at unreadable size on a phone, cannot be searched, and is invisible to Google — so the dish someone is actually googling never leads to you. Written as real pages, the menu is readable in one tap, changeable in a minute, and eligible to appear in search results and on your Google Business Profile.",
+          "Eine PDF-Karte ist der häufigste und teuerste Fehler dieser Branche. Sie lädt herunter statt zu öffnen, erscheint am Handy in unleserlicher Größe, ist nicht durchsuchbar und für Google unsichtbar — das Gericht, nach dem jemand tatsächlich sucht, führt also nie zu Ihnen. Als echte Seiten gebaut, ist die Karte mit einem Tipp lesbar, in einer Minute änderbar und kann in Suchergebnissen und im Google-Unternehmensprofil erscheinen.",
+        ),
+      },
+      {
+        title: c("Allergens without a legal headache", "Allergene ohne Rechtsproblem"),
+        text: c(
+          "Austrian law requires the fourteen allergen groups to be declared, and doing it as a footnote nobody can map to a dish satisfies nobody — least of all the guest with a real allergy who then does not book. Each dish carries its own codes, kept in the same place you edit prices, so updating a recipe updates the declaration instead of leaving the two to drift apart.",
+          "Die österreichische Allergenverordnung verlangt die Deklaration der vierzehn Allergengruppen, und eine Fußnote, die niemand einem Gericht zuordnen kann, hilft niemandem — am wenigsten dem Gast mit echter Allergie, der dann nicht reserviert. Jedes Gericht trägt seine eigenen Codes, gepflegt an derselben Stelle wie die Preise, sodass eine geänderte Rezeptur die Deklaration mitändert statt beides auseinanderlaufen zu lassen.",
+        ),
+      },
+      {
+        title: c("Reservations where you already take them", "Reservierung dort, wo Sie sie schon annehmen"),
+        text: c(
+          "If you run OpenTable, Quandoo, resmio or a table book by phone, the site sends people into that — one obvious button, working on a phone, no second system to check at service. Nobody needs another inbox during a Friday dinner rush. If you take reservations by phone only, the number is a tap-to-call, which on a phone is the whole feature.",
+          "Wenn Sie OpenTable, Quandoo, resmio oder ein Reservierungsbuch am Telefon führen, schickt die Website die Gäste genau dorthin — ein eindeutiger Button, funktionierend am Handy, kein zweites System, das im Service kontrolliert werden muss. Niemand braucht ein weiteres Postfach im Freitagabendgeschäft. Nehmen Sie nur telefonisch an, ist die Nummer ein Tap-to-Call — am Handy ist das die ganze Funktion.",
+        ),
+      },
+      {
+        title: c("Photographs that load before they are scrolled past", "Fotos, die laden, bevor man vorbeiscrollt"),
+        text: c(
+          "In this trade the pictures are the argument, and they are also what makes most restaurant sites unusable on mobile data. Images are served in modern formats at the size the device actually needs, so a gallery that used to weigh eight megabytes weighs a few hundred kilobytes and appears immediately. The food still looks like the food.",
+          "In dieser Branche sind die Bilder das Argument — und zugleich das, was die meisten Restaurant-Websites im Mobilfunknetz unbrauchbar macht. Bilder werden in modernen Formaten und in genau der Größe ausgeliefert, die das Gerät braucht: Eine Galerie, die acht Megabyte wog, wiegt ein paar hundert Kilobyte und ist sofort da. Das Essen sieht weiterhin aus wie das Essen.",
+        ),
+      },
+      {
+        title: c("Found by the dish, not just by the name", "Gefunden über das Gericht, nicht nur über den Namen"),
+        text: c(
+          "People who already know your name will find you anyway. The traffic worth having comes from someone searching for a dish and a district, or looking at Google Maps at half past seven. That means a Google Business Profile that agrees with the site, restaurant and menu structured data, the district in the copy, and hours that are correct on the days everyone else forgets to update.",
+          "Wer Ihren Namen kennt, findet Sie ohnehin. Der Traffic, der zählt, kommt von jemandem, der nach Gericht und Bezirk sucht oder um halb acht auf Google Maps schaut. Das heißt: ein Google-Unternehmensprofil, das mit der Website übereinstimmt, Restaurant- und Menü-Markup, der Bezirk im Text und Öffnungszeiten, die auch an den Tagen stimmen, an denen alle anderen das Aktualisieren vergessen.",
+        ),
+      },
+    ],
+    proof: [
+      { value: "1 tap", label: c("from landing on the site to reading the menu", "von der Startseite bis zur gelesenen Karte") },
+      { value: "1.0s", label: c("largest contentful paint, measured on this site", "Largest Contentful Paint, auf dieser Website gemessen") },
+      { value: "0", label: c("PDFs between a guest and a price", "PDFs zwischen Gast und Preis") },
+    ],
+    faq: [
+      {
+        question: c("Can we change the menu ourselves?", "Können wir die Karte selbst ändern?"),
+        answer: c(
+          "Yes — that is the point of not using a PDF. Dishes, prices and allergen codes live in one editable list, and a change is live in minutes without a designer. If you change the menu daily or seasonally, say so before the build and the editing side is designed around that rhythm rather than bolted on.",
+          "Ja — genau darum keine PDF. Gerichte, Preise und Allergencodes liegen in einer editierbaren Liste, eine Änderung ist in Minuten live, ohne Designer. Wenn Sie täglich oder saisonal wechseln, sagen Sie es vor dem Bau: Dann wird die Redaktionsseite um diesen Rhythmus herum entworfen statt nachträglich angeflanscht.",
+        ),
+      },
+      {
+        question: c("Do we need a delivery or ordering system?", "Brauchen wir ein Liefer- oder Bestellsystem?"),
+        answer: c(
+          "Usually not on your own site. Lieferando and its competitors already own that search, and building a parallel ordering flow rarely pays for itself for a single location. What does pay is being unmistakably findable and reservable, plus a clean link to whatever delivery platform you already use. If you want to take orders directly to avoid the commission, that is a shop project and is quoted as one.",
+          "Meist nicht auf der eigenen Website. Lieferando und Mitbewerber besitzen diese Suche bereits, und ein paralleler Bestellprozess rechnet sich für einen einzelnen Standort selten. Was sich rechnet: unverwechselbar auffindbar und reservierbar zu sein, dazu ein sauberer Link auf die Lieferplattform, die Sie ohnehin nutzen. Wollen Sie direkt bestellen lassen, um die Provision zu sparen, ist das ein Shop-Projekt und wird als solches kalkuliert.",
+        ),
+      },
+      {
+        question: c("We have good photos already. Does that save time?", "Wir haben schon gute Fotos. Spart das Zeit?"),
+        answer: c(
+          "It saves the largest single delay. In this trade the photographs are most of the persuasion, and waiting on a shoot is usually what stretches a one-week build into a month. Send what you have — phone photos in good daylight are often enough to launch with, and can be replaced later without rebuilding anything.",
+          "Es spart die größte Einzelverzögerung. In dieser Branche sind die Fotos der überwiegende Teil der Überzeugung, und das Warten auf ein Shooting dehnt einen Ein-Wochen-Bau meist auf einen Monat. Schicken Sie, was da ist — Handyfotos bei gutem Tageslicht reichen oft für den Start und lassen sich später ersetzen, ohne etwas neu zu bauen.",
+        ),
+      },
+      {
+        question: c("How fast can it be live?", "Wie schnell kann sie live sein?"),
+        answer: c(
+          "About a week from the point the menu and the photographs exist, because the build is static and there is no CMS to configure. A single-page site with the menu, hours, address and a reservation link can go live in two to four days if you need something standing before a weekend.",
+          "Etwa eine Woche ab dem Moment, in dem Karte und Fotos vorliegen — der Bau ist statisch, es gibt kein CMS zu konfigurieren. Eine einseitige Website mit Karte, Zeiten, Adresse und Reservierungslink kann in zwei bis vier Tagen live sein, wenn vor einem Wochenende etwas stehen muss.",
+        ),
+      },
+    ],
+    siblings: ["websites", "arztpraxis", "handwerker"],
+  },
+
+  handwerker: {
+    key: "handwerker",
+    paths: { en: "/en/website-for-tradespeople-vienna/", de: "/de/website-handwerker-wien/" },
+    title: c(
+      "A trades website for the customer whose bathroom is flooding.",
+      "Eine Handwerker-Website für den Kunden, dessen Bad gerade unter Wasser steht.",
+    ),
+    description: c(
+      "Websites for tradespeople in Vienna: phone number that dials on one tap, the districts you cover, whether you do emergencies, and proof you are a real Meisterbetrieb. Built to be found from a phone.",
+      "Websites für Handwerksbetriebe in Wien: Telefonnummer, die mit einem Tipp wählt, die Bezirke, die Sie abdecken, ob Sie Notdienst machen — und der Nachweis, dass Sie ein echter Meisterbetrieb sind. Gebaut, um vom Handy aus gefunden zu werden.",
+    ),
+    eyebrow: c("Website for tradespeople / Vienna", "Website Handwerker / Wien"),
+    lead: c(
+      "Most of your customers find you at the worst moment of their week, on a phone, searching for your trade and their district. They are not reading. They are looking for a number to call and a reason to believe you will pick up. A trades website that gets those two things right beats a beautiful one that buries them.",
+      "Die meisten Ihrer Kunden finden Sie im schlechtesten Moment ihrer Woche, am Handy, mit einer Suche nach Ihrem Gewerk und ihrem Bezirk. Sie lesen nicht. Sie suchen eine Nummer zum Anrufen und einen Grund zu glauben, dass jemand abhebt. Eine Handwerker-Website, die diese zwei Dinge richtig macht, schlägt eine schöne, die sie vergräbt.",
+    ),
+    capabilities: [
+      {
+        title: c("The number dials on one tap", "Die Nummer wählt mit einem Tipp"),
+        text: c(
+          "It sounds trivial until you watch someone try to copy a phone number out of an image on a wet screen. The number sits in the first screen and in a bar that stays reachable while scrolling, and tapping it dials — no copying, no dialler app, no second page. On a phone this is the single highest-value element on the whole site.",
+          "Klingt banal, bis man jemandem zusieht, der auf einem nassen Display eine Telefonnummer aus einem Bild abzutippen versucht. Die Nummer steht im ersten Bildschirm und in einer Leiste, die beim Scrollen erreichbar bleibt — ein Tipp wählt. Kein Abtippen, keine Telefon-App, keine zweite Seite. Am Handy ist das das wertvollste einzelne Element der ganzen Website.",
+        ),
+      },
+      {
+        title: c("The districts you actually drive to", "Die Bezirke, in die Sie wirklich fahren"),
+        text: c(
+          "'Vienna and surroundings' costs you calls in both directions: people inside your area are not sure you mean them, and people outside it waste your time. Naming the districts and the towns beyond the city limits you genuinely serve does two things at once — it answers the question and it puts the exact words people search into the page.",
+          "„Wien und Umgebung“ kostet Sie Anrufe in beide Richtungen: Leute in Ihrem Gebiet sind nicht sicher, ob Sie sie meinen, und Leute außerhalb kosten Sie Zeit. Die Bezirke und die Umlandgemeinden zu benennen, die Sie tatsächlich bedienen, erledigt zwei Dinge auf einmal — es beantwortet die Frage und bringt genau die gesuchten Wörter auf die Seite.",
+        ),
+      },
+      {
+        title: c("Emergency service, answered before it is asked", "Notdienst, beantwortet bevor gefragt wird"),
+        text: c(
+          "If you take emergency calls, say when and roughly what a call-out costs — the fear of an unknown night surcharge is what makes people ring the next number instead. If you do not, say that too. Either answer is better than the silence that makes a panicking customer keep scrolling down the search results.",
+          "Wenn Sie Notdienst machen, sagen Sie wann und was ein Ausrücken ungefähr kostet — die Angst vor einem unbekannten Nachtzuschlag ist der Grund, warum Leute stattdessen die nächste Nummer wählen. Wenn Sie keinen machen, sagen Sie auch das. Jede der beiden Antworten ist besser als das Schweigen, das einen Kunden in Panik weiter durch die Suchergebnisse scrollen lässt.",
+        ),
+      },
+      {
+        title: c("Proof you are a real business", "Nachweis, dass Sie ein echter Betrieb sind"),
+        text: c(
+          "This trade competes against people who take a deposit and disappear, so the customer is checking whether you exist. Gewerbeberechtigung and Meisterbetrieb status, the firm's full name and Firmenbuch number, insurance, how long you have been trading, and photographs of finished jobs with the district named. Concrete, verifiable things — not a stock photo of a smiling man in overalls.",
+          "Dieses Gewerbe konkurriert mit Leuten, die eine Anzahlung nehmen und verschwinden — der Kunde prüft also, ob es Sie gibt. Gewerbeberechtigung und Meisterbetrieb, vollständiger Firmenwortlaut und Firmenbuchnummer, Versicherung, wie lange Sie tätig sind, und Fotos fertiger Arbeiten mit genanntem Bezirk. Konkrete, überprüfbare Dinge — kein Stockfoto eines lächelnden Mannes im Overall.",
+        ),
+      },
+      {
+        title: c("A quote request that is worth answering", "Eine Anfrage, die das Antworten wert ist"),
+        text: c(
+          "A blank 'your message' box produces one-line enquiries you have to phone back twice to price. Asking the four things you would ask on the phone anyway — trade, district, what happened, and whether it is urgent — means the request that reaches you can usually be answered with a real number, or ruled out before you drive across town for nothing.",
+          "Ein leeres Feld „Ihre Nachricht“ produziert Einzeiler, für die Sie zweimal zurückrufen müssen, um einen Preis zu nennen. Die vier Dinge zu fragen, die Sie am Telefon ohnehin fragen — Gewerk, Bezirk, was passiert ist und ob es dringend ist — heißt, dass die Anfrage meist mit einer echten Zahl beantwortet werden kann oder ausscheidet, bevor Sie umsonst quer durch die Stadt fahren.",
+        ),
+      },
+    ],
+    proof: [
+      { value: "1 tap", label: c("from a search result to your phone ringing", "vom Suchergebnis bis Ihr Telefon klingelt") },
+      { value: "1.0s", label: c("largest contentful paint, measured on this site", "Largest Contentful Paint, auf dieser Website gemessen") },
+      { value: "0", label: c("monthly builder fees, and nothing to update", "monatliche Baukastengebühren, nichts zu aktualisieren") },
+    ],
+    faq: [
+      {
+        question: c("Is a website worth it if most work comes by recommendation?", "Lohnt eine Website, wenn das meiste über Empfehlung kommt?"),
+        answer: c(
+          "Recommendation is how you get named; the website is where the person checks you before calling. Someone handed your name still searches it, and finding nothing — or a dead 2012 page — costs you the job you had already won. It is also what makes a Google Business Profile work, and that profile is what puts you in the map results where the emergency searches happen.",
+          "Über Empfehlung werden Sie genannt; auf der Website wird geprüft, bevor angerufen wird. Wer Ihren Namen bekommen hat, sucht ihn trotzdem — und nichts zu finden oder eine tote Seite von 2012, kostet Sie den Auftrag, den Sie schon hatten. Die Website ist außerdem das, was ein Google-Unternehmensprofil erst wirken lässt, und dieses Profil bringt Sie in die Kartenergebnisse, wo die Notfallsuchen stattfinden.",
+        ),
+      },
+      {
+        question: c("How many pages do we need?", "Wie viele Seiten brauchen wir?"),
+        answer: c(
+          "Usually four to six: what you do, the trades in detail, your area, proof of finished work, contact, and the Impressum. More than that is rarely read. If you cover several trades that people search separately — plumbing and heating, say — each gets its own page, because those are separate searches and one combined page ranks for neither.",
+          "Meist vier bis sechs: was Sie tun, die Leistungen im Detail, Ihr Gebiet, Referenzen, Kontakt und das Impressum. Mehr wird selten gelesen. Decken Sie mehrere Gewerke ab, nach denen getrennt gesucht wird — etwa Installation und Heizung —, bekommt jedes eine eigene Seite: Das sind getrennte Suchen, und eine kombinierte Seite rankt für keine davon.",
+        ),
+      },
+      {
+        question: c("We have no photos of our work.", "Wir haben keine Fotos unserer Arbeiten."),
+        answer: c(
+          "Start taking them with a phone from tomorrow — before, during and after, with the customer's permission. They are the most persuasive thing on a trades website and they cost nothing. The site launches with what exists and the gallery grows; waiting for a photographer is the most common reason a build sits unfinished for months.",
+          "Fangen Sie ab morgen an, welche mit dem Handy zu machen — vorher, währenddessen, nachher, mit Einverständnis des Kunden. Sie sind das überzeugendste Element einer Handwerker-Website und kosten nichts. Die Website startet mit dem, was da ist, und die Galerie wächst; auf einen Fotografen zu warten ist der häufigste Grund, warum ein Projekt monatelang unfertig liegen bleibt.",
+        ),
+      },
+      {
+        question: c("Do you also do the Google Business Profile?", "Machen Sie auch das Google-Unternehmensprofil?"),
+        answer: c(
+          "Yes, and for this trade it usually matters more than the website itself, because the map results sit above the ordinary ones. Categories, service area, hours, photographs and the details matched exactly to the site, so the two reinforce each other instead of contradicting each other. The profile stays in your own account.",
+          "Ja — und in diesem Gewerbe zählt es meist mehr als die Website selbst, weil die Kartenergebnisse über den gewöhnlichen stehen. Kategorien, Einzugsgebiet, Zeiten, Fotos und Angaben exakt auf die Website abgestimmt, damit sich beide verstärken statt zu widersprechen. Das Profil bleibt in Ihrem eigenen Konto.",
+        ),
+      },
+    ],
+    siblings: ["websites", "arztpraxis", "restaurant"],
+  },
 };
 
 export interface InsightContent {
@@ -242,6 +535,7 @@ export const insightContent: Record<InsightKey, InsightContent> = {
     ],
     relatedService: "digital-marketing",
   },
+
 };
 
 export const pick = (value: LocalizedCopy, lang: SeoLang) => value[lang];
