@@ -15,15 +15,15 @@ const previews = [
     <svg class="pv-field" viewBox="0 0 1600 660" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs><radialGradient id="process-fade"><stop stop-color="white"/><stop offset="1" stop-color="black"/></radialGradient><mask id="process-mask"><rect width="1600" height="660" fill="url(#process-fade)"/></mask></defs>
       <g mask="url(#process-mask)" fill="none" stroke="currentColor" stroke-width=".65">
-        {Array.from({ length: 34 }, (_, i) => <ellipse cx={250 + i * 14} cy={410 - i * 3} rx={80 + i * 20} ry={48 + i * 15} transform={`rotate(-24 ${250 + i * 14} ${410 - i * 3})`}/>)}
-        {Array.from({ length: 30 }, (_, i) => <ellipse cx={1290 - i * 8} cy={320 + i * 3} rx={64 + i * 17} ry={48 + i * 16} transform={`rotate(30 ${1290 - i * 8} ${320 + i * 3})`}/>)}
+        {Array.from({ length: 34 }, (_, i) => <ellipse class:list={{ "pv-field-fine": i % 2 === 1 }} cx={250 + i * 14} cy={410 - i * 3} rx={80 + i * 20} ry={48 + i * 15} transform={`rotate(-24 ${250 + i * 14} ${410 - i * 3})`}/>)}
+        {Array.from({ length: 30 }, (_, i) => <ellipse class:list={{ "pv-field-fine": i % 2 === 1 }} cx={1290 - i * 8} cy={320 + i * 3} rx={64 + i * 17} ry={48 + i * 16} transform={`rotate(30 ${1290 - i * 8} ${320 + i * 3})`}/>)}
       </g>
     </svg>
     <span class="pv-halo pv-halo--write" aria-hidden="true"></span>
     <span class="pv-halo pv-halo--scope" aria-hidden="true"></span>
     <span class="pv-halo pv-halo--launch" aria-hidden="true"></span>
     <svg class="pv-current" data-pv-svg aria-hidden="true" preserveAspectRatio="none">
-      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4 }]} data-flow-strand={i} pathLength="1000" fill="none"/>)}
+      {Array.from({ length: 9 }, (_, i) => <path class:list={["pv-strand", { "pv-filament": i === 4, "pv-strand--minor": i !== 2 && i !== 4 && i !== 6 }]} data-flow-strand={i} pathLength="1000" fill="none"/>)}
       <circle class="pv-traveller" r="3" cx="0" cy="0"/>
       <path class="pv-pulse" data-flow-pulse pathLength="1000" fill="none"/>
       <path class="pv-pulse pv-pulse--second" data-flow-pulse pathLength="1000" fill="none"/>
@@ -239,6 +239,27 @@ const previews = [
        frames actually go. The dust stays as atmosphere; it just holds still. */
     .pv-pulse { animation: none; }
     .pv-dust i { animation: none; box-shadow: none; }
+    /* The real per-frame cost on a phone. The stage is 361×1165 here instead of
+       1360×650, and the current spans all of it: nine strokes whose dash offset
+       changes every scroll frame, so the whole stage-sized SVG is invalidated
+       nine times over per frame. Six of the nine only ever read as thickness at
+       this width — three lines draw the same picture for a third of the paint.
+       processMotion drops the same six from the scrub, so they cost nothing. */
+    .pv-strand--minor { display: none; }
+    /* The field is painted once, but it is painted at 361×1165 through an SVG
+       mask, and that is a texture a phone has to keep. Its arcs come in pairs
+       roughly 4px apart at the slice scale a phone gets; dropping every second
+       one halves the geometry and looks identical. */
+    .pv-field-fine { display: none; }
+    /* The panel sheen tweens the CENTRE of a radial gradient across the glass.
+       Moving a gradient's origin cannot be composited: every frame re-rasterises
+       the whole 361×580 panel to shift a highlight almost nobody sees at this
+       size. The glow still fades in — `--reflection` is opacity, which is cheap
+       — it just stops travelling. */
+    .pv-glass::after { --light-x: 45%; }
+    /* Their animation is already off here, so both pulses render one static
+       2/1000 dash — an invisible dot each, on a path the size of the stage. */
+    .pv-current .pv-pulse { display: none; }
     /* A 45px shadow blur across three large panels, rasterized on every step. */
     .pv-glass { box-shadow: inset 0 1px 1px rgba(255,255,255,.4), 0 14px 24px -14px #000; }
   }

@@ -41,7 +41,7 @@ export function setupProcessMotion(root: HTMLElement) {
     glyphs.forEach((glyph) => { glyph.style.opacity = "1"; glyph.classList.remove("is-caret"); });
     ink.style.setProperty("--caret", "0");
     if (reduced.matches || document.documentElement.classList.contains("rb-calm")) {
-      root.dataset.motionProgress = "1";
+      root.classList.add("is-complete");
       return;
     }
 
@@ -50,7 +50,11 @@ export function setupProcessMotion(root: HTMLElement) {
       const clock = { typed: 0, energy: 0, end: 0 };
       const path = q<SVGPathElement>(".pv-filament");
       const traveller = q<SVGCircleElement>(".pv-traveller");
-      const strands = qa("[data-flow-strand]");
+      // Only scrub what is on screen. The touch stylesheet hides `.pv-strand--minor`,
+    // and setting a dash offset on a hidden path still costs a style pass, so the
+    // two have to agree about which six are gone.
+    const compact = matchMedia("(max-width: 1040px), (pointer: coarse)").matches;
+    const strands = qa("[data-flow-strand]").filter((strand) => !compact || !strand.classList.contains("pv-strand--minor"));
       const fronts = qa(".pv-front-strand");
       let length = 1;
       let scopeStop = .4;
@@ -58,7 +62,8 @@ export function setupProcessMotion(root: HTMLElement) {
       let lastTyped = -1;
       let lastCaret = -1;
       let lastEnergy = -1;
-      let lastProgress = -1;
+      let lastComplete = false;
+      const alphas = new Float32Array(glyphs.length).fill(-1);
       let refreshFrame = 0;
       const drawEnergy = () => {
         const phase = clock.energy;
@@ -115,7 +120,14 @@ export function setupProcessMotion(root: HTMLElement) {
 
       const render = () => {
           if (lastTyped !== clock.typed) {
-            glyphs.forEach((glyph, index) => { glyph.style.opacity = String(Math.max(0, Math.min(1, clock.typed - index))); });
+            // Every glyph but the one or two under the caret is already at 0 or
+            // 1, and rewriting an unchanged inline style still dirties the pill.
+            glyphs.forEach((glyph, index) => {
+              const alpha = Math.max(0, Math.min(1, clock.typed - index));
+              if (alphas[index] === alpha) return;
+              alphas[index] = alpha;
+              glyph.style.opacity = String(alpha);
+            });
             const caret = Math.min(glyphs.length - 1, Math.floor(clock.typed));
             if (caret !== lastCaret) {
               glyphs[lastCaret]?.classList.remove("is-caret");
@@ -125,10 +137,12 @@ export function setupProcessMotion(root: HTMLElement) {
             lastTyped = clock.typed;
           }
           drawEnergy();
-          const progress = timeline.progress();
-          root.classList.toggle("is-complete", progress > .985);
-          const rounded = Math.round(progress * 1000) / 1000;
-          if (rounded !== lastProgress) { root.dataset.motionProgress = String(rounded); lastProgress = rounded; }
+          // `is-complete` gates the finished-state animations. Toggling it per
+          // frame invalidated the whole scene's style for a value that changes
+          // exactly once; the old `data-motion-progress` written alongside it
+          // was read by nothing at all.
+          const complete = timeline.progress() > .985;
+          if (complete !== lastComplete) { root.classList.toggle("is-complete", complete); lastComplete = complete; }
       };
       const timeline = gsap.timeline({ paused: true, defaults: { ease: "sine.inOut" }, onUpdate: render });
       timeline.to(clock, { end: 1, duration: 100, ease: "none" }, 0)
@@ -191,7 +205,20 @@ export function setupProcessMotion(root: HTMLElement) {
       let targetProgress = 0;
       let following = false;
       let initialized = false;
+      // On a phone the stage is 361×1165 instead of 1360×650, and one step of
+      // this timeline repaints most of it: the current's dash offsets, the glass
+      // panels' opacity, the sheet's rows. Stepping it 60 times a second is what
+      // costs the frames — so on touch the scene advances about 33 times a
+      // second instead. The page still scrolls on the compositor at full rate;
+      // only the drawing inside the scene is coarser, and a scrub this slow does
+      // not read as choppy at 30fps. Desktop keeps every frame.
+      const SCENE_FRAME = compact ? 30 : 0;
+      let carry = 0;
       const followScroll = (_time: number, deltaMs: number) => {
+        carry += deltaMs;
+        if (carry < SCENE_FRAME) return;
+        const elapsed = carry;
+        carry = 0;
         const current = timeline.progress();
         const remaining = targetProgress - current;
         if (Math.abs(remaining) < .0004) {
@@ -202,12 +229,16 @@ export function setupProcessMotion(root: HTMLElement) {
         }
         // A delayed frame must not fast-forward a whole stage. Damping uses a
         // bounded frame delta and a bounded step, local to this scene.
-        const blend = 1 - Math.exp(-Math.min(deltaMs, 32) / 140);
-        const step = gsap.utils.clamp(-.04, .04, remaining * blend);
+        // Bounds scale with the frame the follow actually runs at, so a coarser
+        // scene still catches up in the same wall-clock time. Desktop, running
+        // every frame, keeps exactly the numbers it had.
+        const blend = 1 - Math.exp(-Math.min(elapsed, compact ? 48 : 32) / 140);
+        const cap = compact ? .06 : .04;
+        const step = gsap.utils.clamp(-cap, cap, remaining * blend);
         timeline.progress(current + step);
       };
       const follow = () => {
-        if (!following) { following = true; gsap.ticker.add(followScroll); }
+        if (!following) { following = true; carry = 0; gsap.ticker.add(followScroll); }
       };
       // Attach only after all steps exist. A restored/deep-linked scroll can
       // otherwise render an empty timeline at its end before typing is added.
