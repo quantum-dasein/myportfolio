@@ -12,6 +12,20 @@ interface Props {
 const { logoUrl, logoAlt, links, lang = "en" } = Astro.props;
 const t = useTranslations(lang);
 const year = new Date().getFullYear();
+
+// The home page numbers its sections 01–07. This column is the part of the
+// footer that mirrors them, in their order: Studio 01, Arbeiten 04, Leistungen
+// 05, Archiv 06, Kontakt 07. Notes is a page, not a section, so it moves to the
+// column beside this one — as does the archive link's old position, which used
+// to put 06 after 07.
+const order = ["nav.about", "nav.work", "nav.services", "nav.gallery", "nav.contact"];
+const sections = order
+  .map((key) =>
+    key === "nav.gallery"
+      ? { title: t("nav.gallery"), url: "/gallery", i18n: "nav.gallery" }
+      : links.find((link) => link.i18n === key),
+  )
+  .filter((link): link is NonNullable<typeof link> => Boolean(link));
 ---
 
 <sy-footer>
@@ -52,16 +66,29 @@ const year = new Date().getFullYear();
         </div>
       </div>
 
+      {/* Two columns, because these were two different kinds of link jumbled
+          into one list: anchors into the home page, and pages that stand on
+          their own. The first column follows the home page's own section
+          numbering — Studio 01, Arbeiten 04, Leistungen 05, Archiv 06,
+          Kontakt 07 — so the footer and the page agree about the order of the
+          site. Archiv used to sit below Notizen and Kontakt, which put section
+          06 after section 07 and after a page that is not a section at all. */}
       <nav class="footer-cols" aria-label="Footer">
         <div class="footer-col">
           <span class="col-label" data-i18n="footer.nav.label">{t("footer.nav.label")}</span>
           {
-            links.map((link) => (
-              <a href={link.url} data-i18n={link.i18n} data-case-exit>{link.title}</a>
-            ))
+            sections.map((link) =>
+              link.i18n === "nav.gallery" ? (
+                <a href={link.url} data-tunnel data-cursor="ENTER" data-i18n={link.i18n}>{link.title}</a>
+              ) : (
+                <a href={link.url} data-i18n={link.i18n} data-case-exit>{link.title}</a>
+              ),
+            )
           }
-          <a href="/gallery" data-tunnel data-cursor="ENTER" data-i18n="nav.gallery">{t("nav.gallery")}</a>
-          <a href="/work/studio" data-case-exit data-cursor="READ" data-i18n="footer.colophon">{t("footer.colophon")}</a>
+        </div>
+
+        <div class="footer-col">
+          <span class="col-label" data-i18n="footer.more.label">{t("footer.more.label")}</span>
           {/* One link, not both. Showing the EN and DE profile side by side sent
               German visitors to the English page, which is lockLang and used to
               overwrite their saved language for the whole site. The href and the
@@ -74,6 +101,8 @@ const year = new Date().getFullYear();
             data-i18n="footer.profile"
             data-case-exit
           >{t("footer.profile")}</a>
+          <a href="/notes" data-case-exit data-cursor="READ" data-i18n="nav.notes">{t("nav.notes")}</a>
+          <a href="/work/studio" data-case-exit data-cursor="READ" data-i18n="footer.colophon">{t("footer.colophon")}</a>
         </div>
 
         <div class="footer-col">

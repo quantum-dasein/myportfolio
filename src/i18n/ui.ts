@@ -126,8 +126,8 @@ export const ui = {
 
     // ── Selected Work (teaser — immersive cases land next) ───────────────────
     "work.label": "Selected Work",
-    "work.title": "Two marketing builds. One standard: premium.",
-    "work.text": "Two digital systems I conceived and built solo: strategy, content, technical SEO and the Astro front-end from one hand — and both still maintained, in production, with the search results to check.",
+    "work.title": "One page or four hundred. Same standard.",
+    "work.text": "Three projects I conceived and built solo — a single-page landing, a growth system and a 429-page platform: strategy, content, technical SEO and the Astro front-end from one hand. All three are in production, and the search results are there to check.",
     "work.1.tag": "Astro · GSAP · Technical SEO",
     "work.1.title": "Bridge Consult",
     "work.1.role": "Solo build · Strategy, code & SEO",
@@ -560,6 +560,7 @@ export const ui = {
     "footer.tagline": "Digital Marketer · Creative Developer · Vienna",
     "footer.status": "Available for projects",
     "footer.nav.label": "Navigate",
+    "footer.more.label": "More",
     "footer.social.label": "Elsewhere",
     "footer.colophon": "How this site is built",
     "footer.profile": "Profile & experience · Vienna",
@@ -697,8 +698,8 @@ export const ui = {
 
     // ── Selected Work (teaser — immersive cases land next) ───────────────────
     "work.label": "Ausgewählte Arbeiten",
-    "work.title": "Zwei Marketing-Builds. Ein Standard: erstklassig.",
-    "work.text": "Zwei digitale Systeme, die ich solo konzipiert und gebaut habe: Strategie, Content, Technical SEO und das Astro-Frontend aus einer Hand — und beide laufen weiter, in Produktion, mit nachprüfbaren Suchergebnissen.",
+    "work.title": "Eine Seite oder vierhundert. Derselbe Standard.",
+    "work.text": "Drei Projekte, die ich solo konzipiert und gebaut habe — eine einseitige Landingpage, ein Growth-System und eine Plattform mit 429 Seiten: Strategie, Content, Technical SEO und das Astro-Frontend aus einer Hand. Alle drei laufen in Produktion, und die Suchergebnisse sind nachprüfbar.",
     "work.1.tag": "Astro · GSAP · Technical SEO",
     "work.1.title": "Bridge Consult",
     "work.1.role": "Solo Build · Strategie, Code & SEO",
@@ -1127,6 +1128,7 @@ export const ui = {
     "footer.tagline": "Digital Marketer · Creative Developer · Wien",
     "footer.status": "Verfügbar für Projekte",
     "footer.nav.label": "Navigation",
+    "footer.more.label": "Mehr",
     "footer.social.label": "Anderswo",
     "footer.colophon": "Wie diese Seite gebaut ist",
     "footer.profile": "Profil & Berufserfahrung · Wien",

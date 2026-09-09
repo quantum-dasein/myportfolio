@@ -1173,11 +1173,12 @@ const selectedWork = [
 
   .work-stage {
     position: relative;
-    min-height: 44rem;
+    /* Tall enough for three cards in a cascade rather than two side by side. */
+    min-height: 58rem;
     perspective: 1500px;
 
     @media (--mq-tablet) {
-      min-height: 41rem;
+      min-height: 52rem;
     }
   }
 
@@ -1271,17 +1272,49 @@ const selectedWork = [
     }
   }
 
+  /* The stage was composed for exactly two cards: two absolute positions and
+     nothing for a third, so the Academy card landed at the stage origin and
+     covered Bridge Consult — the one case a visitor most needs to see. Three
+     positions now, with the depth order stated explicitly rather than left to
+     document order: Bridge in front, FIDIC behind it, the small one furthest
+     back. A fourth case will need its own rule here; that is deliberate, the
+     composition is hand-placed, not a grid. */
   .work-card:nth-child(1) {
-    left: 1%;
-    top: 15%;
+    left: 0;
+    top: 6%;
+    z-index: 4;
     transform: perspective(1200px) rotateY(9deg) rotateZ(-2.4deg) translateZ(2rem);
   }
 
   .work-card:nth-child(2) {
     --work-accent: 184, 191, 195;
     right: 0;
-    top: 25%;
+    top: 17%;
+    z-index: 3;
     transform: perspective(1200px) rotateY(-8deg) rotateZ(2.6deg);
+  }
+
+  /* Smaller and set back, which is also what it is: the one-page job next to
+     two multilingual platforms. */
+  .work-card:nth-child(3) {
+    --work-accent: 196, 203, 208;
+    left: 17%;
+    top: 48%;
+    z-index: 2;
+    width: min(46%, 21rem);
+    /* Fixed, not a minimum: its blurb is the longest of the three and an
+       auto-growing card would run straight out of the bottom of the stage. */
+    height: 25rem;
+    min-height: 0;
+    transform: perspective(1200px) rotateY(5deg) rotateZ(-1.4deg) translateZ(-1rem);
+  }
+  .work-card:nth-child(3) a,
+  .work-card:nth-child(3) .work-copy { height: 100%; min-height: 0; }
+  .work-card:nth-child(3) .work-copy > p:not(.work-role) {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   .work-card::before {
@@ -1309,6 +1342,18 @@ const selectedWork = [
   .work-card:nth-child(2):hover {
     border-color: rgba(var(--work-accent), 0.42);
     transform: perspective(1200px) rotateY(-3deg) rotateZ(1deg) translate3d(0, -12px, 2rem);
+    box-shadow:
+      0 3.8rem 8rem rgba(0, 0, 0, 0.68),
+      0 0 4rem rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  /* Hovering the card that sits behind has to bring it forward, or the pointer
+     is on a card the visitor cannot fully see. */
+  .work-card:nth-child(3):hover {
+    z-index: 5;
+    border-color: rgba(var(--work-accent), 0.42);
+    transform: perspective(1200px) rotateY(2deg) rotateZ(-0.6deg) translate3d(0, -12px, 2.6rem);
     box-shadow:
       0 3.8rem 8rem rgba(0, 0, 0, 0.68),
       0 0 4rem rgba(255, 255, 255, 0.08),
@@ -1642,7 +1687,9 @@ const selectedWork = [
     font-size: clamp(0.98rem, 1.25vw, 1.16rem);
   }
 
-  .work-stage { min-height: 42rem; }
+  /* Later than the block above, so this is the height that actually applies on
+     a wide screen. Three cards in a cascade, not two side by side. */
+  .work-stage { min-height: 58rem; }
 
   .work-core {
     position: absolute;
@@ -1734,15 +1781,23 @@ const selectedWork = [
   }
 
   .work-card:nth-child(1) {
-    left: 5%;
-    top: 16%;
+    left: 2%;
+    top: 8%;
     transform: perspective(1200px) rotateY(8deg) rotateZ(-2deg) translateZ(2rem);
   }
 
   .work-card:nth-child(2) {
     right: 1%;
-    top: 27%;
+    top: 20%;
     transform: perspective(1200px) rotateY(-7deg) rotateZ(2.2deg);
+  }
+
+  .work-card:nth-child(3) {
+    left: 16%;
+    top: 52%;
+    width: min(36%, 17.5rem);
+    height: 21rem;
+    transform: perspective(1200px) rotateY(4deg) rotateZ(-1.2deg);
   }
 
   .work-copy { padding: 1.35rem; }
@@ -2020,11 +2075,15 @@ const selectedWork = [
     const rect = workStage.getBoundingClientRect();
     const nx = (event.clientX - rect.left) / rect.width - 0.5;
     const ny = (event.clientY - rect.top) / rect.height - 0.5;
+    // Written for two cards; with three, a shared direction makes the back one
+    // track its neighbour instead of holding its own plane. Depth order drives
+    // both the direction and how far each drifts.
     caseCards.forEach((card, index) => {
-      const direction = index === 0 ? 1 : -1;
+      const direction = index === 1 ? -1 : 1;
+      const depth = index === 0 ? 1 : index === 1 ? 0.85 : 0.55;
       gsap.to(card, {
-        x: nx * 18 * direction,
-        y: ny * 12 * (index === 0 ? 0.75 : 1),
+        x: nx * 18 * direction * depth,
+        y: ny * 12 * depth,
         duration: 0.65,
         ease: "power3.out",
         overwrite: "auto",
@@ -2050,7 +2109,7 @@ const selectedWork = [
       const travel = progress - 0.5;
 
       caseCards.forEach((card, index) => {
-        const direction = index === 0 ? -1 : 1;
+        const direction = index === 1 ? 1 : -1;
         card.style.setProperty("--mobile-card-x", `${direction * 4}px`);
         card.style.setProperty("--mobile-card-y", `${travel * 34 * direction}px`);
       });
