@@ -51,25 +51,25 @@ export function setupProcessMotion(root: HTMLElement) {
       const path = q<SVGPathElement>(".pv-filament");
       const traveller = q<SVGCircleElement>(".pv-traveller");
       // The stacked layout draws the current as three spans instead of one bundle
-    // (see the geometry in ProcessFlow.astro). Each span owns exactly one unit of
-    // `clock.energy`, which is also how the timeline already moves: 0→1 write to
-    // scope, 1→2 scope to launch, 2→3 launch to terminus. So the span that is
-    // filling is the only one written to, and the only one whose box goes dirty.
-    const spans = qa<SVGPathElement>("[data-flow-segment]");
-    const segmented = matchMedia("(max-width: 1040px), (pointer: coarse)").matches && spans.length === 3;
-    const strands = segmented ? [] : qa<SVGPathElement>("[data-flow-strand]");
-    const scrubbed = segmented ? spans : strands;
-    const spanLengths = [1, 1, 1];
-    const spanOffsets = ["", "", ""];
+      // (see the geometry in ProcessFlow.astro). Each span owns exactly one unit of
+      // `clock.energy`, which is also how the timeline already moves: 0→1 write to
+      // scope, 1→2 scope to launch, 2→3 launch to terminus. So the span that is
+      // filling is the only one written to, and the only one whose box goes dirty.
+      const spans = qa<SVGPathElement>("[data-flow-segment]");
+      const segmented = matchMedia("(max-width: 1040px), (pointer: coarse)").matches && spans.length === 3;
+      const strands = segmented ? [] : qa<SVGPathElement>("[data-flow-strand]");
+      const scrubbed = segmented ? spans : strands;
+      const spanLengths = [1, 1, 1];
+      const spanOffsets = ["", "", ""];
       const fronts = qa(".pv-front-strand");
       let length = 1;
       let scopeStop = .4;
       let launchStop = .85;
       let lastTyped = -1;
+      let revealedGlyphs = 0;
       let lastCaret = -1;
       let lastEnergy = -1;
       let lastComplete = false;
-      const alphas = new Float32Array(glyphs.length).fill(-1);
       let refreshFrame = 0;
       const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
       const drawEnergy = () => {
@@ -134,12 +134,12 @@ export function setupProcessMotion(root: HTMLElement) {
       gsap.set(".pv-step", { opacity: 0, y: 7 });
       gsap.set(".pv-step > span", { opacity: .75 });
       gsap.set(".pv-caption", { opacity: 0, y: 8 });
-      gsap.set(".pv-message", { opacity: .14, scale: .995 });
-      gsap.set(".pv-sheet", { opacity: .12, y: 5, scale: .995 });
-      gsap.set(".pv-browser", { opacity: .14, y: 4 });
+      gsap.set(".pv-message", { opacity: .28, scale: .995 });
+      gsap.set(".pv-sheet", { opacity: .24, y: 5, scale: .995 });
+      gsap.set(".pv-browser", { opacity: .26, y: 4 });
       gsap.set(glyphs, { opacity: 0 });
       gsap.set(".pv-check", { "--check-glow": 0 });
-      gsap.set(".pv-row", { opacity: .55, y: 6 });
+      gsap.set(".pv-row", { opacity: .68, y: 6 });
       gsap.set(".pv-row-copy i", { scaleX: 0 });
       gsap.set(".pv-row-icon", { opacity: .4 });
       gsap.set(".pv-check-ring, .pv-check-mark", { strokeDashoffset: 1 });
@@ -151,15 +151,16 @@ export function setupProcessMotion(root: HTMLElement) {
 
       const render = () => {
           if (lastTyped !== clock.typed) {
-            // Every glyph but the one or two under the caret is already at 0 or
-            // 1, and rewriting an unchanged inline style still dirties the pill.
-            glyphs.forEach((glyph, index) => {
-              const alpha = Math.max(0, Math.min(1, clock.typed - index));
-              if (alphas[index] === alpha) return;
-              alphas[index] = alpha;
-              glyph.style.opacity = String(alpha);
-            });
-            const caret = Math.min(glyphs.length - 1, Math.floor(clock.typed));
+            const typed = Math.max(0, Math.min(glyphs.length, clock.typed));
+            const whole = Math.floor(typed);
+            if (whole > revealedGlyphs) {
+              for (let index = revealedGlyphs; index < whole; index++) glyphs[index].style.opacity = "1";
+            } else if (whole < revealedGlyphs) {
+              for (let index = whole; index < revealedGlyphs; index++) glyphs[index].style.opacity = "0";
+            }
+            if (glyphs[whole]) glyphs[whole].style.opacity = String(typed - whole);
+            revealedGlyphs = whole;
+            const caret = Math.min(glyphs.length - 1, whole);
             if (caret !== lastCaret) {
               glyphs[lastCaret]?.classList.remove("is-caret");
               glyphs[caret]?.classList.add("is-caret");
@@ -175,11 +176,11 @@ export function setupProcessMotion(root: HTMLElement) {
           const complete = timeline.progress() > .985;
           if (complete !== lastComplete) { root.classList.toggle("is-complete", complete); lastComplete = complete; }
       };
-      const timeline = gsap.timeline({ paused: true, defaults: { ease: "sine.inOut" }, onUpdate: render });
+      const timeline = gsap.timeline({ paused: true, defaults: { ease: "power2.out" }, onUpdate: render });
       timeline.to(clock, { end: 1, duration: 100, ease: "none" }, 0)
-        .to(".pv-write .pv-step", { opacity: 1, y: 0, duration: 9 }, 0)
-        .to(".pv-write .pv-step > span", { opacity: 1, duration: 6 }, 0)
-        .to(".pv-message", { opacity: 1, scale: 1, duration: 12 }, 1)
+        .to(".pv-write .pv-step", { opacity: 1, y: 0, duration: 6 }, 0)
+        .to(".pv-write .pv-step > span", { opacity: 1, duration: 5 }, 0)
+        .to(".pv-message", { opacity: 1, scale: 1, duration: 8 }, 1)
         .set(".pv-type-ink", { "--caret": 1 }, 5)
         .to(clock, { typed: glyphs.length, duration: 13, ease: "none" }, 4)
         .to(".pv-type-ink", { "--caret": 0, duration: .5, repeat: 3, yoyo: true }, 15)
@@ -194,12 +195,12 @@ export function setupProcessMotion(root: HTMLElement) {
         .to(".pv-write .pv-step > span", { opacity: .82, duration: 9 }, 26)
         .to(".pv-scope .pv-step", { opacity: 1, y: 0, duration: 5 }, 25)
         .to(".pv-scope .pv-step > span", { opacity: 1, duration: 5 }, 25)
-        .to(".pv-sheet", { opacity: 1, scale: 1, y: 0, duration: 13 }, 25)
-        .fromTo(".pv-sheet", { "--reflection": .1, "--light-x": "0%" }, { "--reflection": .9, "--light-x": "100%", duration: 8, immediateRender: false }, 27);
+        .to(".pv-sheet", { opacity: 1, scale: 1, y: 0, duration: 9 }, 25)
+        .fromTo(".pv-sheet", { "--reflection": .1 }, { "--reflection": .55, duration: 6, immediateRender: false }, 27);
 
       qa(".pv-row").forEach((row, index) => {
         const at = 33 + index * 8;
-        timeline.to(row, { opacity: 1, y: 0, duration: 7 }, at)
+        timeline.to(row, { opacity: 1, y: 0, duration: 5 }, at)
           .fromTo(row, { "--row-sheen": "-110%" }, { "--row-sheen": "110%", duration: 6, immediateRender: false }, at)
           .to(row.querySelectorAll(".pv-row-copy i"), { scaleX: 1, duration: 3.5, stagger: .6 }, at + 1)
           .to(row.querySelector(".pv-row-icon"), { opacity: 1, duration: 3 }, at + 2)
@@ -216,15 +217,15 @@ export function setupProcessMotion(root: HTMLElement) {
         .to(".pv-scope .pv-step > span", { opacity: .82, duration: 10 }, 64)
         .to(".pv-launch .pv-step", { opacity: 1, y: 0, duration: 5 }, 67)
         .to(".pv-launch .pv-step > span", { opacity: 1, duration: 5 }, 67)
-        .to(".pv-browser", { opacity: 1, y: 0, duration: 12 }, 67)
+        .to(".pv-browser", { opacity: 1, y: 0, duration: 8 }, 67)
         .to(".pv-frame rect", { strokeDashoffset: 0, duration: 7, ease: "power1.inOut" }, 69)
         .to(".pv-chrome, .pv-nav", { opacity: 1, duration: 6, stagger: 1 }, 71)
         .to(".pv-live", { opacity: 1, duration: 5 }, 75)
-        .to(".pv-site-kicker", { opacity: 1, duration: 8 }, 73)
-        .to(".pv-site-hero > p", { opacity: 1, y: 0, duration: 12 }, 74)
-        .to(".pv-site-link", { opacity: 1, duration: 8 }, 79)
-        .to(".pv-sphere", { opacity: 1, scale: 1, duration: 15 }, 73)
-        .to(".pv-projects > div", { opacity: 1, y: 0, duration: 11, stagger: 2 }, 80)
+        .to(".pv-site-kicker", { opacity: 1, duration: 5 }, 73)
+        .to(".pv-site-hero > p", { opacity: 1, y: 0, duration: 7 }, 74)
+        .to(".pv-site-link", { opacity: 1, duration: 5 }, 79)
+        .to(".pv-sphere", { opacity: 1, scale: 1, duration: 9 }, 73)
+        .to(".pv-projects > div", { opacity: 1, y: 0, duration: 6, stagger: 2 }, 80)
         .to(".pv-launch .pv-caption", { opacity: 1, y: 0, duration: 4 }, 91)
         .to(traveller, { opacity: 1, duration: 1 }, 93)
         .to(clock, { energy: 3, duration: 5, ease: "power1.inOut" }, 93)
@@ -233,44 +234,24 @@ export function setupProcessMotion(root: HTMLElement) {
 
       root.addEventListener("pv:geometry", measure);
       measure();
-      let targetProgress = 0;
-      let following = false;
       let initialized = false;
-      const followScroll = (_time: number, deltaMs: number) => {
-        const current = timeline.progress();
-        const remaining = targetProgress - current;
-        if (Math.abs(remaining) < .0004) {
-          timeline.progress(targetProgress);
-          gsap.ticker.remove(followScroll);
-          following = false;
-          return;
-        }
-        // A delayed frame must not fast-forward a whole stage. Damping uses a
-        // bounded frame delta and a bounded step, local to this scene.
-        const blend = 1 - Math.exp(-Math.min(deltaMs, 32) / 140);
-        const step = gsap.utils.clamp(-.04, .04, remaining * blend);
-        timeline.progress(current + step);
-      };
-      const follow = () => {
-        if (!following) { following = true; gsap.ticker.add(followScroll); }
-      };
-      // Attach only after all steps exist. A restored/deep-linked scroll can
-      // otherwise render an empty timeline at its end before typing is added.
+      // Lenis already smooths the desktop wheel, while touch devices provide
+      // native momentum. Binding the narrative directly avoids a second
+      // animation loop that used to chase the scroll position and look laggy.
       ScrollTrigger.create({
-        trigger: root, start: "top 82%", end: "bottom 82%",
-        onUpdate: (trigger) => {
-          targetProgress = trigger.progress;
-          const bounds = root.getBoundingClientRect();
-          if (targetProgress === 1 && bounds.top < -bounds.height * .6) {
-            timeline.progress(1); // Restored/deep-linked scroll below the scene.
-          } else follow();
-        },
+        animation: timeline,
+        trigger: root,
+        start: "top 82%",
+        end: "bottom 82%",
+        scrub: true,
         onRefresh: (trigger) => {
           cancelAnimationFrame(refreshFrame);
           refreshFrame = requestAnimationFrame(() => {
-            targetProgress = trigger.progress;
-            if (!initialized) { timeline.progress(targetProgress); initialized = true; render(); }
-            else follow();
+            if (!initialized) {
+              timeline.progress(trigger.progress);
+              initialized = true;
+            }
+            render();
           });
         },
       });
@@ -284,33 +265,44 @@ export function setupProcessMotion(root: HTMLElement) {
           y: gsap.quickTo(node, "rotationY", { duration: .85, ease: "power3.out" }),
         }));
         gsap.set(nodes, { transformPerspective: 1400 });
-        gsap.set(root, { "--pointer-x": "0%", "--pointer-y": "0%", "--pointer-reflection": 0 });
+        gsap.set(root, { "--pointer-reflection": 0 });
         const fieldX = gsap.quickTo(q(".pv-field"), "x", { duration: 1.2 });
         const fieldY = gsap.quickTo(q(".pv-field"), "y", { duration: 1.2 });
         const dustX = gsap.quickTo(q(".pv-dust"), "x", { duration: 1 });
         const dustY = gsap.quickTo(q(".pv-dust"), "y", { duration: 1 });
         const reflect = gsap.quickTo(root, "--pointer-reflection", { duration: .8 });
-        const glintX = gsap.quickTo(root, "--pointer-x", { duration: .9 });
-        const glintY = gsap.quickTo(root, "--pointer-y", { duration: .9 });
+        let pointerFrame = 0;
+        let pointerClientX = 0;
+        let pointerClientY = 0;
+        const applyPointer = () => {
+          pointerFrame = 0;
+          const rect = root.getBoundingClientRect();
+          const x = (pointerClientX - rect.left) / rect.width * 2 - 1;
+          const y = (pointerClientY - rect.top) / rect.height * 2 - 1;
+          tilts.forEach((tilt, i) => { const max = i === 0 ? .5 : i === 1 ? 1.2 : 1; tilt.x(-y * max); tilt.y(x * max); });
+          fieldX(x * 5); fieldY(y * 4); dustX(x * 9); dustY(y * 8); reflect(.35);
+        };
         const reset = () => {
+          cancelAnimationFrame(pointerFrame);
+          pointerFrame = 0;
           tilts.forEach((tilt) => { tilt.x(0); tilt.y(0); });
-          fieldX(0); fieldY(0); dustX(0); dustY(0); reflect(0); glintX(0); glintY(0);
+          fieldX(0); fieldY(0); dustX(0); dustY(0); reflect(0);
         };
         root.addEventListener("pointerleave", reset);
-        pointerCleanup = () => root.removeEventListener("pointerleave", reset);
+        pointerCleanup = () => {
+          cancelAnimationFrame(pointerFrame);
+          root.removeEventListener("pointerleave", reset);
+        };
         return (event: PointerEvent) => {
           if (!root.classList.contains("is-visible") || event.pointerType === "touch") return;
-          const rect = root.getBoundingClientRect();
-          const x = (event.clientX - rect.left) / rect.width * 2 - 1;
-          const y = (event.clientY - rect.top) / rect.height * 2 - 1;
-          tilts.forEach((tilt, i) => { const max = i === 0 ? .5 : i === 1 ? 1.2 : 1; tilt.x(-y * max); tilt.y(x * max); });
-          fieldX(x * 5); fieldY(y * 4); dustX(x * 9); dustY(y * 8); reflect(.5); glintX(x * 18); glintY(y * 16);
+          pointerClientX = event.clientX;
+          pointerClientY = event.clientY;
+          if (!pointerFrame) pointerFrame = requestAnimationFrame(applyPointer);
         };
       })() : null;
       if (move) root.addEventListener("pointermove", move, { passive: true });
       cleanup = () => {
         cancelAnimationFrame(refreshFrame);
-        gsap.ticker.remove(followScroll);
         root.removeEventListener("pv:geometry", measure);
         if (move) root.removeEventListener("pointermove", move);
         pointerCleanup();
