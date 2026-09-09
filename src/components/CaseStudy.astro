@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import BridgeDataScene from "./BridgeDataScene.astro";
 import { useTranslations, type UIKey } from "../i18n/utils";
+import { cases, type CaseId } from "../data/cases";
 
 interface CaseItem {
   label: string;
@@ -9,17 +10,11 @@ interface CaseItem {
   translated?: boolean;
 }
 
-interface Props {
-  id: "bridge" | "fidic";
-  image: string;
-  nextHref: string;
-  liveUrl?: string;
-  stack: string;
-  year: string;
-}
+interface Props { id: CaseId }
 
-const { id, image, nextHref, liveUrl, stack, year } = Astro.props;
-const isBridge = id === "bridge";
+const { id } = Astro.props;
+const config = cases[id];
+const { image, nextHref, liveUrl, stack, year, impact, chapters = {}, specimen, seo } = config;
 const liveHost = liveUrl ? new URL(liveUrl).hostname.replace(/^www\./, "") : "";
 const t = useTranslations();
 const tk = (key: string) => t(key as UIKey);
@@ -34,12 +29,7 @@ const items: CaseItem[] = [
 ];
 const highlights = [1, 2, 3].map((n) => key(`highlight.${n}`));
 const process = [1, 2, 3].map((n) => key(`process.${n}`));
-const bridgeMetrics = [
-  { value: "+780%", key: "case.bridge.metric.organic", detail: "5 -> 44", fill: "100%" },
-  { value: "+626.67%", key: "case.bridge.metric.users", detail: "109", fill: "82%" },
-  { value: "+645.69%", key: "case.bridge.metric.events", detail: "865", fill: "88%" },
-  { value: "04", key: "case.bridge.metric.markets", detail: "UZ / US / AT / PL", fill: "64%" },
-];
+
 // The cards used to name the products in the stack, which is the one thing on
 // this page a reader can already buy for themselves. They name the decisions
 // now; the stack is listed in case.bridge.workflow.text where it belongs.
@@ -98,18 +88,10 @@ const fidicPerf = [1, 2, 3, 4, 5].map((n) => ({
   problem: `case.fidic.perf.${n}.problem`,
   fix: `case.fidic.perf.${n}.fix`,
 }));
-const seoTitle = isBridge
-  ? "Bridge Consult Case Study | SEO & Astro by Rodion Belousov"
-  : "FIDIC.uz Case Study | Content, SEO & Astro by Rodion Belousov";
-const seoDescription = isBridge
-  ? "How Rodion Belousov built Bridge Consult's multilingual Astro and Three.js website, technical SEO system and 780% organic search growth."
-  : "Inside Rodion Belousov's solo build of FIDIC.uz: 429 static pages, 117 expert articles, 16 contract tools and a self-refreshing World Bank tender archive.";
-const seoKeywords = isBridge
-  ? ["Bridge Consult case study", "Astro case study", "Three.js website", "technical SEO Austria", "multilingual website development", "AI-assisted web development"]
-  : ["FIDIC knowledge platform", "FIDIC SEO", "Astro content platform", "technical SEO case study", "multilingual content architecture", "contract management tools", "World Bank tender data pipeline"];
+const { title: seoTitle, description: seoDescription, keywords: seoKeywords } = seo;
 const caseSchema = {
   "@type": "CreativeWork",
-  "@id": `https://rodionbelousov.studio/work/${isBridge ? "bridge-consult" : "fidic"}#project`,
+  "@id": `https://rodionbelousov.studio/work/${config.slug}#project`,
   name: tk(titleKey),
   headline: seoTitle,
   description: seoDescription,
@@ -119,9 +101,7 @@ const caseSchema = {
   creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
   url: liveUrl,
   keywords: seoKeywords.join(", "),
-  about: isBridge
-    ? ["Infrastructure consulting", "Technical SEO", "Astro", "Three.js", "Multilingual content"]
-    : ["FIDIC contracts", "Knowledge management", "Technical SEO", "Astro", "Content architecture", "Data pipelines"],
+  about: seo.about,
 };
 ---
 
@@ -133,7 +113,7 @@ const caseSchema = {
   pageType="article"
   keywords={seoKeywords}
   structuredData={caseSchema}
-  theme={id}
+  theme={id === "bridge" || id === "fidic" ? id : undefined}
 >
   <article class="case" data-case-page>
     <section class="case-hero">
@@ -158,7 +138,7 @@ const caseSchema = {
           <span class="visual-depth visual-depth-b" aria-hidden="true"></span>
           <div class="case-screen" data-magnetic>
             <img src={image} alt={`${tk(titleKey)} digital marketing and web development case study`} loading="eager" fetchpriority="high" />
-            <span class="screen-index">{id === "bridge" ? "BC / 01" : "FIDIC / 02"}</span>
+            <span class="screen-index">{config.screenIndex}</span>
             <span class="screen-status">LIVE SYSTEM / 2026</span>
             <a class="screen-live" href={liveUrl} target="_blank" rel="noopener" aria-label={`${tk("case.visit")}: ${tk(titleKey)}`}><span class="ui-arrow" aria-hidden="true"></span></a>
           </div>
@@ -167,7 +147,7 @@ const caseSchema = {
       </div>
     </section>
 
-    {!isBridge && (
+    {chapters.platform && (
       <section class="fidic-platform" aria-labelledby="fidic-platform-title">
         <div class="u-container fidic-platform-head">
           <span class="chapter-label">PRODUCT ECOSYSTEM / SOLO BUILD / 2026</span>
@@ -199,18 +179,21 @@ const caseSchema = {
       </section>
     )}
 
-    {isBridge && (
-      <section class="bridge-impact" aria-labelledby="bridge-impact-title">
+    {/* Measured results. Bridge earns a WebGL scene behind its numbers; a case
+        without one gets the same grid on the plain ground, which is what the
+        block was always doing underneath. */}
+    {impact && (
+      <section class="bridge-impact" aria-labelledby="case-impact-title">
         <div class="u-container impact-head">
-          <span class="chapter-label">GA4 / EARLY LAUNCH SIGNAL</span>
-          <h2 id="bridge-impact-title" data-i18n="case.bridge.impact.title">{tk("case.bridge.impact.title")}</h2>
-          <p data-i18n="case.bridge.impact.text">{tk("case.bridge.impact.text")}</p>
+          <span class="chapter-label">{impact.source}</span>
+          <h2 id="case-impact-title" data-i18n={impact.titleKey}>{tk(impact.titleKey)}</h2>
+          <p data-i18n={impact.textKey}>{tk(impact.textKey)}</p>
         </div>
 
-        <div class="u-container impact-stage" data-reveal>
-          <BridgeDataScene />
+        <div class:list={["u-container", "impact-stage", { "impact-stage--flat": !impact.scene }]} data-reveal>
+          {impact.scene === "bridge" && <BridgeDataScene />}
           <div class="metric-grid">
-            {bridgeMetrics.map((metric, index) => (
+            {impact.metrics.map((metric, index) => (
               <article class:list={["metric", `metric-${index + 1}`]} data-kinetic>
                 <span class="metric-no">0{index + 1}</span>
                 <strong>{metric.value}</strong>
@@ -222,9 +205,9 @@ const caseSchema = {
           </div>
         </div>
         <div class="u-container impact-proofline" data-reveal>
-          <span>GA4 / VERIFIED LAUNCH WINDOW</span>
-          <p data-i18n="case.bridge.impact.note">{tk("case.bridge.impact.note")}</p>
-          <b>BASELINE -> WEEK 03</b>
+          <span>{impact.proofLabel}</span>
+          <p data-i18n={impact.noteKey}>{tk(impact.noteKey)}</p>
+          <b>{impact.proofTail}</b>
         </div>
       </section>
     )}
@@ -246,7 +229,7 @@ const caseSchema = {
       </div>
     </section>
 
-    {isBridge && (
+    {chapters.systemMap && (
       <section class="bridge-system-map">
         <div class="u-container system-map-head">
           <span class="chapter-label">ONE MONTH / TWO LAUNCHES / 2026</span>
@@ -267,7 +250,7 @@ const caseSchema = {
       </section>
     )}
 
-    {isBridge && (
+    {chapters.buildSystem && (
       <section class="bridge-build-system">
         <div class="u-container build-head">
           <span class="chapter-label">HUMAN DIRECTION / AI LEVERAGE</span>
@@ -331,7 +314,7 @@ const caseSchema = {
       </div>
     </section>
 
-    {!isBridge && (
+    {chapters.data && (
       <section class="fidic-data" aria-labelledby="fidic-data-title">
         <div class="u-container fidic-data-head">
           <span class="chapter-label">LIVE DATA LAYER / WORLD BANK / UNATTENDED</span>
@@ -361,7 +344,7 @@ const caseSchema = {
       </section>
     )}
 
-    {!isBridge && (
+    {chapters.runtime && (
       <section class="fidic-runtime" aria-labelledby="fidic-runtime-title">
         <div class="u-container fidic-runtime-head">
           <span class="chapter-label">RUNTIME / 03 SERVERLESS FUNCTIONS</span>
@@ -381,7 +364,7 @@ const caseSchema = {
       </section>
     )}
 
-    {!isBridge && (
+    {chapters.perf && (
       <section class="fidic-perf" aria-labelledby="fidic-perf-title">
         <div class="u-container fidic-perf-head">
           <span class="chapter-label">MEASURED, THEN CUT / PER DEVICE</span>
@@ -454,10 +437,10 @@ const caseSchema = {
           <p data-kinetic data-i18n={key("visual.text")}>{tk(key("visual.text"))}</p>
         </div>
         <div class="specimen" data-reveal>
-          <div class="specimen-axis"><span>VISUAL SYSTEM / 04</span><b>{isBridge ? "BRIDGE CONSULT" : "FIDIC.UZ"}</b></div>
+          <div class="specimen-axis"><span>VISUAL SYSTEM / 04</span><b>{specimen.name}</b></div>
           <span class="specimen-module specimen-module-a"><b>01</b><em>EDITORIAL GRID</em></span>
-          <span class="specimen-module specimen-module-b"><b>02</b><em>{isBridge ? "NOIR GLASS" : "CONTRACT ATLAS"}</em></span>
-          <span class="specimen-module specimen-module-c"><b>03</b><em>{isBridge ? "CHROME SIGNAL" : "FIDIC GOLD"}</em></span>
+          <span class="specimen-module specimen-module-b"><b>02</b><em>{specimen.moduleB}</em></span>
+          <span class="specimen-module specimen-module-c"><b>03</b><em>{specimen.moduleC}</em></span>
           <i class="specimen-orbit" aria-hidden="true"></i>
         </div>
       </div>

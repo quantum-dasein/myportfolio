@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { works } from "../data/works";
 import { insightContent, serviceContent } from "../data/seo-content";
+import { cases } from "../data/cases";
 
 const site = "https://rodionbelousov.studio";
 // Omit dates until an actual per-page editorial modification date is stored.
@@ -31,9 +32,9 @@ ${Object.values(serviceContent).flatMap((service) => [localizedUrl(service.paths
 ${Object.values(insightContent).flatMap((insight) => [localizedUrl(insight.paths.en, insight.paths.de, "en", "0.75"), localizedUrl(insight.paths.de, insight.paths.en, "de", "0.75")]).join("\n")}
 ${url("/", "1.0", "weekly", `<image:image><image:loc>${site}/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp</image:loc><image:title>Rodion Belousov Digital Marketer and Creative Developer Vienna</image:title></image:image>`)}
 ${url("/services", "0.9", "monthly")}
-${url("/work/bridge-consult", "0.9", "monthly", `<image:image><image:loc>${site}/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp</image:loc><image:title>Bridge Consult SEO and Astro case study</image:title></image:image>`)}
-${url("/work/fidic", "0.9", "monthly", `<image:image><image:loc>${site}/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp</image:loc><image:title>FIDIC.uz content platform and technical SEO case study</image:title></image:image>`)}
+${Object.values(cases).map((item) => url(`/work/${item.slug}`, "0.9", "monthly", `<image:image><image:loc>${site}${item.image}</image:loc><image:title>${escapeXml(item.seo.title)}</image:title></image:image>`)).join("\n")}
 ${url("/work/studio", "0.8", "monthly", `<image:image><image:loc>${site}/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg</image:loc><image:title>How rodionbelousov.studio is built: Astro, Three.js, GLSL and Web Audio</image:title></image:image>`)}
+${url("/contact", "0.9", "monthly")}
 ${url("/notes", "0.8", "weekly")}
 ${url("/gallery", "0.8", "monthly", galleryMedia)}
 </urlset>`;

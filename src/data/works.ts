@@ -50,6 +50,16 @@ export const works: Work[] = [
     hrefLabel: "fidic.uz",
   },
   {
+    id: "academy",
+    img: "/cases/rodion-belousov-bridge-consult-academy-one-page-course-landing.webp",
+    type: "case",
+    kTitle: "work.3.title",
+    kCat: "work.3.tag",
+    kText: "work.3.text",
+    href: "/work/academy",
+    hrefLabel: "Academy",
+  },
+  {
     id: "obsidian-residence",
     img: "/portfolio/rodion-belousov-luxury-interior-lighting-3d-visualization.webp",
     type: "reel",

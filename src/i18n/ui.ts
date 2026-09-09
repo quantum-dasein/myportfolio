@@ -140,6 +140,12 @@ export const ui = {
     "work.2.year": "2026",
     "work.2.text":
       "A solo-built FIDIC knowledge platform: 429 static pages in three languages, 117 expert articles, 16 contract tools and a tender archive that refreshes itself every morning.",
+    "work.3.tag": "Astro · CSS · RU/EN/UZ",
+    "work.3.title": "Bridge Consult Academy",
+    "work.3.role": "Solo build · One page, three languages",
+    "work.3.year": "2026",
+    "work.3.text":
+      "A course landing that had to argue before it could list: eighteen modules on one page in three languages, with every effect done in CSS and no third-party JavaScript on the page at all.",
     "work.cta": "Open project",
     "work.more": "Full immersive case studies — next.",
 
@@ -188,6 +194,39 @@ export const ui = {
     "case.bridge.metric.users": "Active users",
     "case.bridge.metric.events": "Event count",
     "case.bridge.metric.markets": "International markets",
+
+    // ── Case: Bridge Consult Academy (the small one) ────────────────────────
+    "case.academy.kicker": "Case Study / One-page course landing",
+    "case.academy.title": "Bridge Consult Academy",
+    "case.academy.subtitle":
+      "One page, three languages, eighteen modules and no third-party JavaScript at all. The small end of the same practice — and the case that exists because two platform studies were making a five-page job look like the wrong kind of client.",
+    "case.academy.role.value": "Solo build: structure, copy editing, design and code",
+    "case.academy.scope.value": "One page, RU/EN/UZ, enquiry form, zero external scripts",
+    "case.academy.problem.text":
+      "An online FIDIC programme is a hard thing to sell on a page. The buyer is a contract manager who has already sat through a course that read the clauses out loud, and the only question that matters to them is whether this one is different. Eighteen modules and forty-odd case discussions are the proof — but a list of eighteen items is also the fastest way to lose someone on a phone.",
+    "case.academy.solution.text":
+      "One scrolling page, ordered as an argument rather than as a brochure: what goes wrong on site, the chain a claim actually travels, the two FIDIC editions side by side, then the modules, then who teaches it. Editorial serif for the headings, monospace for the structural labels, and a single enquiry action repeated at each point where somebody would be ready to take it.",
+    "case.academy.outcome.text":
+      "It ships as thirteen scroll chapters on one URL in three languages, with the entire motion and layout done in CSS — there is no third-party JavaScript on the page at all. No cookie banner, no builder runtime, nothing to consent to and nothing to keep updated. The page is the deliverable, and it is finished.",
+    "case.academy.highlight.1": "Ordered as an argument, not as a course catalogue.",
+    "case.academy.highlight.2": "Three languages on one page structure, not three parallel sites.",
+    "case.academy.highlight.3": "Every effect done in CSS, so the page carries no runtime.",
+    "case.academy.mantra": "Small, and finished.",
+    "case.academy.process.1": "Structure - decided the page had to argue before it could list, and cut the module table out of the top third.",
+    "case.academy.process.2": "Language - RU/EN/UZ handled in the routing with correct hreflang, so one page structure serves all three.",
+    "case.academy.process.3": "Build - Astro, hand-written CSS, images in modern formats, and a deliberate refusal to add a single script tag.",
+    "case.academy.visual.text":
+      "Desert light and graphite; a Playfair Display italic for the one word that carries the promise, Inter for everything operational, and monospaced labels for the structural chrome. The photography does the emotional work so the type does not have to shout — which is what keeps an eighteen-module list from reading as a syllabus.",
+
+    "case.academy.impact.title": "The numbers that matter at this size.",
+    "case.academy.impact.text":
+      "A one-page site is not judged on growth curves; it is judged on whether it opens instantly and says the right thing. So these are the figures worth publishing: what the page carries, and what it deliberately does not.",
+    "case.academy.impact.note":
+      "Counted on the live page. The script figure is third-party JavaScript: there are no external script tags and no analytics, consent or builder runtimes — which is also why the page needs no cookie banner.",
+    "case.academy.metric.scripts": "Third-party scripts on the page",
+    "case.academy.metric.modules": "Programme modules",
+    "case.academy.metric.languages": "Languages, one page structure",
+    "case.academy.metric.sections": "Chapters in the scroll",
     "case.bridge.system.title": "What was actually built.",
     "case.bridge.system.text": "Bridge Consult and fidic.uz were shipped as two connected launches in one focused month of 2026. Under the visual layer sits a reusable content, search and publishing architecture.",
     "case.bridge.system.positioning.title": "Authority, translated",
@@ -666,6 +705,12 @@ export const ui = {
     "work.2.year": "2026",
     "work.2.text":
       "Eine solo gebaute FIDIC-Wissensplattform: 429 statische Seiten in drei Sprachen, 117 Fachartikel, 16 Vertrags-Tools und ein Tender-Archiv, das sich jeden Morgen selbst aktualisiert.",
+    "work.3.tag": "Astro · CSS · RU/EN/UZ",
+    "work.3.title": "Bridge Consult Academy",
+    "work.3.role": "Solo Build · Eine Seite, drei Sprachen",
+    "work.3.year": "2026",
+    "work.3.text":
+      "Eine Kurs-Landingpage, die argumentieren musste, bevor sie aufzählen durfte: achtzehn Module auf einer Seite in drei Sprachen, jeder Effekt in CSS — und kein Third-Party-JavaScript auf der Seite.",
     "work.cta": "Projekt öffnen",
     "work.more": "Vollständige immersive Case Studies — als Nächstes.",
 
@@ -714,6 +759,39 @@ export const ui = {
     "case.bridge.metric.users": "Aktive Nutzer",
     "case.bridge.metric.events": "Event Count",
     "case.bridge.metric.markets": "Internationale Märkte",
+
+    // ── Case: Bridge Consult Academy (das kleine Projekt) ───────────────────
+    "case.academy.kicker": "Case Study / Einseitige Kurs-Landingpage",
+    "case.academy.title": "Bridge Consult Academy",
+    "case.academy.subtitle":
+      "Eine Seite, drei Sprachen, achtzehn Module — und kein einziges Third-Party-JavaScript. Das kleine Ende derselben Arbeit: der Case, den es gibt, weil zwei Plattform-Studien einen Fünf-Seiten-Auftrag wie den falschen Kunden aussehen ließen.",
+    "case.academy.role.value": "Solo Build: Struktur, Textredaktion, Design und Code",
+    "case.academy.scope.value": "Eine Seite, RU/EN/UZ, Anfrageformular, null externe Skripte",
+    "case.academy.problem.text":
+      "Ein FIDIC-Onlineprogramm ist auf einer Seite schwer zu verkaufen. Der Käufer ist ein Contract Manager, der schon einmal in einem Kurs saß, in dem die Klauseln vorgelesen wurden, und ihn interessiert nur eines: ob dieser anders ist. Achtzehn Module und über vierzig Fallbesprechungen sind der Beleg — aber eine Liste mit achtzehn Punkten ist auch der schnellste Weg, jemanden am Handy zu verlieren.",
+    "case.academy.solution.text":
+      "Eine scrollende Seite, aufgebaut als Argument statt als Broschüre: was auf der Baustelle schiefgeht, die Kette, die ein Anspruch tatsächlich durchläuft, die beiden FIDIC-Ausgaben nebeneinander, dann die Module, dann wer unterrichtet. Redaktionelle Serife für die Überschriften, Monospace für die strukturellen Labels und eine einzige Anfrage-Handlung, wiederholt an jeder Stelle, an der jemand bereit dazu wäre.",
+    "case.academy.outcome.text":
+      "Ausgeliefert werden dreizehn Scroll-Kapitel auf einer URL in drei Sprachen, Motion und Layout vollständig in CSS — auf der Seite liegt kein einziges Third-Party-JavaScript. Kein Cookie-Banner, keine Baukasten-Runtime, nichts zuzustimmen und nichts zu aktualisieren. Die Seite ist das Ergebnis, und sie ist fertig.",
+    "case.academy.highlight.1": "Als Argument aufgebaut, nicht als Kurskatalog.",
+    "case.academy.highlight.2": "Drei Sprachen auf einer Seitenstruktur, nicht drei parallele Sites.",
+    "case.academy.highlight.3": "Jeder Effekt in CSS gelöst — die Seite trägt keine Runtime.",
+    "case.academy.mantra": "Klein, und fertig.",
+    "case.academy.process.1": "Struktur - entschieden, dass die Seite argumentieren muss, bevor sie aufzählt, und die Modultabelle aus dem oberen Drittel gestrichen.",
+    "case.academy.process.2": "Sprache - RU/EN/UZ im Routing gelöst, mit korrektem hreflang, sodass eine Seitenstruktur alle drei trägt.",
+    "case.academy.process.3": "Build - Astro, handgeschriebenes CSS, Bilder in modernen Formaten und die bewusste Weigerung, ein einziges Script-Tag zu ergänzen.",
+    "case.academy.visual.text":
+      "Wüstenlicht und Graphit; eine Playfair-Display-Kursive für das eine Wort, das das Versprechen trägt, Inter für alles Operative und monospaced Labels für das strukturelle Beiwerk. Die Fotografie übernimmt die emotionale Arbeit, damit die Typografie nicht laut werden muss — genau das verhindert, dass sich achtzehn Module wie ein Lehrplan lesen.",
+
+    "case.academy.impact.title": "Die Zahlen, die in dieser Größe zählen.",
+    "case.academy.impact.text":
+      "Eine einseitige Website wird nicht an Wachstumskurven gemessen, sondern daran, ob sie sofort öffnet und das Richtige sagt. Deshalb sind das die Werte, die es zu veröffentlichen lohnt: was die Seite trägt — und was bewusst nicht.",
+    "case.academy.impact.note":
+      "Auf der Live-Seite gezählt. Der Skriptwert meint Third-Party-JavaScript: Es gibt keine externen Script-Tags und keine Analytics-, Consent- oder Baukasten-Runtimes — weshalb die Seite auch kein Cookie-Banner braucht.",
+    "case.academy.metric.scripts": "Third-Party-Skripte auf der Seite",
+    "case.academy.metric.modules": "Programm-Module",
+    "case.academy.metric.languages": "Sprachen, eine Seitenstruktur",
+    "case.academy.metric.sections": "Kapitel im Scroll",
     "case.bridge.system.title": "Was tatsächlich gebaut wurde.",
     "case.bridge.system.text": "Bridge Consult und fidic.uz entstanden als zwei verbundene Launches in einem fokussierten Monat 2026. Unter der visuellen Ebene arbeitet eine wiederverwendbare Content-, Search- und Publishing-Architektur.",
     "case.bridge.system.positioning.title": "Autorität, übersetzt",
