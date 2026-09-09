@@ -1139,6 +1139,10 @@ import { works } from "../data/works";
       if (!portal?.work.video || portal.video || portal.videoLoading) return;
       portal.videoLoading = true;
       const video = document.createElement("video");
+      // The film may be served from PUBLIC_MEDIA_BASE_URL. WebGL refuses to
+      // sample a cross-origin frame unless the element opts into CORS, so ask
+      // for it up front; same-origin playback is unaffected.
+      video.crossOrigin = "anonymous";
       video.src = portal.work.video;
       video.muted = true;
       video.loop = true;

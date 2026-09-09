@@ -6,6 +6,8 @@
 //  in /public — swap these for real Behance thumbnails, or a poster + `video`
 //  path to upgrade a plane to a VideoTexture (see Gallery3D notes).
 // ─────────────────────────────────────────────────────────────────────────────
+import { mediaUrl } from "../utils/media";
+
 export const BEHANCE =
   "https://www.behance.net/gallery/146849483/Meine-3D-Projekte";
 
@@ -136,7 +138,7 @@ export const works: Work[] = [
   {
     id: "squidz-pos-display",
     img: "/portfolio/rodion-belousov-squidz-pos-display-3d-animation-poster.webp",
-    video: "/portfolio/video/rodion-belousov-squidz-pos-display-3d-animation.mp4",
+    video: mediaUrl("/portfolio/video/rodion-belousov-squidz-pos-display-3d-animation.mp4"),
     type: "reel",
     title: "Squidz POS Display",
     kCat: "gallery.4.cat",
@@ -151,7 +153,7 @@ export const works: Work[] = [
   {
     id: "lake-como-interior-film",
     img: "/portfolio/rodion-belousov-lake-como-minimalist-interior-3d-animation-poster.webp",
-    video: "/portfolio/video/rodion-belousov-lake-como-minimalist-interior-3d-animation.mp4",
+    video: mediaUrl("/portfolio/video/rodion-belousov-lake-como-minimalist-interior-3d-animation.mp4"),
     type: "reel",
     title: "Lake Como Interior Film",
     kCat: "gallery.1.cat",
@@ -166,7 +168,7 @@ export const works: Work[] = [
   {
     id: "alpine-equipment-product-film",
     img: "/portfolio/rodion-belousov-ski-snowboard-equipment-3d-product-animation-poster.jpg",
-    video: "/portfolio/video/rodion-belousov-ski-snowboard-equipment-3d-product-animation.mp4",
+    video: mediaUrl("/portfolio/video/rodion-belousov-ski-snowboard-equipment-3d-product-animation.mp4"),
     type: "reel",
     title: "Alpine Equipment Product Film",
     kCat: "gallery.1.cat",

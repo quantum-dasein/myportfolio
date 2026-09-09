@@ -1,0 +1,8 @@
+# Kept out of the build upload. This does not shrink Deployment Storage — that
+# is billed on dist/, not on the upload — it only makes uploads and builds
+# quicker. The heavy files are handled by PUBLIC_MEDIA_BASE_URL instead;
+# see src/utils/media.ts.
+.claude/
+.vscode/
+scripts/
+/*.md

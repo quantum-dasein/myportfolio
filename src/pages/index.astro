@@ -6,6 +6,7 @@ import TextMarquee from "../components/TextMarquee.astro";
 import VideoType from "../components/VideoType.astro";
 import ScrollScrub from "../components/ScrollScrub.astro";
 import { useTranslations, type UIKey } from "../i18n/utils";
+import { mediaUrl } from "../utils/media";
 
 const lang = "en";
 const t = useTranslations(lang);
@@ -303,7 +304,7 @@ const selectedWork = [
   <!-- Rodion's own Redshift render playing inside the word -->
   <VideoType
     text="MOTION"
-    video="/portfolio/video/rodion-belousov-squidz-pos-display-3d-animation.mp4"
+    video={mediaUrl("/portfolio/video/rodion-belousov-squidz-pos-display-3d-animation.mp4")}
     poster="/portfolio/rodion-belousov-squidz-pos-display-3d-animation-poster.webp"
     labelKey="reel.type.label"
     label={t("reel.type.label")}
@@ -313,7 +314,7 @@ const selectedWork = [
 
   <!-- Apple-style: the product film turns under the visitor's scroll -->
   <ScrollScrub
-    video="/portfolio/video/rodion-belousov-ski-snowboard-equipment-3d-product-animation.mp4"
+    video={mediaUrl("/portfolio/video/rodion-belousov-ski-snowboard-equipment-3d-product-animation.mp4")}
     poster="/portfolio/rodion-belousov-ski-snowboard-equipment-3d-product-animation-poster.jpg"
     eyebrowKey="scrub.eyebrow"
     eyebrow={t("scrub.eyebrow")}

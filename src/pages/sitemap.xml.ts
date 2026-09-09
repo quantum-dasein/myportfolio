@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { works } from "../data/works";
 import { insightContent, serviceContent } from "../data/seo-content";
+import { absoluteMediaUrl } from "../utils/media";
 
 const site = "https://rodionbelousov.studio";
 // Omit dates until an actual per-page editorial modification date is stored.
@@ -20,7 +21,7 @@ export const GET: APIRoute = () => {
   const galleryMedia = works.map((work) => {
     const image = `<image:image><image:loc>${site}${work.img}</image:loc><image:title>${escapeXml(work.title ?? work.hrefLabel ?? "Rodion Belousov portfolio")}</image:title></image:image>`;
     if (!work.video) return image;
-    return `${image}<video:video><video:thumbnail_loc>${site}${work.img}</video:thumbnail_loc><video:title>${escapeXml(work.title ?? "Rodion Belousov animation")}</video:title><video:description>3D animation created by Rodion Belousov with Cinema 4D, Redshift and Adobe creative tools.</video:description><video:content_loc>${site}${work.video}</video:content_loc><video:family_friendly>yes</video:family_friendly></video:video>`;
+    return `${image}<video:video><video:thumbnail_loc>${site}${work.img}</video:thumbnail_loc><video:title>${escapeXml(work.title ?? "Rodion Belousov animation")}</video:title><video:description>3D animation created by Rodion Belousov with Cinema 4D, Redshift and Adobe creative tools.</video:description><video:content_loc>${absoluteMediaUrl(work.video, site)}</video:content_loc><video:family_friendly>yes</video:family_friendly></video:video>`;
   }).join("");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
