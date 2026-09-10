@@ -1,0 +1,79 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  projectFacts.ts — the numbers this site claims about its own projects.
+//
+//  These figures are quoted in running prose across three languages, a dozen
+//  pages and two schema graphs, so they cannot all be interpolated from here
+//  without turning every sentence into a template. This file is the declaration
+//  instead: one place to check which value is correct before writing a number.
+//
+//  It is needed because drift is silent. The FIDIC teaser on /services said
+//  "109 routes and 105 expert articles" while every other mention on the site
+//  said 429 pages and 117 articles — an early draft nobody updated, and nothing
+//  could catch it, because both numbers look plausible on their own page.
+//
+//  `retired` is the enforced half: `scripts/audit-facts.mjs` fails the build if
+//  any of these strings comes back. Each one is a mistake this site made.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ProjectFact {
+  /** The number, exactly as it should be written in English prose. */
+  value: string;
+  /** The same number in German prose, where the separator differs. */
+  de?: string;
+  /** Where this figure comes from, so the next person can re-derive it rather
+   *  than trust it. */
+  note: string;
+}
+
+export const projectFacts: Record<string, ProjectFact> = {
+  fidicPages: {
+    value: "429",
+    note: "FIDIC.uz — built pages in the platform.",
+  },
+  fidicArticles: {
+    value: "117",
+    note: "FIDIC.uz — expert articles across three languages.",
+  },
+  fidicTools: {
+    value: "16",
+    note: "FIDIC.uz — contract tools and calculators.",
+  },
+  fidicTenders: {
+    value: "2 981",
+    note: "FIDIC.uz — tender records at the last count. Grows daily; see the caveat in the audit.",
+  },
+  bridgeOrganic: {
+    value: "+780%",
+    note: "Bridge Consult — organic sessions in the first launch window, 5 to 44.",
+  },
+  academyModules: {
+    value: "18",
+    note: "Bridge Consult Academy — programme modules on one page.",
+  },
+  languages: {
+    value: "3",
+    note: "RU / EN / UZ on both Bridge Consult projects.",
+  },
+};
+
+/** Strings that must never appear again. Each one was wrong or went stale. */
+export const retired: Array<{ text: string; why: string }> = [
+  { text: "109 routes", why: "An early FIDIC draft. The platform has 429 pages." },
+  { text: "109 Routen", why: "Same, in German." },
+  { text: "105 expert articles", why: "An early FIDIC draft. There are 117." },
+  { text: "105 Fachartikel", why: "Same, in German." },
+  { text: "Three disciplines", why: "The section lists four." },
+  { text: "Drei Disziplinen", why: "Same, in German." },
+  { text: "one of the three", why: "There are four disciplines." },
+  { text: "einer der drei", why: "Same, in German." },
+  { text: "Five scenes", why: "Six systems are listed, and two of them are not scenes." },
+  { text: "Fünf Szenen", why: "Same, in German." },
+  { text: "landing page in three days", why: "The scope picker says 2–4 days." },
+  { text: "Landingpage in drei Tagen", why: "Same, in German." },
+  { text: "Both live projects", why: "There are three case studies now." },
+  { text: "Beide Live-Projekte", why: "Same, in German." },
+  { text: "invisible to Google", why: "Google does index text PDFs. The argument is a different one." },
+  { text: "für Google unsichtbar", why: "Same, in German." },
+  { text: "may inform, not advertise", why: "Broader than §53 Ärztegesetz actually says." },
+  { text: "dürfen informieren, nicht werben", why: "Same, in German." },
+];

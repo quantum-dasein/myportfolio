@@ -7,10 +7,11 @@
     "build": "astro build",
     "audit:links": "node scripts/audit-links.mjs",
     "audit:seo": "node scripts/audit-seo.mjs",
-    "verify": "astro build && node scripts/audit-links.mjs && node scripts/audit-seo.mjs",
+    "verify": "astro build && node scripts/audit-links.mjs && node scripts/audit-seo.mjs && node scripts/audit-facts.mjs",
     "preview": "astro preview",
     "astro": "astro",
-    "og": "node scripts/build-og.mjs"
+    "og": "node scripts/build-og.mjs",
+    "audit:facts": "node scripts/audit-facts.mjs"
   },
   "dependencies": {
     "astro": "^7.0.5",

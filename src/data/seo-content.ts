@@ -28,6 +28,16 @@ export interface ServiceContent {
   lead: LocalizedCopy;
   capabilities: Array<{ title: LocalizedCopy; text: LocalizedCopy }>;
   proof: Array<{ value: string; label: LocalizedCopy }>;
+  /** What the numbers under the proof heading really are. "evidence" means they
+   *  came out of a real client launch; "standard" means they are how the work is
+   *  built — a one-second LCP measured on this site, zero plugins, one tap to a
+   *  phone number. Calling the second kind "evidence from real launches" was a
+   *  claim the rows could not back: no doctor's or restaurant's launch produced
+   *  them. Defaults to "standard", so a new page has to earn the stronger word. */
+  proofKind?: "evidence" | "standard";
+  /** Which case studies to show as further reading. A landing-page-sized page
+   *  leads with the landing-page case rather than a 429-page platform. */
+  cases?: Array<"bridge" | "fidic" | "academy">;
   faq: Array<{ question: LocalizedCopy; answer: LocalizedCopy }>;
   /** Pages worth reading next. Rendered as a link list and, more to the point,
    *  what ties the niche pages to their parent in both directions. */
@@ -45,6 +55,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   // actually type ("website erstellen wien") rather than an industry term.
   websites: {
     key: "websites",
+    proofKind: "standard",
+    cases: ["academy", "bridge"],
     paths: { en: "/en/website-development-vienna/", de: "/de/website-erstellen-wien/" },
     title: c("A business website, live in about a week.", "Eine Unternehmens-Website, in etwa einer Woche live."),
     description: c(
@@ -80,6 +92,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   },
   "digital-marketing": {
     key: "digital-marketing",
+    proofKind: "evidence",
+    cases: ["bridge", "fidic"],
     paths: { en: "/en/digital-marketing-vienna/", de: "/de/digital-marketing-wien/" },
     title: c("Digital Marketing in Vienna, built as one system.", "Digital Marketing in Wien, als ein System gebaut."),
     description: c(
@@ -113,6 +127,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   },
   "technical-seo": {
     key: "technical-seo",
+    proofKind: "evidence",
+    cases: ["bridge", "fidic"],
     paths: { en: "/en/technical-seo-vienna/", de: "/de/technical-seo-wien/" },
     title: c("Technical SEO in Vienna for sites that need to scale.", "Technical SEO in Wien für Websites, die skalieren müssen."),
     description: c(
@@ -146,6 +162,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   },
   "creative-development": {
     key: "creative-development",
+    proofKind: "standard",
+    cases: ["bridge", "fidic"],
     paths: { en: "/en/creative-development-vienna/", de: "/de/creative-development-wien/" },
     title: c("Creative Development in Vienna with marketing intent.", "Creative Development in Wien mit Marketing-Intention."),
     description: c(
@@ -174,7 +192,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       { question: c("When is Three.js the wrong choice?", "Wann ist Three.js die falsche Wahl?"), answer: c("When the subject is not spatial. A pricing table, a booking flow, a documentation site — none of them get clearer in 3D, and the budget buys more as content or speed. It earns its place when a system needs to be explorable, when a transition should read as one continuous move, or when the object itself is the product.", "Wenn das Thema nicht räumlich ist. Eine Preistabelle, ein Buchungsflow, eine Doku-Website — keines davon wird in 3D klarer, und das Budget bringt als Inhalt oder Tempo mehr. Es verdient seinen Platz, wenn ein System erkundbar sein muss, wenn ein Übergang als eine durchgehende Bewegung lesen soll, oder wenn das Objekt selbst das Produkt ist.") },
       { question: c("What do you build with?", "Womit baust du?"), answer: c("Astro for the document, TypeScript throughout, GSAP and ScrollTrigger for timeline work, Lenis for desktop wheel smoothing, Three.js and raw GLSL for the real-time layer, and the Web Audio API for the ambience, which is not fetched at all until a visitor turns sound on. Static output on Vercel, with serverless functions only where something has to run per request.", "Astro für das Dokument, durchgehend TypeScript, GSAP und ScrollTrigger für Timeline-Arbeit, Lenis für Wheel-Smoothing am Desktop, Three.js und rohes GLSL für die Echtzeit-Ebene, und die Web Audio API für die Klangkulisse, die erst geladen wird, wenn jemand den Ton einschaltet. Statische Ausgabe auf Vercel, serverlose Funktionen nur dort, wo etwas pro Request laufen muss.") },
       { question: c("Can you work with an existing brand?", "Kannst du mit einer bestehenden Marke arbeiten?"), answer: c("Yes — most of this work is translating a brand that already exists into motion and space without contradicting it. Bridge Consult had a positioning and a visual identity; the job was to give it a digital surface that read as the same company, not a different one wearing its logo.", "Ja — der größte Teil dieser Arbeit ist, eine bestehende Marke in Bewegung und Raum zu übersetzen, ohne ihr zu widersprechen. Bridge Consult hatte Positionierung und visuelle Identität; die Aufgabe war eine digitale Oberfläche, die als dieselbe Firma liest — nicht als eine andere mit fremdem Logo.") },
-      { question: c("How is a project like this run?", "Wie läuft so ein Projekt ab?"), answer: c("Scope first, in writing, including what is deliberately not being built. Then a working page rather than a mockup, because a static comp cannot tell you whether a transition feels right or what it costs on a phone. Then measurement, and a list of what to cut. Both live projects here were built and shipped solo, so there is no handover where the intent gets lost.", "Zuerst der Scope, schriftlich, inklusive dessen, was bewusst nicht gebaut wird. Dann eine funktionierende Seite statt eines Mockups, denn ein statischer Entwurf sagt weder, ob sich ein Übergang richtig anfühlt, noch was er auf einem Telefon kostet. Dann Messung und eine Liste dessen, was gestrichen wird. Beide Live-Projekte hier entstanden solo — es gibt keine Übergabe, bei der die Absicht verloren geht.") },
+      { question: c("How is a project like this run?", "Wie läuft so ein Projekt ab?"), answer: c("Scope first, in writing, including what is deliberately not being built. Then a working page rather than a mockup, because a static comp cannot tell you whether a transition feels right or what it costs on a phone. Then measurement, and a list of what to cut. Every case study here was built and shipped solo, so there is no handover where the intent gets lost.", "Zuerst der Scope, schriftlich, inklusive dessen, was bewusst nicht gebaut wird. Dann eine funktionierende Seite statt eines Mockups, denn ein statischer Entwurf sagt weder, ob sich ein Übergang richtig anfühlt, noch was er auf einem Telefon kostet. Dann Messung und eine Liste dessen, was gestrichen wird. Alle Case Studies hier entstanden solo — es gibt keine Übergabe, bei der die Absicht verloren geht.") },
     ],
   },
 
@@ -184,6 +202,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
 
   arztpraxis: {
     key: "arztpraxis",
+    proofKind: "standard",
+    cases: ["academy", "bridge"],
     paths: { en: "/en/website-for-doctors-vienna/", de: "/de/website-arztpraxis-wien/" },
     title: c(
       "A practice website that answers the question patients came with.",
@@ -216,8 +236,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       {
         title: c("Inside §53 Ärztegesetz", "Innerhalb von § 53 Ärztegesetz"),
         text: c(
-          "Austrian doctors may inform, not advertise. No superlatives, no comparison with colleagues, no before-and-after gallery used as a sales argument, no testimonials collected as promotion. An agency that writes 'Vienna\u2019s best practice' hands you a problem with the Ärztekammer. The copy here is written to be persuasive within those limits — the argument is specificity, not adjectives.",
-          "Österreichische Ärzte dürfen informieren, nicht werben. Keine Superlative, kein Vergleich mit Kolleginnen und Kollegen, keine Vorher-Nachher-Galerie als Verkaufsargument, keine als Werbung gesammelten Patientenstimmen. Eine Agentur, die „beste Praxis Wiens“ schreibt, beschert Ihnen ein Problem mit der Ärztekammer. Die Texte hier überzeugen innerhalb dieser Grenzen — das Argument ist Genauigkeit, nicht Adjektive.",
+          "The limits are narrower than most agencies assume, and narrower than \u201cno advertising\u201d: §53 Ärztegesetz bars information that is unfactual, untrue or damaging to the standing of the profession, and the Ärztekammer\u2019s guidance is stricter again on comparative claims and on patient testimonials used as promotion. In practice that rules out superlatives and a before-and-after gallery sold as a result, and it leaves a great deal: what you treat, how you work, which methods, which languages, which contracts. Being specific persuades better than a superlative anyway. Where a claim sits on the line, the Kammer will tell you in a phone call — that is their answer to give, not mine.",
+          "Die Grenzen sind enger, als die meisten Agenturen annehmen — und zugleich enger gefasst als „keine Werbung“: § 53 Ärztegesetz untersagt unsachliche, unwahre oder das Standesansehen beeinträchtigende Information, und die Richtlinien der Ärztekammer sind bei Vergleichen und bei als Werbung eingesetzten Patientenstimmen noch strenger. Praktisch fallen damit Superlative und die als Ergebnis verkaufte Vorher-Nachher-Galerie weg — und es bleibt sehr viel: was Sie behandeln, wie Sie arbeiten, welche Methoden, welche Sprachen, welche Verträge. Genauigkeit überzeugt ohnehin mehr als ein Superlativ. Wo eine Aussage auf der Kippe steht, sagt Ihnen das die Kammer in einem Telefonat — das ist ihre Auskunft, nicht meine.",
         ),
       },
       {
@@ -258,8 +278,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       {
         question: c("Does the site have to be accessible?", "Muss die Website barrierefrei sein?"),
         answer: c(
-          "Plan for yes. The European Accessibility Act has applied in Austria since mid-2025 and its reach into private services keeps widening, and a practice serving older and impaired patients has an obvious reason regardless of the letter of the law. Contrast, keyboard operation, real headings and text that scales are built in from the start — retrofitting them later costs several times more.",
-          "Gehen Sie von ja aus. Der European Accessibility Act gilt in Österreich seit Mitte 2025 und sein Zugriff auf private Dienstleistungen wird laufend breiter — und eine Praxis mit älteren und beeinträchtigten Patienten hat unabhängig vom Gesetzestext einen offensichtlichen Grund. Kontrast, Tastaturbedienung, echte Überschriften und skalierbarer Text sind von Anfang an eingebaut; sie nachzurüsten kostet ein Vielfaches.",
+          "Build it as if yes, then check whether you are actually covered. The Barrierefreiheitsgesetz has applied in Austria since mid-2025, but to a defined list of services, and it exempts micro-enterprises — under ten people and under two million in turnover — which most single-doctor practices are. So the honest answer is that it often does not bind you, and that a practice whose patients are disproportionately older or impaired has an obvious reason anyway. Contrast, keyboard operation, real headings and text that scales are built in from the start here, because retrofitting them later costs several times more. If you need certainty about the legal side, that is a question for the Wirtschaftskammer or a lawyer.",
+          "Bauen Sie es, als wäre die Antwort ja — und prüfen Sie dann, ob Sie überhaupt erfasst sind. Das Barrierefreiheitsgesetz gilt in Österreich seit Mitte 2025, aber für eine definierte Liste von Dienstleistungen, und es nimmt Kleinstunternehmen aus — unter zehn Beschäftigte und unter zwei Millionen Umsatz, was auf die meisten Einzelpraxen zutrifft. Ehrlich ist also: Oft bindet es Sie nicht — und eine Praxis mit überdurchschnittlich vielen älteren oder beeinträchtigten Patienten hat trotzdem einen offensichtlichen Grund. Kontrast, Tastaturbedienung, echte Überschriften und skalierbarer Text sind hier von Anfang an eingebaut, weil Nachrüsten ein Vielfaches kostet. Für Rechtssicherheit ist die Wirtschaftskammer oder ein Anwalt zuständig.",
         ),
       },
       {
@@ -275,6 +295,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
 
   restaurant: {
     key: "restaurant",
+    proofKind: "standard",
+    cases: ["academy", "bridge"],
     paths: { en: "/en/website-for-restaurants-vienna/", de: "/de/website-restaurant-wien/" },
     title: c(
       "A restaurant website built for someone standing outside, hungry.",
@@ -293,8 +315,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       {
         title: c("The menu as text, not as a PDF", "Die Karte als Text, nicht als PDF"),
         text: c(
-          "A PDF menu is the most common and most expensive mistake in this trade. It downloads instead of opening, renders at unreadable size on a phone, cannot be searched, and is invisible to Google — so the dish someone is actually googling never leads to you. Written as real pages, the menu is readable in one tap, changeable in a minute, and eligible to appear in search results and on your Google Business Profile.",
-          "Eine PDF-Karte ist der häufigste und teuerste Fehler dieser Branche. Sie lädt herunter statt zu öffnen, erscheint am Handy in unleserlicher Größe, ist nicht durchsuchbar und für Google unsichtbar — das Gericht, nach dem jemand tatsächlich sucht, führt also nie zu Ihnen. Als echte Seiten gebaut, ist die Karte mit einem Tipp lesbar, in einer Minute änderbar und kann in Suchergebnissen und im Google-Unternehmensprofil erscheinen.",
+          "A PDF menu is the most common and most expensive mistake in this trade. It downloads instead of opening, renders at unreadable size on a phone, and is a dead end for the thing that matters: Google does index text PDFs, but what it can rank is a document, not a dish sitting on a page you can update in a minute, tie allergen data to, and measure. Written as real pages, the menu is readable in one tap, changeable in a minute, and eligible to appear in search results and on your Google Business Profile.",
+          "Eine PDF-Karte ist der häufigste und teuerste Fehler dieser Branche. Sie lädt herunter statt zu öffnen, erscheint am Handy in unleserlicher Größe, und ist eine Sackgasse für das Entscheidende: Google indexiert Text-PDFs durchaus — ranken kann es aber ein Dokument, nicht ein Gericht auf einer Seite, die Sie in einer Minute ändern, mit Allergendaten verknüpfen und messen können. Als echte Seiten gebaut, ist die Karte mit einem Tipp lesbar, in einer Minute änderbar und kann in Suchergebnissen und im Google-Unternehmensprofil erscheinen.",
         ),
       },
       {
@@ -366,6 +388,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
 
   handwerker: {
     key: "handwerker",
+    proofKind: "standard",
+    cases: ["academy", "bridge"],
     paths: { en: "/en/website-for-tradespeople-vienna/", de: "/de/website-handwerker-wien/" },
     title: c(
       "A trades website for the customer whose bathroom is flooding.",

@@ -1,6 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { insightContent, pick, serviceContent, type SeoLang, type ServiceKey } from "../data/seo-content";
+import { cases, type CaseId } from "../data/cases";
+
+// Proper nouns, not translated.
+const caseName: Record<CaseId, string> = {
+  bridge: "Bridge Consult",
+  fidic: "FIDIC.uz",
+  academy: "Bridge Consult Academy",
+};
 
 interface Props { lang: SeoLang; serviceKey: ServiceKey }
 const { lang, serviceKey } = Astro.props;
@@ -82,13 +90,37 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
     <section class="evidence" id="evidence">
       <div class="u-container">
-        <span class="eyebrow" data-reveal>{de ? "BELEGE AUS ECHTEN LAUNCHES" : "EVIDENCE FROM REAL LAUNCHES"}</span>
+        {/* Only the pages whose rows came out of a real client launch get to
+            call them that. The rest are how the work is built — a one-second
+            LCP measured on this site, zero plugins, one tap to a phone number —
+            and no doctor's or restaurant's launch produced them. */}
+        <span class="eyebrow" data-reveal>{
+          service.proofKind === "evidence"
+            ? (de ? "BELEGE AUS ECHTEN LAUNCHES" : "EVIDENCE FROM REAL LAUNCHES")
+            : (de ? "SO WIRD HIER GEBAUT" : "HOW THE WORK IS BUILT")
+        }</span>
         <div class="metrics">
           {service.proof.map((item) => <div data-reveal><strong data-count-up>{item.value}</strong><p>{pick(item.label, lang)}</p></div>)}
         </div>
+        {/* Relevance over habit: a page about a landing page for a medical
+            practice leads with the one-page case, not a 429-page platform.
+            `data-case-link` only where a warp scene exists for that case. */}
         <div class="case-links">
-          <a href="/work/bridge-consult" data-case-link data-reveal data-cursor="OPEN"><span>CASE / 01</span><strong>Bridge Consult</strong><b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b></a>
-          <a href="/work/fidic" data-case-link data-reveal data-cursor="OPEN"><span>CASE / 02</span><strong>FIDIC.uz</strong><b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b></a>
+          {(service.cases ?? ["bridge", "fidic"]).map((id, index) => {
+            const item = cases[id];
+            return (
+              <a
+                href={`/work/${item.slug}`}
+                data-case-link={item.warp ? true : undefined}
+                data-reveal
+                data-cursor="OPEN"
+              >
+                <span>CASE / {String(index + 1).padStart(2, "0")}</span>
+                <strong>{caseName[id]}</strong>
+                <b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b>
+              </a>
+            );
+          })}
         </div>
       </div>
     </section>
