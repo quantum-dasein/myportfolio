@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import { insightContent, pick, serviceContent, type SeoLang, type ServiceKey } from "../data/seo-content";
 import { cases, type CaseId } from "../data/cases";
+import { works } from "../data/works";
 
 // Proper nouns, not translated.
 const caseName: Record<CaseId, string> = {
@@ -22,6 +23,22 @@ const relatedInsights = Object.values(insightContent).filter((item) => item.rela
 const siblings = (service.siblings ?? []).map((sibling) => serviceContent[sibling]);
 const alternates = { en: service.paths.en, de: service.paths.de, "x-default": service.paths.en };
 const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({ "@type": "Question", name: pick(item.question, lang), acceptedAnswer: { "@type": "Answer", text: pick(item.answer, lang) } })) };
+
+// A page that sells film shows film. These are the same files the WebGL archive
+// uses, served here as ordinary <video> behind their poster so nothing but the
+// poster downloads until a visitor presses play.
+const reel = (service.reel ?? []).map((id) => works.find((work) => work.id === id)).filter(Boolean) as typeof works;
+// VideoObject for each one. No `uploadDate`: it is not recorded anywhere real,
+// and Google would rather have an incomplete node than an invented date.
+const videoSchema = reel.map((film) => ({
+  "@type": "VideoObject",
+  name: film.title!,
+  description: pick({ en: film.detail!.en, de: film.detail!.de }, lang),
+  thumbnailUrl: `https://rodionbelousov.studio${film.img}`,
+  contentUrl: `https://rodionbelousov.studio${film.video}`,
+  creator: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+  inLanguage: lang,
+}));
 const serviceSchema = { "@type": "Service", name: pick(service.title, lang), description: pick(service.description, lang), provider: { "@id": "https://rodionbelousov.studio/#rodion-belousov" }, areaServed: [{ "@type": "City", name: "Vienna" }, { "@type": "Country", name: "Austria" }] };
 const seoTitle = `${pick(service.eyebrow, lang).replace(" / ", " · ")} | Rodion Belousov`;
 // Unique OG image per service — real case evidence instead of the generic card.
@@ -44,6 +61,7 @@ const localizedCard: Partial<Record<ServiceKey, string>> = {
   arztpraxis: "niche-arztpraxis",
   restaurant: "niche-restaurant",
   handwerker: "niche-handwerker",
+  motion: "motion",
 };
 
 const og: Record<ServiceKey, { image: string; alt: string }> = {
@@ -60,13 +78,14 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
   arztpraxis: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — websites for medical practices in Vienna" },
   restaurant: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — websites for restaurants in Vienna" },
   handwerker: { image: "/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg", alt: "Rodion Belousov — websites for tradespeople in Vienna" },
+  motion: { image: "/og/rodion-belousov-3d-motion-archive-vienna.jpg", alt: "Rodion Belousov — 3D animation and video in Vienna" },
 };
 ---
 
-<Layout lang={lang} alternateUrls={alternates} lockLang title={seoTitle} description={pick(service.description, lang)} image={localizedCard[serviceKey] ? `/og/${localizedCard[serviceKey]}-${lang}.jpg` : og[serviceKey].image} imageAlt={og[serviceKey].alt} structuredData={[serviceSchema, faqSchema]}>
+<Layout lang={lang} alternateUrls={alternates} lockLang title={seoTitle} description={pick(service.description, lang)} image={localizedCard[serviceKey] ? `/og/${localizedCard[serviceKey]}-${lang}.jpg` : og[serviceKey].image} imageAlt={og[serviceKey].alt} structuredData={[serviceSchema, faqSchema, ...videoSchema]}>
   <article class="service-page">
     <!-- Always give a way out: back to the Services & Research hub. -->
-    <a class="back-link" href="/services" data-cursor="BACK" data-magnetic>
+    <a class="back-link" href={de ? "/de/leistungen/" : "/services"} data-cursor="BACK" data-magnetic>
       <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
       <span>{de ? "Zurück" : "Back"}</span>
     </a>
@@ -88,6 +107,36 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       </div>
     </section>
 
+    {reel.length > 0 && (
+      <section class="reel-strip" id="reel">
+        <div class="u-container">
+          <span class="eyebrow" data-reveal>{de ? "AUSSCHNITTE" : "SELECTED FILMS"}</span>
+          <div class="reel-grid">
+            {reel.map((film) => (
+              <figure data-reveal data-film>
+                <button type="button" data-film-play aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
+                  <img src={film.img} alt={`${film.title} — ${pick({ en: film.detail!.en, de: film.detail!.de }, lang)}`} loading="lazy" width="800" height="450" />
+                  <span class="reel-play" aria-hidden="true"></span>
+                </button>
+                {/* preload="none" is the whole point: the poster is an image, the
+                    film is 4 MB, and most visitors will read the page instead. */}
+                <video data-film-video src={film.video} poster={film.img} preload="none" playsinline loop controls hidden></video>
+                <figcaption>
+                  <strong>{film.title}</strong>
+                  <span>{film.detail!.tools}</span>
+                  <p>{pick({ en: film.detail!.en, de: film.detail!.de }, lang)}</p>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+          <a class="reel-more" href="/gallery" data-tunnel data-reveal data-cursor="ENTER">
+            <span>{de ? "Das gesamte 3D-Archiv" : "The whole 3D archive"}</span>
+            <i class="ui-arrow" aria-hidden="true"></i>
+          </a>
+        </div>
+      </section>
+    )}
+
     <section class="evidence" id="evidence">
       <div class="u-container">
         {/* Only the pages whose rows came out of a real client launch get to
@@ -97,7 +146,9 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
         <span class="eyebrow" data-reveal>{
           service.proofKind === "evidence"
             ? (de ? "BELEGE AUS ECHTEN LAUNCHES" : "EVIDENCE FROM REAL LAUNCHES")
-            : (de ? "SO WIRD HIER GEBAUT" : "HOW THE WORK IS BUILT")
+            : service.proofKind === "production"
+              ? (de ? "BELEGE AUS ECHTEN PRODUKTIONEN" : "EVIDENCE FROM REAL PRODUCTIONS")
+              : (de ? "SO WIRD HIER GEBAUT" : "HOW THE WORK IS BUILT")
         }</span>
         <div class="metrics">
           {service.proof.map((item) => <div data-reveal><strong data-count-up>{item.value}</strong><p>{pick(item.label, lang)}</p></div>)}
@@ -135,7 +186,11 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
     {siblings.length > 0 && (
       <section class="siblings">
         <div class="u-container">
-          <span class="eyebrow" data-reveal>{de ? "Für Ihre Branche" : "For your trade"}</span>
+          <span class="eyebrow" data-reveal>{
+            serviceKey === "websites"
+              ? (de ? "Für Ihre Branche" : "For your trade")
+              : (de ? "Weiter hier" : "Keep reading")
+          }</span>
           <div class="siblings-list">
             {siblings.map((item) => (
               <a href={item.paths[lang]} data-reveal data-cursor="OPEN">
@@ -155,7 +210,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
     <div class="service-outro">
       <div class="u-container">
-        <a class="outro-link" href="/services" data-cursor="OPEN" data-magnetic>
+        <a class="outro-link" href={de ? "/de/leistungen/" : "/services"} data-cursor="OPEN" data-magnetic>
           <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
           <span>{de ? "Alle Leistungen & Research" : "All services & research"}</span>
         </a>
@@ -197,6 +252,105 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
   @media (pointer: coarse) {
     .back-link { backdrop-filter: none; background: rgba(6, 7, 8, .96); top: 4.6rem; }
+  }
+
+  /* ── Selected films ────────────────────────────────────────────────────── */
+  /*  Poster first, film on demand. Three 4 MB files autoplaying would make the
+      page about video slower than every other page on the site, which is the
+      one argument this page cannot afford to lose. */
+  .reel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.8rem;
+  }
+  .reel-grid figure { margin: 0; }
+
+  .reel-grid [data-film-play] {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #07080a;
+    cursor: pointer;
+  }
+  .reel-grid img,
+  .reel-grid video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: #07080a;
+  }
+  .reel-grid video { border: 1px solid rgba(255, 255, 255, .12); border-radius: 6px; }
+  /* `display: block` above outranks the reset's [hidden] rule, which is how the
+     film ended up playing controls underneath its own poster. */
+  .reel-grid video[hidden] { display: none; }
+  .reel-grid [data-film-play] img { transition: transform .6s var(--ease-out-expo), opacity .4s ease; }
+  .reel-grid [data-film-play]:hover img { transform: scale(1.03); opacity: .82; }
+
+  .reel-play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 3.4rem;
+    height: 3.4rem;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: 50%;
+    background: rgba(6, 7, 8, .55);
+    backdrop-filter: blur(6px);
+    transition: background .35s ease, border-color .35s ease;
+  }
+  .reel-play::after {
+    content: "";
+    position: absolute;
+    left: 54%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    transform: translate(-50%, -50%);
+    border-left: .62rem solid #fff;
+    border-block: .42rem solid transparent;
+  }
+  .reel-grid [data-film-play]:hover .reel-play { background: rgba(12, 14, 16, .8); border-color: #fff; }
+
+  .reel-grid figcaption { display: grid; gap: .3rem; padding-top: .9rem; }
+  .reel-grid figcaption strong { font: 500 1.05rem var(--font-display); }
+  .reel-grid figcaption span {
+    font: .58rem var(--font-inter);
+    letter-spacing: .14em;
+    color: rgba(var(--rgb-text), .42);
+  }
+  .reel-grid figcaption p {
+    margin: .2rem 0 0;
+    color: rgba(var(--rgb-text), .6);
+    font-size: .84rem;
+    line-height: 1.5;
+  }
+
+  .reel-more {
+    display: inline-flex;
+    align-items: center;
+    gap: .7rem;
+    margin-top: 2.4rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, .28);
+    font: .74rem var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    transition: gap .45s var(--ease-out-expo), border-color .35s ease;
+  }
+  .reel-more:hover { gap: 1.15rem; border-color: #fff; }
+
+  @media (max-width: 900px) {
+    .reel-grid { grid-template-columns: 1fr; gap: 2rem; }
+  }
+  @media (pointer: coarse) {
+    .reel-play { backdrop-filter: none; }
   }
 
   /* ── Outro ─────────────────────────────────────────────────────────────── */
@@ -294,4 +448,31 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
   }
+
+  // ── Selected films ─────────────────────────────────────────────────────────
+  // The poster is a button; pressing it swaps in the <video> and starts it. The
+  // file has preload="none" until then, so a visitor who never presses play
+  // downloads three JPEGs rather than twelve megabytes of MP4.
+  document.querySelectorAll<HTMLElement>("[data-film]").forEach((figure) => {
+    const button = figure.querySelector<HTMLButtonElement>("[data-film-play]");
+    const video = figure.querySelector<HTMLVideoElement>("[data-film-video]");
+    if (!button || !video) return;
+
+    button.addEventListener("click", () => {
+      button.hidden = true;
+      video.hidden = false;
+      video.play().catch(() => {
+        // Autoplay refused (a policy that varies by platform). The controls are
+        // already there, so leave it paused and visible rather than reverting.
+      });
+    });
+
+    // One film at a time: starting a second one pauses the first, which is what
+    // anyone expects and what stops three soundtracks stacking.
+    video.addEventListener("play", () => {
+      document.querySelectorAll<HTMLVideoElement>("[data-film-video]").forEach((other) => {
+        if (other !== video) other.pause();
+      });
+    });
+  });
 </script>

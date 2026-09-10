@@ -4,6 +4,11 @@ export type ServiceKey =
   | "digital-marketing"
   | "technical-seo"
   | "creative-development"
+  // The film half of the practice. It existed as nine works in a WebGL gallery
+  // and a stack name in a lead paragraph, and nowhere in the service layer —
+  // which left the whole site reading as "web developer", a description that
+  // fits ten thousand people in this city and describes half the offer.
+  | "motion"
   // Niche pages. A Vienna business does not search for "website development" —
   // it searches for "Website Arztpraxis Wien". These are children of `websites`,
   // not a fifth practice area, and each one is written around the constraints
@@ -33,8 +38,14 @@ export interface ServiceContent {
    *  built — a one-second LCP measured on this site, zero plugins, one tap to a
    *  phone number. Calling the second kind "evidence from real launches" was a
    *  claim the rows could not back: no doctor's or restaurant's launch produced
-   *  them. Defaults to "standard", so a new page has to earn the stronger word. */
-  proofKind?: "evidence" | "standard";
+   *  them. "production" is the third case: work that was made rather than
+   *  launched — films and animation, where "launch" is the wrong noun.
+   *  Defaults to "standard", so a new page has to earn a stronger word. */
+  proofKind?: "evidence" | "standard" | "production";
+  /** Ids from src/data/works.ts to show as playable films. A page that sells
+   *  film and shows none of it is the exact weakness these pages are accused
+   *  of: text describing work the reader is asked to take on trust. */
+  reel?: string[];
   /** Which case studies to show as further reading. A landing-page-sized page
    *  leads with the landing-page case rather than a 429-page platform. */
   cases?: Array<"bridge" | "fidic" | "academy">;
@@ -119,10 +130,10 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     ],
     faq: [
       { question: c("What does a digital marketing project include?", "Was umfasst ein Digital-Marketing-Projekt?"), answer: c("Depending on the goal: positioning and market research, content architecture, technical SEO, the website itself, analytics and the iteration after launch. The point of running them together is that they stop contradicting each other — the positioning survives contact with production, and the search structure survives the design.", "Je nach Ziel: Positionierung und Marktrecherche, Content-Architektur, Technical SEO, die Website selbst, Analytics und die Iteration nach dem Launch. Der Sinn, das zusammen zu führen: Sie widersprechen sich nicht mehr — die Positionierung übersteht die Produktion, die Search-Struktur übersteht das Design.") },
-      { question: c("Do you also implement the website?", "Setzt du die Website auch technisch um?"), answer: c("Yes, and that is usually the point. Strategy that is handed to someone else to build tends to arrive diluted. I work in Astro, TypeScript, GSAP and Three.js, which means the decision about what a page has to say and the decision about how it loads are made by the same person.", "Ja, und genau darin liegt meist der Sinn. Strategie, die jemand anderes umsetzt, kommt verdünnt an. Ich arbeite mit Astro, TypeScript, GSAP und Three.js — die Entscheidung, was eine Seite sagen muss, und die Entscheidung, wie sie lädt, trifft dieselbe Person.") },
+      { question: c("Do you also implement the website?", "Setzen Sie die Website auch technisch um?"), answer: c("Yes, and that is usually the point. Strategy that is handed to someone else to build tends to arrive diluted. I work in Astro, TypeScript, GSAP and Three.js, which means the decision about what a page has to say and the decision about how it loads are made by the same person.", "Ja, und genau darin liegt meist der Sinn. Strategie, die jemand anderes umsetzt, kommt verdünnt an. Ich arbeite mit Astro, TypeScript, GSAP und Three.js — die Entscheidung, was eine Seite sagen muss, und die Entscheidung, wie sie lädt, trifft dieselbe Person.") },
       { question: c("How long until it shows in search?", "Wie lange dauert es bis zur Sichtbarkeit in der Suche?"), answer: c("Indexing is Google's call and nobody can promise a date. What is controllable is everything before that: a crawlable structure, pages substantial enough to be worth indexing, a submitted sitemap and internal links that give new pages a path. On Bridge Consult the first measurable organic movement came inside the launch window; on a new domain it is realistically weeks, not days.", "Die Indexierung entscheidet Google, ein Datum kann niemand zusagen. Steuerbar ist alles davor: eine crawlbare Struktur, Seiten mit genug Substanz, um indexiert zu werden, eine eingereichte Sitemap und interne Links, die neuen Seiten einen Weg geben. Bei Bridge Consult kam die erste messbare organische Bewegung im Launch-Fenster; auf einer neuen Domain sind es realistisch Wochen, nicht Tage.") },
-      { question: c("Do you work in German and English?", "Arbeitest du auf Deutsch und Englisch?"), answer: c("Both, and the multilingual part is built rather than bolted on. German C2, English C1, Russian native. On FIDIC.uz the interface lives in a single dictionary of 513 keys per language, so no component can lose a translation and no page can quietly ship half-localised.", "Beides, und der mehrsprachige Teil ist gebaut statt angeklebt. Deutsch C2, Englisch C1, Russisch Muttersprache. Auf FIDIC.uz liegt das Interface in einem einzigen Wörterbuch mit 513 Keys pro Sprache — so kann keine Komponente eine Übersetzung verlieren und keine Seite halb lokalisiert live gehen.") },
-      { question: c("Do you work with existing sites?", "Arbeitest du auch an bestehenden Websites?"), answer: c("Often, and it usually starts with a measurement rather than a redesign. A crawl plus a Search Console export tends to name the real problem quickly — thin pages that were never worth indexing, a canonical pointing somewhere unintended, or a home page shipping megabytes nobody asked for. Rebuilding is a decision made after that, not before.", "Häufig, und es beginnt meist mit einer Messung statt mit einem Redesign. Ein Crawl plus ein Search-Console-Export benennt das eigentliche Problem schnell — dünne Seiten, die nie indexierungswürdig waren, ein Canonical, das woanders hinzeigt, oder eine Startseite, die Megabytes ausliefert, die niemand angefordert hat. Neu bauen ist eine Entscheidung danach, nicht davor.") },
+      { question: c("Do you work in German and English?", "Arbeiten Sie auf Deutsch und Englisch?"), answer: c("Both, and the multilingual part is built rather than bolted on. German C2, English C1, Russian native. On FIDIC.uz the interface lives in a single dictionary of 513 keys per language, so no component can lose a translation and no page can quietly ship half-localised.", "Beides, und der mehrsprachige Teil ist gebaut statt angeklebt. Deutsch C2, Englisch C1, Russisch Muttersprache. Auf FIDIC.uz liegt das Interface in einem einzigen Wörterbuch mit 513 Keys pro Sprache — so kann keine Komponente eine Übersetzung verlieren und keine Seite halb lokalisiert live gehen.") },
+      { question: c("Do you work with existing sites?", "Arbeiten Sie auch an bestehenden Websites?"), answer: c("Often, and it usually starts with a measurement rather than a redesign. A crawl plus a Search Console export tends to name the real problem quickly — thin pages that were never worth indexing, a canonical pointing somewhere unintended, or a home page shipping megabytes nobody asked for. Rebuilding is a decision made after that, not before.", "Häufig, und es beginnt meist mit einer Messung statt mit einem Redesign. Ein Crawl plus ein Search-Console-Export benennt das eigentliche Problem schnell — dünne Seiten, die nie indexierungswürdig waren, ein Canonical, das woanders hinzeigt, oder eine Startseite, die Megabytes ausliefert, die niemand angefordert hat. Neu bauen ist eine Entscheidung danach, nicht davor.") },
     ],
   },
   "technical-seo": {
@@ -156,8 +167,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       { question: c("What does technical SEO actually change?", "Was verändert Technical SEO konkret?"), answer: c("It removes the reasons a search engine cannot or will not use a page: broken canonicals, redirect chains, duplicate URLs, missing structured data, pages too slow to be worth ranking. It does not create demand for content nobody wants — it makes sure content people do want is reachable, understood and fast.", "Es beseitigt die Gründe, aus denen eine Suchmaschine eine Seite nicht nutzen kann oder will: kaputte Canonicals, Redirect-Ketten, doppelte URLs, fehlende strukturierte Daten, zu langsame Seiten. Es erzeugt keine Nachfrage nach Inhalten, die niemand sucht — es sorgt dafür, dass gesuchte Inhalte erreichbar, verständlich und schnell sind.") },
       { question: c("My pages are \"discovered but not indexed\". What now?", "Meine Seiten sind \"gefunden, zurzeit nicht indexiert\". Was jetzt?"), answer: c("Do not resubmit them. That status means Google already found the URLs — discovery is not the bottleneck — crawled or assessed them, and decided they were not worth the index. In practice it is almost always thin pages: a couple of hundred words of generic copy that a million other sites also have. The fix is substance and internal linking, not another submission.", "Nicht erneut einreichen. Der Status heißt, dass Google die URLs bereits gefunden hat — Discovery ist nicht der Engpass —, sie geprüft und als nicht indexierungswürdig eingestuft hat. In der Praxis sind es fast immer dünne Seiten: ein paar hundert Wörter generischer Text, den eine Million andere Seiten auch haben. Die Lösung ist Substanz und interne Verlinkung, nicht eine weitere Einreichung.") },
       { question: c("Does a Three.js site rank?", "Kann eine Three.js-Website ranken?"), answer: c("Yes, if the meaning lives in HTML and the WebGL is an enhancement on top. Every claim on this site is server-rendered text; the 3D layer loads after paint and is skipped entirely on Save-Data and low-memory devices. A canvas that is the only place content exists is the version that does not rank.", "Ja, wenn die Bedeutung im HTML liegt und WebGL nur eine Ergänzung darüber ist. Jede Aussage auf dieser Website ist serverseitig gerenderter Text; die 3D-Ebene lädt nach dem Paint und entfällt bei Save-Data und speicherarmen Geräten ganz. Nicht rankt die Variante, in der das Canvas der einzige Ort ist, an dem Inhalt existiert.") },
-      { question: c("How do you handle German and English versions?", "Wie handhabst du deutsche und englische Versionen?"), answer: c("Only genuinely localised content earns its own URL. Interface strings swap in place from a dictionary, so there is no duplicate homepage at a locale root — which is exactly the trap that once stranded visitors on this site with no way back. Where two real versions exist, they carry full hreflang and a canonical each.", "Nur echt lokalisierte Inhalte bekommen eine eigene URL. Interface-Strings werden aus einem Wörterbuch getauscht, es gibt also keine doppelte Startseite unter einem Locale-Root — genau die Falle, die auf dieser Website einmal Besucher ohne Rückweg stranden ließ. Wo zwei echte Versionen existieren, tragen sie vollständiges hreflang und je ein Canonical.") },
-      { question: c("What do you need to start?", "Was brauchst du für den Start?"), answer: c("Search Console access and the site itself. A crawl plus the coverage and query exports usually names the real problem within an hour — and it is frequently not the one that was expected. The output is a prioritised list with the measurement next to each item, not a hundred-page audit.", "Search-Console-Zugang und die Website selbst. Ein Crawl plus die Abdeckungs- und Query-Exporte benennen das eigentliche Problem meist innerhalb einer Stunde — und es ist oft nicht das erwartete. Das Ergebnis ist eine priorisierte Liste mit der Messung neben jedem Punkt, kein hundertseitiges Audit.") },
+      { question: c("How do you handle German and English versions?", "Wie handhaben Sie deutsche und englische Versionen?"), answer: c("Only genuinely localised content earns its own URL. Interface strings swap in place from a dictionary, so there is no duplicate homepage at a locale root — which is exactly the trap that once stranded visitors on this site with no way back. Where two real versions exist, they carry full hreflang and a canonical each.", "Nur echt lokalisierte Inhalte bekommen eine eigene URL. Interface-Strings werden aus einem Wörterbuch getauscht, es gibt also keine doppelte Startseite unter einem Locale-Root — genau die Falle, die auf dieser Website einmal Besucher ohne Rückweg stranden ließ. Wo zwei echte Versionen existieren, tragen sie vollständiges hreflang und je ein Canonical.") },
+      { question: c("What do you need to start?", "Was brauchen Sie für den Start?"), answer: c("Search Console access and the site itself. A crawl plus the coverage and query exports usually names the real problem within an hour — and it is frequently not the one that was expected. The output is a prioritised list with the measurement next to each item, not a hundred-page audit.", "Search-Console-Zugang und die Website selbst. Ein Crawl plus die Abdeckungs- und Query-Exporte benennen das eigentliche Problem meist innerhalb einer Stunde — und es ist oft nicht das erwartete. Das Ergebnis ist eine priorisierte Liste mit der Messung neben jedem Punkt, kein hundertseitiges Audit.") },
     ],
   },
   "creative-development": {
@@ -190,10 +201,119 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     faq: [
       { question: c("Does 3D hurt performance and SEO?", "Schadet 3D der Performance und dem SEO?"), answer: c("It does when it is the only place content exists, or when it loads before the page is readable. Handled properly it costs almost nothing at first paint: the meaning is server-rendered HTML, the 3D layer arrives after, and constrained devices skip it entirely. Measured on this site, the WebGL chunk starts downloading about three seconds in — well past the window that decides LCP.", "Ja, wenn es der einzige Ort ist, an dem Inhalt existiert, oder wenn es lädt, bevor die Seite lesbar ist. Richtig gemacht kostet es beim ersten Paint fast nichts: Die Bedeutung ist serverseitig gerendertes HTML, die 3D-Ebene kommt danach, schwache Geräte lassen sie ganz aus. Auf dieser Website beginnt der WebGL-Chunk erst nach rund drei Sekunden zu laden — weit nach dem Fenster, das den LCP bestimmt.") },
       { question: c("When is Three.js the wrong choice?", "Wann ist Three.js die falsche Wahl?"), answer: c("When the subject is not spatial. A pricing table, a booking flow, a documentation site — none of them get clearer in 3D, and the budget buys more as content or speed. It earns its place when a system needs to be explorable, when a transition should read as one continuous move, or when the object itself is the product.", "Wenn das Thema nicht räumlich ist. Eine Preistabelle, ein Buchungsflow, eine Doku-Website — keines davon wird in 3D klarer, und das Budget bringt als Inhalt oder Tempo mehr. Es verdient seinen Platz, wenn ein System erkundbar sein muss, wenn ein Übergang als eine durchgehende Bewegung lesen soll, oder wenn das Objekt selbst das Produkt ist.") },
-      { question: c("What do you build with?", "Womit baust du?"), answer: c("Astro for the document, TypeScript throughout, GSAP and ScrollTrigger for timeline work, Lenis for desktop wheel smoothing, Three.js and raw GLSL for the real-time layer, and the Web Audio API for the ambience, which is not fetched at all until a visitor turns sound on. Static output on Vercel, with serverless functions only where something has to run per request.", "Astro für das Dokument, durchgehend TypeScript, GSAP und ScrollTrigger für Timeline-Arbeit, Lenis für Wheel-Smoothing am Desktop, Three.js und rohes GLSL für die Echtzeit-Ebene, und die Web Audio API für die Klangkulisse, die erst geladen wird, wenn jemand den Ton einschaltet. Statische Ausgabe auf Vercel, serverlose Funktionen nur dort, wo etwas pro Request laufen muss.") },
-      { question: c("Can you work with an existing brand?", "Kannst du mit einer bestehenden Marke arbeiten?"), answer: c("Yes — most of this work is translating a brand that already exists into motion and space without contradicting it. Bridge Consult had a positioning and a visual identity; the job was to give it a digital surface that read as the same company, not a different one wearing its logo.", "Ja — der größte Teil dieser Arbeit ist, eine bestehende Marke in Bewegung und Raum zu übersetzen, ohne ihr zu widersprechen. Bridge Consult hatte Positionierung und visuelle Identität; die Aufgabe war eine digitale Oberfläche, die als dieselbe Firma liest — nicht als eine andere mit fremdem Logo.") },
+      { question: c("What do you build with?", "Womit bauen Sie?"), answer: c("Astro for the document, TypeScript throughout, GSAP and ScrollTrigger for timeline work, Lenis for desktop wheel smoothing, Three.js and raw GLSL for the real-time layer, and the Web Audio API for the ambience, which is not fetched at all until a visitor turns sound on. Static output on Vercel, with serverless functions only where something has to run per request.", "Astro für das Dokument, durchgehend TypeScript, GSAP und ScrollTrigger für Timeline-Arbeit, Lenis für Wheel-Smoothing am Desktop, Three.js und rohes GLSL für die Echtzeit-Ebene, und die Web Audio API für die Klangkulisse, die erst geladen wird, wenn jemand den Ton einschaltet. Statische Ausgabe auf Vercel, serverlose Funktionen nur dort, wo etwas pro Request laufen muss.") },
+      { question: c("Can you work with an existing brand?", "Können Sie mit einer bestehenden Marke arbeiten?"), answer: c("Yes — most of this work is translating a brand that already exists into motion and space without contradicting it. Bridge Consult had a positioning and a visual identity; the job was to give it a digital surface that read as the same company, not a different one wearing its logo.", "Ja — der größte Teil dieser Arbeit ist, eine bestehende Marke in Bewegung und Raum zu übersetzen, ohne ihr zu widersprechen. Bridge Consult hatte Positionierung und visuelle Identität; die Aufgabe war eine digitale Oberfläche, die als dieselbe Firma liest — nicht als eine andere mit fremdem Logo.") },
       { question: c("How is a project like this run?", "Wie läuft so ein Projekt ab?"), answer: c("Scope first, in writing, including what is deliberately not being built. Then a working page rather than a mockup, because a static comp cannot tell you whether a transition feels right or what it costs on a phone. Then measurement, and a list of what to cut. Every case study here was built and shipped solo, so there is no handover where the intent gets lost.", "Zuerst der Scope, schriftlich, inklusive dessen, was bewusst nicht gebaut wird. Dann eine funktionierende Seite statt eines Mockups, denn ein statischer Entwurf sagt weder, ob sich ein Übergang richtig anfühlt, noch was er auf einem Telefon kostet. Dann Messung und eine Liste dessen, was gestrichen wird. Alle Case Studies hier entstanden solo — es gibt keine Übergabe, bei der die Absicht verloren geht.") },
     ],
+    siblings: ["motion", "websites"],
+  },
+
+  // ── Motion, 3D and video ──────────────────────────────────────────────────
+  //  Written last and it should have been written first. Nine finished 3D works
+  //  sat in a WebGL archive a visitor had to go looking for, two years of video
+  //  production at Siemens sat in a CV row, and the service layer mentioned
+  //  Cinema 4D once, in a subordinate clause. So the site sold a web developer,
+  //  of which Vienna has thousands, instead of the thing that is actually rare:
+  //  the film and the page it lives on made by the same person, which is the
+  //  seam where this work normally falls apart.
+  motion: {
+    key: "motion",
+    proofKind: "production",
+    // The two cases whose sites carry motion of their own — a background film
+    // on one, CSS-only motion on the other. Not FIDIC: it is a text platform.
+    cases: ["bridge", "academy"],
+    reel: ["squidz-pos-display", "lake-como-interior-film", "alpine-equipment-product-film"],
+    paths: { en: "/en/3d-animation-video-vienna/", de: "/de/3d-animation-video-wien/" },
+    title: c("3D animation and video in Vienna.", "3D-Animation und Video in Wien."),
+    description: c(
+      "3D animation, product films and explainer video in Vienna by Rodion Belousov — Cinema 4D and Redshift, cut in After Effects and Premiere, and built to load inside the website that has to carry them.",
+      "3D-Animation, Produktfilme und Erklärvideos in Wien von Rodion Belousov — Cinema 4D und Redshift, geschnitten in After Effects und Premiere, gebaut für die Website, die sie tragen muss.",
+    ),
+    eyebrow: c("3D & Motion / Vienna", "3D & Motion / Wien"),
+    lead: c(
+      "A product film with no product built yet. An interior approved before the first wall goes up. A technical subject made watchable. Or the ten seconds of movement behind a hero section. Made by the same person who builds the website — which is where this normally goes wrong, because the file that arrives is then one the page can actually serve.",
+      "Ein Produktfilm, bevor das Produkt existiert. Ein Interieur, freigegeben, bevor die erste Wand steht. Ein technisches Thema, das ansehbar wird. Oder die zehn Sekunden Bewegung hinter einem Hero. Von derselben Person wie die Website — und genau dort geht es sonst schief, denn so ist die Datei, die ankommt, eine, die die Seite auch ausliefern kann.",
+    ),
+    capabilities: [
+      {
+        title: c("Product film without the product", "Produktfilm ohne Produkt"),
+        text: c(
+          "Camera moves a real shoot cannot afford, on an object that may not be manufactured yet. Modelled and lit in Cinema 4D, rendered in Redshift, cut in After Effects and Premiere. A different colourway, a new pack size or another end frame is a re-render overnight rather than a second studio day — which is why this is often cheaper than the photography it replaces, not the luxury version of it.",
+          "Kamerafahrten, die sich ein realer Dreh nicht leisten kann — an einem Objekt, das vielleicht noch gar nicht produziert ist. Modelliert und ausgeleuchtet in Cinema 4D, gerendert in Redshift, geschnitten in After Effects und Premiere. Eine andere Farbvariante, eine neue Packungsgröße oder ein anderes Endbild ist ein Re-Render über Nacht statt ein zweiter Studiotag — deshalb ist das oft günstiger als die Fotografie, die es ersetzt, und nicht deren Luxusversion.",
+        ),
+      },
+      {
+        title: c("Interiors and architecture, before they exist", "Interieur und Architektur, bevor es sie gibt"),
+        text: c(
+          "A room, a facade or an event set lit with real light logic, so the atmosphere can be approved months before anyone commits money to it. The Lake Como interior film and the Obsidian Residence study in the archive were both built that way: one continuous camera move, materials that behave like the real ones, and a decision made from something you can watch rather than from a moodboard.",
+          "Ein Raum, eine Fassade oder ein Event-Set mit echter Lichtlogik ausgeleuchtet, damit die Atmosphäre freigegeben werden kann, Monate bevor jemand Geld dafür bindet. Der Lake-Como-Interieurfilm und die Obsidian-Residence-Studie im Archiv sind genau so entstanden: eine durchgehende Kamerafahrt, Materialien, die sich wie die echten verhalten, und eine Entscheidung, die man an etwas Ansehbarem trifft statt an einem Moodboard.",
+        ),
+      },
+      {
+        title: c("Making a technical subject watchable", "Ein technisches Thema ansehbar machen"),
+        text: c(
+          "Two years of it at Siemens: 2D tutorial and safety-guideline videos for SIMATIC WinCC Open Architecture — a SCADA platform for large control systems — turned into material a global audience actually watches. Before that, an animated explainer for the FMNR reforestation method for Awaken Trees in Vienna. The animation is never the hard part. Deciding what to leave out, and in which order the rest arrives, is.",
+          "Zwei Jahre davon bei Siemens: 2D-Tutorial- und Safety-Videos für SIMATIC WinCC Open Architecture — eine SCADA-Plattform für große Leitsysteme — in Material verwandelt, das ein globales Publikum tatsächlich ansieht. Davor ein animiertes Erklärvideo zur FMNR-Aufforstungsmethode für Awaken Trees in Wien. Die Animation ist nie der schwierige Teil. Zu entscheiden, was weggelassen wird und in welcher Reihenfolge der Rest kommt, schon.",
+        ),
+      },
+      {
+        title: c("Motion that survives the web", "Motion, die das Web übersteht"),
+        text: c(
+          "A film that makes a page slow has cost more than it earned. So: loops encoded twice and held behind a poster frame, muted autoplay that stands down for Save-Data and reduced-motion, vertical and square cuts taken from the same master, and — where a video would be the heavier answer — the same movement done in WebGL or plain CSS instead. The films on this site do not download at all until you ask for one.",
+          "Ein Film, der eine Seite langsam macht, hat mehr gekostet als eingebracht. Also: Loops doppelt encodiert und hinter einem Posterframe gehalten, stummer Autoplay, der bei Save-Data und reduzierter Bewegung zurücktritt, Hoch- und Quadratformate aus demselben Master — und dort, wo ein Video die schwerere Antwort wäre, dieselbe Bewegung in WebGL oder purem CSS. Die Filme auf dieser Website laden überhaupt erst, wenn Sie einen davon anfordern.",
+        ),
+      },
+      {
+        title: c("One pipeline, one owner", "Eine Pipeline, ein Verantwortlicher"),
+        text: c(
+          "Brief, boards, look development, render, cut, and the page it ends up on — one person the whole way, so there is no version of this where the film team and the web team blame each other for the same second of loading. Delivery is whatever the destination needs: a master, a web loop, social crops, and a poster frame identical to the first frame so nothing flashes when it starts.",
+          "Briefing, Boards, Look-Entwicklung, Render, Schnitt und die Seite, auf der es landet — durchgehend eine Person. Es gibt also keine Variante, in der Filmteam und Webteam sich dieselbe Ladesekunde gegenseitig zuschieben. Geliefert wird, was das Ziel braucht: ein Master, ein Web-Loop, Social-Formate und ein Posterframe, das exakt dem ersten Bild entspricht, damit beim Start nichts blitzt.",
+        ),
+      },
+    ],
+    proof: [
+      { value: "09", label: c("3D works in the public archive — six stills, three films", "3D-Arbeiten im öffentlichen Archiv — sechs Stills, drei Filme") },
+      { value: "SIEMENS", label: c("two years of 2D tutorial and safety video for WinCC OA", "zwei Jahre 2D-Tutorial- und Safety-Video für WinCC OA") },
+      { value: "C4D + RS", label: c("Cinema 4D and Redshift, cut in After Effects and Premiere", "Cinema 4D und Redshift, geschnitten in After Effects und Premiere") },
+    ],
+    faq: [
+      {
+        question: c("Do I need a finished product or a built room?", "Brauche ich ein fertiges Produkt oder einen gebauten Raum?"),
+        answer: c(
+          "No, and that is usually the reason to do it in 3D at all. Drawings, CAD, a packaging dieline, photographs or plain dimensions are enough to build from. It is the one way to have the film before the thing exists — which is what a launch, a crowdfunding page or an investor meeting normally needs it for.",
+          "Nein — und genau das ist meist der Grund, es überhaupt in 3D zu machen. Zeichnungen, CAD, eine Packungs-Stanzform, Fotos oder schlicht Maße reichen als Grundlage. Es ist der einzige Weg, den Film vor der Sache zu haben — und genau dafür braucht ihn ein Launch, eine Crowdfunding-Seite oder ein Investorentermin normalerweise.",
+        ),
+      },
+      {
+        question: c("Do you shoot live action too?", "Drehen Sie auch mit Kamera?"),
+        answer: c(
+          "No camera crew, and I would rather say so than sell it. What is made here is 3D and 2D animation, plus editing, grading, titling and sound assembly on footage you already have or that someone else shoots. If a project genuinely needs a shoot, that is a separate supplier and I will say so at the scope stage rather than after the invoice.",
+          "Kein Kamerateam — und das sage ich lieber, als es zu verkaufen. Gemacht wird hier 3D- und 2D-Animation, dazu Schnitt, Grading, Typo und Tonmontage auf Material, das Sie bereits haben oder das jemand anderes dreht. Wenn ein Projekt wirklich einen Dreh braucht, ist das ein eigener Dienstleister — und das sage ich beim Scope, nicht nach der Rechnung.",
+        ),
+      },
+      {
+        question: c("What do I actually get delivered?", "Was bekomme ich am Ende geliefert?"),
+        answer: c(
+          "A master in full resolution, plus the cuts the destination needs: a muted web loop encoded for the page, 9:16 and 1:1 versions for social, and a poster frame that matches frame one. If it is going on a site I build, it arrives wired in — preloaded lazily, standing down on slow connections, with a still image underneath for anyone who never gets the video.",
+          "Einen Master in voller Auflösung, dazu die Schnitte, die das Ziel braucht: einen stummen Web-Loop für die Seite encodiert, 9:16- und 1:1-Fassungen für Social und ein Posterframe, das dem ersten Bild entspricht. Geht es auf eine Website von mir, kommt es fertig eingebaut — spät geladen, bei langsamen Verbindungen zurücktretend, mit einem Standbild darunter für alle, die das Video nie bekommen.",
+        ),
+      },
+      {
+        question: c("How long does a film take?", "Wie lange dauert ein Film?"),
+        answer: c(
+          "A short product or loop piece with one object and a handful of moves is days rather than weeks. An explainer that has to teach something — script, storyboard, animation, sound — is closer to two to four weeks, and most of that time is approvals rather than rendering. You get the fixed number and the date before it starts, like everything else here.",
+          "Ein kurzes Produkt- oder Loop-Stück mit einem Objekt und wenigen Bewegungen dauert Tage statt Wochen. Ein Erklärvideo, das etwas vermitteln muss — Skript, Storyboard, Animation, Ton — liegt eher bei zwei bis vier Wochen, und der größere Teil davon sind Freigaben, nicht Rendern. Die fixe Zahl und den Termin bekommen Sie vorher, wie bei allem anderen hier.",
+        ),
+      },
+      {
+        question: c("Can the film and the website be one job?", "Können Film und Website ein Auftrag sein?"),
+        answer: c(
+          "That is the version worth buying. The page is designed around what the film does and the film is cut to what the page can carry, so the hero does not wait on a 40 MB file and the vertical cut exists before the campaign asks for it. Split across two suppliers, this is exactly where the argument starts — and the visitor pays for it in loading time.",
+          "Das ist die Variante, die sich lohnt. Die Seite wird um das gebaut, was der Film tut, und der Film auf das geschnitten, was die Seite tragen kann — so wartet der Hero nicht auf eine 40-MB-Datei, und das Hochformat existiert, bevor die Kampagne danach fragt. Auf zwei Dienstleister verteilt beginnt genau hier der Streit — und bezahlt wird er von Besuchern in Ladezeit.",
+        ),
+      },
+    ],
+    siblings: ["creative-development", "websites"],
   },
 
   // ── Niche pages ───────────────────────────────────────────────────────────

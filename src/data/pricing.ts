@@ -12,7 +12,7 @@
 //  They sit deliberately under a Vienna agency (3–8k for a small business site)
 //  and under a mid-level local freelancer.
 // ─────────────────────────────────────────────────────────────────────────────
-export type OfferId = "landing" | "site" | "shop" | "seo" | "platform" | "showreel";
+export type OfferId = "landing" | "site" | "film" | "shop" | "seo" | "platform" | "showreel";
 
 export interface Offer {
   /** Starting price in euro, excluding VAT. */
@@ -24,6 +24,7 @@ export interface Offer {
 export const pricing: Record<OfferId, Offer> = {
   landing: { from: 690 },
   site: { from: 1490 },
+  film: { from: 1200 },
   shop: { from: 2900 },
   seo: { from: 490, monthly: true },
   platform: { from: 4900 },

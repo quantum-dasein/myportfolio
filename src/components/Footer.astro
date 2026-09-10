@@ -81,7 +81,13 @@ const sections = order
               link.i18n === "nav.gallery" ? (
                 <a href={link.url} data-tunnel data-cursor="ENTER" data-i18n={link.i18n}>{link.title}</a>
               ) : (
-                <a href={link.url} data-i18n={link.i18n} data-case-exit>{link.title}</a>
+                <a
+                  href={link.url}
+                  data-i18n={link.i18n}
+                  data-lang-href-en={link.langHref?.en}
+                  data-lang-href-de={link.langHref?.de}
+                  data-case-exit
+                >{link.title}</a>
               ),
             )
           }

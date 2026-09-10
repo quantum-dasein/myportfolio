@@ -74,6 +74,9 @@ export const retired: Array<{ text: string; why: string }> = [
   { text: "Beide Live-Projekte", why: "Same, in German." },
   { text: "invisible to Google", why: "Google does index text PDFs. The argument is a different one." },
   { text: "für Google unsichtbar", why: "Same, in German." },
+  { text: "Six sizes of job", why: "The scope picker has seven; the film was added." },
+  { text: "Sechs Projektgrößen", why: "Same, in German." },
+  { text: "SIX PROJECT SIZES", why: "Same, on the social card." },
   { text: "may inform, not advertise", why: "Broader than §53 Ärztegesetz actually says." },
   { text: "dürfen informieren, nicht werben", why: "Same, in German." },
 ];

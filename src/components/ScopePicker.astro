@@ -1,6 +1,6 @@
 ---
 // ─────────────────────────────────────────────────────────────────────────────
-//  ScopePicker — the six things someone can buy, with what each one costs.
+//  ScopePicker — the seven things someone can buy, with what each one costs.
 //
 //  It used to live inside ProfilePage.astro, which is why the services page —
 //  the one in the nav, the one a visitor opens to find out what things cost —
@@ -17,7 +17,7 @@ import { scopes, pickScope, type ScopeLang } from "../data/scopes";
 interface Props {
   lang?: ScopeLang;
   /** `full` is the commercial page: everything a quote is made of. `compact` is
-   *  the profile page, where the same six choices and the same reacting lattice
+   *  the profile page, where the same seven choices and the same reacting lattice
    *  belong to the storytelling, but the breakdown does not — that would be a
    *  second services page with the same text on a different URL. Compact shows
    *  the timeline, the price and one line of outcome, then hands the visitor to
@@ -133,7 +133,14 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
     </div>
 
     {!full && (
-      <a class="sc-more" href="/services#scope" data-scope-more data-cursor="OPEN" data-magnetic>
+      <a
+        class="sc-more"
+        href={lang === "de" ? "/de/leistungen/#scope" : "/services#scope"}
+        data-scope-more
+        data-scope-hub={lang === "de" ? "/de/leistungen/" : "/services"}
+        data-cursor="OPEN"
+        data-magnetic
+      >
         <span {...loc({ en: "See scope and pricing", de: "Leistungen & Umfang ansehen" })}>{p({ en: "See scope and pricing", de: "Leistungen & Umfang ansehen" })}</span>
         <i class="ui-arrow" aria-hidden="true"></i>
       </a>
@@ -540,7 +547,11 @@ if (picker) {
       link.setAttribute("href", `${url.pathname}${url.search}${url.hash}`);
     });
     if (more) {
-      more.setAttribute("href", `/services?project=${encodeURIComponent(id)}#scope`);
+      // The hub is a real URL per language now, so the handoff has to keep the
+      // language it started in: a German profile page must not send a visitor
+      // to the English hub with their choice attached.
+      const hub = more.dataset.scopeHub || "/services";
+      more.setAttribute("href", `${hub}?project=${encodeURIComponent(id)}#scope`);
       return;
     }
     if (!isFull) return;

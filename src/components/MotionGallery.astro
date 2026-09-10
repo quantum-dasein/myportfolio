@@ -54,9 +54,26 @@ const tiles = [
       <h2 class="motion-title" data-sy-reveal="words" data-i18n="gallery.title">{t("gallery.title")}</h2>
       <p class="motion-lead" data-reveal data-i18n="gallery.text">{t("gallery.text")}</p>
       <p class="motion-tools" data-reveal>Cinema 4D / Redshift / After Effects / Premiere Pro / Photoshop</p>
-      <a class="gallery-link" href={BEHANCE} target="_blank" rel="noopener" data-reveal data-cursor="VIEW">
+      {/* Two exits, and the order matters. The Behance link sends someone to a
+          portfolio on somebody else's domain; the first link says the same work
+          can be bought here, with a price on it. This band existed for years
+          with only the second one, which is how a commercial practice reads as
+          a hobby. */}
+      <div class="gallery-links">
+      <a
+        class="gallery-link gallery-link--hire"
+        href="/en/3d-animation-video-vienna/"
+        data-lang-href-en="/en/3d-animation-video-vienna/"
+        data-lang-href-de="/de/3d-animation-video-wien/"
+        data-reveal
+        data-cursor="OPEN"
+      >
+        <span data-i18n="gallery.service">{t("gallery.service")}</span><span class="css-arrow css-arrow--plain" aria-hidden="true"></span>
+      </a>
+      <a class="gallery-link gallery-link--quiet" href={BEHANCE} target="_blank" rel="noopener" data-reveal data-cursor="VIEW">
         <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow--plain" aria-hidden="true"></span>
       </a>
+      </div>
     </div>
 
     <div class="gallery-stage">
@@ -183,6 +200,20 @@ const tiles = [
     color: #f7f9f9;
     font-size: 0.82rem;
   }
+
+  /* Two exits, stacked, and the order is the argument: the thing that can be
+     ordered here first, the portfolio on somebody else's domain second and
+     quieter. This band had only the second one for years, which is how a
+     commercial practice ends up reading as a hobby. */
+  .gallery-links { display: grid; justify-items: start; }
+  .gallery-links .gallery-link--quiet {
+    margin-top: 0.9rem;
+    padding-bottom: 0.3rem;
+    border-bottom-color: rgba(255, 255, 255, 0.22);
+    color: rgba(var(--rgb-text), 0.62);
+    font-size: 0.72rem;
+  }
+  .gallery-links .gallery-link--quiet:hover { color: #f7f9f9; border-bottom-color: rgba(255, 255, 255, 0.5); }
 
   .css-arrow {
     position: relative;

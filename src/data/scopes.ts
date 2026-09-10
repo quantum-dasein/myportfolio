@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  scopes.ts — the six things someone can buy, in one place.
+//  scopes.ts — the seven things someone can buy, in one place.
 //
 //  Lived inside ProfilePage.astro, which meant the services page could not show
 //  prices without restating them. Two pages now render the same picker from
@@ -74,6 +74,26 @@ export const scopes: Scope[] = [
     ],
     needs: copy("Finished content, or a list of what the site has to say.", "Fertige Inhalte — oder eine Liste dessen, was die Website sagen soll."),
     proof: { text: copy("What that looks like", "Wie das aussieht"), href: copy("/en/website-development-vienna/", "/de/website-erstellen-wien/") },
+  },
+  // The film. It is here because the site was selling six web products while
+  // three finished 3D films sat in the archive with no way to order one — so
+  // anyone who wanted the thing had to guess whether it was even on offer.
+  {
+    id: "film",
+    price: priceOf("film"),
+    outcome: copy("A film of the thing, before the thing exists.", "Ein Film der Sache, bevor es die Sache gibt."),
+    label: copy("3D film or animation", "3D-Film oder Animation"),
+    size: copy("Product, interior or explainer", "Produkt, Interieur oder Erklärvideo"),
+    time: copy("1–2 weeks", "1–2 Wochen"),
+    field: 0.33,
+    gets: [
+      copy("Modelled, lit and rendered in Cinema 4D and Redshift — from drawings, CAD or photographs", "Modelliert, ausgeleuchtet und gerendert in Cinema 4D und Redshift — aus Zeichnungen, CAD oder Fotos"),
+      copy("Cut, graded and titled in After Effects and Premiere, sound assembled", "Geschnitten, gegradet und betitelt in After Effects und Premiere, Ton montiert"),
+      copy("A master plus the cuts the destination needs — web loop, 9:16, 1:1", "Ein Master plus die Fassungen, die das Ziel braucht — Web-Loop, 9:16, 1:1"),
+      copy("Encoded and built into the page, if the page is one of mine", "Encodiert und in die Seite eingebaut, wenn die Seite von mir ist"),
+    ],
+    needs: copy("What it has to show, plus any drawings, CAD or photographs. If none exist, dimensions are enough to start.", "Was gezeigt werden soll — dazu Zeichnungen, CAD-Daten oder Fotos. Wenn es nichts davon gibt, reichen Maße für den Start."),
+    proof: { text: copy("Films and 3D work", "Filme und 3D-Arbeiten"), href: copy("/en/3d-animation-video-vienna/", "/de/3d-animation-video-wien/") },
   },
   {
     id: "shop",

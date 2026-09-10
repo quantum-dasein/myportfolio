@@ -29,7 +29,7 @@ const { logoUrl, logoAlt, links, cta, lang = "en", localeLinks, logoTunnel = fal
               <ul>
                 {links.map((l) => (
                   <li>
-                    <a href={l.url} data-i18n={l.i18n} data-overlay={l.overlay} data-case-exit>
+                    <a href={l.url} data-i18n={l.i18n} data-lang-href-en={l.langHref?.en} data-lang-href-de={l.langHref?.de} data-overlay={l.overlay} data-case-exit>
                       {l.title}
                     </a>
                   </li>

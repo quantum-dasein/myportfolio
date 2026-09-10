@@ -91,12 +91,13 @@ if (Astro.url.pathname !== "/" && !noindex && !pageSchemas.some(item => item["@t
     ],
   });
 }
-// The six things someone can actually buy, priced from the same table the
+// The seven things someone can actually buy, priced from the same table the
 // scope picker reads. `UnitPriceSpecification` with a billing duration is how
 // a monthly retainer is distinguished from a one-off project price.
 const offerNames: Record<OfferId, { name: string; description: string }> = {
   landing: { name: "Landing page", description: "One page written around a single action, live in 2–4 days." },
   site: { name: "Business website", description: "5–10 pages in German and English, live in about a week." },
+  film: { name: "3D film or animation", description: "A product, interior or explainer film in Cinema 4D and Redshift, cut and delivered in the formats the destination needs." },
   shop: { name: "Online shop", description: "Catalogue, cart and checkout with Austrian VAT and shipping rules." },
   seo: { name: "SEO and content", description: "Technical fixes made rather than reported, on a site that already exists." },
   platform: { name: "Web app or platform", description: "Live data, accounts and an admin your team can run." },
@@ -264,10 +265,17 @@ const nav: Link[] = isDeck
   : [
       { title: t("nav.about"), url: `${homePrefix}#about`, i18n: "nav.about" },
       { title: t("nav.work"), url: `${homePrefix}#work`, i18n: "nav.work" },
-      // Services & Research is its own destination (/services) — a real page,
-      // completely independent of the language system. It must never resolve to
-      // a locale root (/en/, /de/), which is what trapped visitors before.
-      { title: t("nav.services"), url: "/services", i18n: "nav.services" },
+      // Services & Research is its own destination — a real page, and since it
+      // carries prices and an FAQ schema, a real page per language: /services
+      // and /de/leistungen/. It must never resolve to a locale ROOT (/en/,
+      // /de/), which is the thing that trapped visitors before; a named German
+      // route is the opposite of that.
+      {
+        title: t("nav.services"),
+        url: lang === "de" ? "/de/leistungen/" : "/services",
+        i18n: "nav.services",
+        langHref: { en: "/services", de: "/de/leistungen/" },
+      },
       // The engineering log. A finished surface no longer proves much on its
       // own, so the record of what broke — and the two entries where the right
       // call was to bin the work — earns a top-level slot rather than living

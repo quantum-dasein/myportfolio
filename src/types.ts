@@ -10,6 +10,11 @@ export interface Link {
   overlay?: string;
   /** play the warp tunnel transition before navigating to `url`. */
   tunnel?: boolean;
+  /** Per-language destinations for a link whose target is a real localized URL
+   *  rather than one page that swaps its own copy. The client switcher rewrites
+   *  `href` from these on `rb:langchange`; the server renders the one matching
+   *  the page's own language. */
+  langHref?: { en: string; de: string };
 }
 
 export interface Image {
