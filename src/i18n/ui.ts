@@ -90,6 +90,8 @@ export const ui = {
     "exp.1.period": "Dec 2024 — Present",
     "exp.1.text":
       "Translated complex infrastructure and FIDIC contract expertise into a premium digital presence — researching international construction projects, shaping feasibility studies and market analysis, then designing and building the Bridge Consult and fidic.uz sites on Astro + Three.js. The collaboration is ongoing.",
+    "exp.1.link": "Read the Bridge Consult case study",
+    "exp.1.link2": "Read the FIDIC.uz case study",
     "exp.2.company": "Siemens — Eisenstadt, AT",
     "exp.2.role": "Marketing & Knowledge Management",
     "exp.2.period": "2023 — 2024",
@@ -442,6 +444,7 @@ export const ui = {
     "services.scope.lead": "Starting prices, not quotes: the real number is fixed within a day once the scope is clear. No form and no call needed to see this.",
     "services.scope.note": "Not on the list, or not sure which one it is? Write anyway — describing it badly is fine, sorting it out is my job.",
     "services.scope.cta": "Get a fixed price",
+    "services.carried.label": "You picked",
     "services.disciplines.label": "The disciplines behind it",
 
     // ── /services hub: how the three disciplines combine, plus FAQ ──────────
@@ -668,6 +671,8 @@ export const ui = {
     "exp.1.period": "Dez 2024 — heute",
     "exp.1.text":
       "Komplexe Infrastruktur- und FIDIC-Vertragsexpertise in eine erstklassige digitale Präsenz übersetzt — Recherche zu internationalen Bauprojekten, Aufbau von Feasibility Studies und Marktanalysen, dann Design und Umsetzung der Websites Bridge Consult und fidic.uz auf Astro + Three.js. Die Zusammenarbeit läuft weiter.",
+    "exp.1.link": "Fallstudie Bridge Consult lesen",
+    "exp.1.link2": "Fallstudie FIDIC.uz lesen",
     "exp.2.company": "Siemens — Eisenstadt, AT",
     "exp.2.role": "Marketing & Wissensmanagement",
     "exp.2.period": "2023 — 2024",
@@ -1013,6 +1018,7 @@ export const ui = {
     "services.scope.lead": "Startpreise, keine Angebote: Die echte Zahl steht binnen eines Tages fest, sobald der Umfang klar ist. Kein Formular, kein Gespräch nötig, um das zu sehen.",
     "services.scope.note": "Nicht auf der Liste, oder unsicher, was zutrifft? Schreiben Sie trotzdem — es unbeholfen zu beschreiben ist völlig in Ordnung, das Sortieren ist mein Job.",
     "services.scope.cta": "Festpreis anfragen",
+    "services.carried.label": "Ihre Auswahl",
     "services.disciplines.label": "Die Disziplinen dahinter",
 
     // ── /services-Hub: wie die drei Disziplinen zusammenwirken, plus FAQ ────

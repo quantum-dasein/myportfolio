@@ -87,12 +87,14 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
           <div class="sc-headline">
             <div>
               <span class="sc-key" {...loc({ en: "Timeline", de: "Zeitrahmen" })}>{p({ en: "Timeline", de: "Zeitrahmen" })}</span>
-              <strong class="sc-value" {...loc(s.time)}>{p(s.time)}</strong>
+              {/* Named, not read by position: the services hero repeats these
+                  two when a visitor arrives with a scope already chosen. */}
+              <strong class="sc-value" data-scope-value="time" {...loc(s.time)}>{p(s.time)}</strong>
             </div>
             {p(s.price!) && (
               <div>
                 <span class="sc-key" {...loc({ en: "From", de: "Ab" })}>{p({ en: "From", de: "Ab" })}</span>
-                <strong class="sc-value" {...loc(s.price!)}>{p(s.price!)}</strong>
+                <strong class="sc-value" data-scope-value="price" {...loc(s.price!)}>{p(s.price!)}</strong>
               </div>
             )}
             <div>
@@ -521,9 +523,22 @@ if (picker) {
 
   const currentId = () => picker.querySelector<HTMLElement>("[data-scope-tab][aria-selected='true']")?.dataset.scopeTab || "";
 
+  // Anything on the page that leads onward from a chosen scope — the enquiry
+  // button under the picker — carries the choice with it, so the contact form
+  // opens on the same answer instead of asking the same question twice.
+  const onward = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-scope-cta]"));
+
   const syncHandoff = () => {
     const id = currentId();
     if (!id) return;
+    onward.forEach((link) => {
+      const url = new URL(link.dataset.scopeCta || link.getAttribute("href") || "/contact", location.href);
+      // Remember the untouched target once: without it every sync would append
+      // to the href it wrote last time.
+      link.dataset.scopeCta ||= `${url.pathname}${url.hash}`;
+      url.searchParams.set("project", id);
+      link.setAttribute("href", `${url.pathname}${url.search}${url.hash}`);
+    });
     if (more) {
       more.setAttribute("href", `/services?project=${encodeURIComponent(id)}#scope`);
       return;

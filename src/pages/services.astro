@@ -81,6 +81,22 @@ const research = [1, 2, 3, 4].map((n) => ({
         {t("services.title")}
       </h1>
       <p class="svc-lead" data-sy-reveal="lines" data-i18n="services.lead">{t("services.lead")}</p>
+
+      <!-- Shown only to someone who arrived with a scope already picked, from
+           the profile page or a link. Without it the page answered a question
+           that had just been asked: a full-height hero about the practice in
+           general, while the visitor's own answer sat a screen below. The
+           values are read out of the picker rather than restated here, so
+           there is still one price table on the site. -->
+      <a class="svc-carried" href="#scope" data-scope-carried data-cursor="VIEW" hidden>
+        <span class="svc-carried-key" data-i18n="services.carried.label">{t("services.carried.label")}</span>
+        <strong data-scope-carried-label></strong>
+        <span class="svc-carried-meta">
+          <span data-scope-carried-time></span>
+          <span data-scope-carried-price></span>
+        </span>
+        <i class="ui-arrow ui-arrow-down" aria-hidden="true"></i>
+      </a>
     </div>
   </section>
 
@@ -98,7 +114,7 @@ const research = [1, 2, 3, 4].map((n) => ({
       <ScopePicker lang="en" />
 
       <p class="svc-scope-note" data-reveal data-i18n="services.scope.note">{t("services.scope.note")}</p>
-      <a class="svc-scope-cta" href="/contact" data-reveal data-cursor="OPEN" data-magnetic>
+      <a class="svc-scope-cta" href="/contact" data-scope-cta data-reveal data-cursor="OPEN" data-magnetic>
         <span data-i18n="services.scope.cta">{t("services.scope.cta")}</span>
         <i aria-hidden="true">→</i>
       </a>
@@ -255,6 +271,50 @@ const research = [1, 2, 3, 4].map((n) => ({
     display: flex;
     align-items: center;
     padding: 9rem 0 5rem;
+  }
+
+  /* A visitor who arrived with a scope chosen has already read the general
+     pitch — they came for their own number. The hero gives up its height so
+     the picker is the next thing on the screen rather than the next screen. */
+  .svc-hero.is-carried {
+    min-height: 0;
+    padding: 8.5rem 0 3rem;
+  }
+
+  .svc-carried {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.55rem 1rem;
+    margin-top: 2.2rem;
+    padding: 0.85rem 1.3rem;
+    border: 1px solid rgba(var(--rgb-text), 0.16);
+    border-radius: 999px;
+    background: rgba(var(--rgb-white), 0.03);
+    color: var(--color-text);
+    transition: border-color 0.35s ease, background-color 0.35s ease;
+  }
+  .svc-carried:hover { border-color: rgba(var(--rgb-text), 0.4); background: rgba(var(--rgb-white), 0.06); }
+
+  .svc-carried-key {
+    font-family: var(--font-inter);
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+  .svc-carried strong { font-size: 0.95rem; font-weight: 500; }
+  .svc-carried-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    font-size: 0.82rem;
+    color: rgba(var(--rgb-text), 0.66);
+  }
+  .svc-carried-meta span:empty { display: none; }
+
+  @media (max-width: 620px) {
+    .svc-carried { border-radius: 14px; }
   }
 
   .svc-eyebrow {
@@ -563,5 +623,48 @@ const research = [1, 2, 3, 4].map((n) => ({
         }),
     });
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }
+
+  // ── The scope carried in from elsewhere ────────────────────────────────────
+  // /services?project=<id> is how the profile page hands a choice over. The
+  // picker already opens on the right panel; this puts the answer where the
+  // visitor is actually looking when they land — at the top — and takes the
+  // hero's height back so the picker is a scroll away, not a screen away.
+  //
+  // The label, timeline and price are read out of the picker's own DOM rather
+  // than restated here: scopes.ts stays the one place a price is written, and
+  // the language swapper only has to translate one copy of them.
+  const carried = document.querySelector<HTMLAnchorElement>("[data-scope-carried]");
+  const scopePicker = document.querySelector<HTMLElement>("[data-scope-picker]");
+
+  if (carried && scopePicker) {
+    const wanted = new URLSearchParams(location.search).get("project");
+
+    const fill = () => {
+      const tab = scopePicker.querySelector<HTMLElement>("[data-scope-tab][aria-selected='true']");
+      const id = tab?.dataset.scopeTab;
+      if (!id) return;
+      const panel = scopePicker.querySelector<HTMLElement>(`[data-scope-panel="${CSS.escape(id)}"]`);
+      const text = (node: Element | null | undefined) => node?.textContent?.trim() || "";
+      const write = (selector: string, value: string) => {
+        const node = carried.querySelector<HTMLElement>(selector);
+        if (node) node.textContent = value;
+      };
+      write("[data-scope-carried-label]", text(tab.querySelector(".sc-tab-label")));
+      write("[data-scope-carried-time]", text(panel?.querySelector("[data-scope-value='time']")));
+      const price = text(panel?.querySelector("[data-scope-value='price']"));
+      write("[data-scope-carried-price]", price ? `${price}` : "");
+    };
+
+    if (wanted && scopePicker.querySelector(`[data-scope-tab="${CSS.escape(wanted)}"]`)) {
+      document.querySelector(".svc-hero")?.classList.add("is-carried");
+      carried.hidden = false;
+      fill();
+      // The picker announces every change, including the one it makes itself
+      // when it reads the parameter, and the switcher retranslates the values
+      // underneath us — follow both rather than snapshotting once.
+      scopePicker.addEventListener("rb:scopechange", fill);
+      addEventListener("rb:langchange", () => requestAnimationFrame(fill));
+    }
   }
 </script>

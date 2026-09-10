@@ -1835,40 +1835,103 @@ const selectedWork = [
 
   @media (max-width: 560px) {
     .work-intro .s-title { font-size: 3rem; }
-    .work-stage { min-height: 52rem; padding-top: 0; }
-    .work-grid { position: absolute; inset: 0; display: block; }
+    .work-stage { padding-top: 0; }
     .work-core { width: 18rem; top: 45%; opacity: 0.88; }
     .work-terrain { display: block; left: -42%; right: -42%; bottom: -2%; opacity: .28; }
     .work-orbits { display: block; inset: 4% -42% 8%; }
-    .work-card {
-      /* The staggered collage below positions with top/right offsets — that
-         maths only works absolutely. The earlier phone rule flips cards to
-         `relative`, where `top` shifts FROM the flow position, which is how
-         FIDIC ended up 800px deep and bleeding into the services band. */
-      position: absolute;
-      width: 84%;
-      height: 24.5rem;
-      min-height: 0;
-      translate: var(--mobile-card-x, 0) var(--mobile-card-y, 0);
-    }
-    .work-card:nth-child(1) {
-      left: -3% !important;
-      right: auto !important;
-      top: 2rem !important;
-      transform: perspective(900px) rotateY(5deg) rotateZ(-1.5deg) !important;
-    }
-    .work-card:nth-child(2) {
-      left: auto !important;
-      right: -3% !important;
-      top: 25.5rem !important;
-      transform: perspective(900px) rotateY(-5deg) rotateZ(1.5deg) !important;
-    }
-    .work-card figure { position: absolute; aspect-ratio: auto; }
     .work-copy { padding: 1.05rem; }
     .work-card h3 { font-size: 1.42rem; }
     .work-card p { font-size: .76rem; line-height: 1.42; }
     .work-role { margin-block: .35rem .55rem; }
     .work-cta { padding-top: .8rem; }
+  }
+
+  /* ── Selected work, tablet cascade ────────────────────────────────────────
+     Between the phone stack and the desktop composition the collage still had
+     the third card on top of the first: Academy at 52% of a stage 640px tall,
+     with its own heading behind the Bridge Consult card and the whole cascade
+     spilling 33px out of the stage. The offsets are hand-placed per screen, so
+     this range gets its own: a taller stage, and three positions that read as
+     a cascade instead of a pile. Bridge starts at the top, FIDIC drops behind
+     it on the right, Academy sits below both and clear of them.
+     ------------------------------------------------------------------- */
+  @media (max-width: 1100px) and (min-width: 768px) {
+    /* Tall enough that 52% + the card's own 21rem still lands inside it. */
+    .work-stage { min-height: 46rem; }
+    .work-card:nth-child(1) { left: 0; top: 0; }
+    .work-card:nth-child(2) { right: 0; top: 15%; }
+    .work-card:nth-child(3) { left: 8%; top: 52%; }
+  }
+
+  /* ── Selected work, one column ────────────────────────────────────────────
+     The stage is a hand-placed collage: three cards at absolute offsets on a
+     perspective plane. That composition was written for two cards and adding
+     the third broke it below tablet — Academy landed at 52% of a stage sized
+     for two, half under FIDIC, at the 36% width its desktop rule gives it
+     (`.work-card:nth-child(3)` outranks a plain `.work-card`, so the narrow
+     rules never reached it).
+
+     Absolute placement does not survive adding a case, so narrow screens get
+     the honest answer instead: one column, in flow, each card its own width,
+     image on top and text beneath. Every offset the wider layouts set is
+     named and cleared here, because they are not all set on `.work-card`.
+     ------------------------------------------------------------------- */
+  @media (max-width: 767px) {
+    .work-stage { min-height: 0; }
+
+    .work-grid {
+      position: relative;
+      inset: auto;
+      display: grid;
+      gap: 1.15rem;
+      padding: 1rem 0 0.5rem;
+    }
+
+    .work-card,
+    .work-card:nth-child(1),
+    .work-card:nth-child(2),
+    .work-card:nth-child(3) {
+      position: relative;
+      left: auto;
+      right: auto;
+      top: auto;
+      bottom: auto;
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      transform: none;
+      /* The scroll parallax writes --mobile-card-x/y into this; in a stack it
+         would only close the gap between neighbours. */
+      translate: none;
+    }
+
+    /* The nth-child(3) rules are repeated here on purpose: the desktop card
+       is a fixed height, so it sets `height: 100%` and a line clamp through a
+       selector one pseudo-class more specific than a plain `.work-card`. Left
+       alone, the Academy card kept both and swallowed its own "Open project"
+       link. */
+    .work-card a,
+    .work-card:nth-child(3) a,
+    .work-card .work-copy,
+    .work-card:nth-child(3) .work-copy {
+      height: auto;
+      min-height: 0;
+    }
+
+    /* A band at the top of the card rather than a full-bleed backdrop under
+       the text, so it needs a height of its own. */
+    .work-card figure { position: relative; inset: auto; aspect-ratio: 1.62; }
+
+    /* The blurb is clamped on the desktop cards because those are a fixed
+       height. These are not, so the whole sentence can stay. */
+    .work-card .work-copy > p:not(.work-role),
+    .work-card:nth-child(3) .work-copy > p:not(.work-role) {
+      -webkit-line-clamp: none;
+    }
+
+    /* One line, so the year stays level with the index rather than stranded
+       above a wrapped tag. */
+    .work-meta { font-size: 0.56rem; letter-spacing: 0.1em; }
   }
 
   @media (max-width: 760px) {

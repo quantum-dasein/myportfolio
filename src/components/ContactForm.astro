@@ -9,11 +9,17 @@
 //  site, so the form asks for exactly those and nothing else.
 //
 //  Delivery: the site is a static build with no server of its own, so the POST
-//  goes to Web3Forms, which forwards it to Rodion's inbox. The access key is
-//  public by design (it only permits submissions to one address) and comes from
-//  PUBLIC_W3F_KEY at build time. Without that variable the form still works —
-//  it composes the same message into a prefilled mail draft — so the page is
-//  never broken, it just falls back to where it started.
+//  goes to Formspree, which forwards it to Rodion's inbox. The form id is public
+//  by design — it is meant to sit in client HTML and only permits submissions to
+//  one configured address — so it lives here rather than in an environment
+//  variable that has to be set on every deploy target. PUBLIC_FORM_ENDPOINT can
+//  still override it for a staging form.
+//
+//  Formspree's own AJAX SDK is not used. It exists to supply form state,
+//  validation display and button handling, and this form already had all three
+//  before Formspree did: a status line, `reportValidity`, a disabled button and
+//  a honeypot. Adding the library would mean a script from a CDN and a second
+//  source of truth for the same behaviour.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useTranslations, type Lang } from "../i18n/utils";
 
@@ -21,7 +27,7 @@ interface Props { lang?: Lang }
 const { lang = "en" } = Astro.props;
 const t = useTranslations(lang);
 
-const key = import.meta.env.PUBLIC_W3F_KEY ?? "";
+const ENDPOINT = import.meta.env.PUBLIC_FORM_ENDPOINT ?? "https://formspree.io/f/mjyvjpdk";
 const MAIL = "rodionbelousov@protonmail.com";
 
 const what = ["landing", "site", "shop", "seo", "platform", "showreel", "other"] as const;
@@ -29,7 +35,7 @@ const when = ["asap", "month", "quarter", "open"] as const;
 const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 ---
 
-<form class="cf" data-contact-form data-endpoint={key} data-mail={MAIL} novalidate>
+<form class="cf" data-contact-form data-endpoint={ENDPOINT} data-mail={MAIL} novalidate>
   <div class="cf-field">
     <label for="cf-what" data-i18n="form.what.label">{t("form.what.label")}</label>
     <select id="cf-what" name="what" required>
@@ -188,6 +194,17 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       if (form.dataset.wired) return;
       form.dataset.wired = "true";
 
+      // Arriving from the scope picker with `?project=<id>`: the ids in
+      // src/data/scopes.ts and the ids of these options are deliberately the
+      // same words, so a visitor who already said what they need on /services
+      // is not asked again on the next page. An unknown value simply leaves
+      // the select on its default.
+      const project = new URLSearchParams(location.search).get("project");
+      const what = form.elements.namedItem("what") as HTMLSelectElement | null;
+      if (project && what && Array.from(what.options).some((option) => option.value === project)) {
+        what.value = project;
+      }
+
       const status = form.querySelector<HTMLParagraphElement>(".cf-status")!;
       const button = form.querySelector<HTMLButtonElement>(".cf-send")!;
       const label = button.querySelector("span")!;
@@ -228,8 +245,8 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
         const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
         const body = compose();
 
-        // No key configured yet: hand the composed message to a mail draft
-        // rather than losing it. Same destination, one more tap.
+        // Only reachable if the endpoint is deliberately blanked. Kept because
+        // losing a written enquiry is worse than one extra tap.
         if (!endpoint) {
           const subject = encodeURIComponent(`Website enquiry — ${email}`);
           location.href = `mailto:${mail}?subject=${subject}&body=${encodeURIComponent(body)}`;
@@ -243,19 +260,28 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
         status.textContent = "";
 
         try {
-          const response = await fetch("https://api.web3forms.com/submit", {
+          // `Accept: application/json` is what stops Formspree replying with its
+          // own hosted thank-you page; `_replyto` and `_subject` are the two
+          // fields it treats specially, so hitting reply in the inbox answers
+          // the person who wrote rather than Formspree.
+          const response = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "application/json" },
             body: JSON.stringify({
-              access_key: endpoint,
-              subject: `Website enquiry — ${email}`,
-              from_name: "rodionbelousov.studio",
-              replyto: email,
               email,
+              _replyto: email,
+              _subject: `Website enquiry — ${email}`,
               message: body,
             }),
           });
-          if (!response.ok) throw new Error(String(response.status));
+          if (!response.ok) {
+            // Formspree answers a rejected submission with a JSON body naming
+            // the reason. Worth reading: a form that is paused or over quota
+            // fails exactly like a network error otherwise, and the visitor is
+            // told to try again forever.
+            const detail = await response.json().catch(() => null);
+            throw new Error(detail?.errors?.[0]?.message || String(response.status));
+          }
           form.reset();
           say("form.success", true);
         } catch {

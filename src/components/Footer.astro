@@ -474,6 +474,15 @@ const sections = order
   }
 
   @media (max-width: 600px) {
+    /* Three groups of links in an auto-fit grid gave a phone two columns and
+       then dropped the third onto a second row under the first, leaving a
+       hole beside it — and the German "Profil & Berufserfahrung · Wien" is
+       wider than a half-width column, so with `white-space: nowrap` it ran
+       off the right edge of the screen. One column at this width: nothing
+       overflows, and the groups read in order instead of around a gap. */
+    .footer-cols { grid-template-columns: 1fr; gap: 1.85rem; }
+    .footer-col { gap: .68rem; }
+
     .finale { min-height: 590px; }
     .finale-card { width: calc(100% - 2rem); padding: 1.5rem; backdrop-filter: none; }
     .finale-card h2 { margin-block: 1.1rem 1.8rem; font-size: clamp(2.3rem, 12vw, 3.2rem); line-height: .96; }

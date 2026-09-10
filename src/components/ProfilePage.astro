@@ -75,6 +75,21 @@ const facts = [
 const experience = [1, 2, 3];
 const education = [1, 2, 3];
 
+// Proof under each role, because a CV row is a claim and these three are the
+// only ones on the page that can be checked in a click: the two case studies
+// written about the Bridge Consult work, the Siemens video series, and the
+// Awaken Trees film. They used to sit on the home page's career list; that
+// list is gone and the links went with it, which left the record here as
+// three paragraphs asking to be taken at their word.
+const jobLinks: Record<number, Array<{ href: string; key: string; external?: boolean }>> = {
+  1: [
+    { href: "/work/bridge-consult", key: "exp.1.link" },
+    { href: "/work/fidic", key: "exp.1.link2" },
+  ],
+  2: [{ href: "https://www.youtube.com/@WinCCOA/playlists", key: "exp.2.link", external: true }],
+  3: [{ href: "https://www.youtube.com/watch?v=cC-eCQHxzyA", key: "exp.3.link", external: true }],
+};
+
 const steps = [
   { n: "01", label: c("WRITE", "SCHREIBEN"), line: c("Tell me what you need and when.", "Sagen Sie mir, was Sie brauchen — und bis wann.") },
   { n: "02", label: c("SCOPE", "UMFANG"), line: c("Scope, price and launch date — fixed within a day.", "Umfang, Preis und Launch-Termin — innerhalb eines Tages vereinbart.") },
@@ -184,6 +199,22 @@ const breadcrumbs = {
                   <h3>{tk(`exp.${n}.company`)}</h3>
                   <p class="pf-role">{tk(`exp.${n}.role`)}</p>
                   <p>{tk(`exp.${n}.text`)}</p>
+                  {jobLinks[n] && (
+                    <p class="pf-proof">
+                      {jobLinks[n].map((link) => (
+                        <a
+                          href={link.href}
+                          target={link.external ? "_blank" : undefined}
+                          rel={link.external ? "noopener" : undefined}
+                          data-case-exit={link.external ? undefined : true}
+                          data-cursor={link.external ? "WATCH" : "READ"}
+                        >
+                          {tk(link.key)}
+                          <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
+                        </a>
+                      ))}
+                    </p>
+                  )}
                 </div>
               </li>
             ))}
@@ -458,6 +489,40 @@ const breadcrumbs = {
     color: var(--color-accent) !important;
   }
   .pf-rows p:last-child { margin: 0; }
+
+  /* The links under a role. Underlined rather than buttoned: they are evidence
+     for the sentence above them, not a call to action competing with the page's
+     own. */
+  .pf-proof {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.4rem;
+    margin: 0.85rem 0 0 !important;
+  }
+  .pf-proof a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.28rem;
+    border-bottom: 1px solid rgba(var(--rgb-text), 0.26);
+    color: rgba(var(--rgb-text), 0.82);
+    font-size: 0.82rem;
+    transition: color 0.35s ease, border-color 0.35s ease, gap 0.45s var(--ease-out-expo);
+  }
+  .pf-proof a:hover,
+  .pf-proof a:focus-visible {
+    color: #fff;
+    border-color: #fff;
+    gap: 0.8rem;
+  }
+  .pf-proof .css-arrow {
+    display: inline-block;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+    transform: rotate(-45deg);
+  }
 
   .pf-cards { display: grid; gap: 1rem; margin-top: 2rem; }
   .pf-cards.three { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
