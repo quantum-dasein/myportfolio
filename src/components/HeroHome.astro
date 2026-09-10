@@ -17,7 +17,11 @@ const t = useTranslations();
       </span>
 
       <h1 class="hero-title" aria-label={`${t("hero.title.1")} ${t("hero.title.2")}`}>
-        <span class="line" data-intro data-i18n="hero.title.1">{t("hero.title.1")}</span>
+        {/* The two lines are display:block, so this space renders as nothing —
+            but without it the headline extracts as "fast,and get found." in
+            anything that reads the DOM text rather than the aria-label, Google's
+            snippet included. */}
+        <span class="line" data-intro data-i18n="hero.title.1">{t("hero.title.1")}</span>{" "}
         <span class="line muted" data-intro data-i18n="hero.title.2">{t("hero.title.2")}</span>
       </h1>
 
