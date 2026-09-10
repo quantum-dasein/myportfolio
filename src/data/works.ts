@@ -13,6 +13,10 @@ export interface Work {
   id: string;
   img: string;
   video?: string; // optional .mp4 → becomes a VideoTexture
+  /** 16:9 unless stated. A reel shot on location is a phone file, and a 9:16
+   *  card cannot share a row with landscape ones without towering over them —
+   *  so the vertical ones get their own strip. */
+  ratio?: "vertical";
   type: "case" | "reel";
   /** static proper-noun title (reel) OR i18n key (case, via kTitle) */
   title?: string;
@@ -186,6 +190,22 @@ export const works: Work[] = [
       tools: "CINEMA 4D / REDSHIFT / AFTER EFFECTS / PHOTOSHOP",
       en: "A product-motion study that stages ski and snowboard equipment as sculptural objects through controlled light, color and mechanical choreography.",
       de: "Eine Product-Motion-Studie, die Ski- und Snowboard-Equipment mit kontrolliertem Licht, Farbe und mechanischer Choreografie als skulpturale Objekte inszeniert.",
+    },
+  },
+  {
+    id: "fidic-osh-first-meeting",
+    img: "/portfolio/rodion-belousov-fidic-osh-first-meeting-event-reel-poster.webp",
+    video: "/portfolio/video/rodion-belousov-fidic-osh-first-meeting-event-reel.mp4",
+    ratio: "vertical",
+    type: "reel",
+    title: "FIDIC OSH — First Meeting",
+    kCat: "gallery.7.cat",
+    href: "https://t.me/fidicuzb",
+    hrefLabel: "PLAY REEL",
+    detail: {
+      tools: "ON LOCATION / PREMIERE PRO",
+      en: "The first FIDIC OSH meeting in Tashkent, June 2026 — contract managers, engineers and claims specialists around one table, and the session that started the FIDIC Club. Filmed and cut on the day, in the format the client actually publishes in: vertical, captioned, under a minute.",
+      de: "Das erste FIDIC-OSH-Treffen in Taschkent, Juni 2026 — Vertragsmanager, Ingenieure und Claims-Spezialisten an einem Tisch, und die Sitzung, aus der der FIDIC Club entstand. Am selben Tag gedreht und geschnitten, im Format, in dem der Kunde tatsächlich publiziert: vertikal, untertitelt, unter einer Minute.",
     },
   },
 ];

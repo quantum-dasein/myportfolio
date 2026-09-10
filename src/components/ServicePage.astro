@@ -28,7 +28,12 @@ const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({
 // A page that sells film shows film. These are the same files the WebGL archive
 // uses, served here as ordinary <video> behind their poster so nothing but the
 // poster downloads until a visitor presses play.
-const reel = (service.reel ?? []).map((id) => works.find((work) => work.id === id)).filter(Boolean) as typeof works;
+const reelAll = (service.reel ?? []).map((id) => works.find((work) => work.id === id)).filter(Boolean) as typeof works;
+// Landscape films and vertical field reels are two different objects on a page:
+// a 9:16 card in a three-column landscape grid is twice the height of its
+// neighbours and drags the row with it. Same data, two strips.
+const reel = reelAll.filter((film) => film.ratio !== "vertical");
+const fieldReel = reelAll.filter((film) => film.ratio === "vertical");
 
 // The row of the price table this page is selling, read from the same file the
 // picker reads. These pages are what search sends people to, and every one of
@@ -38,7 +43,7 @@ const scope = service.scope ? scopes.find((row) => row.id === service.scope) : u
 const hub = de ? "/de/leistungen/" : "/services/";
 // VideoObject for each one. No `uploadDate`: it is not recorded anywhere real,
 // and Google would rather have an incomplete node than an invented date.
-const videoSchema = reel.map((film) => ({
+const videoSchema = reelAll.map((film) => ({
   "@type": "VideoObject",
   name: film.title!,
   description: pick({ en: film.detail!.en, de: film.detail!.de }, lang),
@@ -141,6 +146,39 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
             <span>{de ? "Das gesamte 3D-Archiv" : "The whole 3D archive"}</span>
             <i class="ui-arrow" aria-hidden="true"></i>
           </a>
+        </div>
+      </section>
+    )}
+
+    {/* Shot on location. This is here on purpose and not folded into the films
+        above: a client who needs someone to turn up at an event and hand back a
+        publishable vertical cut the same day is not reading a page about
+        Cinema 4D, and there is no reason to make them infer it. */}
+    {fieldReel.length > 0 && (
+      <section class="reel-strip reel-strip--field" id="field-reel">
+        <div class="u-container">
+          <span class="eyebrow" data-reveal>{de ? "VOR ORT GEDREHT" : "SHOT ON LOCATION"}</span>
+          <p class="field-lead" data-reveal>
+            {de
+              ? "Nicht jedes Video braucht ein Set. Manchmal braucht es jemanden, der zum Termin kommt, dreht und noch am selben Tag einen Schnitt zurückgibt, den der Kunde so veröffentlichen kann."
+              : "Not every video needs a set. Sometimes it needs someone who turns up at the event, shoots it, and hands back a cut the client can publish the same day."}
+          </p>
+          <div class="reel-grid reel-grid--field">
+            {fieldReel.map((film) => (
+              <figure data-reveal data-film>
+                <button type="button" data-film-play aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
+                  <img src={film.img} alt={`${film.title} — ${pick({ en: film.detail!.en, de: film.detail!.de }, lang)}`} loading="lazy" width="464" height="848" />
+                  <span class="reel-play" aria-hidden="true"></span>
+                </button>
+                <video data-film-video src={film.video} poster={film.img} preload="none" playsinline loop controls hidden></video>
+                <figcaption>
+                  <strong>{film.title}</strong>
+                  <span>{film.detail!.tools}</span>
+                  <p>{pick({ en: film.detail!.en, de: film.detail!.de }, lang)}</p>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
         </div>
       </section>
     )}
@@ -361,6 +399,12 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
   .reel-grid video {
     display: block;
     width: 100%;
+    /* height:auto is not decoration. The <img> carries width/height attributes
+       for CLS, and those map to presentational hints — a real used height that
+       aspect-ratio cannot override on its own. Without this line every poster
+       on this page rendered at its attribute height (411x450 instead of
+       411x231) and object-fit: cover quietly cropped the difference. */
+    height: auto;
     aspect-ratio: 16 / 9;
     object-fit: cover;
     background: #07080a;
@@ -397,6 +441,37 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
     border-block: .42rem solid transparent;
   }
   .reel-grid [data-film-play]:hover .reel-play { background: rgba(12, 14, 16, .8); border-color: #fff; }
+
+  /* The vertical strip. Narrow columns on purpose: a 9:16 card at a third of a
+     1200px container would be nearly 700px tall and swallow the section. */
+  .reel-strip--field { padding-top: 0; }
+  .field-lead {
+    max-width: 54ch;
+    margin: .9rem 0 0;
+    color: rgba(var(--rgb-text), .6);
+    font-size: .95rem;
+    line-height: 1.6;
+  }
+  /* Each field reel is a poster beside its caption rather than above it. A 9:16
+     card is 246px wide and its description is thirteen lines long underneath —
+     the text ends up in a gutter while two thirds of the row sit empty. */
+  .reel-grid--field { grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 2rem; }
+  .reel-grid--field figure {
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+  .reel-grid--field img,
+  .reel-grid--field video { aspect-ratio: 9 / 16; }
+  /* One reel alone takes the full row, and without a cap its description runs
+     the whole 1200px of it. */
+  .reel-grid--field figcaption { padding-top: 0; max-width: 46ch; }
+  @media (max-width: 560px) {
+    .reel-grid--field figure { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .reel-grid--field [data-film-play] { max-width: 17rem; }
+    .reel-grid--field figcaption { padding-top: .9rem; }
+  }
 
   .reel-grid figcaption { display: grid; gap: .3rem; padding-top: .9rem; }
   .reel-grid figcaption strong { font: 500 1.05rem var(--font-display); }

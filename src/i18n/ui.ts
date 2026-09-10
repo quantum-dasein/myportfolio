@@ -363,6 +363,7 @@ export const ui = {
     "gallery.4.cat": "Art Direction",
     "gallery.5.cat": "Generative",
     "gallery.6.cat": "Motion",
+    "gallery.7.cat": "Event Film",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
     // hrefs live in the dictionary too, so the language switcher points each
@@ -959,6 +960,7 @@ export const ui = {
     "gallery.4.cat": "Art Direction",
     "gallery.5.cat": "Generativ",
     "gallery.6.cat": "Motion",
+    "gallery.7.cat": "Eventfilm",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
     "hero.trust.label": "Bewährt bei",
