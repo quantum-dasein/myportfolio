@@ -1,0 +1,154 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  ContactPage — where the enquiry actually gets written, one language per URL.
+//
+//  The only way to reach Rodion used to be a `mailto:` link. On a phone that
+//  hands the visitor to a mail app many of them have never configured, and the
+//  enquiry dies there. This page asks the three things a quote needs — what,
+//  when, roughly how much — and sends them, so a half-finished thought still
+//  arrives instead of evaporating.
+//
+//  It used to be one English route that swapped itself into German in the
+//  browser, which meant a German visitor coming from /de/leistungen/ landed on
+//  an English page and watched it change under them. /contact and /de/kontakt/
+//  are two real URLs now, both lockLang, and the switcher moves between them.
+// ─────────────────────────────────────────────────────────────────────────────
+import Layout from "../layouts/Layout.astro";
+import ContactForm from "./ContactForm.astro";
+import ScopeField from "./ScopeField.astro";
+import { useTranslations, type Lang } from "../i18n/utils";
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const de = lang === "de";
+const c = <T,>(en: T, deValue: T): T => (de ? deValue : en);
+const t = useTranslations(lang);
+
+const paths = { en: "/contact/", de: "/de/kontakt/" };
+---
+
+<Layout
+  lang={lang}
+  lockLang
+  alternateUrls={{ en: paths.en, de: paths.de, "x-default": paths.en }}
+  hideFinale
+  title={c(
+    "Contact — get a fixed price for your website | Rodion Belousov, Vienna",
+    "Kontakt — Festpreis für Ihre Website | Rodion Belousov, Wien",
+  )}
+  description={c(
+    "Tell me what you need, when you need it and your budget range. You get a fixed price and a launch date back, usually the same day. Websites, shops, SEO and 3D film in Vienna.",
+    "Sagen Sie mir, was Sie brauchen, bis wann und in welchem Rahmen. Sie bekommen einen Festpreis und einen Launch-Termin zurück, meist am selben Tag. Websites, Shops, SEO und 3D-Film in Wien.",
+  )}
+  image={c("/og/contact-en.jpg", "/og/contact-de.jpg")}
+  imageAlt={c(
+    "Contact Rodion Belousov — web developer in Vienna",
+    "Kontakt Rodion Belousov — Webentwickler in Wien",
+  )}
+  keywords={c(
+    ["contact web developer Vienna", "get a website quote Vienna", "website cost Vienna", "hire web developer Vienna"],
+    ["Webdesigner Wien Kontakt", "Website Angebot Wien", "Website Kosten Wien", "Webentwickler Wien anfragen"],
+  )}
+  structuredData={{
+    "@type": "ContactPage",
+    name: c("Contact — Rodion Belousov", "Kontakt — Rodion Belousov"),
+    description: c(
+      "Enquiry form for websites, online shops, SEO and 3D film in Vienna. Fixed price and launch date, usually within a day.",
+      "Anfrageformular für Websites, Online-Shops, SEO und 3D-Film in Wien. Festpreis und Launch-Termin, meist binnen eines Tages.",
+    ),
+    mainEntity: { "@id": "https://rodionbelousov.studio/#rodion-belousov" },
+  }}
+>
+  <section class="section ct">
+    {/* The same lattice that sits behind the price table on the profile page:
+        every node is a unit of the job, and the form's first question drives
+        it. Picking "a landing page" contracts it to a handful; picking "a
+        platform" fills it. Canvas 2D, no 3D library — this page has to stay
+        light, it is the one someone opens to write. */}
+    <ScopeField />
+    <div class="u-container ct-grid">
+      <span class="s-idx">01 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+
+      <div class="ct-body">
+        <h1 class="ct-title" data-sy-reveal="words" data-i18n="form.title">{t("form.title")}</h1>
+        <p class="s-lead" data-reveal data-i18n="form.text">{t("form.text")}</p>
+
+        <div class="ct-form" data-reveal>
+          <ContactForm lang={lang} />
+        </div>
+
+        <aside class="ct-aside" data-reveal>
+          <span class="ct-aside-label" data-i18n="contact.label">{t("contact.label")}</span>
+          <a href="mailto:rodionbelousov@protonmail.com">rodionbelousov@protonmail.com</a>
+          <a href="https://www.linkedin.com/in/rodion-belousov-413040228/" target="_blank" rel="me noopener">LinkedIn</a>
+          <span data-i18n="contact.location">{t("contact.location")}</span>
+        </aside>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* Same treatment as /notes and the insight articles: an opaque surface above
+     the site-wide WebGL backdrop. The sculpture sits exactly where the form
+     does on a phone, and grey type over a chrome sphere is unfillable. The
+     radial glow keeps the light the backdrop was giving. */
+  .ct {
+    position: relative;
+    z-index: 1;
+    padding-top: clamp(7rem, 14vh, 11rem);
+    padding-bottom: clamp(5rem, 12vh, 9rem);
+    background:
+      radial-gradient(circle at 78% 12%, rgba(255, 255, 255, 0.075), transparent 30rem),
+      #030405;
+  }
+  .ct-grid { position: relative; z-index: 1; display: grid; gap: 2rem; }
+
+  /* Here the lattice is atmosphere behind a form rather than the subject of the
+     section, so it sits further back than it does on the profile page. */
+  .ct :global(.sf) { opacity: 0.72; }
+  @media (max-width: 767px) {
+    .ct :global(.sf) { opacity: 0.5; }
+  }
+
+  .ct-title {
+    max-width: 16ch;
+    margin: 0 0 1.4rem;
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+  }
+
+  .ct-body { display: grid; gap: 2.6rem; }
+  .ct-body > .s-lead { max-width: 46ch; margin: 0; }
+
+  .ct-aside {
+    display: grid;
+    /* Next to a tall form column this is a grid item that would otherwise
+       stretch, spreading three short lines over the whole height. */
+    align-content: start;
+    gap: 0.6rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--color-line);
+    font-size: 0.92rem;
+    color: var(--color-text-alt);
+  }
+  .ct-aside-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .ct-aside a { width: fit-content; color: var(--color-text); }
+  .ct-aside a:hover { color: var(--color-accent); }
+
+  /* Wide enough for two columns: the form on the left, the fallback ways to
+     reach him on the right, so neither is buried under the other. */
+  @media (min-width: 900px) {
+    .ct-grid { grid-template-columns: 12rem 1fr; align-items: start; }
+    .ct-body { grid-template-columns: minmax(0, 34rem) 1fr; gap: 3rem 4rem; }
+    .ct-title { grid-column: 1 / -1; }
+    .ct-body > .s-lead { grid-column: 1 / -1; }
+    .ct-aside { border-top: none; padding-top: 0.4rem; }
+  }
+</style>

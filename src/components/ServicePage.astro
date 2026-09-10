@@ -260,7 +260,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
           </dl>
           <p data-reveal>{pickScope(scope.needs, lang)}</p>
           <div class="cta-links" data-reveal>
-            <a class="cta-primary" href={`/contact?project=${scope.id}`} data-cursor="OPEN" data-magnetic>
+            <a class="cta-primary" href={`${de ? "/de/kontakt/" : "/contact/"}?project=${scope.id}`} data-cursor="OPEN" data-magnetic>
               {de ? "Festpreis anfragen" : "Get a fixed price"}<i class="ui-arrow" aria-hidden="true"></i>
             </a>
             <a class="cta-secondary" href={`${hub}?project=${scope.id}#scope`} data-cursor="VIEW">

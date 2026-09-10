@@ -148,7 +148,7 @@ const research = [1, 2, 3, 4].map((n) => ({
       <ScopePicker lang={lang} />
 
       <p class="svc-scope-note" data-reveal data-i18n="services.scope.note">{t("services.scope.note")}</p>
-      <a class="svc-scope-cta" href="/contact" data-scope-cta data-reveal data-cursor="OPEN" data-magnetic>
+      <a class="svc-scope-cta" href={de ? "/de/kontakt/" : "/contact/"} data-scope-cta data-reveal data-cursor="OPEN" data-magnetic>
         <span data-i18n="services.scope.cta">{t("services.scope.cta")}</span>
         <i aria-hidden="true">→</i>
       </a>

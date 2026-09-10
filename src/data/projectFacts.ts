@@ -39,8 +39,8 @@ export const projectFacts: Record<string, ProjectFact> = {
     note: "FIDIC.uz — contract tools and calculators.",
   },
   fidicTenders: {
-    value: "2 981",
-    note: "FIDIC.uz — tender records at the last count. Grows daily; see the caveat in the audit.",
+    value: "2 900+",
+    note: "FIDIC.uz — tender records. The pipeline adds to it every morning, so the site says 2 900+ rather than a figure that is wrong by the afternoon.",
   },
   bridgeOrganic: {
     value: "+780%",
@@ -74,6 +74,9 @@ export const retired: Array<{ text: string; why: string }> = [
   { text: "Beide Live-Projekte", why: "Same, in German." },
   { text: "invisible to Google", why: "Google does index text PDFs. The argument is a different one." },
   { text: "für Google unsichtbar", why: "Same, in German." },
+  { text: "2 981", why: "A daily-growing archive written as a fixed number. The site says 2 900+." },
+  { text: "2.981", why: "Same, in German." },
+  { text: "2,981", why: "Same, with a comma." },
   { text: "25 production routes", why: "The build has 36. The audit counts them now." },
   { text: "11 interactive archive sectors", why: "The archive holds 12 works. The number is counted from works.ts now." },
   { text: "11 interaktive Archiv-Sektoren", why: "Same, in German." },

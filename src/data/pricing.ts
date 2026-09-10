@@ -10,7 +10,9 @@
 //  They are starting prices, not quotes. The promise made everywhere else on
 //  the site is that the real number is fixed within a day, once scope is known.
 //  They sit deliberately under a Vienna agency (3–8k for a small business site)
-//  and under a mid-level local freelancer.
+//  and under a mid-level local freelancer — the instruction is to be the cheap
+//  end of the credible range, because the first job is to get the enquiry and
+//  a price nobody argues with is worth more than a margin nobody pays.
 // ─────────────────────────────────────────────────────────────────────────────
 export type OfferId = "landing" | "site" | "film" | "shop" | "seo" | "platform" | "showreel";
 
@@ -22,13 +24,13 @@ export interface Offer {
 }
 
 export const pricing: Record<OfferId, Offer> = {
-  landing: { from: 690 },
-  site: { from: 1490 },
-  film: { from: 1200 },
-  shop: { from: 2900 },
-  seo: { from: 490, monthly: true },
-  platform: { from: 4900 },
-  showreel: { from: 3900 },
+  landing: { from: 590 },
+  site: { from: 1190 },
+  film: { from: 890 },
+  shop: { from: 2290 },
+  seo: { from: 390, monthly: true },
+  platform: { from: 3900 },
+  showreel: { from: 2900 },
 };
 
 /** German writes 1.490 € and English €1,490 — the number is the same either

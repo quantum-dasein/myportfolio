@@ -539,7 +539,7 @@ if (picker) {
     const id = currentId();
     if (!id) return;
     onward.forEach((link) => {
-      const url = new URL(link.dataset.scopeCta || link.getAttribute("href") || "/contact", location.href);
+      const url = new URL(link.dataset.scopeCta || link.getAttribute("href") || "/contact/", location.href);
       // Remember the untouched target once: without it every sync would append
       // to the href it wrote last time.
       link.dataset.scopeCta ||= `${url.pathname}${url.hash}`;

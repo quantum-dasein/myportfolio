@@ -35,7 +35,8 @@ ${localizedUrl("/services", "/de/leistungen/", "en", "0.9")}
 ${localizedUrl("/de/leistungen/", "/services", "de", "0.9")}
 ${Object.values(cases).map((item) => url(`/work/${item.slug}`, "0.9", "monthly", `<image:image><image:loc>${site}${item.image}</image:loc><image:title>${escapeXml(item.seo.title)}</image:title></image:image>`)).join("\n")}
 ${url("/work/studio", "0.8", "monthly", `<image:image><image:loc>${site}/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg</image:loc><image:title>How rodionbelousov.studio is built: Astro, Three.js, GLSL and Web Audio</image:title></image:image>`)}
-${url("/contact", "0.9", "monthly")}
+${localizedUrl("/contact/", "/de/kontakt/", "en", "0.9")}
+${localizedUrl("/de/kontakt/", "/contact/", "de", "0.9")}
 ${url("/notes", "0.8", "weekly")}
 ${url("/gallery", "0.8", "monthly", galleryMedia)}
 </urlset>`;

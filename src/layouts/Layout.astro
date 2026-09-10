@@ -40,6 +40,10 @@ interface Props {
    * in place on the current page and never changes the route.
    */
   lockLang?: boolean;
+  /** Hide the footer's big "start a project" card. It leads to the enquiry
+   *  form, so on the enquiry form itself it is a loop back to the page the
+   *  visitor is already reading. */
+  hideFinale?: boolean;
   /** Disable the default Webgl component to provide a custom one */
   noWebgl?: boolean;
 }
@@ -58,6 +62,7 @@ const {
   lang = defaultLang,
   alternateUrls,
   lockLang = false,
+  hideFinale = false,
   noWebgl = false,
 } = Astro.props;
 const t = useTranslations(lang);
@@ -116,7 +121,7 @@ const offerCatalogue = (Object.keys(pricing) as OfferId[]).map((id) => ({
     ...(pricing[id].monthly ? { billingDuration: 1, billingIncrement: 1, unitCode: "MON" } : {}),
   },
   availability: "https://schema.org/InStock",
-  url: new URL("/contact", site).toString(),
+  url: new URL("/contact/", site).toString(),
 }));
 
 const schema = {
@@ -285,7 +290,12 @@ const nav: Link[] = isDeck
       // form — two steps to reach the one thing this link promises. Points at
       // the form directly; the finale card still leads there for anyone who
       // arrives at the bottom of a page the long way.
-      { title: t("nav.contact"), url: "/contact", i18n: "nav.contact" },
+      {
+        title: t("nav.contact"),
+        url: lang === "de" ? "/de/kontakt/" : "/contact/",
+        i18n: "nav.contact",
+        langHref: { en: "/contact/", de: "/de/kontakt/" },
+      },
     ];
 const cta = isDeck
   ? { title: t("portal.back"), url: "/", i18n: "portal.back", tunnel: true }
@@ -411,7 +421,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       <slot />
     </main>
 
-    {!isDeck && <Footer logoUrl="/" logoAlt="Rodion Belousov" links={nav} lang={lang} />}
+    {!isDeck && <Footer logoUrl="/" logoAlt="Rodion Belousov" links={nav} lang={lang} hideFinale={hideFinale} />}
     {!isDeck && <SmoothScroll />}
     <PageTransition />
     <CaseTransition />

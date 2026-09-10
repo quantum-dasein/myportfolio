@@ -7,9 +7,12 @@ interface Props {
   logoAlt: string;
   links: Link[];
   lang?: Lang;
+  /** The enquiry page hides the finale card: it is a link to the enquiry page. */
+  hideFinale?: boolean;
 }
 
-const { logoUrl, logoAlt, links, lang = "en" } = Astro.props;
+const { logoUrl, logoAlt, links, lang = "en", hideFinale = false } = Astro.props;
+const contactHref = lang === "de" ? "/de/kontakt/" : "/contact/";
 const t = useTranslations(lang);
 const year = new Date().getFullYear();
 
@@ -30,7 +33,7 @@ const sections = order
 
 <sy-footer>
   <footer id="contact">
-    <div class="finale">
+    <div class="finale" hidden={hideFinale || undefined}>
       <div class="terrain terrain-back" aria-hidden="true"></div>
       <div class="terrain terrain-front" aria-hidden="true"></div>
       <span class="signal-line line-a" aria-hidden="true"></span>
@@ -43,7 +46,15 @@ const sections = order
       <div class="finale-card" id="contact-cta" data-reveal>
         <span class="finale-eyebrow" data-i18n="footer.cta.eyebrow">{t("footer.cta.eyebrow")}</span>
         <h2 data-sy-reveal="words" data-i18n="footer.cta.title">{t("footer.cta.title")}</h2>
-        <a class="project-link" href="/contact" data-cursor="OPEN" data-magnetic data-case-exit>
+        <a
+          class="project-link"
+          href={contactHref}
+          data-lang-href-en="/contact/"
+          data-lang-href-de="/de/kontakt/"
+          data-cursor="OPEN"
+          data-magnetic
+          data-case-exit
+        >
           <span class="project-icon css-arrow css-arrow-up" aria-hidden="true"></span>
           <span data-i18n="footer.cta.button">{t("footer.cta.button")}</span>
           <span class="project-rule" aria-hidden="true"></span>

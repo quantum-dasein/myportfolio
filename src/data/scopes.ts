@@ -147,7 +147,7 @@ export const scopes: Scope[] = [
       copy("Multi-language handled in the routing, not bolted on afterwards", "Mehrsprachigkeit im Routing gelöst, nicht nachträglich angeflanscht"),
     ],
     needs: copy("A conversation about what the thing has to do before anyone writes code.", "Ein Gespräch darüber, was das System leisten muss, bevor irgendjemand Code schreibt."),
-    proof: { text: copy("429 pages, 3 languages, 2 981 tenders — FIDIC.uz", "429 Seiten, 3 Sprachen, 2 981 Ausschreibungen — FIDIC.uz"), href: "/work/fidic" },
+    proof: { text: copy("429 pages, 3 languages, 2 900+ tenders — FIDIC.uz", "429 Seiten, 3 Sprachen, 2 900+ Ausschreibungen — FIDIC.uz"), href: "/work/fidic" },
   },
   {
     id: "showreel",

@@ -22,6 +22,7 @@
 //  source of truth for the same behaviour.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useTranslations, type Lang } from "../i18n/utils";
+import { scopes } from "../data/scopes";
 
 interface Props { lang?: Lang }
 const { lang = "en" } = Astro.props;
@@ -31,23 +32,29 @@ const ENDPOINT = import.meta.env.PUBLIC_FORM_ENDPOINT ?? "https://formspree.io/f
 const MAIL = "rodionbelousov@protonmail.com";
 
 const what = ["landing", "site", "film", "shop", "seo", "platform", "showreel", "other"] as const;
+// The lattice behind the form is the same one the scope picker drives: every
+// node is a unit of the job, so choosing "a landing page" contracts it to a
+// handful and "a platform" fills it. The ratios live in scopes.ts; "other" is
+// the one answer with no row there, so it sits in the middle rather than
+// pretending to be a size.
+const fieldOf = (id: string) => scopes.find((scope) => scope.id === id)?.field ?? 0.5;
 const when = ["asap", "month", "quarter", "open"] as const;
 const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 ---
 
 <form class="cf" data-contact-form data-endpoint={ENDPOINT} data-mail={MAIL} novalidate>
   <div class="cf-field">
-    <label for="cf-what" data-i18n="form.what.label">{t("form.what.label")}</label>
+    <label for="cf-what"><i aria-hidden="true">01</i><span data-i18n="form.what.label">{t("form.what.label")}</span></label>
     <select id="cf-what" name="what" required>
       {what.map((id) => (
-        <option value={id} data-i18n={`form.what.${id}`}>{t(`form.what.${id}` as any)}</option>
+        <option value={id} data-field={fieldOf(id)} data-i18n={`form.what.${id}`}>{t(`form.what.${id}` as any)}</option>
       ))}
     </select>
   </div>
 
   <div class="cf-row">
     <div class="cf-field">
-      <label for="cf-when" data-i18n="form.when.label">{t("form.when.label")}</label>
+      <label for="cf-when"><i aria-hidden="true">02</i><span data-i18n="form.when.label">{t("form.when.label")}</span></label>
       <select id="cf-when" name="when" required>
         {when.map((id) => (
           <option value={id} data-i18n={`form.when.${id}`}>{t(`form.when.${id}` as any)}</option>
@@ -55,7 +62,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       </select>
     </div>
     <div class="cf-field">
-      <label for="cf-budget" data-i18n="form.budget.label">{t("form.budget.label")}</label>
+      <label for="cf-budget"><i aria-hidden="true">03</i><span data-i18n="form.budget.label">{t("form.budget.label")}</span></label>
       <select id="cf-budget" name="budget" required>
         {budget.map((id) => (
           <option value={id} data-i18n={`form.budget.${id}`}>{t(`form.budget.${id}` as any)}</option>
@@ -65,7 +72,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   </div>
 
   <div class="cf-field">
-    <label for="cf-email" data-i18n="form.email.label">{t("form.email.label")}</label>
+    <label for="cf-email"><i aria-hidden="true">04</i><span data-i18n="form.email.label">{t("form.email.label")}</span></label>
     <input
       id="cf-email"
       name="email"
@@ -79,7 +86,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   </div>
 
   <div class="cf-field">
-    <label for="cf-message" data-i18n="form.message.label">{t("form.message.label")}</label>
+    <label for="cf-message"><i aria-hidden="true">05</i><span data-i18n="form.message.label">{t("form.message.label")}</span></label>
     <textarea
       id="cf-message"
       name="message"
@@ -102,16 +109,30 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 </form>
 
 <style>
-  .cf { display: grid; gap: 1.15rem; max-width: 34rem; }
-  .cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem; }
-  .cf-field { display: grid; gap: 0.5rem; min-width: 0; }
+  .cf { display: grid; gap: 1.35rem; max-width: 34rem; }
+  .cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.35rem; }
+  .cf-field { position: relative; display: grid; gap: 0.55rem; min-width: 0; }
 
   .cf-field label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-text-alt);
+    transition: color 0.3s ease;
   }
+  /* The step number. A form with five questions reads shorter when it says so. */
+  .cf-field label i {
+    font-style: normal;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: rgba(var(--rgb-text), 0.3);
+    transition: color 0.3s ease;
+  }
+  .cf-field:focus-within label { color: var(--color-text); }
+  .cf-field:focus-within label i { color: var(--color-accent); }
 
   .cf select,
   .cf input,
@@ -120,29 +141,82 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
     font: inherit;
     font-size: 0.92rem;
     color: var(--color-text);
-    background: rgba(var(--rgb-white), 0.03);
-    border: 1px solid var(--color-line);
-    border-radius: 10px;
-    padding: 0.85rem 0.95rem;
+    /* A flat rgba fill read as a browser default. This is the same glass the
+       cards elsewhere on the site are made of: a top-lit gradient, a hairline,
+       and an inner highlight along the upper edge. */
+    /* The lattice behind this form draws lines across the whole column, so the
+       controls need a floor of their own or the placeholder competes with it. */
+    background:
+      linear-gradient(180deg, rgba(var(--rgb-white), 0.055), rgba(var(--rgb-white), 0.015)),
+      rgba(7, 9, 11, 0.82);
+    border: 1px solid rgba(var(--rgb-text), 0.16);
+    border-radius: 12px;
+    padding: 0.95rem 1.05rem;
+    box-shadow: inset 0 1px 0 rgba(var(--rgb-white), 0.07);
+    transition: border-color 0.3s ease, box-shadow 0.35s ease, background-color 0.3s ease;
     /* iOS zooms the page in on focus for anything under 16px, and never zooms
        back out. The visual size stays small; only the computed size is 16. */
     -webkit-text-size-adjust: 100%;
   }
-  .cf textarea { resize: vertical; min-height: 5.5rem; }
+  .cf textarea { resize: vertical; min-height: 6rem; line-height: 1.5; }
 
   /* Native selects inherit the OS palette on some platforms and come out white
      text on white. Naming both sides keeps the dropdown readable everywhere. */
-  .cf select { appearance: none; background-image: none; color-scheme: dark; }
+  .cf select {
+    appearance: none;
+    color-scheme: dark;
+    /* A select with the chevron removed and nothing put back looks exactly like
+       a text input that will not accept typing. */
+    padding-right: 2.9rem;
+    /* Long German options must not run past the box on engines that do not
+       ellipsise a select on their own. */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
   .cf select option { background: #0d1013; color: #f4f6f9; }
+
+  /* Drawn rather than typed: a glyph would inherit the OS emoji font on iOS. */
+  .cf-field { --chev: 1.15rem; }
+  .cf-field:has(select)::after {
+    content: "";
+    position: absolute;
+    right: 1.15rem;
+    bottom: 1.42rem;
+    width: 0.44rem;
+    height: 0.44rem;
+    border-right: 1px solid rgba(var(--rgb-text), 0.55);
+    border-bottom: 1px solid rgba(var(--rgb-text), 0.55);
+    transform: rotate(45deg);
+    pointer-events: none;
+    transition: border-color 0.3s ease, transform 0.35s var(--ease-out-expo);
+  }
+  .cf-field:focus-within:has(select)::after {
+    border-color: var(--color-text);
+    transform: rotate(45deg) translate(1px, 1px);
+  }
+
+  .cf select:hover,
+  .cf input:hover,
+  .cf textarea:hover { border-color: rgba(var(--rgb-text), 0.3); }
 
   .cf select:focus-visible,
   .cf input:focus-visible,
   .cf textarea:focus-visible {
     outline: none;
-    border-color: rgba(var(--rgb-text), 0.55);
-    background: rgba(var(--rgb-white), 0.06);
+    border-color: rgba(var(--rgb-text), 0.62);
+    background:
+      linear-gradient(180deg, rgba(var(--rgb-white), 0.09), rgba(var(--rgb-white), 0.03)),
+      rgba(9, 11, 14, 0.88);
+    box-shadow:
+      inset 0 1px 0 rgba(var(--rgb-white), 0.1),
+      0 0 0 3px rgba(var(--rgb-text), 0.07),
+      0 0 28px rgba(var(--rgb-white), 0.05);
   }
-  .cf input:user-invalid { border-color: rgba(226, 128, 128, 0.6); }
+  .cf input:user-invalid {
+    border-color: rgba(226, 128, 128, 0.6);
+    box-shadow: inset 0 1px 0 rgba(var(--rgb-white), 0.05), 0 0 0 3px rgba(226, 128, 128, 0.09);
+  }
 
   .cf-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
@@ -204,6 +278,18 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       if (project && what && Array.from(what.options).some((option) => option.value === project)) {
         what.value = project;
       }
+
+      // Tell the lattice how big the job is. It is the same `rb:scope` event the
+      // picker sends, so the field behind the form behaves exactly as it does
+      // behind the price table — the picture answers the question being asked.
+      const announce = () => {
+        const option = what?.selectedOptions?.[0];
+        const ratio = Number(option?.dataset.field);
+        if (Number.isFinite(ratio)) dispatchEvent(new CustomEvent("rb:scope", { detail: { ratio } }));
+      };
+      what?.addEventListener("change", announce);
+      // After the preselect above, and late enough that the canvas is listening.
+      requestAnimationFrame(announce);
 
       const status = form.querySelector<HTMLParagraphElement>(".cf-status")!;
       const button = form.querySelector<HTMLButtonElement>(".cf-send")!;

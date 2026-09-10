@@ -68,7 +68,7 @@ const description = c(
 const facts = [
   { v: "+780", suffix: "%", k: c("organic search after launch", "organische Suche nach Launch") },
   { v: "429", suffix: "", k: c("pages, FIDIC platform", "Seiten, FIDIC-Plattform") },
-  { v: "2 981", suffix: "", k: c("tenders, refreshed daily", "Ausschreibungen, täglich aktualisiert") },
+  { v: "2 900", suffix: "+", k: c("tenders, refreshed daily", "Ausschreibungen, täglich aktualisiert") },
   { v: "03", suffix: "", k: c("languages in one content system", "Sprachen in einem Content-System") },
 ];
 
@@ -134,7 +134,7 @@ const breadcrumbs = {
           )}</p>
 
           <div class="pf-actions" data-reveal>
-            <a class="pf-btn primary" href="/contact" data-magnetic>
+            <a class="pf-btn primary" href={de ? "/de/kontakt/" : "/contact/"} data-magnetic>
               <span>{c("Get a fixed quote", "Festes Angebot anfragen")}</span><i class="ui-arrow" aria-hidden="true"></i>
             </a>
             <a class="pf-btn ghost" href="#scope" data-magnetic>
@@ -256,7 +256,7 @@ const breadcrumbs = {
           "Offen für Projekte jeder Größe — in Wien, österreichweit oder remote.",
         )}</p>
         <div class="pf-actions">
-          <a class="pf-btn primary" href="/contact" data-magnetic>
+          <a class="pf-btn primary" href={de ? "/de/kontakt/" : "/contact/"} data-magnetic>
             <span>{c("Send me a message", "Schreiben Sie mir")}</span><i class="ui-arrow" aria-hidden="true"></i>
           </a>
           <a class="pf-btn" href="https://www.linkedin.com/in/rodion-belousov-413040228/" rel="me noopener" target="_blank" data-magnetic>

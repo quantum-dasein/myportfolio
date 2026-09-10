@@ -68,7 +68,7 @@ const cards = [
     en: {
       eyebrow: "Case Study / Knowledge Platform",
       title: "FIDIC.uz",
-      spec: [["Pages", "429"], ["Expert articles", "117"], ["Tenders", "2 981"]],
+      spec: [["Pages", "429"], ["Expert articles", "117"], ["Tenders", "2 900+"]],
       foot: "A SOLO-BUILT CONTRACT PLATFORM IN THREE LANGUAGES",
     },
   },
@@ -92,13 +92,13 @@ const cards = [
     en: {
       eyebrow: "Vienna, Austria / International · Remote",
       title: "Rodion Belousov\nin Vienna.",
-      spec: [["From", "€690"], ["Reply", "Within a day"], ["Since", "2022"]],
+      spec: [["From", "€590"], ["Reply", "Within a day"], ["Since", "2022"]],
       foot: "WEBSITES · SHOPS · SEO · 3D & FILM",
     },
     de: {
       eyebrow: "Wien, Österreich / International · Remote",
       title: "Rodion Belousov\nin Wien.",
-      spec: [["Ab", "690 €"], ["Antwort", "Binnen eines Tages"], ["Seit", "2022"]],
+      spec: [["Ab", "590 €"], ["Antwort", "Binnen eines Tages"], ["Seit", "2022"]],
       foot: "WEBSITES · SHOPS · SEO · 3D & FILM",
     },
   },
@@ -110,13 +110,13 @@ const cards = [
     en: {
       eyebrow: "Services & Research / Vienna",
       title: "What it is,\nand what it costs.",
-      spec: [["Project sizes", "Seven"], ["From", "€690"], ["Price fixed", "In a day"]],
+      spec: [["Project sizes", "Seven"], ["From", "€590"], ["Price fixed", "In a day"]],
       foot: "LANDING · WEBSITE · 3D FILM · SHOP · SEO · PLATFORM · SHOWREEL",
     },
     de: {
       eyebrow: "Leistungen & Research / Wien",
       title: "Was es ist —\nund was es kostet.",
-      spec: [["Projektgrößen", "Sieben"], ["Ab", "690 €"], ["Preis fix", "In einem Tag"]],
+      spec: [["Projektgrößen", "Sieben"], ["Ab", "590 €"], ["Preis fix", "In einem Tag"]],
       foot: "LANDING · WEBSITE · 3D-FILM · SHOP · SEO · PLATTFORM · SHOWREEL",
     },
   },
@@ -142,13 +142,13 @@ const cards = [
     en: {
       eyebrow: "Website Development / Vienna",
       title: "Live in about\na week.",
-      spec: [["From", "€1,490"], ["Pages", "5–10"], ["Ownership", "Yours"]],
+      spec: [["From", "€1,190"], ["Pages", "5–10"], ["Ownership", "Yours"]],
       foot: "FIXED SCOPE · FIXED PRICE · NO BUILDER SUBSCRIPTION",
     },
     de: {
       eyebrow: "Website erstellen / Wien",
       title: "In etwa einer\nWoche live.",
-      spec: [["Ab", "1.490 €"], ["Seiten", "5–10"], ["Eigentum", "Ihres"]],
+      spec: [["Ab", "1.190 €"], ["Seiten", "5–10"], ["Eigentum", "Ihres"]],
       foot: "FESTER UMFANG · FESTPREIS · KEINE BAUKASTEN-GEBÜHR",
     },
   },
@@ -162,13 +162,13 @@ const cards = [
     en: {
       eyebrow: "3D & Motion / Vienna",
       title: "3D animation\nand video.",
-      spec: [["From", "€1,200"], ["Pipeline", "C4D + Redshift"], ["In the archive", "9 works"]],
+      spec: [["From", "€890"], ["Pipeline", "C4D + Redshift"], ["In the archive", "9 works"]],
       foot: "PRODUCT FILM · INTERIORS · EXPLAINERS · WEB LOOPS",
     },
     de: {
       eyebrow: "3D & Motion / Wien",
       title: "3D-Animation\nund Video.",
-      spec: [["Ab", "1.200 €"], ["Pipeline", "C4D + Redshift"], ["Im Archiv", "9 Arbeiten"]],
+      spec: [["Ab", "890 €"], ["Pipeline", "C4D + Redshift"], ["Im Archiv", "9 Arbeiten"]],
       foot: "PRODUKTFILM · INTERIEUR · ERKLÄRVIDEO · WEB-LOOPS",
     },
   },
