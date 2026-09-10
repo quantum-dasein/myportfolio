@@ -57,6 +57,10 @@ export const scopes: Scope[] = [
       copy("Hosting, domain and certificate set up in your own accounts", "Hosting, Domain und Zertifikat in Ihren eigenen Konten eingerichtet"),
     ],
     needs: copy("Your text and images, or an hour on a call for me to write them.", "Ihre Texte und Bilder — oder eine Stunde Gespräch, damit ich sie schreibe."),
+    // The one-page case, which is exactly this scope at full size. It was the
+    // only row on the table with no piece of work behind it while a matching
+    // case study sat two clicks away.
+    proof: { text: copy("One page, eighteen modules — Bridge Consult Academy", "Eine Seite, achtzehn Module — Bridge Consult Academy"), href: "/work/academy" },
   },
   {
     id: "site",
