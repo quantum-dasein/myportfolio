@@ -141,3 +141,77 @@ export const fidicQueries = [
   { term: "eot", impressions: 144, position: 5.8 },
   { term: "daab fidic", impressions: 52, position: 7.5 },
 ] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Copy, in both languages, built from the numbers above.
+//
+//  The case page renders in English and swaps language in the browser, so every
+//  string in the block needs a dictionary key — otherwise a German visitor gets
+//  a German page with one English chart in the middle of it. The strings are
+//  assembled here rather than typed into src/i18n/ui.ts so that a number never
+//  exists in two places: change the export above and the sentences follow.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MONTHS = {
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  de: ["Jän", "Feb", "März", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez"],
+} as const;
+
+/** "8 Sep" / "8. Sep" — the day and month of an ISO date, in either language. */
+export const fidicDate = (iso: string, lang: "en" | "de") => {
+  const [, month, day] = iso.split("-");
+  const name = MONTHS[lang][Number(month) - 1];
+  return lang === "de" ? `${Number(day)}. ${name}` : `${Number(day)} ${name}`;
+};
+
+const fidicNum = (value: number, lang: "en" | "de") => value.toLocaleString(lang === "de" ? "de-DE" : "en-US");
+
+const impMax = Math.max(...fidicSearchDays.map((d) => d[2]));
+const clickMax = Math.max(...fidicSearchDays.map((d) => d[1]));
+const peakIndex = fidicSearchDays.reduce((best, day, i) => (day[1] > fidicSearchDays[best][1] ? i : best), 0);
+const peakDay = fidicSearchDays[peakIndex];
+const midDay = fidicSearchDays[Math.floor(fidicSearchDays.length / 2)][0];
+
+/** The one day the chart marks, and where on the chart it sits. Exported so the
+ *  component does not recompute the maximum it is already labelling. */
+export const fidicSearchPeak = { index: peakIndex, clicks: peakDay[1], date: peakDay[0], impMax, clickMax } as const;
+
+const copy = (lang: "en" | "de") => {
+  const n = (value: number) => fidicNum(value, lang);
+  const d = (iso: string) => fidicDate(iso, lang);
+  const en = lang === "en";
+  return {
+    "search.source": `${fidicSearch.source} · ${fidicSearch.property} · ${d(fidicSearch.from)} – ${d(fidicSearch.to)} 2026`,
+    "search.headline": en
+      ? "Eighty-two days of search, and nothing else."
+      : "Zweiundachtzig Tage Suche — und sonst nichts.",
+    "search.lede": en
+      ? "No advertising, no social posts, no bought links. Every visit below arrived because a page answered a question someone typed into Google — in a field with a few thousand specialists in it worldwide."
+      : "Keine Werbung, keine Social-Posts, keine gekauften Links. Jeder Besuch unten kam, weil eine Seite eine Frage beantwortet hat, die jemand bei Google eingetippt hat — in einem Feld mit weltweit wenigen tausend Fachleuten.",
+    "search.alt": en
+      ? `Daily Google search impressions and clicks for ${fidicSearch.property} between ${fidicSearch.from} and ${fidicSearch.to}: ${n(fidicSearch.impressions)} impressions and ${n(fidicSearch.clicks)} clicks in total.`
+      : `Tägliche Google-Impressionen und -Klicks für ${fidicSearch.property} zwischen ${fidicSearch.from} und ${fidicSearch.to}: insgesamt ${n(fidicSearch.impressions)} Impressionen und ${n(fidicSearch.clicks)} Klicks.`,
+    "search.scale.from": d(fidicSearch.from),
+    "search.scale.mid": d(midDay),
+    "search.scale.to": d(fidicSearch.to),
+    "search.key.impressions": en ? `Impressions · peak ${n(impMax)}` : `Impressionen · Spitze ${n(impMax)}`,
+    "search.key.clicks": en ? `Clicks · peak ${n(clickMax)}` : `Klicks · Spitze ${n(clickMax)}`,
+    "search.peak": en
+      ? `${peakDay[1]} clicks · ${d(peakDay[0])}`
+      : `${peakDay[1]} Klicks · ${d(peakDay[0])}`,
+    "search.fig.impressions.v": n(fidicSearch.impressions),
+    "search.fig.impressions": en ? "search impressions" : "Impressionen in der Suche",
+    "search.fig.clicks.v": n(fidicSearch.clicks),
+    "search.fig.clicks": en ? "clicks" : "Klicks",
+    "search.fig.pages.v": n(fidicSearch.pagesWithClicks),
+    "search.fig.pages": en ? "pages that earned a click" : "Seiten mit mindestens einem Klick",
+    "search.fig.countries.v": n(fidicSearch.countriesWithClicks),
+    "search.fig.countries": en ? "countries" : "Länder",
+    "search.growth": en
+      ? `Still climbing: ${n(fidicSearch.last30.impressions)} impressions in the last thirty days against ${n(fidicSearch.previous30.impressions)} in the thirty before them.`
+      : `Weiter steigend: ${n(fidicSearch.last30.impressions)} Impressionen in den letzten dreißig Tagen gegenüber ${n(fidicSearch.previous30.impressions)} in den dreißig davor.`,
+    "search.queries": en ? "Ranking for" : "Rankt für",
+  };
+};
+
+export const fidicSearchCopy = { en: copy("en"), de: copy("de") };

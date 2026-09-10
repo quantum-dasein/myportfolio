@@ -10,13 +10,21 @@
 //
 //  Inline SVG, no chart library: it is 82 points on two paths, and pulling a
 //  library onto a page that argues about page weight would be its own answer.
+//
+//  Every string carries a data-i18n key, because the case page renders in
+//  English and swaps language in the browser — without them a German visitor
+//  reads a German page with one English chart sitting in the middle of it.
+//
+//  The block owns its whole reveal (see the script at the bottom) instead of
+//  joining the page's [data-reveal] batch. Two systems touching one element is
+//  how the chart ended up never drawing: the batch moved the figure, nothing
+//  ever set the class the drawing was keyed on. One owner, one clock.
 // ─────────────────────────────────────────────────────────────────────────────
-import { fidicSearch, fidicSearchDays, fidicQueries } from "../data/fidicSearch";
+import { fidicSearch, fidicSearchDays, fidicSearchPeak, fidicQueries } from "../data/fidicSearch";
+import { useTranslations, type UIKey } from "../i18n/utils";
 
-interface Props { lang?: "en" | "de" }
-const { lang = "en" } = Astro.props;
-const de = lang === "de";
-const c = <T,>(en: T, deValue: T): T => (de ? deValue : en);
+const t = useTranslations();
+const tk = (key: string) => t(key as UIKey);
 
 // ── Geometry ─────────────────────────────────────────────────────────────────
 const W = 1000;
@@ -25,99 +33,100 @@ const PAD = { top: 16, right: 8, bottom: 26, left: 8 };
 const plotW = W - PAD.left - PAD.right;
 const plotH = H - PAD.top - PAD.bottom;
 
-const impMax = Math.max(...fidicSearchDays.map((d) => d[2]));
-const clickMax = Math.max(...fidicSearchDays.map((d) => d[1]));
 const x = (i: number) => PAD.left + (i / (fidicSearchDays.length - 1)) * plotW;
 const y = (value: number, max: number) => PAD.top + plotH - (value / max) * plotH;
 
 const line = (pick: (d: (typeof fidicSearchDays)[number]) => number, max: number) =>
   fidicSearchDays.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(pick(d), max).toFixed(1)}`).join(" ");
 
-const impressionsPath = line((d) => d[2], impMax);
-const clicksPath = line((d) => d[1], clickMax);
+const impressionsPath = line((d) => d[2], fidicSearchPeak.impMax);
+const clicksPath = line((d) => d[1], fidicSearchPeak.clickMax);
 const impressionsArea = `${impressionsPath} L${x(fidicSearchDays.length - 1).toFixed(1)} ${PAD.top + plotH} L${PAD.left} ${PAD.top + plotH} Z`;
 
-const dateLabel = (iso: string) => {
-  const [, month, day] = iso.split("-");
-  const months = de
-    ? ["Jän", "Feb", "März", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez"]
-    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${Number(day)} ${months[Number(month) - 1]}`;
+// The best day, marked on the curve.
+const peakY = y(fidicSearchPeak.clicks, fidicSearchPeak.clickMax);
+const peak = {
+  x: ((x(fidicSearchPeak.index) / W) * 100).toFixed(2),
+  y: ((peakY / H) * 100).toFixed(2),
+  stem: (((PAD.top + plotH - peakY) / H) * 100).toFixed(2),
 };
 
-const num = (value: number) => value.toLocaleString(de ? "de-DE" : "en-US");
-
+// The label and the formatted value live in the dictionary; only the raw target
+// for the count-up comes from here, so the number a visitor watches climb and
+// the number it lands on cannot drift apart.
 const figures = [
-  { value: num(fidicSearch.impressions), label: c("search impressions", "Impressionen in der Suche") },
-  { value: num(fidicSearch.clicks), label: c("clicks", "Klicks") },
-  { value: String(fidicSearch.pagesWithClicks), label: c("pages that earned a click", "Seiten mit mindestens einem Klick") },
-  { value: String(fidicSearch.countriesWithClicks), label: c("countries", "Länder") },
-];
+  { key: "impressions", n: fidicSearch.impressions },
+  { key: "clicks", n: fidicSearch.clicks },
+  { key: "pages", n: fidicSearch.pagesWithClicks },
+  { key: "countries", n: fidicSearch.countriesWithClicks },
+] as const;
 ---
-
-<figure class="sp" data-reveal>
+<figure class="sp" data-sp>
   <figcaption class="sp-head">
-    <span class="sp-source">
-      {fidicSearch.source} · {fidicSearch.property} · {dateLabel(fidicSearch.from)} – {dateLabel(fidicSearch.to)} 2026
-    </span>
-    <h3>{c("Eighty-two days of search, and nothing else.", "Zweiundachtzig Tage Suche — und sonst nichts.")}</h3>
-    <p>
-      {c(
-        "No advertising, no social posts, no bought links. Every visit below arrived because a page answered a question someone typed into Google — in a field with a few thousand specialists in it worldwide.",
-        "Keine Werbung, keine Social-Posts, keine gekauften Links. Jeder Besuch unten kam, weil eine Seite eine Frage beantwortet hat, die jemand bei Google eingetippt hat — in einem Feld mit weltweit wenigen tausend Fachleuten.",
-      )}
-    </p>
+    <span class="sp-source" data-i18n="search.source">{tk("search.source")}</span>
+    <h3 data-sy-reveal="words" data-i18n="search.headline">{tk("search.headline")}</h3>
+    <p data-sy-reveal="lines" data-i18n="search.lede">{tk("search.lede")}</p>
   </figcaption>
 
   <div class="sp-chart">
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img"
-      aria-label={c(
-        `Daily Google search impressions and clicks for fidic.uz between ${fidicSearch.from} and ${fidicSearch.to}: ${fidicSearch.impressions} impressions and ${fidicSearch.clicks} clicks in total.`,
-        `Tägliche Google-Impressionen und -Klicks für fidic.uz zwischen ${fidicSearch.from} und ${fidicSearch.to}: insgesamt ${fidicSearch.impressions} Impressionen und ${fidicSearch.clicks} Klicks.`,
-      )}>
-      <defs>
-        <linearGradient id="sp-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="rgb(var(--rgb-text))" stop-opacity=".22" />
-          <stop offset="100%" stop-color="rgb(var(--rgb-text))" stop-opacity="0" />
-        </linearGradient>
-      </defs>
-      {[0.25, 0.5, 0.75].map((at) => (
-        <line class="sp-grid" x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH * at} y2={PAD.top + plotH * at} />
-      ))}
-      <line class="sp-axis" x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH} y2={PAD.top + plotH} />
-      <path class="sp-area" d={impressionsArea} />
-      <path class="sp-line sp-line--impressions" d={impressionsPath} />
-      <path class="sp-line sp-line--clicks" d={clicksPath} />
-    </svg>
+    <div class="sp-plot">
+      <svg class="sp-svg sp-svg--base" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img"
+        data-i18n-attr="aria-label:search.alt" aria-label={tk("search.alt")}>
+        <defs>
+          <linearGradient id="sp-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgb(var(--rgb-text))" stop-opacity=".22" />
+            <stop offset="100%" stop-color="rgb(var(--rgb-text))" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map((at) => (
+          <line class="sp-grid" x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH * at} y2={PAD.top + plotH * at} />
+        ))}
+        <line class="sp-axis" x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH} y2={PAD.top + plotH} />
+        <path class="sp-area" d={impressionsArea} />
+        <path class="sp-line sp-line--impressions" d={impressionsPath} />
+      </svg>
+
+      {/* The clicks line rides in its own layer so it can arrive a beat later
+          than the mass behind it — and so the glow can be built from stacked
+          strokes. A blur filter would be wrong here: preserveAspectRatio="none"
+          stretches the user space, so a round blur comes out as an ellipse. */}
+      <svg class="sp-svg sp-svg--clicks" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        <path class="sp-halo sp-halo--wide" d={clicksPath} />
+        <path class="sp-halo sp-halo--mid" d={clicksPath} />
+        <path class="sp-line sp-line--clicks" d={clicksPath} />
+      </svg>
+
+      <div class="sp-peak" aria-hidden="true" style={`--x:${peak.x}%; --y:${peak.y}%; --stem:${peak.stem}%`}>
+        <i class="sp-peak-stem"></i>
+        <i class="sp-peak-dot"></i>
+        <b class="sp-peak-label" data-i18n="search.peak">{tk("search.peak")}</b>
+      </div>
+    </div>
+
     <div class="sp-scale" aria-hidden="true">
-      <span>{dateLabel(fidicSearch.from)}</span>
-      <span>{dateLabel(fidicSearchDays[Math.floor(fidicSearchDays.length / 2)][0])}</span>
-      <span>{dateLabel(fidicSearch.to)}</span>
+      <span data-i18n="search.scale.from">{tk("search.scale.from")}</span>
+      <span data-i18n="search.scale.mid">{tk("search.scale.mid")}</span>
+      <span data-i18n="search.scale.to">{tk("search.scale.to")}</span>
     </div>
     <div class="sp-key" aria-hidden="true">
-      <span class="sp-key-imp">{c("Impressions", "Impressionen")} · {c("peak", "Spitze")} {num(impMax)}</span>
-      <span class="sp-key-clicks">{c("Clicks", "Klicks")} · {c("peak", "Spitze")} {num(clickMax)}</span>
+      <span class="sp-key-imp" data-i18n="search.key.impressions">{tk("search.key.impressions")}</span>
+      <span class="sp-key-clicks" data-i18n="search.key.clicks">{tk("search.key.clicks")}</span>
     </div>
   </div>
 
   <dl class="sp-figures">
     {figures.map((figure) => (
       <div>
-        <dt>{figure.value}</dt>
-        <dd>{figure.label}</dd>
+        <dt data-sp-count={figure.n} data-i18n={`search.fig.${figure.key}.v`}>{tk(`search.fig.${figure.key}.v`)}</dt>
+        <dd data-i18n={`search.fig.${figure.key}`}>{tk(`search.fig.${figure.key}`)}</dd>
       </div>
     ))}
   </dl>
 
   <div class="sp-tail">
-    <p class="sp-growth">
-      {c(
-        `Still climbing: ${num(fidicSearch.last30.impressions)} impressions in the last thirty days against ${num(fidicSearch.previous30.impressions)} in the thirty before them.`,
-        `Weiter steigend: ${num(fidicSearch.last30.impressions)} Impressionen in den letzten dreißig Tagen gegenüber ${num(fidicSearch.previous30.impressions)} in den dreißig davor.`,
-      )}
-    </p>
+    <p class="sp-growth" data-i18n="search.growth">{tk("search.growth")}</p>
     <ul class="sp-queries">
-      <li class="sp-queries-label">{c("Ranking for", "Rankt für")}</li>
+      <li class="sp-queries-label" data-i18n="search.queries">{tk("search.queries")}</li>
       {fidicQueries.map((query) => (
         <li><b>{query.term}</b><span>#{query.position.toFixed(1)}</span></li>
       ))}
@@ -127,11 +136,41 @@ const figures = [
 
 <style>
   .sp {
+    --sp-neon: 234, 241, 248;
+    --sp-draw: 1.25s;
     margin: 0;
     padding: clamp(1.6rem, 3vw, 2.6rem);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.008));
+  }
+
+  /* ── The choreography ──────────────────────────────────────────────────────
+     Every transition below is declared on .is-in, never on .is-armed. Arming
+     therefore costs nothing: the block snaps to its start state the instant the
+     script touches it, and only the reveal is animated. Declared the other way
+     round — the obvious way — arming itself becomes a 0.5s fade-out, and a
+     visitor who reaches the block before that fade has finished sees the reveal
+     start from whatever half-lit value it caught, which is what made the dot
+     and the pills arrive already half visible.
+
+     The block is armed only by JavaScript, so without it the finished chart is
+     what renders, not an empty rectangle. */
+  .sp.is-armed { opacity: 0; transform: translate3d(0, 22px, 0); will-change: opacity, transform; }
+  .sp.is-armed.is-in {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+    /* The rim lights once the curve is drawn — the same layered falloff the
+       card deck uses, so "this is live" reads the same everywhere. */
+    box-shadow:
+      0 0 0 1px rgba(var(--sp-neon), 0.07),
+      0 0 2.4rem rgba(var(--sp-neon), 0.05),
+      0 0 6rem rgba(var(--sp-neon), 0.035);
+    transition:
+      opacity 0.62s var(--ease-out-expo),
+      transform 0.62s var(--ease-out-expo),
+      box-shadow 1.4s ease 0.5s;
   }
 
   .sp-head { padding: 0; }
@@ -143,6 +182,13 @@ const figures = [
     text-transform: uppercase;
     color: rgba(var(--rgb-text), 0.45);
   }
+  .sp.is-armed .sp-source { opacity: 0; transform: translate3d(0, 8px, 0); }
+  .sp.is-armed.is-in .sp-source {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.6s ease 0.08s, transform 0.6s var(--ease-out-expo) 0.08s;
+  }
+
   .sp-head h3 {
     margin: 1rem 0 0.8rem;
     max-width: 20ch;
@@ -157,7 +203,9 @@ const figures = [
   }
 
   .sp-chart { margin-top: 2.2rem; }
-  .sp-chart svg { display: block; width: 100%; height: clamp(150px, 22vw, 240px); overflow: visible; }
+  .sp-plot { position: relative; }
+  .sp-svg { display: block; width: 100%; height: clamp(150px, 22vw, 240px); overflow: visible; }
+  .sp-svg--clicks { position: absolute; inset: 0; height: 100%; }
   .sp-grid { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; vector-effect: non-scaling-stroke; }
   .sp-axis { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1; vector-effect: non-scaling-stroke; }
   .sp-area { fill: url(#sp-fill); }
@@ -176,22 +224,99 @@ const figures = [
   .sp-line--impressions { stroke: rgba(var(--rgb-text), 0.34); stroke-width: 1.1; }
   .sp-line--clicks { stroke: #fff; stroke-width: 2; }
 
-  /* The line draws itself once, when the figure is revealed. A chart that is
-     already finished when you reach it reads as a picture; one that draws reads
-     as a measurement. */
-  .sp.is-in .sp-line {
-    stroke-dasharray: 2400;
-    stroke-dashoffset: 2400;
-    animation: sp-draw 1.6s var(--ease-out-expo) forwards;
+  /* Neon, built from three strokes rather than a blur: a wide dim band, a
+     tighter brighter one, then the white core on top. Non-scaling strokes keep
+     every width in screen pixels, so the tube stays round however far the
+     viewBox is stretched — a Gaussian blur would come out of the same stretch
+     as an ellipse. */
+  .sp-halo {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke: rgb(var(--sp-neon));
   }
-  .sp.is-in .sp-line--clicks { animation-delay: 0.18s; }
-  .sp.is-in .sp-area { animation: sp-fade 1.4s ease 0.4s both; }
-  @keyframes sp-draw { to { stroke-dashoffset: 0; } }
-  @keyframes sp-fade { from { opacity: 0; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) {
-    .sp.is-in .sp-line,
-    .sp.is-in .sp-area { animation: none; stroke-dashoffset: 0; }
+  .sp-halo--wide { stroke-width: 11; opacity: 0.05; }
+  .sp-halo--mid { stroke-width: 5; opacity: 0.09; }
+
+  /* The draw. A left-to-right wipe rather than a dash offset: with
+     non-scaling-stroke the dash pattern lives in screen space while
+     getTotalLength() reports user space, and the two disagree the moment the
+     viewBox is stretched — which is exactly what happens here at every width. */
+  .sp.is-armed .sp-svg { clip-path: inset(0 100% 0 0); }
+  .sp.is-armed.is-in .sp-svg {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path var(--sp-draw) var(--ease-out-expo) 0.18s;
   }
+  .sp.is-armed.is-in .sp-svg--clicks { transition-delay: 0.32s; }
+
+  /* The best day, pinned. Which day it was is half the point: the peak sits in
+     the final fortnight, which is the difference between "it worked once" and
+     "it is still going". */
+  .sp-peak { position: absolute; inset: 0; pointer-events: none; }
+  .sp-peak i { position: absolute; display: block; }
+  .sp-peak-stem {
+    left: var(--x);
+    top: var(--y);
+    width: 1px;
+    height: var(--stem);
+    margin-left: -0.5px;
+    background: linear-gradient(180deg, rgba(var(--sp-neon), 0.5), rgba(var(--sp-neon), 0));
+    transform-origin: 50% 0;
+  }
+  .sp-peak-dot {
+    left: var(--x);
+    top: var(--y);
+    width: 7px;
+    height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    border-radius: 50%;
+    background: rgb(var(--sp-neon));
+    box-shadow:
+      0 0 0 3px rgba(var(--sp-neon), 0.12),
+      0 0 0.75rem rgba(var(--sp-neon), 0.55),
+      0 0 2rem rgba(var(--sp-neon), 0.3);
+  }
+  .sp-peak-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3.5px;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--sp-neon), 0.5);
+    animation: sp-ping 3.6s var(--ease-out-expo) infinite;
+  }
+  @keyframes sp-ping {
+    0% { transform: scale(0.6); opacity: 0.7; }
+    60%, 100% { transform: scale(2.6); opacity: 0; }
+  }
+  .sp-peak-label {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    transform: translate(calc(-100% - 0.85rem), -50%);
+    white-space: nowrap;
+    font-family: var(--font-inter);
+    font-size: 0.58rem;
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(var(--sp-neon), 0.85);
+    text-shadow: 0 0 1.4rem rgba(var(--sp-neon), 0.35);
+  }
+  .sp.is-armed .sp-peak-stem { transform: scaleY(0); }
+  .sp.is-armed .sp-peak-dot { opacity: 0; transform: scale(0.2); }
+  .sp.is-armed .sp-peak-dot::after { animation: none; }
+  .sp.is-armed .sp-peak-label { opacity: 0; }
+  .sp.is-armed.is-in .sp-peak-stem { transform: scaleY(1); transition: transform 0.7s var(--ease-out-expo) var(--sp-peak-t, 1.02s); }
+  .sp.is-armed.is-in .sp-peak-dot {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.5s ease var(--sp-peak-t, 0.98s), transform 0.7s var(--ease-out-expo) var(--sp-peak-t, 0.98s);
+  }
+  /* The ring only starts pinging once the dot has landed, so the first pulse
+     is the arrival rather than something already in progress behind a fade. */
+  .sp.is-armed.is-in .sp-peak-dot::after { animation: sp-ping 3.6s var(--ease-out-expo) var(--sp-peak-t, 1.3s) infinite; }
+  .sp.is-armed.is-in .sp-peak-label { opacity: 1; transition: opacity 0.7s ease var(--sp-peak-t, 1.15s); }
 
   .sp-scale,
   .sp-key {
@@ -217,7 +342,15 @@ const figures = [
   }
   .sp-key-imp { color: rgba(var(--rgb-text), 0.42); }
   .sp-key-clicks { color: #fff; }
-  .sp-key-clicks::before { height: 2px; }
+  .sp-key-clicks::before { height: 2px; box-shadow: 0 0 0.6rem rgba(var(--sp-neon), 0.7); }
+  .sp-scale { --d: 0.72s; }
+  .sp-key { --d: 0.82s; }
+  .sp.is-armed :is(.sp-scale, .sp-key) { opacity: 0; transform: translate3d(0, 8px, 0); }
+  .sp.is-armed.is-in :is(.sp-scale, .sp-key) {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.7s ease var(--d), transform 0.7s var(--ease-out-expo) var(--d);
+  }
 
   .sp-figures {
     display: grid;
@@ -227,13 +360,30 @@ const figures = [
     padding-top: 1.8rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
-  .sp-figures dt { font: 500 clamp(1.6rem, 3.4vw, 2.6rem)/1 var(--font-display); }
+  .sp-figures dt {
+    font: 500 clamp(1.6rem, 3.4vw, 2.6rem)/1 var(--font-display);
+    font-variant-numeric: tabular-nums;
+    transition: text-shadow 0.6s ease;
+  }
   .sp-figures dd {
     margin: 0.5rem 0 0;
     font-size: 0.78rem;
     line-height: 1.45;
     color: rgba(var(--rgb-text), 0.55);
   }
+  .sp-figures > div:nth-child(1) { --d: 0.42s; }
+  .sp-figures > div:nth-child(2) { --d: 0.5s; }
+  .sp-figures > div:nth-child(3) { --d: 0.58s; }
+  .sp-figures > div:nth-child(4) { --d: 0.66s; }
+  .sp.is-armed .sp-figures > div { opacity: 0; transform: translate3d(0, 14px, 0); }
+  .sp.is-armed.is-in .sp-figures > div {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.7s ease var(--d), transform 0.7s var(--ease-out-expo) var(--d);
+  }
+  /* While a number is still counting it is lit; it settles into plain white as
+     it lands, so the eye is pulled to whichever figure is still moving. */
+  .sp-figures dt.is-counting { text-shadow: 0 0 1.6rem rgba(var(--sp-neon), 0.45); }
 
   .sp-tail {
     display: grid;
@@ -248,6 +398,7 @@ const figures = [
     color: rgba(var(--rgb-text), 0.6);
     font-size: 0.88rem;
     line-height: 1.55;
+    --d: 0.86s;
   }
   .sp-queries {
     display: flex;
@@ -266,6 +417,12 @@ const figures = [
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 100px;
     font-size: 0.76rem;
+    transition: border-color 0.5s ease, box-shadow 0.5s ease, background-color 0.5s ease;
+  }
+  .sp-queries li:not(.sp-queries-label):hover {
+    border-color: rgba(var(--sp-neon), 0.42);
+    background: rgba(var(--sp-neon), 0.05);
+    box-shadow: 0 0 1.6rem rgba(var(--sp-neon), 0.12);
   }
   .sp-queries-label {
     border: 0;
@@ -278,9 +435,128 @@ const figures = [
   }
   .sp-queries b { font-weight: 400; }
   .sp-queries span { color: var(--color-accent); font-size: 0.7rem; }
+  .sp.is-armed .sp-growth { opacity: 0; transform: translate3d(0, 10px, 0); }
+  .sp.is-armed.is-in .sp-growth {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.7s ease var(--d), transform 0.7s var(--ease-out-expo) var(--d);
+  }
+  .sp-queries li:nth-child(1) { --d: 0.94s; }
+  .sp-queries li:nth-child(2) { --d: 1s; }
+  .sp-queries li:nth-child(3) { --d: 1.06s; }
+  .sp-queries li:nth-child(4) { --d: 1.12s; }
+  .sp-queries li:nth-child(5) { --d: 1.18s; }
+  .sp-queries li:nth-child(6) { --d: 1.24s; }
+  .sp-queries li:nth-child(n + 7) { --d: 1.3s; }
+  .sp.is-armed .sp-queries li { opacity: 0; transform: translate3d(0, 10px, 0); }
+  /* The entrance carries the delay; the hover colours deliberately do not, or a
+     pill would take a second to light up under the cursor after the reveal. */
+  .sp.is-armed.is-in .sp-queries li {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.6s ease var(--d),
+      transform 0.6s var(--ease-out-expo) var(--d),
+      border-color 0.5s ease,
+      box-shadow 0.5s ease,
+      background-color 0.5s ease;
+  }
 
   @media (max-width: 760px) {
+    /* A phone shows the block a screen at a time, so a desktop-length
+       choreography would still be running after the chart has scrolled past.
+       Same order, shorter clock. */
+    .sp { --sp-draw: 0.95s; --sp-peak-t: 0.7s; }
     .sp-figures { grid-template-columns: 1fr 1fr; gap: 1.4rem 1rem; }
-    .sp-key { flex-wrap: wrap; gap: 0.5rem 1.2rem; }
+    .sp-key { flex-wrap: wrap; gap: 0.5rem 1.2rem; --d: 0.56s; }
+    .sp-scale { --d: 0.5s; }
+    .sp-figures > div:nth-child(1) { --d: 0.3s; }
+    .sp-figures > div:nth-child(2) { --d: 0.36s; }
+    .sp-figures > div:nth-child(3) { --d: 0.42s; }
+    .sp-figures > div:nth-child(4) { --d: 0.48s; }
+    .sp-growth { --d: 0.62s; }
+    /* Matching the desktop rules' specificity on purpose: a plain
+       `.sp-queries li` here loses to `li:nth-child(4)` above however late
+       it appears, media query or not. */
+    .sp-queries li:nth-child(n) { --d: 0.7s; }
+    /* 22vw of a phone is 86px of chart, which flattens eighty-two days into a
+       tremble. A fixed height instead — the block is the proof, not a garnish. */
+    .sp-svg { height: 182px; }
+    .sp-peak-label {
+      font-size: 0.52rem;
+      letter-spacing: 0.12em;
+      transform: translate(calc(-100% - 0.65rem), -50%);
+    }
+    .sp-peak-dot::after { animation-duration: 4.8s; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sp-peak-dot::after { animation: none; opacity: 0; }
   }
 </style>
+
+<script>
+  // The block runs its own clock. Everything above is a CSS transition keyed on
+  // .is-in; the only thing JavaScript owns is when that class lands and the
+  // count-up, which CSS cannot do.
+  const REVEAL_LINE = "0px 0px -12% 0px"; // the same line every reveal on the site uses
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const easeOutExpo = (t: number) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+
+  function countUp(el: HTMLElement, to: number, locale: string, duration: number, delay: number) {
+    const format = (value: number) => Math.round(value).toLocaleString(locale);
+    el.textContent = format(0);
+    el.classList.add("is-counting");
+    const start = performance.now() + delay;
+    const step = (now: number) => {
+      const t = Math.min(1, Math.max(0, (now - start) / duration));
+      el.textContent = format(easeOutExpo(t) * to);
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.classList.remove("is-counting");
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-sp]").forEach((figure) => {
+    if (reduced) return; // the rest state is the finished state
+
+    const phone = matchMedia("(max-width: 760px)").matches;
+    const counters = Array.from(figure.querySelectorAll<HTMLElement>("[data-sp-count]"));
+
+    // Anything already past the reveal line when the bundle runs is shown
+    // finished rather than armed: arming it here would blank a block the
+    // visitor is already looking at and then play it back at them.
+    if (figure.getBoundingClientRect().top < innerHeight * 0.88) {
+      figure.classList.add("is-in");
+      return;
+    }
+    figure.classList.add("is-armed");
+
+    const play = () => {
+      figure.classList.add("is-in");
+      // Read at play time, not at build time: the language switcher rewrites the
+      // page in place, so a figure counting up must group its thousands the way
+      // the page around it currently reads (17,380 against 17.380).
+      const locale = document.documentElement.lang.startsWith("de") ? "de-DE" : "en-US";
+      counters.forEach((counter, index) => {
+        const to = Number(counter.dataset.spCount || 0);
+        if (!to) return;
+        countUp(counter, to, locale, phone ? 900 : 1150, (phone ? 320 : 460) + index * (phone ? 60 : 80));
+      });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        play();
+      });
+    }, { rootMargin: REVEAL_LINE, threshold: 0 });
+
+    observer.observe(figure);
+  });
+</script>

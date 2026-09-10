@@ -7,6 +7,8 @@
 //  the client-side swapper can reference them via `data-i18n="<key>"`.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { fidicSearchCopy } from "../data/fidicSearch";
+
 export const languages = {
   en: "English",
   de: "Deutsch",
@@ -16,6 +18,10 @@ export const defaultLang = "en";
 
 export const ui = {
   en: {
+    // The fidic.uz search-proof block builds its strings from the export itself
+    // (src/data/fidicSearch.ts), so a figure is never typed out twice.
+    ...fidicSearchCopy.en,
+
     "accessibility.skip-to-content": "Skip to content",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
@@ -607,6 +613,8 @@ export const ui = {
   },
 
   de: {
+    ...fidicSearchCopy.de,
+
     "accessibility.skip-to-content": "Zum Inhalt springen",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
