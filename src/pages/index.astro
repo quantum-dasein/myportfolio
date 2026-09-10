@@ -2214,7 +2214,7 @@ const selectedWork = [
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
-  import { REVEAL, registerReveal, scheduleReveal } from "../utils/reveals";
+  import { REVEAL } from "../utils/reveals";
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -2238,28 +2238,21 @@ const selectedWork = [
     document.documentElement.classList.add("is-motion-ready");
 
     requestAnimationFrame(() => {
-      // Registered up front so that when one element of a section crosses the
-      // line, the rest of that section joins the same gesture instead of
-      // popping in one scroll notch at a time.
-      const play = (el: HTMLElement) => () => {
-        el.classList.add("is-in");
-        gsap.to(el, {
-          opacity: 1,
-          y: 0,
-          duration: REVEAL.block.duration,
-          ease: REVEAL.ease,
-          overwrite: true,
-          onComplete: () => el.classList.add("is-revealed"),
-        });
-      };
-      items.forEach((el) => registerReveal(el, play(el)));
-
       ScrollTrigger.batch(items, {
         // 88%, like every other reveal on the site — this was firing at 82%,
         // six per cent of a screen out of step with the split text beside it.
         start: "top 88%",
         once: true,
-        onEnter: (batch) => batch.forEach((el) => scheduleReveal(el as HTMLElement, play(el as HTMLElement))),
+        onEnter: (batch) =>
+          gsap.to(batch, {
+            opacity: 1,
+            y: 0,
+            duration: REVEAL.block.duration,
+            ease: REVEAL.ease,
+            stagger: 0.06,
+            overwrite: true,
+            onComplete: () => batch.forEach((item) => (item as HTMLElement).classList.add("is-revealed")),
+          }),
         onEnterBack: (batch) => {
           gsap.set(batch, { opacity: 1, y: 0 });
           batch.forEach((item) => item.classList.add("is-revealed"));

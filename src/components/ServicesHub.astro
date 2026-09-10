@@ -645,7 +645,7 @@ const research = [1, 2, 3, 4].map((n) => ({
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
-  import { REVEAL, registerReveal, scheduleReveal } from "../utils/reveals";
+  import { REVEAL } from "../utils/reveals";
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -658,19 +658,19 @@ const research = [1, 2, 3, 4].map((n) => ({
     // Each element joins the site-wide reveal wave instead of staggering inside
     // its own batch: block reveals and split text then belong to one cascade in
     // document order, rather than two that merely overlap.
-    // Registered up front so that when one element of a section crosses the
-    // line, the rest of that section joins the same gesture instead of popping
-    // in one scroll notch at a time.
-    const play = (el: HTMLElement) => () => {
-      el.classList.add("is-in");
-      gsap.to(el, { opacity: 1, y: 0, duration: REVEAL.block.duration, ease: REVEAL.ease, overwrite: true });
-    };
-    items.forEach((el) => registerReveal(el, play(el)));
-
     ScrollTrigger.batch(items, {
       start: "top 88%",
       once: true,
-      onEnter: (batch) => batch.forEach((el) => scheduleReveal(el as HTMLElement, play(el as HTMLElement))),
+      onEnter: (batch) =>
+        gsap.to(batch, {
+          opacity: 1,
+          y: 0,
+          duration: REVEAL.block.duration,
+          ease: REVEAL.ease,
+          stagger: 0.06,
+          overwrite: true,
+          onStart: () => batch.forEach((el) => (el as HTMLElement).classList.add("is-in")),
+        }),
     });
     document.fonts?.ready.then(() => ScrollTrigger.refresh());
   }

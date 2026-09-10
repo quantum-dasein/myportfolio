@@ -141,7 +141,7 @@ export const ui = {
     "work.2.role": "Solo build · Content, code & SEO",
     "work.2.year": "2026",
     "work.2.text":
-      "A solo-built FIDIC knowledge platform: 429 static pages in three languages, 117 expert articles, 16 contract tools and a tender archive that refreshes itself every morning.",
+      "A solo-built FIDIC knowledge platform: 429 static pages in three languages, 117 expert articles and 16 contract tools — 17 380 Google impressions in its first 82 days, on search alone.",
     "work.3.tag": "Astro · CSS · RU/EN/UZ",
     "work.3.title": "Bridge Consult Academy",
     "work.3.role": "Solo build · One page, three languages",
@@ -728,7 +728,7 @@ export const ui = {
     "work.2.role": "Solo Build · Content, Code & SEO",
     "work.2.year": "2026",
     "work.2.text":
-      "Eine solo gebaute FIDIC-Wissensplattform: 429 statische Seiten in drei Sprachen, 117 Fachartikel, 16 Vertrags-Tools und ein Tender-Archiv, das sich jeden Morgen selbst aktualisiert.",
+      "Eine solo gebaute FIDIC-Wissensplattform: 429 statische Seiten in drei Sprachen, 117 Fachartikel und 16 Vertrags-Tools — 17.380 Google-Impressionen in den ersten 82 Tagen, allein über die Suche.",
     "work.3.tag": "Astro · CSS · RU/EN/UZ",
     "work.3.title": "Bridge Consult Academy",
     "work.3.role": "Solo Build · Eine Seite, drei Sprachen",

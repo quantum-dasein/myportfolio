@@ -1,0 +1,286 @@
+---
+// ─────────────────────────────────────────────────────────────────────────────
+//  SearchProof — the fidic.uz search curve, drawn from the export.
+//
+//  A number in a big typeface is a claim. A curve with a date range and the
+//  name of the tool it came from is closer to evidence: the shape has to agree
+//  with the totals, and both have to agree with what anyone can look up. So
+//  this draws the actual daily series from src/data/fidicSearch.ts — no
+//  smoothing, no trimmed axis, nothing that would flatter it.
+//
+//  Inline SVG, no chart library: it is 82 points on two paths, and pulling a
+//  library onto a page that argues about page weight would be its own answer.
+// ─────────────────────────────────────────────────────────────────────────────
+import { fidicSearch, fidicSearchDays, fidicQueries } from "../data/fidicSearch";
+
+interface Props { lang?: "en" | "de" }
+const { lang = "en" } = Astro.props;
+const de = lang === "de";
+const c = <T,>(en: T, deValue: T): T => (de ? deValue : en);
+
+// ── Geometry ─────────────────────────────────────────────────────────────────
+const W = 1000;
+const H = 260;
+const PAD = { top: 16, right: 8, bottom: 26, left: 8 };
+const plotW = W - PAD.left - PAD.right;
+const plotH = H - PAD.top - PAD.bottom;
+
+const impMax = Math.max(...fidicSearchDays.map((d) => d[2]));
+const clickMax = Math.max(...fidicSearchDays.map((d) => d[1]));
+const x = (i: number) => PAD.left + (i / (fidicSearchDays.length - 1)) * plotW;
+const y = (value: number, max: number) => PAD.top + plotH - (value / max) * plotH;
+
+const line = (pick: (d: (typeof fidicSearchDays)[number]) => number, max: number) =>
+  fidicSearchDays.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(pick(d), max).toFixed(1)}`).join(" ");
+
+const impressionsPath = line((d) => d[2], impMax);
+const clicksPath = line((d) => d[1], clickMax);
+const impressionsArea = `${impressionsPath} L${x(fidicSearchDays.length - 1).toFixed(1)} ${PAD.top + plotH} L${PAD.left} ${PAD.top + plotH} Z`;
+
+const dateLabel = (iso: string) => {
+  const [, month, day] = iso.split("-");
+  const months = de
+    ? ["Jän", "Feb", "März", "Apr", "Mai", "Juni", "Juli", "Aug", "Sep", "Okt", "Nov", "Dez"]
+    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${Number(day)} ${months[Number(month) - 1]}`;
+};
+
+const num = (value: number) => value.toLocaleString(de ? "de-DE" : "en-US");
+
+const figures = [
+  { value: num(fidicSearch.impressions), label: c("search impressions", "Impressionen in der Suche") },
+  { value: num(fidicSearch.clicks), label: c("clicks", "Klicks") },
+  { value: String(fidicSearch.pagesWithClicks), label: c("pages that earned a click", "Seiten mit mindestens einem Klick") },
+  { value: String(fidicSearch.countriesWithClicks), label: c("countries", "Länder") },
+];
+---
+
+<figure class="sp" data-reveal>
+  <figcaption class="sp-head">
+    <span class="sp-source">
+      {fidicSearch.source} · {fidicSearch.property} · {dateLabel(fidicSearch.from)} – {dateLabel(fidicSearch.to)} 2026
+    </span>
+    <h3>{c("Eighty-two days of search, and nothing else.", "Zweiundachtzig Tage Suche — und sonst nichts.")}</h3>
+    <p>
+      {c(
+        "No advertising, no social posts, no bought links. Every visit below arrived because a page answered a question someone typed into Google — in a field with a few thousand specialists in it worldwide.",
+        "Keine Werbung, keine Social-Posts, keine gekauften Links. Jeder Besuch unten kam, weil eine Seite eine Frage beantwortet hat, die jemand bei Google eingetippt hat — in einem Feld mit weltweit wenigen tausend Fachleuten.",
+      )}
+    </p>
+  </figcaption>
+
+  <div class="sp-chart">
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img"
+      aria-label={c(
+        `Daily Google search impressions and clicks for fidic.uz between ${fidicSearch.from} and ${fidicSearch.to}: ${fidicSearch.impressions} impressions and ${fidicSearch.clicks} clicks in total.`,
+        `Tägliche Google-Impressionen und -Klicks für fidic.uz zwischen ${fidicSearch.from} und ${fidicSearch.to}: insgesamt ${fidicSearch.impressions} Impressionen und ${fidicSearch.clicks} Klicks.`,
+      )}>
+      <defs>
+        <linearGradient id="sp-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgb(var(--rgb-text))" stop-opacity=".22" />
+          <stop offset="100%" stop-color="rgb(var(--rgb-text))" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((at) => (
+        <line class="sp-grid" x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH * at} y2={PAD.top + plotH * at} />
+      ))}
+      <line class="sp-axis" x1={PAD.left} x2={W - PAD.right} y1={PAD.top + plotH} y2={PAD.top + plotH} />
+      <path class="sp-area" d={impressionsArea} />
+      <path class="sp-line sp-line--impressions" d={impressionsPath} />
+      <path class="sp-line sp-line--clicks" d={clicksPath} />
+    </svg>
+    <div class="sp-scale" aria-hidden="true">
+      <span>{dateLabel(fidicSearch.from)}</span>
+      <span>{dateLabel(fidicSearchDays[Math.floor(fidicSearchDays.length / 2)][0])}</span>
+      <span>{dateLabel(fidicSearch.to)}</span>
+    </div>
+    <div class="sp-key" aria-hidden="true">
+      <span class="sp-key-imp">{c("Impressions", "Impressionen")} · {c("peak", "Spitze")} {num(impMax)}</span>
+      <span class="sp-key-clicks">{c("Clicks", "Klicks")} · {c("peak", "Spitze")} {num(clickMax)}</span>
+    </div>
+  </div>
+
+  <dl class="sp-figures">
+    {figures.map((figure) => (
+      <div>
+        <dt>{figure.value}</dt>
+        <dd>{figure.label}</dd>
+      </div>
+    ))}
+  </dl>
+
+  <div class="sp-tail">
+    <p class="sp-growth">
+      {c(
+        `Still climbing: ${num(fidicSearch.last30.impressions)} impressions in the last thirty days against ${num(fidicSearch.previous30.impressions)} in the thirty before them.`,
+        `Weiter steigend: ${num(fidicSearch.last30.impressions)} Impressionen in den letzten dreißig Tagen gegenüber ${num(fidicSearch.previous30.impressions)} in den dreißig davor.`,
+      )}
+    </p>
+    <ul class="sp-queries">
+      <li class="sp-queries-label">{c("Ranking for", "Rankt für")}</li>
+      {fidicQueries.map((query) => (
+        <li><b>{query.term}</b><span>#{query.position.toFixed(1)}</span></li>
+      ))}
+    </ul>
+  </div>
+</figure>
+
+<style>
+  .sp {
+    margin: 0;
+    padding: clamp(1.6rem, 3vw, 2.6rem);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.008));
+  }
+
+  .sp-head { padding: 0; }
+  .sp-source {
+    display: block;
+    font-family: var(--font-inter);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.45);
+  }
+  .sp-head h3 {
+    margin: 1rem 0 0.8rem;
+    max-width: 20ch;
+    font: 500 clamp(1.6rem, 3vw, 2.4rem)/1.06 var(--font-display);
+  }
+  .sp-head p {
+    max-width: 60ch;
+    margin: 0;
+    color: rgba(var(--rgb-text), 0.66);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .sp-chart { margin-top: 2.2rem; }
+  .sp-chart svg { display: block; width: 100%; height: clamp(150px, 22vw, 240px); overflow: visible; }
+  .sp-grid { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .sp-axis { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .sp-area { fill: url(#sp-fill); }
+  .sp-line {
+    fill: none;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  /* Two series on one picture only works if one of them is clearly the
+     subject. Impressions are the mass behind the argument — thin, dim, with
+     the fill under them. Clicks are the argument: solid white, twice the
+     weight. Drawn the other way round, as it was first, the reader cannot
+     tell which line the numbers underneath belong to. */
+  .sp-line--impressions { stroke: rgba(var(--rgb-text), 0.34); stroke-width: 1.1; }
+  .sp-line--clicks { stroke: #fff; stroke-width: 2; }
+
+  /* The line draws itself once, when the figure is revealed. A chart that is
+     already finished when you reach it reads as a picture; one that draws reads
+     as a measurement. */
+  .sp.is-in .sp-line {
+    stroke-dasharray: 2400;
+    stroke-dashoffset: 2400;
+    animation: sp-draw 1.6s var(--ease-out-expo) forwards;
+  }
+  .sp.is-in .sp-line--clicks { animation-delay: 0.18s; }
+  .sp.is-in .sp-area { animation: sp-fade 1.4s ease 0.4s both; }
+  @keyframes sp-draw { to { stroke-dashoffset: 0; } }
+  @keyframes sp-fade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sp.is-in .sp-line,
+    .sp.is-in .sp-area { animation: none; stroke-dashoffset: 0; }
+  }
+
+  .sp-scale,
+  .sp-key {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.7rem;
+    font-family: var(--font-inter);
+    font-size: 0.58rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.38);
+  }
+  .sp-key { justify-content: flex-start; gap: 1.6rem; margin-top: 0.9rem; }
+  .sp-key span { position: relative; padding-left: 1.1rem; }
+  .sp-key span::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 0.7rem;
+    height: 1px;
+    background: currentColor;
+  }
+  .sp-key-imp { color: rgba(var(--rgb-text), 0.42); }
+  .sp-key-clicks { color: #fff; }
+  .sp-key-clicks::before { height: 2px; }
+
+  .sp-figures {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 2.4rem 0 0;
+    padding-top: 1.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .sp-figures dt { font: 500 clamp(1.6rem, 3.4vw, 2.6rem)/1 var(--font-display); }
+  .sp-figures dd {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: rgba(var(--rgb-text), 0.55);
+  }
+
+  .sp-tail {
+    display: grid;
+    gap: 1.4rem;
+    margin-top: 2rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .sp-growth {
+    max-width: 52ch;
+    margin: 0;
+    color: rgba(var(--rgb-text), 0.6);
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+  .sp-queries {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.7rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sp-queries li {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 100px;
+    font-size: 0.76rem;
+  }
+  .sp-queries-label {
+    border: 0;
+    padding-left: 0;
+    font-family: var(--font-inter);
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.4);
+  }
+  .sp-queries b { font-weight: 400; }
+  .sp-queries span { color: var(--color-accent); font-size: 0.7rem; }
+
+  @media (max-width: 760px) {
+    .sp-figures { grid-template-columns: 1fr 1fr; gap: 1.4rem 1rem; }
+    .sp-key { flex-wrap: wrap; gap: 0.5rem 1.2rem; }
+  }
+</style>

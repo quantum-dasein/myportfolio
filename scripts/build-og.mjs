@@ -68,8 +68,8 @@ const cards = [
     en: {
       eyebrow: "Case Study / Knowledge Platform",
       title: "FIDIC.uz",
-      spec: [["Pages", "429"], ["Expert articles", "117"], ["Tenders", "2 900+"]],
-      foot: "A SOLO-BUILT CONTRACT PLATFORM IN THREE LANGUAGES",
+      spec: [["Pages", "429"], ["Impressions", "17 380"], ["Countries", "78"]],
+      foot: "82 DAYS IN GOOGLE, ON SEARCH ALONE · NO ADS, NO SOCIAL, NO LINKS",
     },
   },
   {

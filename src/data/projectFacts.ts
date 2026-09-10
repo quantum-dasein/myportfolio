@@ -42,6 +42,19 @@ export const projectFacts: Record<string, ProjectFact> = {
     value: "2 900+",
     note: "FIDIC.uz — tender records. The pipeline adds to it every morning, so the site says 2 900+ rather than a figure that is wrong by the afternoon.",
   },
+  fidicImpressions: {
+    value: "17 380",
+    de: "17.380",
+    note: "FIDIC.uz — Google impressions, 19 Jun – 8 Sep 2026 (82 days). Search Console export, committed at src/data/fidicSearch.ts.",
+  },
+  fidicClicks: {
+    value: "414",
+    note: "FIDIC.uz — Google clicks over the same 82 days. CTR 2.4%, average position 9.6.",
+  },
+  fidicSearchCountries: {
+    value: "78",
+    note: "FIDIC.uz — countries that produced at least one click. 181 produced at least one impression.",
+  },
   bridgeOrganic: {
     value: "+780%",
     note: "Bridge Consult — organic sessions in the first launch window, 5 to 44.",

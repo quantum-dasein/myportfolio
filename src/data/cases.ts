@@ -64,6 +64,10 @@ export interface CaseConfig {
   specimen: { name: string; moduleB: string; moduleC: string };
   seo: { title: string; description: string; keywords: string[]; about: string[] };
   impact?: CaseImpact;
+  /** Show the Search Console export — the daily curve, the totals and the
+   *  queries — as a block of its own. Only FIDIC has a result worth six months
+   *  of anyone's attention, and only FIDIC has the export to back it. */
+  searchProof?: true;
   /** The long-form chapters that only the two platform cases have. */
   chapters?: Partial<Record<"systemMap" | "buildSystem" | "platform" | "data" | "runtime" | "perf", true>>;
   /** The bespoke WebGL departure and return, and there are exactly two of them:
@@ -127,8 +131,8 @@ export const cases: Record<CaseId, CaseConfig> = {
     id: "fidic",
     slug: "fidic",
     tagline: {
-      en: "429 static pages, 117 expert articles, 16 contract tools and a tender archive that refreshes itself every morning.",
-      de: "429 statische Seiten, 117 Fachartikel, 16 Vertrags-Tools und ein Ausschreibungsarchiv, das sich jeden Morgen selbst aktualisiert.",
+      en: "429 static pages and 117 expert articles in a niche of a few thousand specialists — 17 380 search impressions in its first 82 days, with no advertising at all.",
+      de: "429 statische Seiten und 117 Fachartikel in einem Feld mit wenigen tausend Fachleuten — 17 380 Impressionen in den ersten 82 Tagen, ganz ohne Werbung.",
     },
     image: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp",
     stack: "Astro / MDX / Serverless",
@@ -160,6 +164,7 @@ export const cases: Record<CaseId, CaseConfig> = {
         "Data pipelines",
       ],
     },
+    searchProof: true,
     chapters: { platform: true, data: true, runtime: true, perf: true },
     warp: "fidic",
   },

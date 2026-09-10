@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import BridgeDataScene from "./BridgeDataScene.astro";
+import SearchProof from "./SearchProof.astro";
 import { useTranslations, type UIKey } from "../i18n/utils";
 import { cases, type CaseId } from "../data/cases";
 
@@ -14,7 +15,7 @@ interface Props { id: CaseId }
 
 const { id } = Astro.props;
 const config = cases[id];
-const { image, card, nextHref, liveUrl, stack, year, impact, chapters = {}, specimen, seo } = config;
+const { image, card, nextHref, liveUrl, stack, year, impact, searchProof, chapters = {}, specimen, seo } = config;
 const nextId = (Object.values(cases).find((item) => `/work/${item.slug}` === nextHref)?.id ?? "bridge") as CaseId;
 const liveHost = liveUrl ? new URL(liveUrl).hostname.replace(/^www\./, "") : "";
 const t = useTranslations();
@@ -215,6 +216,16 @@ const caseSchema = {
           <p data-i18n={impact.noteKey}>{tk(impact.noteKey)}</p>
           <b>{impact.proofTail}</b>
         </div>
+      </section>
+    )}
+
+    {/* The export, drawn. It sits after the chapter that says what the platform
+        is, because a number about a thing nobody has described yet is noise —
+        and before everything about how it was built, because the result is the
+        part a visitor is deciding on. */}
+    {searchProof && (
+      <section class="case-search-proof" aria-label="Search performance">
+        <div class="u-container"><SearchProof /></div>
       </section>
     )}
 
@@ -696,6 +707,8 @@ const caseSchema = {
   @keyframes portal-orbit { to { transform: translate(-50%, -50%) rotateX(72deg) rotateZ(360deg); } }
 
   .case-hero [data-reveal] { opacity: 1; transform: none; }
+
+  .case-search-proof { padding: clamp(3.5rem, 7vw, 6rem) 0; }
 
   .bridge-impact,
   .bridge-build-system,
@@ -1753,7 +1766,7 @@ const caseSchema = {
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
-  import { REVEAL, registerReveal, scheduleReveal } from "../utils/reveals";
+  import { REVEAL } from "../utils/reveals";
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -1769,16 +1782,18 @@ const caseSchema = {
     // Each element joins the site-wide reveal wave instead of staggering inside
     // its own batch: block reveals and split text then belong to one cascade in
     // document order, rather than two that merely overlap.
-    const play = (el: HTMLElement) => () => {
-      el.classList.add("is-in");
-      gsap.to(el, { opacity: 1, y: 0, duration: REVEAL.block.duration, ease: REVEAL.ease, overwrite: true });
-    };
-    reveal.forEach((el) => registerReveal(el, play(el)));
-
     ScrollTrigger.batch(reveal, {
       start: "top 88%",
       once: true,
-      onEnter: (batch) => batch.forEach((el) => scheduleReveal(el as HTMLElement, play(el as HTMLElement))),
+      onEnter: (batch) =>
+        gsap.to(batch, {
+          opacity: 1,
+          y: 0,
+          duration: REVEAL.block.duration,
+          ease: REVEAL.ease,
+          stagger: 0.06,
+          overwrite: true,
+        }),
       onEnterBack: (batch) => gsap.set(batch, { opacity: 1, y: 0 }),
     });
 
