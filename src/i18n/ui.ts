@@ -428,6 +428,12 @@ export const ui = {
     "studio.cta.insight": "Where AI helps — and where it is the wrong tool",
     "studio.cta.live": "Open the archive",
 
+    // The home page teases this section; /services is the section. They used to
+    // share `services.title` and `services.lead` word for word, so a visitor who
+    // clicked through read the same two sentences twice.
+    "services.teaser.title": "Six sizes of job. One way of working.",
+    "services.teaser.text":
+      "From a landing page to a platform in three languages — the same person writes it, builds it and answers for it afterwards. Prices and timelines are on the services page, without a form.",
     "services.eyebrow": "Services & Research / Vienna",
     "services.title": "What it is, and what it costs.",
     "services.lead": "Pick the size of the job below and you get the timeline and a starting price without filling in anything. Most of the work is the small end of that list — a clear site, quickly, at a price agreed up front. The rest is what the same person can do when a project needs more.",
@@ -996,6 +1002,9 @@ export const ui = {
     "studio.cta.insight": "Wo KI hilft — und wo sie das falsche Werkzeug ist",
     "studio.cta.live": "Archiv öffnen",
 
+    "services.teaser.title": "Sechs Projektgrößen. Eine Arbeitsweise.",
+    "services.teaser.text":
+      "Von der Landingpage bis zur Plattform in drei Sprachen — dieselbe Person schreibt sie, baut sie und steht danach dafür gerade. Preise und Zeitrahmen stehen auf der Leistungsseite, ohne Formular.",
     "services.eyebrow": "Leistungen & Research / Wien",
     "services.title": "Was es ist — und was es kostet.",
     "services.lead": "Wählen Sie unten die Größe des Projekts und Sie sehen Zeitrahmen und Startpreis, ohne irgendetwas auszufüllen. Der größte Teil der Arbeit ist das kleine Ende dieser Liste — eine klare Website, schnell, zum vorab vereinbarten Preis. Der Rest ist das, was dieselbe Person kann, wenn ein Projekt mehr braucht.",

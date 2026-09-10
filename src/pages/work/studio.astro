@@ -30,11 +30,19 @@ const systems = [1, 2, 3, 4, 5, 6].map((n) => ({
 }));
 
 // Excerpt only — the full log lives at /notes/ and both read the same source,
-// so the two can never drift apart.
+// so the two can never drift apart. "Excerpt" was doing no work, though: this
+// rendered the entire entry, so three long paragraphs appeared word for word on
+// both pages. It takes the first sentence now, derived rather than rewritten,
+// which keeps the two in step and gives someone a reason to open the log.
+const firstSentence = (value: string) => {
+  const end = value.search(/[.!?](\s|$)/);
+  return end === -1 ? value : value.slice(0, end + 1);
+};
+
 const notes = allNotes.slice(0, 3).map(({ n }) => ({
   n,
   title: noteKey(n, "title"),
-  text: noteKey(n, "text"),
+  lede: firstSentence(tk(noteKey(n, "text"))),
 }));
 ---
 
@@ -170,7 +178,9 @@ const notes = allNotes.slice(0, 3).map(({ n }) => ({
                 <span class="st-note-n">{String(note.n).padStart(2, "0")}</span>
                 <div>
                   <h3 data-i18n={note.title}>{tk(note.title)}</h3>
-                  <p data-i18n={note.text}>{tk(note.text)}</p>
+                  {/* Not `data-i18n`: the client swapper would put the whole
+                      entry back when the language changes. */}
+                  <p>{note.lede}</p>
                 </div>
               </article>
             ))
