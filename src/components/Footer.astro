@@ -33,7 +33,11 @@ const sections = order
 
 <sy-footer>
   <footer id="contact">
-    <div class="finale" hidden={hideFinale || undefined}>
+    {/* Not `hidden`: `.finale` sets `display: grid`, which beats the attribute's
+        `display: none`, so the card stayed on screen while the DOM claimed it
+        was hidden. On the enquiry page it should not exist at all. */}
+    {!hideFinale && (
+    <div class="finale">
       <div class="terrain terrain-back" aria-hidden="true"></div>
       <div class="terrain terrain-front" aria-hidden="true"></div>
       <span class="signal-line line-a" aria-hidden="true"></span>
@@ -62,6 +66,7 @@ const sections = order
         </a>
       </div>
     </div>
+    )}
 
     <div class="footer-main">
       <div class="brand-cell">

@@ -1753,6 +1753,7 @@ const caseSchema = {
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
+  import { REVEAL, registerReveal, scheduleReveal } from "../utils/reveals";
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -1765,18 +1766,19 @@ const caseSchema = {
   } else {
     gsap.set(reveal.filter(item => !item.closest(".case-hero")), { opacity: 0, y: 28 });
     gsap.set(kinetic, { opacity: 0, y: 34, rotateX: 5, scale: .985 });
+    // Each element joins the site-wide reveal wave instead of staggering inside
+    // its own batch: block reveals and split text then belong to one cascade in
+    // document order, rather than two that merely overlap.
+    const play = (el: HTMLElement) => () => {
+      el.classList.add("is-in");
+      gsap.to(el, { opacity: 1, y: 0, duration: REVEAL.block.duration, ease: REVEAL.ease, overwrite: true });
+    };
+    reveal.forEach((el) => registerReveal(el, play(el)));
+
     ScrollTrigger.batch(reveal, {
       start: "top 88%",
       once: true,
-      onEnter: (batch) =>
-        gsap.to(batch, {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          ease: "power3.out",
-          stagger: 0.08,
-          overwrite: true,
-        }),
+      onEnter: (batch) => batch.forEach((el) => scheduleReveal(el as HTMLElement, play(el as HTMLElement))),
       onEnterBack: (batch) => gsap.set(batch, { opacity: 1, y: 0 }),
     });
 
@@ -1799,14 +1801,14 @@ const caseSchema = {
           gsap.fromTo(children, { opacity: 0, y: 12 }, {
             opacity: 1,
             y: 0,
-            duration: .72,
+            duration: .82,
             delay: .18 + index * .055,
             stagger: .045,
-            ease: "power3.out",
+            ease: REVEAL.ease,
           });
         }
         card.querySelectorAll<HTMLElement>(".metric-track i").forEach((track) => {
-          gsap.to(track, { scaleX: 1, duration: 1.3, delay: .35 + index * .07, ease: "power3.out" });
+          gsap.to(track, { scaleX: 1, duration: 1.4, delay: .35 + index * .07, ease: REVEAL.ease });
         });
       }),
       onEnterBack: (batch) => gsap.set(batch, { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1 }),

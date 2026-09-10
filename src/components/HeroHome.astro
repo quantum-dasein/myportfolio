@@ -425,10 +425,12 @@ const t = useTranslations();
     gsap.fromTo(items, { opacity: 0, y: reduced ? 0 : 24 }, {
       opacity: 1,
       y: 0,
-      duration: reduced ? 0 : 1.05,
-      stagger: reduced ? 0 : 0.075,
+      duration: reduced ? 0 : 1.15,
+      stagger: reduced ? 0 : 0.085,
       delay: reduced ? 0 : 0.14,
-      ease: "power3.out",
+      // The same curve every reveal further down the page uses, so the site
+      // opens the way it continues.
+      ease: "expo.out",
       overwrite: true,
     });
     countTrustMetric();
