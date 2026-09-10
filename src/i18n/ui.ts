@@ -51,7 +51,7 @@ export const ui = {
     "about.title":
       "One operator for the messy space between strategy and launch.",
     "about.text":
-      "I work where marketing usually gets fragmented: positioning in one file, content in another, SEO somewhere else, and the website treated like decoration. My edge is connecting the whole chain - market logic, copy, search intent, campaign assets, motion and the final interface - with a Master's focus in International Marketing and Brand Management behind it.",
+      "I work where marketing usually gets fragmented: positioning in one file, content in another, SEO somewhere else, and the website treated like decoration. My edge is connecting the whole chain — market logic, copy, search intent, campaign assets, motion and the final interface — with a Master's focus in International Marketing and Brand Management behind it.",
 
     // ── The objection, said out loud ────────────────────────────────────────
     // Buyers are already asking it; a site that pretends otherwise reads as
@@ -69,13 +69,13 @@ export const ui = {
     "objection.cta": "Read what actually broke",
     "about.pillar.1.title": "Marketing Strategy",
     "about.pillar.1.text":
-      "Offer logic, audience insight, positioning and narrative - the strategic spine before anything becomes visual.",
+      "Offer logic, audience insight, positioning and narrative — the strategic spine before anything becomes visual.",
     "about.pillar.2.title": "Content & SEO",
     "about.pillar.2.text":
       "Landing pages, expert articles, social assets, search structure and publishing systems that turn expertise into demand.",
-    "about.pillar.3.title": "Creative Development",
+    "about.pillar.3.title": "Creative Development & Film",
     "about.pillar.3.text":
-      "Astro, Three.js, GSAP and motion craft when the brand needs a digital surface that feels alive and still sells.",
+      "Astro, Three.js and GSAP where a brand needs a surface that feels alive and still sells — and, when the argument needs a picture that moves, the film itself, in Cinema 4D and Redshift.",
 
     // ── Experience ──────────────────────────────────────────────────────────
     "record.label": "RECORD",
@@ -181,15 +181,15 @@ export const ui = {
     "case.bridge.highlight.2": "Created a modular content structure for services, expertise and project intelligence.",
     "case.bridge.highlight.3": "Balanced cinematic motion with a conservative B2B trust signal.",
     "case.bridge.mantra": "Precision over noise.",
-    "case.bridge.process.1": "Discovery - extracted the hard business signals: FIDIC, feasibility, market analysis, project research.",
-    "case.bridge.process.2": "Architecture - shaped the site around credibility, scan speed and direct contact intent.",
-    "case.bridge.process.3": "Build - shipped Astro 6, multilingual routing, automated sitemap logic, technical SEO and a custom Three.js project universe.",
+    "case.bridge.process.1": "Discovery — extracted the hard business signals: FIDIC, feasibility, market analysis, project research.",
+    "case.bridge.process.2": "Architecture — shaped the site around credibility, scan speed and direct contact intent.",
+    "case.bridge.process.3": "Build — shipped Astro 6, multilingual routing, automated sitemap logic, technical SEO and a custom Three.js project universe.",
     "case.bridge.visual.text":
       "Warm taupe, graphite and off-white; Inter for operational clarity, Playfair Display for editorial authority; generous whitespace, restrained motion and a cinematic Three.js project universe. The result feels like a contemporary infrastructure consultancy, not a generic corporate template.",
 
     "case.bridge.impact.title": "From launch to measurable demand.",
     "case.bridge.impact.text":
-      "The website was not treated as a visual exercise. Content, technical SEO and the Astro build were designed as one acquisition system - then validated with real GA4 signals in the first launch window.",
+      "The website was not treated as a visual exercise. Content, technical SEO and the Astro build were designed as one acquisition system — then validated with real GA4 signals in the first launch window.",
     "case.bridge.impact.note":
       "Real GA4 launch data, translated into a live spatial model. Percentages compare the measured period with the preceding baseline; the original analytics export remains part of the project record.",
     "case.bridge.metric.organic": "Organic Search sessions",
@@ -214,9 +214,9 @@ export const ui = {
     "case.academy.highlight.2": "Three languages on one page structure, not three parallel sites.",
     "case.academy.highlight.3": "Every effect done in CSS, so the page carries no runtime.",
     "case.academy.mantra": "Small, and finished.",
-    "case.academy.process.1": "Structure - decided the page had to argue before it could list, and cut the module table out of the top third.",
-    "case.academy.process.2": "Language - RU/EN/UZ handled in the routing with correct hreflang, so one page structure serves all three.",
-    "case.academy.process.3": "Build - Astro, hand-written CSS, images in modern formats, and a deliberate refusal to add a single script tag.",
+    "case.academy.process.1": "Structure — decided the page had to argue before it could list, and cut the module table out of the top third.",
+    "case.academy.process.2": "Language — RU/EN/UZ handled in the routing with correct hreflang, so one page structure serves all three.",
+    "case.academy.process.3": "Build — Astro, hand-written CSS, images in modern formats, and a deliberate refusal to add a single script tag.",
     "case.academy.visual.text":
       "Desert light and graphite; a Playfair Display italic for the one word that carries the promise, Inter for everything operational, and monospaced labels for the structural chrome. The photography does the emotional work so the type does not have to shout — which is what keeps an eighteen-module list from reading as a syllabus.",
 
@@ -249,26 +249,26 @@ export const ui = {
     "case.fidic.kicker": "Case Study / Knowledge Platform",
     "case.fidic.title": "FIDIC.uz",
     "case.fidic.subtitle":
-      "A fast, premium knowledge platform around FIDIC contract standards - built to make complex authoritative material feel navigable, trustworthy and modern.",
+      "A fast, premium knowledge platform around FIDIC contract standards — built to make complex authoritative material feel navigable, trustworthy and modern.",
     "case.fidic.role.value": "Solo build: product strategy, content, SEO, code and art direction",
     "case.fidic.scope.value": "3 locales, 429 pages, 117 expert articles, 16 professional tools",
     "case.fidic.problem.text":
       "FIDIC content is dense by nature. The challenge was to avoid the usual legal-document fatigue and build a platform where users can enter through clarity: contract logic, learning paths, article structure and trust-first navigation.",
     "case.fidic.solution.text":
-      "The platform uses a disciplined information architecture with cinematic surfaces: high-contrast sections, controlled scroll rhythm, motion cues and a dark spatial atmosphere. The content stays readable, search-ready and scalable, while the interface signals that this is not a basic archive - it is a premium professional resource.",
+      "The platform uses a disciplined information architecture with cinematic surfaces: high-contrast sections, controlled scroll rhythm, motion cues and a dark spatial atmosphere. The content stays readable, search-ready and scalable, while the interface signals that this is not a basic archive — it is a premium professional resource.",
     "case.fidic.outcome.text":
       "FIDIC.uz becomes a credible digital home for contract-standard knowledge in the region: fast, structured, memorable and ready to scale into articles, explainers, education modules and expert-led content.",
     "case.fidic.highlight.1": "Turned complex contract standards into a navigable digital system.",
     "case.fidic.highlight.2": "Built an experience that feels authoritative without feeling static.",
     "case.fidic.highlight.3": "Prepared the platform for long-form content, SEO and expert publishing.",
     "case.fidic.mantra": "Clarity over density.",
-    "case.fidic.process.1": "Map - grouped heavy topics into clearer user-facing entry points.",
-    "case.fidic.process.2": "Frame - designed the interface around trust, hierarchy and momentum.",
-    "case.fidic.process.3": "Ship - implemented the front-end with Astro, animation timing and performance discipline.",
+    "case.fidic.process.1": "Map — grouped heavy topics into clearer user-facing entry points.",
+    "case.fidic.process.2": "Frame — designed the interface around trust, hierarchy and momentum.",
+    "case.fidic.process.3": "Ship — implemented the front-end with Astro, animation timing and performance discipline.",
     "case.fidic.visual.text":
       "Blueprint & Brass: deep ink surfaces, brass signals, monospaced technical labels, editorial grids and the color-coded Rainbow Book library. Dense contract knowledge becomes a navigable professional operating system rather than a legal-document archive.",
     "case.fidic.platform.title": "A contract knowledge operating system.",
-    "case.fidic.platform.text": "Designed and shipped solo as a multilingual product, not a brochure: 429 static pages across three languages, 117 expert articles, a nine-book contract atlas, 16 tools and calculators, a certification registry and a serverless AI layer - roughly 48,000 lines of code I own end to end.",
+    "case.fidic.platform.text": "Designed and shipped solo as a multilingual product, not a brochure: 429 static pages across three languages, 117 expert articles, a nine-book contract atlas, 16 tools and calculators, a certification registry and a serverless AI layer — roughly 48,000 lines of code I own end to end.",
     "case.fidic.metric.routes": "pages in the production build",
     "case.fidic.metric.articles": "expert articles, 39 per language",
     "case.fidic.metric.books": "contract books",
@@ -276,20 +276,20 @@ export const ui = {
     "case.fidic.metric.languages": "complete languages",
     "case.fidic.metric.schema": "schema.org types in the markup",
     "case.fidic.layer.knowledge.title": "Knowledge graph",
-    "case.fidic.layer.knowledge.text": "39 articles per language, 28 dissected FIDIC clauses, 25 glossary terms and MDB project cases - one typed content model, three complete languages, no partial translation.",
+    "case.fidic.layer.knowledge.text": "39 articles per language, 28 dissected FIDIC clauses, 25 glossary terms and MDB project cases — one typed content model, three complete languages, no partial translation.",
     "case.fidic.layer.books.title": "Nine-book atlas",
     "case.fidic.layer.books.text": "Red through White Book profiles translate scope, risk and applicability into a visual contract library.",
     "case.fidic.layer.tools.title": "Professional workflows",
-    "case.fidic.layer.tools.text": "Contract Map, Claim Readiness, Notice Deadline, risk scoring, the Tender Risk Lab and book selection turn reading into action. Every calculation runs in the browser - nothing a user types is sent anywhere.",
+    "case.fidic.layer.tools.text": "Contract Map, Claim Readiness, Notice Deadline, risk scoring, the Tender Risk Lab and book selection turn reading into action. Every calculation runs in the browser — nothing a user types is sent anywhere.",
     "case.fidic.layer.calculators.title": "Contract calculators",
-    "case.fidic.layer.calculators.text": "Time-bar under Sub-Clause 20.2, EOT and delay, liquidated damages, interim payment under Clause 14 and DAAB timelines - the five models a contract team reruns constantly.",
+    "case.fidic.layer.calculators.text": "Time-bar under Sub-Clause 20.2, EOT and delay, liquidated damages, interim payment under Clause 14 and DAAB timelines — the five models a contract team reruns constantly.",
     "case.fidic.layer.ai.title": "Ask FIDIC layer",
     "case.fidic.layer.ai.text": "Ask FIDIC AI calls the Anthropic Messages API over raw HTTPS, so no SDK ever lands in the client bundle and the site stays fully static. Length and history caps guard a paid public endpoint.",
     "case.fidic.layer.trust.title": "Trust infrastructure",
     "case.fidic.layer.trust.text": "A CLI issues each training certificate into a versioned registry with a QR code; anyone can verify it on a public page. Certificate pages are force-noindexed so personal data never reaches search results.",
 
     "case.fidic.data.title": "A tender archive that refuses to forget.",
-    "case.fidic.data.text": "The World Bank procurement API only ever returns a rolling window - a notice that drops out of the feed is gone for good. So the pipeline never overwrites. Every morning it merges the fresh response into a cumulative archive, and if the upstream fails it exits non-zero instead of quietly saving an empty snapshot.",
+    "case.fidic.data.text": "The World Bank procurement API only ever returns a rolling window — a notice that drops out of the feed is gone for good. So the pipeline never overwrites. Every morning it merges the fresh response into a cumulative archive, and if the upstream fails it exits non-zero instead of quietly saving an empty snapshot.",
     "case.fidic.data.stat.notices": "notices in the archive",
     "case.fidic.data.stat.countries": "countries across Central Asia and the Caucasus",
     "case.fidic.data.stat.depth": "archive depth, first notice onward",
@@ -301,10 +301,10 @@ export const ui = {
     "case.fidic.data.row.model.title": "Data model",
     "case.fidic.data.row.model.text": "A cumulative snapshot. The run merges the API response into the stored archive rather than replacing it, so history accumulates instead of eroding.",
     "case.fidic.data.row.publish.title": "Publication",
-    "case.fidic.data.row.publish.text": "The refreshed dataset is committed to main, which triggers a rebuild and a targeted IndexNow ping - one summary page plus seven country cuts, in three languages.",
+    "case.fidic.data.row.publish.text": "The refreshed dataset is committed to main, which triggers a rebuild and a targeted IndexNow ping — one summary page plus seven country cuts, in three languages.",
 
     "case.fidic.perf.title": "Most of the engineering was taking things out.",
-    "case.fidic.perf.text": "Four Three.js scenes, smooth scroll, a custom cursor and magnetic buttons all shipped - and then got measured. Whatever cost more than it returned was removed per device, not per opinion.",
+    "case.fidic.perf.text": "Four Three.js scenes, smooth scroll, a custom cursor and magnetic buttons all shipped — and then got measured. Whatever cost more than it returned was removed per device, not per opinion.",
     "case.fidic.perf.problem": "What the measurement showed",
     "case.fidic.perf.fix": "What changed",
     "case.fidic.perf.1.problem": "Smooth scroll was hurting LCP on phones.",
@@ -317,7 +317,7 @@ export const ui = {
     "case.fidic.perf.4.fix": "The tender table rebuilds itself as cards, wide tables gained a scroll indicator, the home page became swipeable rails.",
     "case.fidic.perf.5.problem": "Search returned results that did not match the query.",
     "case.fidic.perf.5.fix": "Relevance logic rewritten and retested against real queries.",
-    "case.fidic.perf.principle": "Everything that reveals content - entrance animations, counters - lives in a plain script outside the build bundle. If the bundle never loads, the content is still there. Resilience beats effect.",
+    "case.fidic.perf.principle": "Everything that reveals content — entrance animations, counters — lives in a plain script outside the build bundle. If the bundle never loads, the content is still there. Resilience beats effect.",
 
     "case.fidic.runtime.title": "Static by default, dynamic only where it earns it.",
     "case.fidic.runtime.text": "429 pages compile to plain HTML with no server in the request path. Three serverless functions carry everything that genuinely has to run at request time.",
@@ -332,7 +332,7 @@ export const ui = {
     "case.fidic.runtime.5.title": "Own tooling",
     "case.fidic.runtime.5.text": "Seven purpose-built scripts: tender collection, changed-URL mapping, IndexNow submission, OG truncation checks, certificate issuing, SEO audits and PDF extraction.",
     "case.fidic.runtime.6.title": "32 schema.org types",
-    "case.fidic.runtime.6.text": "Article, TechArticle, DefinedTerm, Course, EducationalOccupationalCredential, Dataset and 26 more - SEO built into the architecture rather than bolted on afterwards.",
+    "case.fidic.runtime.6.text": "Article, TechArticle, DefinedTerm, Course, EducationalOccupationalCredential, Dataset and 26 more — SEO built into the architecture rather than bolted on afterwards.",
 
     // ── Motion & 3D gallery ─────────────────────────────────────────────────
     "gallery.label": "3D & Film",
@@ -401,7 +401,7 @@ export const ui = {
     // Shared source for /notes/ and the excerpt on /work/studio. Entries 1-3
     // are the original three, verbatim; 4-8 came out of later sessions.
     "nav.notes": "Notes",
-    "notes.meta.title": "Engineering notes - what broke on this site and why | Rodion Belousov",
+    "notes.meta.title": "Engineering notes — what broke on this site and why | Rodion Belousov",
     "notes.meta.description": "A running log of real failures on rodionbelousov.studio: a 12.75 MB video nobody asked for, a loading screen that could never end, a codec that lost, an optimisation that cost 42 KB.",
     "notes.kicker": "Engineering log / rodionbelousov.studio",
     "notes.title": "What broke, and what it cost.",
@@ -414,19 +414,19 @@ export const ui = {
     "note.1.title": "Mobile pays a different price",
     "note.1.text": "The archive rendered every frame twice: the scene into a render target, then a fullscreen composite for grain and vignette. On a phone GPU that memory bandwidth is the entire budget. It now draws straight to the screen and only spins the composite up while a transition wipe is running.",
     "note.2.title": "Reduce Motion is not an off switch",
-    "note.2.text": "The preloader froze its object with animation-play-state: paused. On any phone with Reduce Motion enabled that read as a broken page - a cube standing still. It now turns slowly instead of dying.",
+    "note.2.text": "The preloader froze its object with animation-play-state: paused. On any phone with Reduce Motion enabled that read as a broken page — a cube standing still. It now turns slowly instead of dying.",
     "note.3.title": "The locale trap",
     "note.3.text": "Localized clones of the homepage lived at /en/ and /de/, and the wordmark pointed at them. Switching language on a service page stranded you on a duplicate with no way back. The clones are gone, 301'd to the real home, and locale now applies only to real localized content.",
     "note.4.title": "The film that downloaded before anyone asked for it",
     "note.4.text": "A scroll-scrubbed film shipped with its source and preload=auto written straight into the markup, for a section that starts three screens down the page. Every visitor pulled all 12.75 MB of it from first paint. On a phone on a weak connection the page painted in about a second and then sat there feeling frozen, because the connection stayed saturated for minutes behind it. The source now attaches only as the section approaches, and not at all under Save-Data. Home page transfer went from 12.92 MB to 0.16 MB.",
     "note.5.title": "A loading screen that could never end",
-    "note.5.text": "The intro held overflow:hidden and touch-action:none on the document while it played. Every path that released that lock lived inside the animation-frame loop - including the failsafe, which was itself a line of that loop. So anything that stopped the loop left the page painted, readable and permanently unscrollable, recoverable only by reloading. The release now also hangs off a plain timer that fires whether or not a single frame is ever served. Verified by stubbing out requestAnimationFrame entirely.",
+    "note.5.text": "The intro held overflow:hidden and touch-action:none on the document while it played. Every path that released that lock lived inside the animation-frame loop — including the failsafe, which was itself a line of that loop. So anything that stopped the loop left the page painted, readable and permanently unscrollable, recoverable only by reloading. The release now also hangs off a plain timer that fires whether or not a single frame is ever served. Verified by stubbing out requestAnimationFrame entirely.",
     "note.6.title": "Hyphenation only breaks where the dictionary exists",
-    "note.6.text": "A case title carried hyphens:auto, added so that long German headings would break cleanly. Android Chrome ships the hyphenation dictionary; desktop Linux mostly does not. So the title split as FIDIC - fi- / dic.uz on a phone, and looked perfect on every machine it was built on. Both halves fit their own line down to 320px, so the space was the only break ever wanted.",
+    "note.6.text": "A case title carried hyphens:auto, added so that long German headings would break cleanly. Android Chrome ships the hyphenation dictionary; desktop Linux mostly does not. So the title split as FIDIC — fi- / dic.uz on a phone, and looked perfect on every machine it was built on. Both halves fit their own line down to 320px, so the space was the only break ever wanted.",
     "note.7.title": "The codec that won on paper",
-    "note.7.text": "AV1 was encoded next to H.264 for all three films. It cut the two 1080p30 clips by up to 78% - and came out larger than H.264 on the 60fps one, because a single CRF number does not map to the same quality across codecs. Shipping it meant per-file tuning plus format negotiation in four components, for a win that reverses on one file in three and that iOS largely cannot use. Measured, then dropped.",
+    "note.7.text": "AV1 was encoded next to H.264 for all three films. It cut the two 1080p30 clips by up to 78% — and came out larger than H.264 on the 60fps one, because a single CRF number does not map to the same quality across codecs. Shipping it meant per-file tuning plus format negotiation in four components, for a win that reverses on one file in three and that iOS largely cannot use. Measured, then dropped.",
     "note.8.title": "The optimisation that cost 42 KB",
-    "note.8.text": "Making three.js a dynamic import, so devices that skip the WebGL backdrop could skip the download too. It worked - and the shared chunk grew from 528 KB to 674 KB, because a dynamic import forces the bundler to keep the whole namespace instead of tree-shaking it. That is 42 KB added for every ordinary visitor to save a minority, and it pulled the download forward into the window that decides LCP. Reverted the same hour it was written.",
+    "note.8.text": "Making three.js a dynamic import, so devices that skip the WebGL backdrop could skip the download too. It worked — and the shared chunk grew from 528 KB to 674 KB, because a dynamic import forces the bundler to keep the whole namespace instead of tree-shaking it. That is 42 KB added for every ordinary visitor to save a minority, and it pulled the download forward into the window that decides LCP. Reverted the same hour it was written.",
 
     "studio.cta.insight": "Where AI helps — and where it is the wrong tool",
     "studio.cta.live": "Open the archive",
@@ -530,7 +530,7 @@ export const ui = {
     "contact.text":
       "Available for selected marketing, content, SEO and premium web projects. Tell me what you're launching.",
     "contact.email": "rodionbelousov@protonmail.com",
-    "contact.behance.label": "Behance - Creative Archive",
+    "contact.behance.label": "Behance — Creative Archive",
     "contact.location": "Vienna, Austria",
     "contact.cta": "Start a project",
 
@@ -570,7 +570,7 @@ export const ui = {
 
     // ── Footer ──────────────────────────────────────────────────────────────
     "footer.cta.eyebrow": "Available for selected launches",
-    "footer.cta.title": "Marketing, content, SEO and web - built as one system.",
+    "footer.cta.title": "Marketing, content, SEO and web — built as one system.",
     "footer.cta.button": "Start a project",
     "footer.tagline": "Digital Marketer · Creative Developer · Vienna",
     "footer.status": "Available for projects",
@@ -656,13 +656,13 @@ export const ui = {
     "objection.cta": "Nachlesen, was wirklich kaputtging",
     "about.pillar.1.title": "Marketing-Strategie",
     "about.pillar.1.text":
-      "Angebotslogik, Zielgruppenverständnis, Positionierung und Narrativ - die strategische Wirbelsäule, bevor etwas visuell wird.",
+      "Angebotslogik, Zielgruppenverständnis, Positionierung und Narrativ — die strategische Wirbelsäule, bevor etwas visuell wird.",
     "about.pillar.2.title": "Content & SEO",
     "about.pillar.2.text":
       "Landingpages, Fachartikel, Social Assets, Suchstruktur und Publishing-Systeme, die Expertise in Nachfrage verwandeln.",
-    "about.pillar.3.title": "Creative Development",
+    "about.pillar.3.title": "Creative Development & Film",
     "about.pillar.3.text":
-      "Astro, Three.js und GSAP, wenn ein Projekt eine hochwertige digitale Oberfläche braucht - schnell, einprägsam und an Marketingziele gebunden.",
+      "Astro, Three.js und GSAP, wenn ein Projekt eine hochwertige digitale Oberfläche braucht — und, wenn das Argument ein bewegtes Bild braucht, den Film selbst, in Cinema 4D und Redshift.",
 
     // ── Experience ──────────────────────────────────────────────────────────
     "record.label": "WERDEGANG",
@@ -768,15 +768,15 @@ export const ui = {
     "case.bridge.highlight.2": "Modulare Struktur für Services, Expertise und Projektintelligenz geschaffen.",
     "case.bridge.highlight.3": "Cinematic Motion mit konservativen B2B-Vertrauenssignalen balanciert.",
     "case.bridge.mantra": "Präzision statt Rauschen.",
-    "case.bridge.process.1": "Discovery - harte Business-Signale extrahiert: FIDIC, Feasibility, Marktanalyse, Projektrecherche.",
-    "case.bridge.process.2": "Architektur - die Site auf Glaubwürdigkeit, Scan-Speed und Kontaktintention ausgerichtet.",
-    "case.bridge.process.3": "Build - Astro 6, mehrsprachiges Routing, automatisierte Sitemap-Logik, Technical SEO und eine eigene Three.js-Projektwelt ausgeliefert.",
+    "case.bridge.process.1": "Discovery — harte Business-Signale extrahiert: FIDIC, Feasibility, Marktanalyse, Projektrecherche.",
+    "case.bridge.process.2": "Architektur — die Site auf Glaubwürdigkeit, Scan-Speed und Kontaktintention ausgerichtet.",
+    "case.bridge.process.3": "Build — Astro 6, mehrsprachiges Routing, automatisierte Sitemap-Logik, Technical SEO und eine eigene Three.js-Projektwelt ausgeliefert.",
     "case.bridge.visual.text":
       "Warmes Taupe, Graphit und Off-White; Inter für operative Klarheit, Playfair Display für redaktionelle Autorität; viel Weißraum, kontrollierte Motion und eine filmische Three.js-Projektwelt. Das Ergebnis positioniert Bridge Consult als zeitgemäße Infrastrukturberatung. Kein generisches Corporate-Template.",
 
     "case.bridge.impact.title": "Vom Launch zu messbarer Nachfrage.",
     "case.bridge.impact.text":
-      "Die Website wurde nicht als reine Visual-Uebung gebaut. Content, Technical SEO und der Astro-Build funktionieren als ein Akquisitionssystem - validiert durch echte GA4-Signale im ersten Launch-Fenster.",
+      "Die Website wurde nicht als reine Visual-Uebung gebaut. Content, Technical SEO und der Astro-Build funktionieren als ein Akquisitionssystem — validiert durch echte GA4-Signale im ersten Launch-Fenster.",
     "case.bridge.impact.note":
       "Echte GA4-Launch-Daten, übersetzt in ein räumliches Live-Modell. Die Prozentwerte vergleichen den Messzeitraum mit der vorherigen Baseline; der originale Analytics-Export bleibt im Projektnachweis erhalten.",
     "case.bridge.metric.organic": "Organic-Search-Sitzungen",
@@ -801,9 +801,9 @@ export const ui = {
     "case.academy.highlight.2": "Drei Sprachen auf einer Seitenstruktur, nicht drei parallele Sites.",
     "case.academy.highlight.3": "Jeder Effekt in CSS gelöst — die Seite trägt keine Runtime.",
     "case.academy.mantra": "Klein, und fertig.",
-    "case.academy.process.1": "Struktur - entschieden, dass die Seite argumentieren muss, bevor sie aufzählt, und die Modultabelle aus dem oberen Drittel gestrichen.",
-    "case.academy.process.2": "Sprache - RU/EN/UZ im Routing gelöst, mit korrektem hreflang, sodass eine Seitenstruktur alle drei trägt.",
-    "case.academy.process.3": "Build - Astro, handgeschriebenes CSS, Bilder in modernen Formaten und die bewusste Weigerung, ein einziges Script-Tag zu ergänzen.",
+    "case.academy.process.1": "Struktur — entschieden, dass die Seite argumentieren muss, bevor sie aufzählt, und die Modultabelle aus dem oberen Drittel gestrichen.",
+    "case.academy.process.2": "Sprache — RU/EN/UZ im Routing gelöst, mit korrektem hreflang, sodass eine Seitenstruktur alle drei trägt.",
+    "case.academy.process.3": "Build — Astro, handgeschriebenes CSS, Bilder in modernen Formaten und die bewusste Weigerung, ein einziges Script-Tag zu ergänzen.",
     "case.academy.visual.text":
       "Wüstenlicht und Graphit; eine Playfair-Display-Kursive für das eine Wort, das das Versprechen trägt, Inter für alles Operative und monospaced Labels für das strukturelle Beiwerk. Die Fotografie übernimmt die emotionale Arbeit, damit die Typografie nicht laut werden muss — genau das verhindert, dass sich achtzehn Module wie ein Lehrplan lesen.",
 
@@ -836,7 +836,7 @@ export const ui = {
     "case.fidic.kicker": "Case Study / Wissensplattform",
     "case.fidic.title": "FIDIC.uz",
     "case.fidic.subtitle":
-      "Eine schnelle, hochwertige Wissensplattform rund um FIDIC-Vertragsstandards - gebaut, damit komplexe verbindliche Inhalte navigierbar, vertrauenswürdig und modern wirken.",
+      "Eine schnelle, hochwertige Wissensplattform rund um FIDIC-Vertragsstandards — gebaut, damit komplexe verbindliche Inhalte navigierbar, vertrauenswürdig und modern wirken.",
     "case.fidic.role.value": "Solo Build: Produktstrategie, Content, SEO, Code und Art Direction",
     "case.fidic.scope.value": "3 Sprachen, 429 Seiten, 117 Fachartikel, 16 Profi-Tools",
     "case.fidic.problem.text":
@@ -849,13 +849,13 @@ export const ui = {
     "case.fidic.highlight.2": "Eine Erfahrung gebaut, die autoritativ wirkt, ohne statisch zu sein.",
     "case.fidic.highlight.3": "Die Plattform für Longform Content, SEO und Expertenpublishing vorbereitet.",
     "case.fidic.mantra": "Klarheit statt Dichte.",
-    "case.fidic.process.1": "Map - schwere Themen in klare user-facing Einstiege gruppiert.",
-    "case.fidic.process.2": "Frame - Interface um Vertrauen, Hierarchie und Momentum gestaltet.",
-    "case.fidic.process.3": "Ship - Frontend mit Astro, Animation Timing und Performance-Disziplin umgesetzt.",
+    "case.fidic.process.1": "Map — schwere Themen in klare user-facing Einstiege gruppiert.",
+    "case.fidic.process.2": "Frame — Interface um Vertrauen, Hierarchie und Momentum gestaltet.",
+    "case.fidic.process.3": "Ship — Frontend mit Astro, Animation Timing und Performance-Disziplin umgesetzt.",
     "case.fidic.visual.text":
       "Blueprint & Brass: tiefe Ink-Flächen, Messing-Signale, technische Mono-Labels, redaktionelle Raster und die farbcodierte Rainbow-Book-Bibliothek. Dichtes Vertragswissen wird zum navigierbaren professionellen Betriebssystem statt zu einem juristischen Dokumentenarchiv.",
     "case.fidic.platform.title": "Ein Betriebssystem für Vertragswissen.",
-    "case.fidic.platform.text": "Solo als mehrsprachiges Produkt konzipiert und ausgeliefert, nicht als Broschüre: 429 statische Seiten in drei Sprachen, 117 Fachartikel, ein Atlas aus neun Vertragsbüchern, 16 Tools und Rechner, ein Zertifikatsregister und eine serverlose AI-Ebene - rund 48.000 Zeilen Code in eigener Verantwortung.",
+    "case.fidic.platform.text": "Solo als mehrsprachiges Produkt konzipiert und ausgeliefert, nicht als Broschüre: 429 statische Seiten in drei Sprachen, 117 Fachartikel, ein Atlas aus neun Vertragsbüchern, 16 Tools und Rechner, ein Zertifikatsregister und eine serverlose AI-Ebene — rund 48.000 Zeilen Code in eigener Verantwortung.",
     "case.fidic.metric.routes": "Seiten im Produktions-Build",
     "case.fidic.metric.articles": "Fachartikel, 39 pro Sprache",
     "case.fidic.metric.books": "Vertragsbücher",
@@ -863,20 +863,20 @@ export const ui = {
     "case.fidic.metric.languages": "vollständige Sprachen",
     "case.fidic.metric.schema": "schema.org-Typen im Markup",
     "case.fidic.layer.knowledge.title": "Knowledge Graph",
-    "case.fidic.layer.knowledge.text": "39 Artikel pro Sprache, 28 aufgeschlüsselte FIDIC-Klauseln, 25 Glossarbegriffe und MDB-Projektfälle - ein typisiertes Content-Modell, drei vollständige Sprachen, keine Teilübersetzung.",
+    "case.fidic.layer.knowledge.text": "39 Artikel pro Sprache, 28 aufgeschlüsselte FIDIC-Klauseln, 25 Glossarbegriffe und MDB-Projektfälle — ein typisiertes Content-Modell, drei vollständige Sprachen, keine Teilübersetzung.",
     "case.fidic.layer.books.title": "Atlas aus neun Books",
     "case.fidic.layer.books.text": "Profile vom Red bis White Book übersetzen Scope, Risiko und Einsatzgebiet in eine visuelle Vertragsbibliothek.",
     "case.fidic.layer.tools.title": "Professionelle Workflows",
-    "case.fidic.layer.tools.text": "Contract Map, Claim Readiness, Notice Deadline, Risk Scoring, Tender Risk Lab und Book Selector machen aus Wissen konkrete Arbeit. Alle Berechnungen laufen im Browser - Eingaben verlassen das Gerät nicht.",
+    "case.fidic.layer.tools.text": "Contract Map, Claim Readiness, Notice Deadline, Risk Scoring, Tender Risk Lab und Book Selector machen aus Wissen konkrete Arbeit. Alle Berechnungen laufen im Browser — Eingaben verlassen das Gerät nicht.",
     "case.fidic.layer.calculators.title": "Vertragsrechner",
-    "case.fidic.layer.calculators.text": "Time Bar nach Sub-Clause 20.2, EOT und Delay, Vertragsstrafen, Interim Payment nach Clause 14 und DAAB-Fristen - die fünf Modelle, die ein Vertragsteam ständig neu rechnet.",
+    "case.fidic.layer.calculators.text": "Time Bar nach Sub-Clause 20.2, EOT und Delay, Vertragsstrafen, Interim Payment nach Clause 14 und DAAB-Fristen — die fünf Modelle, die ein Vertragsteam ständig neu rechnet.",
     "case.fidic.layer.ai.title": "Ask-FIDIC-Layer",
-    "case.fidic.layer.ai.text": "Ask FIDIC AI ruft die Anthropic Messages API über rohes HTTPS auf - so landet kein SDK im Client-Bundle und die Seite bleibt vollständig statisch. Längen- und Verlaufslimits schützen einen kostenpflichtigen öffentlichen Endpunkt.",
+    "case.fidic.layer.ai.text": "Ask FIDIC AI ruft die Anthropic Messages API über rohes HTTPS auf — so landet kein SDK im Client-Bundle und die Seite bleibt vollständig statisch. Längen- und Verlaufslimits schützen einen kostenpflichtigen öffentlichen Endpunkt.",
     "case.fidic.layer.trust.title": "Trust Infrastructure",
-    "case.fidic.layer.trust.text": "Ein CLI-Skript trägt jedes Schulungszertifikat mit QR-Code in ein versioniertes Register ein; prüfen kann es jeder auf einer öffentlichen Seite. Zertifikatsseiten sind zwingend noindex - personenbezogene Daten erreichen den Index nicht.",
+    "case.fidic.layer.trust.text": "Ein CLI-Skript trägt jedes Schulungszertifikat mit QR-Code in ein versioniertes Register ein; prüfen kann es jeder auf einer öffentlichen Seite. Zertifikatsseiten sind zwingend noindex — personenbezogene Daten erreichen den Index nicht.",
 
     "case.fidic.data.title": "Ein Tender-Archiv, das nichts vergisst.",
-    "case.fidic.data.text": "Die Procurement-API der Weltbank liefert immer nur ein gleitendes Fenster - eine Ausschreibung, die herausfällt, ist endgültig weg. Deshalb überschreibt die Pipeline nie. Jeden Morgen führt sie die frische Antwort mit einem kumulativen Archiv zusammen; fällt die Quelle aus, endet der Lauf mit Fehlercode, statt still einen leeren Snapshot zu speichern.",
+    "case.fidic.data.text": "Die Procurement-API der Weltbank liefert immer nur ein gleitendes Fenster — eine Ausschreibung, die herausfällt, ist endgültig weg. Deshalb überschreibt die Pipeline nie. Jeden Morgen führt sie die frische Antwort mit einem kumulativen Archiv zusammen; fällt die Quelle aus, endet der Lauf mit Fehlercode, statt still einen leeren Snapshot zu speichern.",
     "case.fidic.data.stat.notices": "Ausschreibungen im Archiv",
     "case.fidic.data.stat.countries": "Länder in Zentralasien und im Kaukasus",
     "case.fidic.data.stat.depth": "Archivtiefe ab der ersten Ausschreibung",
@@ -884,14 +884,14 @@ export const ui = {
     "case.fidic.data.row.source.title": "Quelle",
     "case.fidic.data.row.source.text": "Die World Bank Procurement Notices API, pro Land abgefragt und zu einem einzigen typisierten Datensatz normalisiert.",
     "case.fidic.data.row.schedule.title": "Zeitplan",
-    "case.fidic.data.row.schedule.text": "Ein GitHub-Actions-Cronjob. Jeder Bot-Commit trägt den aktuellen Stand offener zu gesamter Ausschreibungen in der Message - der Zustand des Archivs ist allein aus dem Git-Log ablesbar.",
+    "case.fidic.data.row.schedule.text": "Ein GitHub-Actions-Cronjob. Jeder Bot-Commit trägt den aktuellen Stand offener zu gesamter Ausschreibungen in der Message — der Zustand des Archivs ist allein aus dem Git-Log ablesbar.",
     "case.fidic.data.row.model.title": "Datenmodell",
-    "case.fidic.data.row.model.text": "Ein kumulativer Snapshot. Der Lauf führt die API-Antwort mit dem gespeicherten Archiv zusammen, statt es zu ersetzen - Historie wächst, statt zu bröckeln.",
+    "case.fidic.data.row.model.text": "Ein kumulativer Snapshot. Der Lauf führt die API-Antwort mit dem gespeicherten Archiv zusammen, statt es zu ersetzen — Historie wächst, statt zu bröckeln.",
     "case.fidic.data.row.publish.title": "Publikation",
-    "case.fidic.data.row.publish.text": "Der aktualisierte Datensatz wird nach main committet, was Rebuild und einen gezielten IndexNow-Ping auslöst - eine Übersichtsseite plus sieben Länderschnitte, in drei Sprachen.",
+    "case.fidic.data.row.publish.text": "Der aktualisierte Datensatz wird nach main committet, was Rebuild und einen gezielten IndexNow-Ping auslöst — eine Übersichtsseite plus sieben Länderschnitte, in drei Sprachen.",
 
     "case.fidic.perf.title": "Der größere Teil der Arbeit war Weglassen.",
-    "case.fidic.perf.text": "Vier Three.js-Szenen, Smooth Scroll, ein eigener Cursor und magnetische Buttons gingen live - und wurden dann gemessen. Was mehr kostete, als es einbrachte, flog raus: pro Gerät, nicht nach Meinung.",
+    "case.fidic.perf.text": "Vier Three.js-Szenen, Smooth Scroll, ein eigener Cursor und magnetische Buttons gingen live — und wurden dann gemessen. Was mehr kostete, als es einbrachte, flog raus: pro Gerät, nicht nach Meinung.",
     "case.fidic.perf.problem": "Was die Messung zeigte",
     "case.fidic.perf.fix": "Was sich geändert hat",
     "case.fidic.perf.1.problem": "Smooth Scroll verschlechterte den LCP auf Telefonen.",
@@ -904,14 +904,14 @@ export const ui = {
     "case.fidic.perf.4.fix": "Die Tender-Tabelle baut sich als Karten neu auf, breite Tabellen bekamen einen Scroll-Indikator, die Startseite wurde zu wischbaren Rails.",
     "case.fidic.perf.5.problem": "Die Suche lieferte Treffer, die nicht zur Anfrage passten.",
     "case.fidic.perf.5.fix": "Die Relevanzlogik wurde neu geschrieben und an echten Suchanfragen nachgeprüft.",
-    "case.fidic.perf.principle": "Alles, was Inhalte sichtbar macht - Einblendungen, Zähler - liegt in einem einfachen Skript außerhalb des Build-Bundles. Lädt das Bundle nicht, ist der Inhalt trotzdem da. Ausfallsicherheit schlägt Effekt.",
+    "case.fidic.perf.principle": "Alles, was Inhalte sichtbar macht — Einblendungen, Zähler — liegt in einem einfachen Skript außerhalb des Build-Bundles. Lädt das Bundle nicht, ist der Inhalt trotzdem da. Ausfallsicherheit schlägt Effekt.",
 
     "case.fidic.runtime.title": "Statisch als Standard, dynamisch nur, wo es sich lohnt.",
     "case.fidic.runtime.text": "429 Seiten kompilieren zu reinem HTML, ohne Server im Request-Pfad. Drei serverlose Funktionen tragen alles, was wirklich zur Laufzeit passieren muss.",
     "case.fidic.runtime.1.title": "Anthropic Messages API",
     "case.fidic.runtime.1.text": "Ask FIDIC AI wird über rohes HTTPS aufgerufen, damit das SDK nie im Client-Bundle landet. Limits für Anfrage und Verlauf schützen einen kostenpflichtigen öffentlichen Endpunkt.",
     "case.fidic.runtime.2.title": "Telegram Bot API",
-    "case.fidic.runtime.2.text": "Leads laufen direkt in einen Chat. Ist kein Bot konfiguriert, antwortet die Funktion bewusst mit non-2xx und das Formular fällt auf ein vorbefülltes mailto zurück - keine Anfrage geht still verloren.",
+    "case.fidic.runtime.2.text": "Leads laufen direkt in einen Chat. Ist kein Bot konfiguriert, antwortet die Funktion bewusst mit non-2xx und das Formular fällt auf ein vorbefülltes mailto zurück — keine Anfrage geht still verloren.",
     "case.fidic.runtime.3.title": "@vercel/og",
     "case.fidic.runtime.3.text": "Social Cards pro Headline in 1200x630, mit Schriften direkt im Funktionsordner, damit Kyrillisch korrekt rendert statt zu Kästchen zu werden.",
     "case.fidic.runtime.4.title": "IndexNow + Wikidata",
@@ -919,7 +919,7 @@ export const ui = {
     "case.fidic.runtime.5.title": "Eigenes Tooling",
     "case.fidic.runtime.5.text": "Sieben eigens gebaute Skripte: Tender-Sammlung, Changed-URL-Mapping, IndexNow-Übermittlung, OG-Abschneidekontrolle, Zertifikatsausgabe, SEO-Audit und PDF-Extraktion.",
     "case.fidic.runtime.6.title": "32 schema.org-Typen",
-    "case.fidic.runtime.6.text": "Article, TechArticle, DefinedTerm, Course, EducationalOccupationalCredential, Dataset und 26 weitere - SEO steckt in der Architektur statt nachträglich obendrauf.",
+    "case.fidic.runtime.6.text": "Article, TechArticle, DefinedTerm, Course, EducationalOccupationalCredential, Dataset und 26 weitere — SEO steckt in der Architektur statt nachträglich obendrauf.",
 
     // ── Motion & 3D gallery ─────────────────────────────────────────────────
     "gallery.label": "3D & Film",
@@ -984,10 +984,10 @@ export const ui = {
 
     // ── Engineering-Log ─────────────────────────────────────────────────────
     "nav.notes": "Notizen",
-    "notes.meta.title": "Engineering-Notizen - was auf dieser Seite kaputtging und warum | Rodion Belousov",
+    "notes.meta.title": "Engineering-Notizen — was auf dieser Seite kaputtging und warum | Rodion Belousov",
     "notes.meta.description": "Ein laufendes Protokoll echter Fehler auf rodionbelousov.studio: ein 12,75-MB-Video, das niemand angefordert hat, ein Ladebildschirm ohne Ende, ein Codec, der verlor, eine Optimierung, die 42 KB kostete.",
     "notes.kicker": "Engineering-Log / rodionbelousov.studio",
-    "notes.title": "Was kaputtging - und was es gekostet hat.",
+    "notes.title": "Was kaputtging — und was es gekostet hat.",
     "notes.lead": "Die fertige Oberfläche kann jeder zeigen, und inzwischen kann sie jeder generieren. Das hier ist der Teil, der nicht aus einem Prompt fällt: die Stellen, die zuerst falsch waren, wie sie gefunden wurden, und die zwei Einträge, bei denen die richtige Antwort war, die Arbeit wegzuwerfen.",
     "notes.count": "Einträge",
     "notes.measured": "Jede Zahl hier ist gemessen, nicht geschätzt.",
@@ -997,19 +997,19 @@ export const ui = {
     "note.1.title": "Mobil zahlt einen anderen Preis",
     "note.1.text": "Das Archiv renderte jeden Frame doppelt: die Szene in ein Render-Target, danach ein Vollbild-Composite für Korn und Vignette. Auf einer Handy-GPU ist diese Speicherbandbreite das gesamte Budget. Jetzt wird direkt auf den Bildschirm gezeichnet, und das Composite läuft nur während eines Übergangs.",
     "note.2.title": "Reduce Motion ist kein Ausschalter",
-    "note.2.text": "Der Preloader fror sein Objekt mit animation-play-state: paused ein. Auf jedem Handy mit aktiviertem Reduce Motion las sich das als kaputte Seite - ein Würfel, der stillsteht. Jetzt dreht er sich langsam, statt zu sterben.",
+    "note.2.text": "Der Preloader fror sein Objekt mit animation-play-state: paused ein. Auf jedem Handy mit aktiviertem Reduce Motion las sich das als kaputte Seite — ein Würfel, der stillsteht. Jetzt dreht er sich langsam, statt zu sterben.",
     "note.3.title": "Die Locale-Falle",
     "note.3.text": "Unter /en/ und /de/ lagen Klone der Startseite, und die Wortmarke zeigte darauf. Ein Sprachwechsel auf einer Leistungsseite strandete dich auf einem Duplikat ohne Rückweg. Die Klone sind weg, per 301 auf das echte Zuhause umgeleitet, und Locale gilt nur noch für echt lokalisierte Inhalte.",
     "note.4.title": "Der Film, der lud, bevor ihn jemand angefordert hat",
-    "note.4.text": "Ein scroll-gesteuerter Film stand mit Quelle und preload=auto direkt im Markup - für einen Abschnitt, der drei Bildschirme weiter unten beginnt. Jeder Besucher zog alle 12,75 MB ab dem ersten Frame. Auf einem Telefon mit schwacher Verbindung war die Seite nach etwa einer Sekunde gezeichnet und fühlte sich danach eingefroren an, weil die Leitung minutenlang ausgelastet blieb. Die Quelle wird jetzt erst beim Herannahen angehängt, unter Save-Data gar nicht. Der Transfer der Startseite fiel von 12,92 MB auf 0,16 MB.",
+    "note.4.text": "Ein scroll-gesteuerter Film stand mit Quelle und preload=auto direkt im Markup — für einen Abschnitt, der drei Bildschirme weiter unten beginnt. Jeder Besucher zog alle 12,75 MB ab dem ersten Frame. Auf einem Telefon mit schwacher Verbindung war die Seite nach etwa einer Sekunde gezeichnet und fühlte sich danach eingefroren an, weil die Leitung minutenlang ausgelastet blieb. Die Quelle wird jetzt erst beim Herannahen angehängt, unter Save-Data gar nicht. Der Transfer der Startseite fiel von 12,92 MB auf 0,16 MB.",
     "note.5.title": "Ein Ladebildschirm, der nie enden konnte",
-    "note.5.text": "Das Intro hielt overflow:hidden und touch-action:none auf dem Dokument, solange es lief. Jeder Weg, der diese Sperre löste, lag in der Animation-Frame-Schleife - auch die Notbremse, die selbst eine Zeile dieser Schleife war. Alles, was die Schleife anhielt, hinterließ also eine gezeichnete, lesbare und dauerhaft nicht scrollbare Seite, die nur ein Reload rettete. Die Freigabe hängt jetzt zusätzlich an einem einfachen Timer, der feuert, ob je ein Frame geliefert wird oder nicht. Geprüft, indem requestAnimationFrame komplett stillgelegt wurde.",
+    "note.5.text": "Das Intro hielt overflow:hidden und touch-action:none auf dem Dokument, solange es lief. Jeder Weg, der diese Sperre löste, lag in der Animation-Frame-Schleife — auch die Notbremse, die selbst eine Zeile dieser Schleife war. Alles, was die Schleife anhielt, hinterließ also eine gezeichnete, lesbare und dauerhaft nicht scrollbare Seite, die nur ein Reload rettete. Die Freigabe hängt jetzt zusätzlich an einem einfachen Timer, der feuert, ob je ein Frame geliefert wird oder nicht. Geprüft, indem requestAnimationFrame komplett stillgelegt wurde.",
     "note.6.title": "Silbentrennung bricht nur dort, wo das Wörterbuch liegt",
-    "note.6.text": "Ein Case-Titel trug hyphens:auto, eingeführt, damit lange deutsche Überschriften sauber umbrechen. Android Chrome liefert das Trennwörterbuch mit, Desktop-Linux meist nicht. Also trennte der Titel auf dem Telefon als FIDIC - fi- / dic.uz und sah auf jeder Maschine, auf der er gebaut wurde, perfekt aus. Beide Hälften passen bis 320px in ihre eigene Zeile - das Leerzeichen war immer der einzige gewünschte Umbruch.",
+    "note.6.text": "Ein Case-Titel trug hyphens:auto, eingeführt, damit lange deutsche Überschriften sauber umbrechen. Android Chrome liefert das Trennwörterbuch mit, Desktop-Linux meist nicht. Also trennte der Titel auf dem Telefon als FIDIC — fi- / dic.uz und sah auf jeder Maschine, auf der er gebaut wurde, perfekt aus. Beide Hälften passen bis 320px in ihre eigene Zeile — das Leerzeichen war immer der einzige gewünschte Umbruch.",
     "note.7.title": "Der Codec, der auf dem Papier gewann",
-    "note.7.text": "AV1 wurde für alle drei Filme neben H.264 kodiert. Es verkleinerte die beiden 1080p30-Clips um bis zu 78% - und fiel beim 60-fps-Film größer aus als H.264, weil eine einzelne CRF-Zahl über Codecs hinweg nicht denselben Qualitätspunkt trifft. Es auszuliefern hätte Feintuning pro Datei plus Formataushandlung in vier Komponenten bedeutet, für einen Gewinn, der sich bei einer von drei Dateien umkehrt und den iOS größtenteils nicht nutzen kann. Gemessen, dann verworfen.",
+    "note.7.text": "AV1 wurde für alle drei Filme neben H.264 kodiert. Es verkleinerte die beiden 1080p30-Clips um bis zu 78% — und fiel beim 60-fps-Film größer aus als H.264, weil eine einzelne CRF-Zahl über Codecs hinweg nicht denselben Qualitätspunkt trifft. Es auszuliefern hätte Feintuning pro Datei plus Formataushandlung in vier Komponenten bedeutet, für einen Gewinn, der sich bei einer von drei Dateien umkehrt und den iOS größtenteils nicht nutzen kann. Gemessen, dann verworfen.",
     "note.8.title": "Die Optimierung, die 42 KB kostete",
-    "note.8.text": "three.js zu einem dynamischen Import machen, damit Geräte ohne WebGL-Hintergrund auch den Download sparen. Es funktionierte - und der gemeinsame Chunk wuchs von 528 KB auf 674 KB, weil ein dynamischer Import den Bundler zwingt, den gesamten Namespace zu behalten, statt ihn zu tree-shaken. Das sind 42 KB mehr für jeden normalen Besucher, um einer Minderheit etwas zu sparen, und der Download rutschte in genau das Fenster, das den LCP bestimmt. Noch in derselben Stunde zurückgenommen.",
+    "note.8.text": "three.js zu einem dynamischen Import machen, damit Geräte ohne WebGL-Hintergrund auch den Download sparen. Es funktionierte — und der gemeinsame Chunk wuchs von 528 KB auf 674 KB, weil ein dynamischer Import den Bundler zwingt, den gesamten Namespace zu behalten, statt ihn zu tree-shaken. Das sind 42 KB mehr für jeden normalen Besucher, um einer Minderheit etwas zu sparen, und der Download rutschte in genau das Fenster, das den LCP bestimmt. Noch in derselben Stunde zurückgenommen.",
 
     "studio.cta.insight": "Wo KI hilft — und wo sie das falsche Werkzeug ist",
     "studio.cta.live": "Archiv öffnen",
@@ -1110,7 +1110,7 @@ export const ui = {
     "contact.text":
       "Verfügbar für ausgewählte Marketing-, Content-, SEO- und Premium-Web-Projekte. Sagen Sie mir, was Sie launchen.",
     "contact.email": "rodionbelousov@protonmail.com",
-    "contact.behance.label": "Behance - Creative Archive",
+    "contact.behance.label": "Behance — Creative Archive",
     "contact.location": "Wien, Österreich",
     "contact.cta": "Projekt starten",
 
@@ -1150,7 +1150,7 @@ export const ui = {
 
     // ── Footer ──────────────────────────────────────────────────────────────
     "footer.cta.eyebrow": "Verfügbar für ausgewählte Launches",
-    "footer.cta.title": "Marketing, Content, SEO und Web - als ein System gebaut.",
+    "footer.cta.title": "Marketing, Content, SEO und Web — als ein System gebaut.",
     "footer.cta.button": "Projekt starten",
     "footer.tagline": "Digital Marketer · Creative Developer · Wien",
     "footer.status": "Verfügbar für Projekte",
