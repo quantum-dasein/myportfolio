@@ -53,6 +53,31 @@ const strip = (html) =>
 
 const failures = [];
 
+// ── The one number the build itself knows ────────────────────────────────────
+// The colophon prints a route count. It said 25 while the site had grown past
+// thirty, and nothing could catch that: the value and its label are separate
+// elements, so grepping for "25 production routes" finds nothing even though
+// the page says exactly that. Here the two are read from the DOM and compared
+// with the pages actually on disk.
+const routeCount = pages.filter((file) => {
+  const rel = path.relative(dist, file);
+  return !rel.startsWith("404") && !rel.startsWith("google");
+}).length;
+
+for (const file of pages) {
+  const html = readFileSync(file, "utf8");
+  const printed = html.match(/<strong[^>]*data-i18n="studio\.metric\.1\.v"[^>]*>(\d+)<\/strong>/);
+  if (!printed) continue;
+  const claimed = Number(printed[1]);
+  if (claimed !== routeCount) {
+    failures.push(
+      `/${path.relative(dist, path.dirname(file)).replace(/\\/g, "/")}\n` +
+      `    route count: the colophon says ${claimed}, the build produced ${routeCount}\n` +
+      `    Update studio.metric.1.v in src/i18n/ui.ts (both languages).`,
+    );
+  }
+}
+
 for (const file of pages) {
   const url = "/" + path.relative(dist, path.dirname(file)).replace(/\\/g, "/");
   const text = strip(readFileSync(file, "utf8"));
@@ -71,5 +96,6 @@ if (unique.length) {
 }
 
 console.log(
-  `Fact audit passed: ${pages.length} pages clear of ${retired.length} retired strings (${declared} figures declared).`,
+  `Fact audit passed: ${pages.length} pages clear of ${retired.length} retired strings ` +
+  `(${declared} figures declared, ${routeCount} routes counted).`,
 );

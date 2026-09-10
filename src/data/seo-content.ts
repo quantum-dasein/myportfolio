@@ -1,3 +1,5 @@
+import { works } from "./works";
+
 export type SeoLang = "en" | "de";
 export type ServiceKey =
   | "websites"
@@ -61,6 +63,12 @@ export interface ServiceContent {
   /** Pages worth reading next. Rendered as a link list and, more to the point,
    *  what ties the niche pages to their parent in both directions. */
   siblings?: ServiceKey[];
+  /** Which row of the scope table this page is selling. These pages are the
+   *  ones that rank, and every one of them ended without a price or a way to
+   *  ask for one — the reader had to find the hub, then find their own scope
+   *  in it. Naming it here puts the number on the page and carries the choice
+   *  into both the picker and the contact form. */
+  scope?: "landing" | "site" | "film" | "shop" | "seo" | "platform" | "showreel";
 }
 
 const c = (en: string, de: string): LocalizedCopy => ({ en, de });
@@ -74,6 +82,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   // actually type ("website erstellen wien") rather than an industry term.
   websites: {
     key: "websites",
+    scope: "site",
     proofKind: "standard",
     cases: ["academy", "bridge"],
     paths: { en: "/en/website-development-vienna/", de: "/de/website-erstellen-wien/" },
@@ -115,6 +124,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   },
   "digital-marketing": {
     key: "digital-marketing",
+    scope: "site",
     proofKind: "evidence",
     cases: ["bridge", "fidic"],
     paths: { en: "/en/digital-marketing-vienna/", de: "/de/digital-marketing-wien/" },
@@ -154,6 +164,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   },
   "technical-seo": {
     key: "technical-seo",
+    scope: "seo",
     proofKind: "evidence",
     cases: ["bridge", "fidic"],
     paths: { en: "/en/technical-seo-vienna/", de: "/de/technical-seo-wien/" },
@@ -193,6 +204,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   },
   "creative-development": {
     key: "creative-development",
+    scope: "showreel",
     proofKind: "standard",
     cases: ["bridge", "fidic"],
     reel: ["lake-como-interior-film"],
@@ -215,7 +227,11 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       { title: c("Shipped, then maintained", "Ausgeliefert, dann gepflegt"), text: c("The interesting work starts after launch. This site keeps a public engineering log of what broke, how it was found and what it measured — including the changes that were measured and then thrown away. Read it before hiring anyone, including me.", "Die interessante Arbeit beginnt nach dem Launch. Diese Website führt ein öffentliches Engineering-Log darüber, was kaputtging, wie es gefunden wurde und was es gemessen hat — inklusive der Änderungen, die gemessen und dann verworfen wurden. Lesen Sie es, bevor Sie jemanden beauftragen, mich eingeschlossen.") },
     ],
     proof: [
-      { value: "11", label: c("interactive archive sectors", "interaktive Archiv-Sektoren"), note: c("one WebGL scene, nine works inside it", "eine WebGL-Szene, neun Arbeiten darin") },
+      // Counted, not typed. It said 11 for as long as the archive had eleven
+      // works in it; adding the Academy case made that a stale number nobody
+      // would have caught, because it is plausible either way — which is the
+      // whole failure mode this file's numbers are prone to.
+      { value: String(works.length), label: c("interactive archive sectors", "interaktive Archiv-Sektoren"), note: c("three case portals and nine 3D works", "drei Case-Portale und neun 3D-Arbeiten") },
       { value: "60 FPS", label: c("target for motion and WebGL experiences", "Zielwert für Motion- und WebGL-Erlebnisse"), note: c("measured on a mid-range phone, not a workstation", "auf einem Mittelklasse-Handy gemessen, nicht auf einer Workstation") },
       { value: "~3 s", label: c("before the WebGL chunk starts downloading at all", "bis der WebGL-Chunk überhaupt zu laden beginnt"), note: c("well past the window that decides LCP", "weit nach dem Fenster, das den LCP entscheidet") },
     ],
@@ -243,6 +259,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
   //  seam where this work normally falls apart.
   motion: {
     key: "motion",
+    scope: "film",
     proofKind: "production",
     // The two cases whose sites carry motion of their own — a background film
     // on one, CSS-only motion on the other. Not FIDIC: it is a text platform.
@@ -347,6 +364,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
 
   arztpraxis: {
     key: "arztpraxis",
+    scope: "site",
     proofKind: "standard",
     cases: ["academy", "bridge"],
     paths: { en: "/en/website-for-doctors-vienna/", de: "/de/website-arztpraxis-wien/" },
@@ -440,6 +458,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
 
   restaurant: {
     key: "restaurant",
+    scope: "site",
     proofKind: "standard",
     cases: ["academy", "bridge"],
     paths: { en: "/en/website-for-restaurants-vienna/", de: "/de/website-restaurant-wien/" },
@@ -533,6 +552,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
 
   handwerker: {
     key: "handwerker",
+    scope: "site",
     proofKind: "standard",
     cases: ["academy", "bridge"],
     paths: { en: "/en/website-for-tradespeople-vienna/", de: "/de/website-handwerker-wien/" },

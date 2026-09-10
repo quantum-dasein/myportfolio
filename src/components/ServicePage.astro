@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import { insightContent, pick, serviceContent, type SeoLang, type ServiceKey } from "../data/seo-content";
 import { cases, type CaseId } from "../data/cases";
 import { works } from "../data/works";
+import { scopes, pickScope } from "../data/scopes";
 
 // Proper nouns, not translated.
 const caseName: Record<CaseId, string> = {
@@ -28,6 +29,13 @@ const faqSchema = { "@type": "FAQPage", mainEntity: service.faq.map((item) => ({
 // uses, served here as ordinary <video> behind their poster so nothing but the
 // poster downloads until a visitor presses play.
 const reel = (service.reel ?? []).map((id) => works.find((work) => work.id === id)).filter(Boolean) as typeof works;
+
+// The row of the price table this page is selling, read from the same file the
+// picker reads. These pages are what search sends people to, and every one of
+// them used to end on "all services & research" — a reader who wanted the
+// number had to go and find their own scope again.
+const scope = service.scope ? scopes.find((row) => row.id === service.scope) : undefined;
+const hub = de ? "/de/leistungen/" : "/services/";
 // VideoObject for each one. No `uploadDate`: it is not recorded anywhere real,
 // and Google would rather have an incomplete node than an invented date.
 const videoSchema = reel.map((film) => ({
@@ -229,6 +237,40 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       <div class="u-container"><span class="eyebrow" data-reveal>FAQ</span>{service.faq.map((item) => <details data-reveal><summary>{pick(item.question, lang)}</summary><p>{pick(item.answer, lang)}</p></details>)}</div>
     </section>
 
+    {scope && (
+      <section class="service-cta">
+        <div class="u-container">
+          <span class="eyebrow" data-reveal>{de ? "WAS ES KOSTET" : "WHAT IT COSTS"}</span>
+          <h2 data-sy-reveal="words">{pickScope(scope.label, lang)}</h2>
+          <dl class="cta-figures" data-reveal>
+            <div>
+              <dt>{de ? "Zeitrahmen" : "Timeline"}</dt>
+              <dd>{pickScope(scope.time, lang)}</dd>
+            </div>
+            {scope.price && (
+              <div>
+                <dt>{de ? "Ab" : "From"}</dt>
+                <dd>{pickScope(scope.price, lang)}</dd>
+              </div>
+            )}
+            <div>
+              <dt>{de ? "Antwort" : "Reply"}</dt>
+              <dd>{de ? "Binnen eines Tages" : "Within a day"}</dd>
+            </div>
+          </dl>
+          <p data-reveal>{pickScope(scope.needs, lang)}</p>
+          <div class="cta-links" data-reveal>
+            <a class="cta-primary" href={`/contact?project=${scope.id}`} data-cursor="OPEN" data-magnetic>
+              {de ? "Festpreis anfragen" : "Get a fixed price"}<i class="ui-arrow" aria-hidden="true"></i>
+            </a>
+            <a class="cta-secondary" href={`${hub}?project=${scope.id}#scope`} data-cursor="VIEW">
+              {de ? "Alle Projektgrößen und Preise" : "Every project size, priced"}<i class="ui-arrow" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
+      </section>
+    )}
+
     <div class="service-outro">
       <div class="u-container">
         <a class="outro-link" href={de ? "/de/leistungen/" : "/services"} data-cursor="OPEN" data-magnetic>
@@ -390,6 +432,57 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
   @media (pointer: coarse) {
     .reel-play { backdrop-filter: none; }
   }
+
+  /* ── What it costs ─────────────────────────────────────────────────────── */
+  .service-cta h2 {
+    margin: 1.4rem 0 0;
+    font: 500 clamp(2.2rem, 4vw, 3.6rem)/1.02 var(--font-display);
+  }
+  .cta-figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 3.2rem;
+    margin: 2rem 0 1.6rem;
+  }
+  .cta-figures > div { position: relative; padding-left: 1rem; }
+  .cta-figures > div::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .2rem;
+    bottom: .2rem;
+    width: 1px;
+    background: rgba(255, 255, 255, .24);
+  }
+  .cta-figures dt {
+    font: .6rem var(--font-inter);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), .44);
+  }
+  .cta-figures dd { margin: .45rem 0 0; font: 500 1.5rem var(--font-display); }
+  .service-cta > .u-container > p {
+    max-width: 46rem;
+    color: rgba(var(--rgb-text), .66);
+    line-height: 1.6;
+  }
+  .cta-links { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2.2rem; }
+  .cta-primary,
+  .cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: .8rem;
+    padding: 1rem 1.7rem;
+    border-radius: 100px;
+    font: .74rem var(--font-inter);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    transition: opacity .25s ease, border-color .35s ease, gap .45s var(--ease-out-expo);
+  }
+  .cta-primary { background: var(--color-text); color: #0b0e12; }
+  .cta-primary:hover { opacity: .86; gap: 1.2rem; }
+  .cta-secondary { border: 1px solid rgba(255, 255, 255, .2); color: rgba(var(--rgb-text), .84); }
+  .cta-secondary:hover { border-color: rgba(255, 255, 255, .5); color: #fff; gap: 1.2rem; }
 
   /* ── Outro ─────────────────────────────────────────────────────────────── */
   .siblings { padding: clamp(3rem, 6vw, 5rem) 0 0; }

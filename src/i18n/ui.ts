@@ -361,7 +361,7 @@ export const ui = {
     "studio.title": "The proof is the page you're on.",
     "studio.lead":
       "Every claim here is testable by scrolling it. No template, no page builder — a hand-built Astro site with five bespoke real-time scenes, two languages, and an ambience that stays off the wire until you ask for it.",
-    "studio.metric.1.v": "25",
+    "studio.metric.1.v": "36",
     "studio.metric.1.l": "production routes",
     "studio.metric.2.v": "02",
     "studio.metric.2.l": "languages, zero routing hacks",
@@ -946,7 +946,7 @@ export const ui = {
     "studio.title": "Der Beweis ist die Seite, auf der du gerade bist.",
     "studio.lead":
       "Jede Behauptung hier lässt sich durch Scrollen überprüfen. Kein Template, kein Baukasten — eine handgebaute Astro-Website mit fünf eigenen Echtzeit-Szenen, zwei Sprachen und einer Klangkulisse, die erst über die Leitung geht, wenn du sie anforderst.",
-    "studio.metric.1.v": "25",
+    "studio.metric.1.v": "36",
     "studio.metric.1.l": "produktive Routen",
     "studio.metric.2.v": "02",
     "studio.metric.2.l": "Sprachen, null Routing-Hacks",

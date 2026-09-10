@@ -96,8 +96,12 @@ for (const page of pages) {
     checked++;
 
     const [rawPath, anchor] = href.split("#");
+    // A query string is not part of the route. /contact?project=film is the
+    // contact page carrying a choice, and this used to read it as a page named
+    // "contact?project=film" and report the site as broken.
+    const [pathOnly] = rawPath.split("?");
     // same-page anchor (href="#foo")
-    const targetPath = rawPath === "" ? from.replace(/index\.html$/, "") : rawPath;
+    const targetPath = pathOnly === "" ? from.replace(/index\.html$/, "") : pathOnly;
 
     if (!targetPath.startsWith("/")) {
       problems.push({ from, href, why: "relative link — expected an absolute path" });
