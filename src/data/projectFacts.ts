@@ -38,6 +38,14 @@ export const projectFacts: Record<string, ProjectFact> = {
     value: "16",
     note: "FIDIC.uz — contract tools and calculators.",
   },
+  fidicClauses: {
+    value: "27",
+    note: "FIDIC.uz — dissected clauses. Verified against the current public repository README.",
+  },
+  fidicGlossaryTerms: {
+    value: "26",
+    note: "FIDIC.uz — glossary terms. Verified against the current public repository README.",
+  },
   fidicTenders: {
     value: "2 900+",
     note: "FIDIC.uz — tender records. The pipeline adds to it every morning, so the site says 2 900+ rather than a figure that is wrong by the afternoon.",
@@ -75,6 +83,12 @@ export const retired: Array<{ text: string; why: string }> = [
   { text: "109 Routen", why: "Same, in German." },
   { text: "105 expert articles", why: "An early FIDIC draft. There are 117." },
   { text: "105 Fachartikel", why: "Same, in German." },
+  { text: "28 dissected clauses", why: "The current FIDIC.uz repository documents 27." },
+  { text: "28 dissected FIDIC clauses", why: "The current FIDIC.uz repository documents 27." },
+  { text: "28 aufgeschlüsselte Klauseln", why: "The current FIDIC.uz repository documents 27." },
+  { text: "28 aufgeschlüsselte FIDIC-Klauseln", why: "The current FIDIC.uz repository documents 27." },
+  { text: "25 glossary terms", why: "The current FIDIC.uz repository documents 26." },
+  { text: "25 Glossarbegriffe", why: "The current FIDIC.uz repository documents 26." },
   { text: "Three disciplines", why: "The section lists four." },
   { text: "Drei Disziplinen", why: "Same, in German." },
   { text: "one of the three", why: "There are four disciplines." },

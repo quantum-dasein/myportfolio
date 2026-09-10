@@ -150,33 +150,6 @@ const selectedWork = [
     </div>
   </section>
 
-  <!-- ── The objection, answered before it is raised ────────────────────── -->
-  <section class="section objection" id="objection">
-    <div class="u-container section-grid">
-      <span class="s-idx">02 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
-      <div>
-        <h2 class="s-title obj-title" data-sy-reveal="words" data-i18n="objection.title">{t("objection.title")}</h2>
-        <p class="s-lead" data-sy-reveal="lines" data-i18n="objection.text">{t("objection.text")}</p>
-
-        <div class="obj-rows">
-          {
-            [1, 2, 3].map((n) => (
-              <article class="obj-row" data-reveal>
-                <h3 data-i18n={`objection.${n}.title`}>{tk(`objection.${n}.title`)}</h3>
-                <p data-i18n={`objection.${n}.text`}>{tk(`objection.${n}.text`)}</p>
-              </article>
-            ))
-          }
-        </div>
-
-        <a class="obj-cta" href="/notes" data-cursor="READ" data-magnetic>
-          <span data-i18n="objection.cta">{t("objection.cta")}</span>
-          <i class="ui-arrow" aria-hidden="true"></i>
-        </a>
-      </div>
-    </div>
-  </section>
-
   <!-- The CV used to be two full sections here AND the whole of the profile
        page, word for word. It belongs on the profile page: that page exists to
        be the professional record, and repeating it here made both look like
@@ -184,7 +157,7 @@ const selectedWork = [
        about the work. -->
   <section class="section record" id="record">
     <div class="u-container section-grid">
-      <span class="s-idx">03 - <span data-i18n="record.label">{t("record.label")}</span></span>
+      <span class="s-idx">02 - <span data-i18n="record.label">{t("record.label")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="record.title">{t("record.title")}</h2>
         <p class="record-text" data-sy-reveal="lines" data-i18n="record.text">{t("record.text")}</p>
@@ -206,7 +179,7 @@ const selectedWork = [
   <section class="section work" id="work">
     <div class="u-container work-composition">
       <div class="work-intro">
-        <span class="s-idx">04 - <span data-i18n="work.label">{t("work.label")}</span></span>
+        <span class="s-idx">03 - <span data-i18n="work.label">{t("work.label")}</span></span>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
         <p class="s-lead" data-sy-reveal="lines" data-i18n="work.text">{t("work.text")}</p>
         <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
@@ -302,6 +275,35 @@ const selectedWork = [
     </div>
   </section>
 
+  <!-- The AI objection works better after the work has supplied evidence for
+       the answer. Before the cases it introduced a doubt the visitor might not
+       have had yet; here it reads as a position backed by the projects above. -->
+  <section class="section objection" id="objection">
+    <div class="u-container section-grid">
+      <span class="s-idx">04 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
+      <div>
+        <h2 class="s-title obj-title" data-sy-reveal="words" data-i18n="objection.title">{t("objection.title")}</h2>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="objection.text">{t("objection.text")}</p>
+
+        <div class="obj-rows">
+          {
+            [1, 2, 3].map((n) => (
+              <article class="obj-row" data-reveal>
+                <h3 data-i18n={`objection.${n}.title`}>{tk(`objection.${n}.title`)}</h3>
+                <p data-i18n={`objection.${n}.text`}>{tk(`objection.${n}.text`)}</p>
+              </article>
+            ))
+          }
+        </div>
+
+        <a class="obj-cta" href="/notes" data-cursor="READ" data-magnetic>
+          <span data-i18n="objection.cta">{t("objection.cta")}</span>
+          <i class="ui-arrow" aria-hidden="true"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Services & Research existed only in the header until now. This is the
        on-page entry: a teaser that reads as part of the story and hands off to
        the /services hub. Card hrefs come from the dictionary, so they follow
@@ -369,7 +371,7 @@ const selectedWork = [
   <section class="portal" id="archive">
     <div class="u-container portal-inner">
       <div>
-        <span class="s-idx">06 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <span class="s-idx">07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
         <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
         <p class="portal-text" data-sy-reveal="lines" data-i18n="portal.text">{t("portal.text")}</p>
       </div>
@@ -383,7 +385,7 @@ const selectedWork = [
 
   <section class="section contact legacy-ending" id="legacy-contact">
     <div class="u-container contact-grid">
-      <span class="s-idx">07 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+      <span class="s-idx">08 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
       <div>
         <h2 class="contact-title" data-sy-reveal="words" data-i18n="contact.title">{t("contact.title")}</h2>
         <p class="s-lead" data-sy-reveal="lines" data-i18n="contact.text">{t("contact.text")}</p>

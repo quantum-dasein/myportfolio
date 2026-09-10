@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { fidicSearchCopy } from "../data/fidicSearch";
+import { projectFacts } from "../data/projectFacts";
 
 export const languages = {
   en: "English",
@@ -282,7 +283,7 @@ export const ui = {
     "case.fidic.metric.languages": "complete languages",
     "case.fidic.metric.schema": "schema.org types in the markup",
     "case.fidic.layer.knowledge.title": "Knowledge graph",
-    "case.fidic.layer.knowledge.text": "39 articles per language, 28 dissected FIDIC clauses, 25 glossary terms and MDB project cases — one typed content model, three complete languages, no partial translation.",
+    "case.fidic.layer.knowledge.text": `39 articles per language, ${projectFacts.fidicClauses.value} dissected FIDIC clauses, ${projectFacts.fidicGlossaryTerms.value} glossary terms and MDB project cases — one typed content model, three complete languages, no partial translation.`,
     "case.fidic.layer.books.title": "Nine-book atlas",
     "case.fidic.layer.books.text": "Red through White Book profiles translate scope, risk and applicability into a visual contract library.",
     "case.fidic.layer.tools.title": "Professional workflows",
@@ -363,7 +364,7 @@ export const ui = {
     "hero.trust.metric": "organic growth",
 
     // ── Meta case: this very site (/work/studio) ────────────────────────────
-    "studio.eyebrow": "Case / 03 — This site",
+    "studio.eyebrow": "Studio / Technical case — This site",
     "studio.title": "The proof is the page you're on.",
     "studio.lead":
       "Every claim here is testable by scrolling it. No template, no page builder — a hand-built Astro site with five bespoke real-time scenes, two languages, and an ambience that stays off the wire until you ask for it.",
@@ -871,7 +872,7 @@ export const ui = {
     "case.fidic.metric.languages": "vollständige Sprachen",
     "case.fidic.metric.schema": "schema.org-Typen im Markup",
     "case.fidic.layer.knowledge.title": "Knowledge Graph",
-    "case.fidic.layer.knowledge.text": "39 Artikel pro Sprache, 28 aufgeschlüsselte FIDIC-Klauseln, 25 Glossarbegriffe und MDB-Projektfälle — ein typisiertes Content-Modell, drei vollständige Sprachen, keine Teilübersetzung.",
+    "case.fidic.layer.knowledge.text": `39 Artikel pro Sprache, ${projectFacts.fidicClauses.de ?? projectFacts.fidicClauses.value} aufgeschlüsselte FIDIC-Klauseln, ${projectFacts.fidicGlossaryTerms.de ?? projectFacts.fidicGlossaryTerms.value} Glossarbegriffe und MDB-Projektfälle — ein typisiertes Content-Modell, drei vollständige Sprachen, keine Teilübersetzung.`,
     "case.fidic.layer.books.title": "Atlas aus neun Books",
     "case.fidic.layer.books.text": "Profile vom Red bis White Book übersetzen Scope, Risiko und Einsatzgebiet in eine visuelle Vertragsbibliothek.",
     "case.fidic.layer.tools.title": "Professionelle Workflows",
@@ -950,7 +951,7 @@ export const ui = {
     "hero.trust.metric": "organisches Wachstum",
 
     // ── Meta case: this very site (/work/studio) ────────────────────────────
-    "studio.eyebrow": "Case / 03 — Diese Website",
+    "studio.eyebrow": "Studio / Technischer Case — Diese Website",
     "studio.title": "Der Beweis ist die Seite, auf der du gerade bist.",
     "studio.lead":
       "Jede Behauptung hier lässt sich durch Scrollen überprüfen. Kein Template, kein Baukasten — eine handgebaute Astro-Website mit fünf eigenen Echtzeit-Szenen, zwei Sprachen und einer Klangkulisse, die erst über die Leitung geht, wenn du sie anforderst.",
