@@ -26,7 +26,7 @@ export interface Offer {
 export const pricing: Record<OfferId, Offer> = {
   landing: { from: 590 },
   site: { from: 1190 },
-  film: { from: 890 },
+  film: { from: 190 },
   shop: { from: 2290 },
   seo: { from: 390, monthly: true },
   platform: { from: 3900 },

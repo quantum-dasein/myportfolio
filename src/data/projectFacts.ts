@@ -91,6 +91,8 @@ export const retired: Array<{ text: string; why: string }> = [
   { text: "25 Glossarbegriffe", why: "The current FIDIC.uz repository documents 26." },
   { text: "Three disciplines", why: "The section lists four." },
   { text: "Drei Disziplinen", why: "Same, in German." },
+  { text: "Four disciplines", why: "Video is now a fifth standalone service." },
+  { text: "Vier Disziplinen", why: "Same, in German." },
   { text: "one of the three", why: "There are four disciplines." },
   { text: "einer der drei", why: "Same, in German." },
   { text: "Five scenes", why: "Six systems are listed, and two of them are not scenes." },

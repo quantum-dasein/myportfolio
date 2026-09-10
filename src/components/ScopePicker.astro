@@ -425,6 +425,21 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
   @media (max-width: 560px) {
     .sc-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .sc-headline { gap: 1.1rem 1.8rem; }
+    .sc-headline > div { min-width: 0; }
+    .sc-headline > :first-child {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+    }
+    .sc-headline > :first-child .sc-value {
+      max-width: 100%;
+      font-size: clamp(1.65rem, 8vw, 2.2rem);
+      line-height: 1.08;
+      overflow-wrap: anywhere;
+      text-wrap: balance;
+    }
+    .sc-headline > :not(:first-child) { flex: 1 1 7.5rem; }
+    .sc-value { overflow-wrap: anywhere; }
   }
 </style>
 

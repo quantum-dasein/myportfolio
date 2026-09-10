@@ -79,25 +79,25 @@ export const scopes: Scope[] = [
     needs: copy("Finished content, or a list of what the site has to say.", "Fertige Inhalte — oder eine Liste dessen, was die Website sagen soll."),
     proof: { text: copy("What that looks like", "Wie das aussieht"), href: copy("/en/website-development-vienna/", "/de/website-erstellen-wien/") },
   },
-  // The film. It is here because the site was selling six web products while
-  // three finished 3D films sat in the archive with no way to order one — so
-  // anyone who wanted the thing had to guess whether it was even on offer.
+  // Video starts with the ordinary job people actually ask for — one short or
+  // reel cut from existing footage — and keeps the full 3D production as the
+  // ceiling rather than making it look like the minimum engagement.
   {
     id: "film",
     price: priceOf("film"),
-    outcome: copy("A film of the thing, before the thing exists.", "Ein Film der Sache, bevor es die Sache gibt."),
-    label: copy("3D film or animation", "3D-Film oder Animation"),
-    size: copy("Product, interior or explainer", "Produkt, Interieur oder Erklärvideo"),
-    time: copy("1–2 weeks", "1–2 Wochen"),
+    outcome: copy("One finished video, cut for where people will watch it.", "Ein fertiges Video, geschnitten für den Ort, an dem es gesehen wird."),
+    label: copy("Shorts, reels & video", "Shorts, Reels & Video"),
+    size: copy("Editing, motion or full 3D", "Schnitt, Motion oder komplettes 3D"),
+    time: copy("From 1 day", "Ab 1 Tag"),
     field: 0.33,
     gets: [
-      copy("Modelled, lit and rendered in Cinema 4D and Redshift — from drawings, CAD or photographs", "Modelliert, ausgeleuchtet und gerendert in Cinema 4D und Redshift — aus Zeichnungen, CAD oder Fotos"),
-      copy("Cut, graded and titled in After Effects and Premiere, sound assembled", "Geschnitten, gegradet und betitelt in After Effects und Premiere, Ton montiert"),
-      copy("A master plus the cuts the destination needs — web loop, 9:16, 1:1", "Ein Master plus die Fassungen, die das Ziel braucht — Web-Loop, 9:16, 1:1"),
-      copy("Encoded and built into the page, if the page is one of mine", "Encodiert und in die Seite eingebaut, wenn die Seite von mir ist"),
+      copy("Clean editing from footage you already have — pacing, colour, sound and the parts that should be cut", "Sauberer Schnitt aus vorhandenem Material — Rhythmus, Farbe, Ton und alles, was raus muss"),
+      copy("Captions, on-screen type and simple motion for a short, reel or paid social ad", "Untertitel, Typo und einfache Motion für Short, Reel oder Social Ad"),
+      copy("The versions the channel needs — 9:16, 1:1, 16:9, web loop and a clean master", "Die Fassungen für den Kanal — 9:16, 1:1, 16:9, Web-Loop und sauberer Master"),
+      copy("2D explainers or full Cinema 4D and Redshift production when the idea needs more", "2D-Erklärvideo oder komplette Cinema-4D- und Redshift-Produktion, wenn die Idee mehr braucht"),
     ],
-    needs: copy("What it has to show, plus any drawings, CAD or photographs. If none exist, dimensions are enough to start.", "Was gezeigt werden soll — dazu Zeichnungen, CAD-Daten oder Fotos. Wenn es nichts davon gibt, reichen Maße für den Start."),
-    proof: { text: copy("Films and 3D work", "Filme und 3D-Arbeiten"), href: copy("/en/3d-animation-video-vienna/", "/de/3d-animation-video-wien/") },
+    needs: copy("The footage or idea and where it will run. For 3D, drawings, CAD, photographs or dimensions are enough to start.", "Material oder Idee und der Zielkanal. Für 3D reichen Zeichnungen, CAD, Fotos oder Maße als Start."),
+    proof: { text: copy("Video, motion and 3D work", "Video-, Motion- und 3D-Arbeiten"), href: copy("/en/3d-animation-video-vienna/", "/de/3d-animation-video-wien/") },
   },
   {
     id: "shop",

@@ -26,8 +26,8 @@ export const ui = {
     "accessibility.skip-to-content": "Skip to content",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
-    "meta.title": "Web Developer & 3D Motion in Vienna — Websites, SEO, Film | Rodion Belousov",
-    "meta.description": "Websites, SEO and 3D film in Vienna by Rodion Belousov. A clear business site live in about a week — fixed price, fast, yours to keep — plus product films, WebGL and motion when a brand needs more than a page.",
+    "meta.title": "Websites & Video in Vienna — Reels, SEO, 3D | Rodion Belousov",
+    "meta.description": "Landing pages, business websites, shorts, reels, video editing and SEO in Vienna — from one small fixed-price job to full 3D production and multilingual platforms.",
 
     // ── Navigation ──────────────────────────────────────────────────────────
     "nav.intro": "Intro",
@@ -44,21 +44,28 @@ export const ui = {
     "lang.switch": "Switch language",
 
     // ── Hero ────────────────────────────────────────────────────────────────
-    "hero.status": "Available for select projects · 2026",
-    "hero.eyebrow": "Websites · SEO · 3D & Film · Vienna",
-    "hero.title.1": "Websites that load fast,",
-    "hero.title.2": "and get found.",
-    "hero.subtitle": "I'm Rodion Belousov — websites in Vienna, and the 3D and film that go on them. Most jobs are straightforward: a clear business site, live in about a week, fixed price, fast and yours to keep. When a brand needs more than a page, the same hands build the interactive kind and render the films — two live multilingual platforms and nine 3D works are below.",
-    "hero.cta.primary": "View selected work",
-    "hero.cta.secondary": "Start a project",
+    "hero.status": "Small projects welcome · Vienna / remote",
+    "hero.eyebrow": "Websites · Shorts & Reels · SEO · 3D",
+    "hero.title.1": "Websites that get found",
+    "hero.title.2": "Video people remember",
+    "hero.subtitle": "I'm Rodion Belousov in Vienna. Come for one landing page, one short or reel, or a practical fix to an existing site. If the job grows, the same person can take it through SEO, a full multilingual platform, motion and 3D — without agency handoffs or agency overhead.",
+    "hero.cta.primary": "See services & prices",
+    "hero.cta.primary.href": "/services/#scope",
+    "hero.cta.secondary": "Tell me what you need",
+    "hero.readout.start.label": "Start with",
+    "hero.readout.start.value": "LANDING / REEL / FIX",
+    "hero.readout.web.label": "Web",
+    "hero.readout.web.value": "SITE / SHOP / SEO",
+    "hero.readout.video.label": "Video",
+    "hero.readout.video.value": "EDIT / MOTION / 3D",
     "hero.scroll": "Scroll",
 
     // ── About / Approach ────────────────────────────────────────────────────
     "about.label": "Approach",
     "about.title":
-      "One operator for the messy space between strategy and launch.",
+      "One person for the small job — and whatever it grows into.",
     "about.text":
-      "I work where marketing usually gets fragmented: positioning in one file, content in another, SEO somewhere else, and the website treated like decoration. My edge is connecting the whole chain — market logic, copy, search intent, campaign assets, motion and the final interface — with a Master's focus in International Marketing and Brand Management behind it.",
+      "Start with what has to ship now: one page, one reel, a menu, an SEO fix. Strategy, copy, editing, motion and development sit in one workflow, so a small job does not need agency overhead and a larger one does not fall apart across suppliers.",
 
     // ── The objection, said out loud ────────────────────────────────────────
     // Buyers are already asking it; a site that pretends otherwise reads as
@@ -74,15 +81,15 @@ export const ui = {
     "objection.3.title": "You can generate a fast site",
     "objection.3.text": "You cannot generate the person who notices, months later, that the site has quietly got slower — and who can tell you by how much, because it was being measured.",
     "objection.cta": "Read what actually broke",
-    "about.pillar.1.title": "Marketing Strategy",
+    "about.pillar.1.title": "Websites & Shops",
     "about.pillar.1.text":
-      "Offer logic, audience insight, positioning and narrative — the strategic spine before anything becomes visual.",
-    "about.pillar.2.title": "Content & SEO",
+      "Landing pages and clear business sites first; multilingual platforms and shops when the job genuinely needs them.",
+    "about.pillar.2.title": "SEO & Content",
     "about.pillar.2.text":
-      "Landing pages, expert articles, social assets, search structure and publishing systems that turn expertise into demand.",
-    "about.pillar.3.title": "Creative Development & Film",
+      "Practical fixes, landing copy, expert articles, social assets and search structures that can be measured after launch.",
+    "about.pillar.3.title": "Video, Reels & 3D",
     "about.pillar.3.text":
-      "Astro, Three.js and GSAP where a brand needs a surface that feels alive and still sells — and, when the argument needs a picture that moves, the film itself, in Cinema 4D and Redshift.",
+      "One vertical edit, a 2D explainer or a complete Cinema 4D production — cut and delivered for the screen where it has to work.",
 
     // ── Experience ──────────────────────────────────────────────────────────
     "record.label": "RECORD",
@@ -343,11 +350,11 @@ export const ui = {
 
     // ── Motion & 3D gallery ─────────────────────────────────────────────────
     "gallery.label": "3D & Film",
-    "gallery.title": "The other half of this practice.",
+    "gallery.title": "From one reel to full 3D.",
     "gallery.text":
-      "Product films, interiors and explainers — modelled and lit in Cinema 4D, rendered in Redshift, cut in After Effects and Premiere. Two years of it was made at Siemens, for a global audience. It is something you can order here, not only something to look at.",
+      "Shorts and social edits from existing footage, 2D explainers, product films and interiors — cut in After Effects and Premiere, with Cinema 4D and Redshift when the idea needs them. Two years of video work was made at Siemens for a global audience.",
     "gallery.cta": "View full gallery on Behance",
-    "gallery.service": "3D film and animation, priced",
+    "gallery.service": "Video, reels and 3D — from €190",
     "gallery.hint": "Drag to explore · Click to enter",
     "preloader.label": "Calibrating the void",
     "gallery.1.cat": "3D Product",
@@ -441,23 +448,23 @@ export const ui = {
     // The home page teases this section; /services is the section. They used to
     // share `services.title` and `services.lead` word for word, so a visitor who
     // clicked through read the same two sentences twice.
-    "services.teaser.title": "Seven sizes of job. One way of working.",
+    "services.teaser.title": "Seven ways to start. No minimum project.",
     "services.teaser.text":
-      "From a landing page to a platform in three languages — the same person writes it, builds it and answers for it afterwards. Prices and timelines are on the services page, without a form.",
-    "services.eyebrow": "Services & Research / Vienna",
-    "services.title": "What it is, and what it costs.",
-    "services.lead": "Pick the size of the job below and you get the timeline and a starting price without filling in anything. Most of the work is the small end of that list — a clear site, quickly, at a price agreed up front. The rest is what the same person can do when a project needs more.",
+      "One landing page, one reel, a practical SEO fix — or a platform in three languages. Starting prices and timelines are visible before you fill in a form.",
+    "services.eyebrow": "Websites · Video · SEO / Vienna",
+    "services.title": "One page, one reel, or the whole system.",
+    "services.lead": "Start with the thing that has to ship now. A landing page, a clean vertical edit or a practical SEO fix is a complete project here — not a lead-in to a larger package. If you need the full site, shop, platform or 3D production, that is here too.",
     "services.scope.label": "What you need",
-    "services.scope.title": "Seven sizes of job, priced.",
-    "services.scope.lead": "Starting prices, not quotes: the real number is fixed within a day once the scope is clear. No form and no call needed to see this.",
+    "services.scope.title": "Seven useful sizes, no minimum project.",
+    "services.scope.lead": "Starting prices, not quotes: the real number is fixed within a day once the scope is clear. One reel is as valid a project as a platform.",
     "services.scope.note": "Not on the list, or not sure which one it is? Write anyway — describing it badly is fine, sorting it out is my job.",
     "services.scope.cta": "Get a fixed price",
     "services.carried.label": "You picked",
     "services.disciplines.label": "The disciplines behind it",
 
-    // ── /services hub: how the three disciplines combine, plus FAQ ──────────
+    // ── /services hub: how the five disciplines combine, plus FAQ ──────────
     "services.how.label": "How it works together",
-    "services.how.title": "Four disciplines, one delivery.",
+    "services.how.title": "Five disciplines, one delivery.",
     "services.how.lead": "Split across separate suppliers, these contradict each other: the positioning does not survive production, the search structure gets designed over, and nobody owns the result. Run together they compound, and there is one person to ask when something breaks.",
     "services.how.1.title": "Scope before pixels",
     "services.how.1.text": "Written scope first, including what is deliberately not being built. Deciding a client needs one verifiable proposition rather than eleven more pages is the highest-leverage call on a project, and the cheapest moment to make it is before anything becomes visual.",
@@ -469,8 +476,8 @@ export const ui = {
     "services.how.4.text": "Both live platforms here are still maintained rather than handed over and forgotten, which is the part of this that is hard to fake: a site that has been running for a year has either been looked after or it has quietly decayed, and it is visible either way.",
     "services.faq.label": "Questions",
     "services.faq.title": "Before you get in touch.",
-    "services.faq.1.q": "Can I book just one of them?",
-    "services.faq.1.a": "Yes, and often that is the right call — a technical SEO pass on an existing site, or a WebGL layer for a brand that already has its positioning settled. They are listed together because they compound, not because they are sold as a bundle.",
+    "services.faq.1.q": "Can I hire you for one small job?",
+    "services.faq.1.a": "Yes. One landing page, one reel, one edit or one technical SEO pass is a complete engagement. The larger capabilities are here for when they are useful, not as a minimum package you have to buy.",
     "services.faq.2.q": "What does a project cost?",
     "services.faq.2.a": "It depends on scope, and scope is the first thing we settle in writing. A focused audit-and-fix engagement is a different order of magnitude from a multilingual platform with a live data pipeline. You get a number before work starts, not a range that moves.",
     "services.faq.3.q": "How do we start?",
@@ -496,9 +503,9 @@ export const ui = {
     "services.4.text":
       "Astro, Three.js, GSAP and hand-written GLSL. Real-time 3D and motion that carry the brand without costing the Core Web Vitals.",
     "services.4.href": "/en/creative-development-vienna/",
-    "services.5.title": "3D & Film",
+    "services.5.title": "Video, Reels & 3D",
     "services.5.text":
-      "Product films, interiors and explainers in Cinema 4D and Redshift, cut in After Effects and Premiere — and encoded so the page that carries them still loads fast.",
+      "A single short from existing footage, ongoing social edits, 2D explainers or full Cinema 4D production — cut for the channel where people will watch it.",
     "services.5.href": "/en/3d-animation-video-vienna/",
 
     "research.label": "Research",
@@ -535,7 +542,7 @@ export const ui = {
     "contact.label": "Contact",
     "contact.title": "Let's build something worth remembering.",
     "contact.text":
-      "Available for selected marketing, content, SEO and premium web projects. Tell me what you're launching.",
+      "Small jobs welcome: one landing page, one reel, an SEO fix — or a full site, campaign or 3D production. Tell me what needs to be finished.",
     "contact.email": "rodionbelousov@protonmail.com",
     "contact.behance.label": "Behance — Creative Archive",
     "contact.location": "Vienna, Austria",
@@ -548,7 +555,7 @@ export const ui = {
     "form.what.label": "What do you need?",
     "form.what.landing": "A landing page",
     "form.what.site": "A business website",
-    "form.what.film": "A 3D film or animation",
+    "form.what.film": "A short, reel, video edit or 3D film",
     "form.what.shop": "An online shop",
     "form.what.seo": "SEO on a site I already have",
     "form.what.platform": "A web app or platform",
@@ -576,10 +583,10 @@ export const ui = {
     "form.privacy": "Only used to answer you. Not passed on, not added to any list.",
 
     // ── Footer ──────────────────────────────────────────────────────────────
-    "footer.cta.eyebrow": "Available for selected launches",
-    "footer.cta.title": "Marketing, content, SEO and web — built as one system.",
-    "footer.cta.button": "Start a project",
-    "footer.tagline": "Digital Marketer · Creative Developer · Vienna",
+    "footer.cta.eyebrow": "Small projects welcome",
+    "footer.cta.title": "One page, one reel, or the whole system.",
+    "footer.cta.button": "Tell me what you need",
+    "footer.tagline": "Websites · Video · SEO · 3D · Vienna",
     "footer.status": "Available for projects",
     "footer.nav.label": "Navigate",
     "footer.more.label": "More",
@@ -619,8 +626,8 @@ export const ui = {
     "accessibility.skip-to-content": "Zum Inhalt springen",
 
     // ── Meta / SEO ──────────────────────────────────────────────────────────
-    "meta.title": "Webentwickler & 3D-Motion in Wien — Websites, SEO, Film | Rodion Belousov",
-    "meta.description": "Websites, SEO und 3D-Film in Wien von Rodion Belousov. Eine klare Unternehmens-Website in etwa einer Woche live — Festpreis, schnell, Ihr Eigentum — dazu Produktfilme, WebGL und Motion, wenn eine Marke mehr braucht als eine Seite.",
+    "meta.title": "Websites & Video in Wien — Reels, SEO, 3D | Rodion Belousov",
+    "meta.description": "Landingpages, Unternehmens-Websites, Shorts, Reels, Videoschnitt und SEO in Wien — vom kleinen Festpreis-Auftrag bis zur kompletten 3D-Produktion und mehrsprachigen Plattform.",
 
     // ── Navigation ──────────────────────────────────────────────────────────
     "nav.intro": "Intro",
@@ -637,20 +644,27 @@ export const ui = {
     "lang.switch": "Sprache wechseln",
 
     // ── Hero ────────────────────────────────────────────────────────────────
-    "hero.status": "Verfügbar für ausgewählte Projekte · 2026",
-    "hero.eyebrow": "Websites · SEO · 3D & Film · Wien",
-    "hero.title.1": "Websites, die schnell laden,",
-    "hero.title.2": "und gefunden werden.",
-    "hero.subtitle": "Ich bin Rodion Belousov — Websites in Wien, und das 3D und der Film, die darauf laufen. Die meisten Aufträge sind unkompliziert: eine klare Unternehmens-Website, in etwa einer Woche live, zum Festpreis, schnell und Ihr Eigentum. Braucht eine Marke mehr als eine Seite, bauen dieselben Hände die interaktive Variante und rendern die Filme — zwei laufende mehrsprachige Plattformen und neun 3D-Arbeiten finden Sie unten.",
-    "hero.cta.primary": "Ausgewählte Arbeiten",
-    "hero.cta.secondary": "Projekt starten",
+    "hero.status": "Kleine Aufträge willkommen · Wien / remote",
+    "hero.eyebrow": "Websites · Shorts & Reels · SEO · 3D",
+    "hero.title.1": "Websites, die gefunden werden",
+    "hero.title.2": "Video, das im Kopf bleibt",
+    "hero.subtitle": "Ich bin Rodion Belousov in Wien. Sie können mit einer Landingpage, einem Short oder Reel oder einem konkreten Fix an einer bestehenden Website kommen. Wird der Auftrag größer, begleite ich ihn weiter durch SEO, mehrsprachige Plattform, Motion und 3D — ohne Agenturübergaben und Agentur-Overhead.",
+    "hero.cta.primary": "Leistungen & Preise",
+    "hero.cta.primary.href": "/de/leistungen/#scope",
+    "hero.cta.secondary": "Sagen Sie, was Sie brauchen",
+    "hero.readout.start.label": "Starten mit",
+    "hero.readout.start.value": "LANDING / REEL / FIX",
+    "hero.readout.web.label": "Web",
+    "hero.readout.web.value": "WEBSITE / SHOP / SEO",
+    "hero.readout.video.label": "Video",
+    "hero.readout.video.value": "SCHNITT / MOTION / 3D",
     "hero.scroll": "Scrollen",
 
     // ── About / Approach ────────────────────────────────────────────────────
     "about.label": "Ansatz",
-    "about.title": "Ein Operator für den Raum zwischen Strategie und Launch.",
+    "about.title": "Eine Person für den kleinen Auftrag — und alles, was daraus wächst.",
     "about.text":
-      "Die meisten Projekte verlieren ihre Schärfe zwischen Business-Idee, Content-Plan und fertiger Website. Ich schließe diese Lücke. Mit Master-Fokus auf International Marketing und Brand Management sowie Erfahrung bei Siemens, im Consulting und in eigenen Builds verbinde ich Marktlogik mit Copy, Search Intent, Kampagnen und Interface.",
+      "Starten Sie mit dem, was jetzt fertig werden muss: einer Seite, einem Reel, einer Speisekarte oder einem SEO-Fix. Strategie, Text, Schnitt, Motion und Entwicklung laufen in einem Workflow — ohne Agentur-Overhead beim kleinen Auftrag und ohne Übergabeverluste beim großen.",
 
     // ── Der Einwand, laut ausgesprochen ─────────────────────────────────────
     "objection.label": "Die naheliegende Frage",
@@ -663,15 +677,15 @@ export const ui = {
     "objection.3.title": "Eine schnelle Seite lässt sich generieren",
     "objection.3.text": "Nicht generieren lässt sich die Person, die Monate später bemerkt, dass die Seite still langsamer geworden ist — und die sagen kann, um wie viel, weil gemessen wurde.",
     "objection.cta": "Nachlesen, was wirklich kaputtging",
-    "about.pillar.1.title": "Marketing-Strategie",
+    "about.pillar.1.title": "Websites & Shops",
     "about.pillar.1.text":
-      "Angebotslogik, Zielgruppenverständnis, Positionierung und Narrativ — die strategische Wirbelsäule, bevor etwas visuell wird.",
+      "Landingpages und klare Unternehmens-Websites zuerst; mehrsprachige Plattformen und Shops, wenn der Auftrag sie wirklich braucht.",
     "about.pillar.2.title": "Content & SEO",
     "about.pillar.2.text":
-      "Landingpages, Fachartikel, Social Assets, Suchstruktur und Publishing-Systeme, die Expertise in Nachfrage verwandeln.",
-    "about.pillar.3.title": "Creative Development & Film",
+      "Konkrete Fixes, Landingpage-Texte, Fachartikel, Social Assets und Suchstrukturen, die sich nach dem Launch messen lassen.",
+    "about.pillar.3.title": "Video, Reels & 3D",
     "about.pillar.3.text":
-      "Astro, Three.js und GSAP, wenn ein Projekt eine hochwertige digitale Oberfläche braucht — und, wenn das Argument ein bewegtes Bild braucht, den Film selbst, in Cinema 4D und Redshift.",
+      "Ein Hochformat-Schnitt, ein 2D-Erklärvideo oder eine komplette Cinema-4D-Produktion — für den Bildschirm geliefert, auf dem sie funktionieren muss.",
 
     // ── Experience ──────────────────────────────────────────────────────────
     "record.label": "WERDEGANG",
@@ -932,11 +946,11 @@ export const ui = {
 
     // ── Motion & 3D gallery ─────────────────────────────────────────────────
     "gallery.label": "3D & Film",
-    "gallery.title": "Die andere Hälfte dieser Arbeit.",
+    "gallery.title": "Vom einzelnen Reel bis zur kompletten 3D-Produktion.",
     "gallery.text":
-      "Produktfilme, Interieurs und Erklärvideos — modelliert und ausgeleuchtet in Cinema 4D, gerendert in Redshift, geschnitten in After Effects und Premiere. Zwei Jahre davon entstanden bei Siemens, für ein globales Publikum. Das ist bestellbar, nicht nur ansehbar.",
+      "Shorts und Social-Schnitte aus vorhandenem Material, 2D-Erklärvideos, Produktfilme und Interieurs — geschnitten in After Effects und Premiere, mit Cinema 4D und Redshift, wenn die Idee sie braucht. Zwei Jahre Videoarbeit entstanden bei Siemens für ein globales Publikum.",
     "gallery.cta": "Ganze Galerie auf Behance ansehen",
-    "gallery.service": "3D-Film und Animation, mit Preis",
+    "gallery.service": "Video, Reels und 3D — ab 190 €",
     "gallery.hint": "Ziehen zum Entdecken · Klick zum Eintreten",
     "preloader.label": "Kalibriere die Leere",
     "gallery.1.cat": "3D-Produkt",
@@ -1023,23 +1037,23 @@ export const ui = {
     "studio.cta.insight": "Wo KI hilft — und wo sie das falsche Werkzeug ist",
     "studio.cta.live": "Archiv öffnen",
 
-    "services.teaser.title": "Sieben Projektgrößen. Eine Arbeitsweise.",
+    "services.teaser.title": "Sieben Wege zu starten. Kein Mindestprojekt.",
     "services.teaser.text":
-      "Von der Landingpage bis zur Plattform in drei Sprachen — dieselbe Person schreibt sie, baut sie und steht danach dafür gerade. Preise und Zeitrahmen stehen auf der Leistungsseite, ohne Formular.",
-    "services.eyebrow": "Leistungen & Research / Wien",
-    "services.title": "Was es ist — und was es kostet.",
-    "services.lead": "Wählen Sie unten die Größe des Projekts und Sie sehen Zeitrahmen und Startpreis, ohne irgendetwas auszufüllen. Der größte Teil der Arbeit ist das kleine Ende dieser Liste — eine klare Website, schnell, zum vorab vereinbarten Preis. Der Rest ist das, was dieselbe Person kann, wenn ein Projekt mehr braucht.",
+      "Eine Landingpage, ein Reel, ein konkreter SEO-Fix — oder eine Plattform in drei Sprachen. Startpreise und Zeitrahmen sehen Sie, bevor Sie ein Formular ausfüllen.",
+    "services.eyebrow": "Websites · Video · SEO / Wien",
+    "services.title": "Eine Seite, ein Reel oder das ganze System.",
+    "services.lead": "Starten Sie mit dem, was jetzt fertig werden muss. Eine Landingpage, ein sauberer Hochformat-Schnitt oder ein konkreter SEO-Fix ist hier ein vollständiger Auftrag — kein Einstieg in ein größeres Paket. Brauchen Sie Website, Shop, Plattform oder 3D-Produktion, gibt es das ebenfalls.",
     "services.scope.label": "Was Sie brauchen",
-    "services.scope.title": "Sieben Projektgrößen, mit Preis.",
-    "services.scope.lead": "Startpreise, keine Angebote: Die echte Zahl steht binnen eines Tages fest, sobald der Umfang klar ist. Kein Formular, kein Gespräch nötig, um das zu sehen.",
+    "services.scope.title": "Sieben sinnvolle Größen, kein Mindestprojekt.",
+    "services.scope.lead": "Startpreise, keine Angebote: Die echte Zahl steht binnen eines Tages fest, sobald der Umfang klar ist. Ein Reel ist ein genauso vollständiger Auftrag wie eine Plattform.",
     "services.scope.note": "Nicht auf der Liste, oder unsicher, was zutrifft? Schreiben Sie trotzdem — es unbeholfen zu beschreiben ist völlig in Ordnung, das Sortieren ist mein Job.",
     "services.scope.cta": "Festpreis anfragen",
     "services.carried.label": "Ihre Auswahl",
     "services.disciplines.label": "Die Disziplinen dahinter",
 
-    // ── /services-Hub: wie die drei Disziplinen zusammenwirken, plus FAQ ────
+    // ── /services-Hub: wie die fünf Disziplinen zusammenwirken, plus FAQ ────
     "services.how.label": "Wie es zusammenwirkt",
-    "services.how.title": "Vier Disziplinen, eine Auslieferung.",
+    "services.how.title": "Fünf Disziplinen, eine Auslieferung.",
     "services.how.lead": "Auf mehrere Dienstleister verteilt widersprechen sie einander: Die Positionierung übersteht die Produktion nicht, die Search-Struktur wird überdesignt, und niemand verantwortet das Ergebnis. Zusammen geführt verstärken sie sich — und es gibt eine Person, die man fragt, wenn etwas kaputtgeht.",
     "services.how.1.title": "Scope vor Pixeln",
     "services.how.1.text": "Zuerst schriftlicher Scope, inklusive dessen, was bewusst nicht gebaut wird. Zu entscheiden, dass ein Kunde ein prüfbares Versprechen braucht statt elf weiterer Seiten, ist die wirksamste Entscheidung im Projekt — und der billigste Moment dafür liegt vor allem Visuellen.",
@@ -1051,8 +1065,8 @@ export const ui = {
     "services.how.4.text": "Beide Live-Plattformen hier werden weiter gepflegt statt übergeben und vergessen — und genau das lässt sich schwer vortäuschen: Eine Website, die seit einem Jahr läuft, wurde entweder betreut oder ist still verfallen, und beides sieht man ihr an.",
     "services.faq.label": "Fragen",
     "services.faq.title": "Bevor Sie schreiben.",
-    "services.faq.1.q": "Kann ich auch nur eine davon buchen?",
-    "services.faq.1.a": "Ja, und oft ist das richtig — ein Technical-SEO-Durchgang auf einer bestehenden Website oder eine WebGL-Ebene für eine Marke, deren Positionierung längst steht. Sie stehen zusammen, weil sie sich verstärken, nicht weil sie als Paket verkauft werden.",
+    "services.faq.1.q": "Kann ich Sie für einen einzelnen kleinen Auftrag buchen?",
+    "services.faq.1.a": "Ja. Eine Landingpage, ein Reel, ein Schnitt oder ein Technical-SEO-Pass ist ein vollständiger Auftrag. Die größeren Möglichkeiten stehen hier, wenn sie sinnvoll sind — nicht als Mindestpaket, das Sie kaufen müssen.",
     "services.faq.2.q": "Was kostet ein Projekt?",
     "services.faq.2.a": "Das hängt vom Scope ab, und der Scope wird als Erstes schriftlich geklärt. Ein fokussiertes Audit-und-Fix ist eine andere Größenordnung als eine mehrsprachige Plattform mit Live-Datenpipeline. Sie bekommen eine Zahl, bevor die Arbeit beginnt — keine Spanne, die sich verschiebt.",
     "services.faq.3.q": "Wie fangen wir an?",
@@ -1078,9 +1092,9 @@ export const ui = {
     "services.4.text":
       "Astro, Three.js, GSAP und handgeschriebenes GLSL. Echtzeit-3D und Motion, die die Marke tragen, ohne die Core Web Vitals zu kosten.",
     "services.4.href": "/de/creative-development-wien/",
-    "services.5.title": "3D & Film",
+    "services.5.title": "Video, Reels & 3D",
     "services.5.text":
-      "Produktfilme, Interieurs und Erklärvideos in Cinema 4D und Redshift, geschnitten in After Effects und Premiere — und so encodiert, dass die Seite, die sie trägt, weiterhin schnell lädt.",
+      "Ein einzelner Short aus vorhandenem Material, laufende Social-Schnitte, 2D-Erklärvideos oder komplette Cinema-4D-Produktion — für den Kanal geschnitten, auf dem das Video gesehen wird.",
     "services.5.href": "/de/3d-animation-video-wien/",
 
     "research.label": "Research",
@@ -1117,7 +1131,7 @@ export const ui = {
     "contact.label": "Kontakt",
     "contact.title": "Bauen wir etwas, das man nicht vergisst.",
     "contact.text":
-      "Verfügbar für ausgewählte Marketing-, Content-, SEO- und Premium-Web-Projekte. Sagen Sie mir, was Sie launchen.",
+      "Kleine Aufträge willkommen: eine Landingpage, ein Reel, ein SEO-Fix — oder eine komplette Website, Kampagne oder 3D-Produktion. Sagen Sie mir, was fertig werden muss.",
     "contact.email": "rodionbelousov@protonmail.com",
     "contact.behance.label": "Behance — Creative Archive",
     "contact.location": "Wien, Österreich",
@@ -1130,7 +1144,7 @@ export const ui = {
     "form.what.label": "Was brauchen Sie?",
     "form.what.landing": "Eine Landingpage",
     "form.what.site": "Eine Unternehmens-Website",
-    "form.what.film": "Einen 3D-Film oder eine Animation",
+    "form.what.film": "Einen Short, ein Reel, einen Videoschnitt oder 3D-Film",
     "form.what.shop": "Einen Online-Shop",
     "form.what.seo": "SEO für eine bestehende Website",
     "form.what.platform": "Eine Web-App oder Plattform",
@@ -1158,10 +1172,10 @@ export const ui = {
     "form.privacy": "Wird nur zur Beantwortung verwendet. Nicht weitergegeben, nicht in einen Verteiler aufgenommen.",
 
     // ── Footer ──────────────────────────────────────────────────────────────
-    "footer.cta.eyebrow": "Verfügbar für ausgewählte Launches",
-    "footer.cta.title": "Marketing, Content, SEO und Web — als ein System gebaut.",
-    "footer.cta.button": "Projekt starten",
-    "footer.tagline": "Digital Marketer · Creative Developer · Wien",
+    "footer.cta.eyebrow": "Kleine Aufträge willkommen",
+    "footer.cta.title": "Eine Seite, ein Reel oder das ganze System.",
+    "footer.cta.button": "Sagen Sie, was Sie brauchen",
+    "footer.tagline": "Websites · Video · SEO · 3D · Wien",
     "footer.status": "Verfügbar für Projekte",
     "footer.nav.label": "Navigation",
     "footer.more.label": "Mehr",

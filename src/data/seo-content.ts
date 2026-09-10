@@ -267,17 +267,24 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     cases: ["bridge", "academy"],
     reel: ["squidz-pos-display", "lake-como-interior-film", "alpine-equipment-product-film"],
     paths: { en: "/en/3d-animation-video-vienna/", de: "/de/3d-animation-video-wien/" },
-    title: c("3D animation and video in Vienna.", "3D-Animation und Video in Wien."),
+    title: c("Video, reels and 3D animation in Vienna.", "Video, Reels und 3D-Animation in Wien."),
     description: c(
-      "3D animation, product films and explainer video in Vienna by Rodion Belousov — Cinema 4D and Redshift, cut in After Effects and Premiere, and built to load inside the website that has to carry them.",
-      "3D-Animation, Produktfilme und Erklärvideos in Wien von Rodion Belousov — Cinema 4D und Redshift, geschnitten in After Effects und Premiere, gebaut für die Website, die sie tragen muss.",
+      "Shorts, reels, video editing, 2D explainers and 3D animation in Vienna by Rodion Belousov — from one vertical edit to a complete Cinema 4D production.",
+      "Shorts, Reels, Videoschnitt, 2D-Erklärvideos und 3D-Animation in Wien von Rodion Belousov — vom einzelnen Hochformat-Schnitt bis zur kompletten Cinema-4D-Produktion.",
     ),
-    eyebrow: c("3D & Motion / Vienna", "3D & Motion / Wien"),
+    eyebrow: c("Video, Reels & 3D / Vienna", "Video, Reels & 3D / Wien"),
     lead: c(
-      "A product film with no product built yet. An interior approved before the first wall goes up. A technical subject made watchable. Or the ten seconds of movement behind a hero section. Made by the same person who builds the website — which is where this normally goes wrong, because the file that arrives is then one the page can actually serve.",
-      "Ein Produktfilm, bevor das Produkt existiert. Ein Interieur, freigegeben, bevor die erste Wand steht. Ein technisches Thema, das ansehbar wird. Oder die zehn Sekunden Bewegung hinter einem Hero. Von derselben Person wie die Website — und genau dort geht es sonst schief, denn so ist die Datei, die ankommt, eine, die die Seite auch ausliefern kann.",
+      "One clean reel from footage you already have. A batch of shorts with captions and motion. A technical explainer, a product film before the product exists, or the ten seconds behind a website hero. Start with the useful version; 3D is available when the idea needs it, not imposed on every job.",
+      "Ein sauberes Reel aus vorhandenem Material. Eine Reihe Shorts mit Untertiteln und Motion. Ein technisches Erklärvideo, ein Produktfilm vor dem fertigen Produkt oder die zehn Sekunden hinter einem Website-Hero. Starten Sie mit der sinnvollen Version; 3D ist verfügbar, wenn die Idee es braucht — nicht als Pflicht für jeden Auftrag.",
     ),
     capabilities: [
+      {
+        title: c("One short or reel, properly finished", "Ein Short oder Reel, sauber fertiggestellt"),
+        text: c(
+          "Send the footage and the destination. I cut the pace, remove what drags, clean the colour and sound, add captions and on-screen type, and deliver the vertical, square or horizontal versions the channel needs. It can be one video; there is no batch minimum and no requirement to turn it into a campaign.",
+          "Schicken Sie Material und Zielkanal. Ich setze den Rhythmus, entferne Längen, bereinige Farbe und Ton, ergänze Untertitel und Typo und liefere Hoch-, Quadrat- oder Querformat. Es kann bei einem Video bleiben; es gibt keine Mindestmenge und keinen Zwang, daraus eine Kampagne zu machen.",
+        ),
+      },
       {
         title: c("Product film without the product", "Produktfilm ohne Produkt"),
         text: c(
@@ -320,6 +327,13 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       { value: "C4D + RS", label: c("Cinema 4D and Redshift, cut in After Effects and Premiere", "Cinema 4D und Redshift, geschnitten in After Effects und Premiere") },
     ],
     faq: [
+      {
+        question: c("Can you just edit one reel?", "Können Sie auch nur ein Reel schneiden?"),
+        answer: c(
+          "Yes. A straightforward edit from supplied footage starts at €190 and can be delivered from one working day, depending on length and the state of the material. Captions, simple motion and the required aspect ratios are scoped before the edit, so the small job stays small.",
+          "Ja. Ein klarer Schnitt aus geliefertem Material startet bei 190 € und kann — je nach Länge und Material — ab einem Arbeitstag geliefert werden. Untertitel, einfache Motion und die benötigten Formate werden vor dem Schnitt festgelegt, damit der kleine Auftrag klein bleibt.",
+        ),
+      },
       {
         question: c("Do I need a finished product or a built room?", "Brauche ich ein fertiges Produkt oder einen gebauten Raum?"),
         answer: c(

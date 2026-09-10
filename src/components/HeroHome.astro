@@ -28,16 +28,16 @@ const t = useTranslations();
       <p class="hero-sub" data-intro data-i18n="hero.subtitle">{t("hero.subtitle")}</p>
 
       <div class="hero-actions" data-intro>
-        <a class="primary" href="#work" data-i18n="hero.cta.primary" data-magnetic>{t("hero.cta.primary")}</a>
+        <a class="primary" href="/services/#scope" data-i18n="hero.cta.primary" data-i18n-attr="href:hero.cta.primary.href" data-magnetic>{t("hero.cta.primary")}</a>
         <a class="secondary" href="#contact-cta" data-i18n="hero.cta.secondary" data-magnetic>{t("hero.cta.secondary")}</a>
       </div>
 
     </div>
 
     <aside class="hero-readout" data-intro aria-label="Studio capabilities">
-      <div><span>FOCUS</span><strong>WEBSITES / SEO</strong></div>
-      <div><span>MOTION</span><strong>3D / FILM / WEBGL</strong></div>
-      <div><span>BASE</span><strong>VIENNA / REMOTE</strong></div>
+      <div><span data-i18n="hero.readout.start.label">{t("hero.readout.start.label")}</span><strong data-i18n="hero.readout.start.value">{t("hero.readout.start.value")}</strong></div>
+      <div><span data-i18n="hero.readout.web.label">{t("hero.readout.web.label")}</span><strong data-i18n="hero.readout.web.value">{t("hero.readout.web.value")}</strong></div>
+      <div><span data-i18n="hero.readout.video.label">{t("hero.readout.video.label")}</span><strong data-i18n="hero.readout.video.value">{t("hero.readout.video.value")}</strong></div>
     </aside>
 
     <div class="hero-cue" data-intro>
