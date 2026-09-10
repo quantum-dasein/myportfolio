@@ -56,6 +56,10 @@ export interface CaseConfig {
   nextHref: string;
   /** Corner label inside the hero screen, e.g. "BC / 01". */
   screenIndex: string;
+  /** One line, in both languages, for the places that link TO this case rather
+   *  than being it: the service pages used to show a card with nothing on it
+   *  but the project's name, which asks a reader to click on faith. */
+  tagline: { en: string; de: string };
   /** Names printed on the visual-language specimen. */
   specimen: { name: string; moduleB: string; moduleC: string };
   seo: { title: string; description: string; keywords: string[]; about: string[] };
@@ -74,6 +78,10 @@ export const cases: Record<CaseId, CaseConfig> = {
   bridge: {
     id: "bridge",
     slug: "bridge-consult",
+    tagline: {
+      en: "A multilingual corporate site and the SEO system under it — organic search up 780% inside the launch window.",
+      de: "Eine mehrsprachige Corporate-Website und das SEO-System darunter — organische Suche +780% im Launch-Fenster.",
+    },
     image: "/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp",
     stack: "Astro / Three.js / GSAP",
     year: "2026",
@@ -118,6 +126,10 @@ export const cases: Record<CaseId, CaseConfig> = {
   fidic: {
     id: "fidic",
     slug: "fidic",
+    tagline: {
+      en: "429 static pages, 117 expert articles, 16 contract tools and a tender archive that refreshes itself every morning.",
+      de: "429 statische Seiten, 117 Fachartikel, 16 Vertrags-Tools und ein Ausschreibungsarchiv, das sich jeden Morgen selbst aktualisiert.",
+    },
     image: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp",
     stack: "Astro / MDX / Serverless",
     year: "2026",
@@ -159,6 +171,10 @@ export const cases: Record<CaseId, CaseConfig> = {
   academy: {
     id: "academy",
     slug: "academy",
+    tagline: {
+      en: "One page, eighteen modules, three languages, and not a single line of third-party JavaScript.",
+      de: "Eine Seite, achtzehn Module, drei Sprachen — und keine Zeile Third-Party-JavaScript.",
+    },
     image: "/cases/rodion-belousov-bridge-consult-academy-one-page-course-landing.webp",
     stack: "Astro / CSS",
     year: "2026",

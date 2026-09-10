@@ -150,9 +150,22 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
               ? (de ? "BELEGE AUS ECHTEN PRODUKTIONEN" : "EVIDENCE FROM REAL PRODUCTIONS")
               : (de ? "SO WIRD HIER GEBAUT" : "HOW THE WORK IS BUILT")
         }</span>
+        {/* A row of three bare numbers in a large black space was the whole
+            section. The note under each one says where the figure comes from —
+            the raw pair behind a percentage, the source behind a claim — which
+            is the difference between a statistic and a poster. `is-text` is for
+            values that are not numbers: "RU / EN / UZ" set at 6rem wrapped onto
+            two lines and collided with its own label. */}
         <div class="metrics">
-          {service.proof.map((item) => <div data-reveal><strong data-count-up>{item.value}</strong><p>{pick(item.label, lang)}</p></div>)}
+          {service.proof.map((item) => (
+            <div data-reveal>
+              <strong data-count-up={/^[+\-]?[\d.,]/.test(item.value) ? true : undefined} class:list={{ "is-text": !/^[+\-]?[\d.,]/.test(item.value) }}>{item.value}</strong>
+              <p>{pick(item.label, lang)}</p>
+              {item.note && <span class="metric-note">{pick(item.note, lang)}</span>}
+            </div>
+          ))}
         </div>
+        {service.proofNote && <p class="proof-note" data-reveal>{pick(service.proofNote, lang)}</p>}
         {/* Relevance over habit: a page about a landing page for a medical
             practice leads with the one-page case, not a 429-page platform.
             `data-case-link` only where a warp scene exists for that case. */}
@@ -166,9 +179,17 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
                 data-reveal
                 data-cursor="OPEN"
               >
+                {/* The card carried the project's name and nothing else, which
+                    asks a reader to click on faith. The picture is the project;
+                    the line under it is what the project was. */}
+                <img src={item.image} alt="" loading="lazy" aria-hidden="true" />
                 <span>CASE / {String(index + 1).padStart(2, "0")}</span>
                 <strong>{caseName[id]}</strong>
-                <b>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></b>
+                <p>{pick(item.tagline, lang)}</p>
+                <b>
+                  <span>{item.stack} · {item.year}</span>
+                  <span>{de ? "Case öffnen" : "Open case"} <i class="ui-arrow" aria-hidden="true"></i></span>
+                </b>
               </a>
             );
           })}
@@ -220,7 +241,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 </Layout>
 
 <style>
-  .service-page{position:relative;z-index:1;background:#030405}.service-hero{min-height:88svh;display:grid;align-items:end;padding:10rem 0 6rem;background:radial-gradient(circle at 74% 26%,rgba(255,255,255,.1),transparent 24rem)}.eyebrow{display:block;color:rgba(var(--rgb-text),.53);font:.64rem var(--font-inter);letter-spacing:.22em;text-transform:uppercase}.service-hero h1{max-width:12ch;margin:1.5rem 0;font:500 clamp(4rem,8vw,8rem)/.9 var(--font-display);letter-spacing:0}.service-hero p{max-width:48rem;color:rgba(var(--rgb-text),.76);font-size:clamp(1.2rem,2vw,1.65rem);line-height:1.55}.service-hero a{display:inline-block;margin-top:2rem;padding-bottom:.4rem;border-bottom:1px solid rgba(255,255,255,.35)}section{padding:clamp(5rem,9vw,9rem) 0;border-top:1px solid rgba(255,255,255,.08)}.capability-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.capability-grid>div{min-height:22rem;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.008))}.capability-grid span,.case-links span{font:.62rem var(--font-inter);letter-spacing:.16em;color:rgba(var(--rgb-text),.45)}.capability-grid h2{margin:7rem 0 1rem;font:500 clamp(1.7rem,2.2vw,2.6rem)/1.04 var(--font-display);overflow-wrap:anywhere;hyphens:auto}.capability-grid p,.metrics p{color:rgba(var(--rgb-text),.65);line-height:1.55}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2rem 0 4rem}.metrics>div{padding:2rem;border-top:1px solid rgba(255,255,255,.28)}.metrics strong{font:500 clamp(3rem,6vw,6rem)/1 var(--font-display)}.case-links{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.case-links a{min-height:17rem;display:flex;flex-direction:column;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.025)}.case-links strong{margin:auto 0;font:500 clamp(2rem,4vw,4rem)/1 var(--font-display)}.case-links b{font:.65rem var(--font-inter);letter-spacing:.12em;text-transform:uppercase}.research-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:5rem}.research h2{max-width:9ch;font:500 clamp(3rem,5vw,5.5rem)/.95 var(--font-display)}.research-grid>div:last-child{border-top:1px solid rgba(255,255,255,.14)}.research-grid a{display:flex;justify-content:space-between;gap:2rem;padding:1.5rem 0;border-bottom:1px solid rgba(255,255,255,.14);font:500 clamp(1.2rem,2vw,1.8rem)/1.2 var(--font-display)}.faq .u-container{max-width:70rem}.faq details{border-bottom:1px solid rgba(255,255,255,.14)}.faq summary{cursor:pointer;padding:1.5rem 0;font:500 clamp(1.2rem,2vw,1.7rem) var(--font-display)}.faq details p{max-width:50rem;padding:0 0 1.7rem;color:rgba(var(--rgb-text),.68);line-height:1.6}
+  .service-page{position:relative;z-index:1;background:#030405}.service-hero{min-height:88svh;display:grid;align-items:end;padding:10rem 0 6rem;background:radial-gradient(circle at 74% 26%,rgba(255,255,255,.1),transparent 24rem)}.eyebrow{display:block;color:rgba(var(--rgb-text),.53);font:.64rem var(--font-inter);letter-spacing:.22em;text-transform:uppercase}.service-hero h1{max-width:12ch;margin:1.5rem 0;font:500 clamp(4rem,8vw,8rem)/.9 var(--font-display);letter-spacing:0}.service-hero p{max-width:48rem;color:rgba(var(--rgb-text),.76);font-size:clamp(1.2rem,2vw,1.65rem);line-height:1.55}.service-hero a{display:inline-block;margin-top:2rem;padding-bottom:.4rem;border-bottom:1px solid rgba(255,255,255,.35)}section{padding:clamp(5rem,9vw,9rem) 0;border-top:1px solid rgba(255,255,255,.08)}.capability-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.capability-grid>div{min-height:22rem;padding:1.6rem;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.008))}.capability-grid span,.case-links span{font:.62rem var(--font-inter);letter-spacing:.16em;color:rgba(var(--rgb-text),.45)}.capability-grid h2{margin:7rem 0 1rem;font:500 clamp(1.7rem,2.2vw,2.6rem)/1.04 var(--font-display);overflow-wrap:anywhere;hyphens:auto}.capability-grid p,.metrics p{color:rgba(var(--rgb-text),.65);line-height:1.55}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2rem 0 1.4rem}.metrics>div{padding:2rem 2rem 1.6rem;border-top:1px solid rgba(255,255,255,.28)}.metrics strong{display:block;font:500 clamp(3rem,6vw,6rem)/1 var(--font-display)}.metrics strong.is-text{font-size:clamp(1.9rem,3vw,2.9rem);letter-spacing:.01em}.case-links{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.case-links a{position:relative;isolation:isolate;overflow:hidden;min-height:20rem;display:flex;flex-direction:column;padding:1.6rem;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(255,255,255,.025)}.case-links img{position:absolute;inset:0;z-index:-1;width:100%;height:100%;object-fit:cover;opacity:.34;transform:scale(1.04);transition:opacity .6s var(--ease-out-expo),transform .8s var(--ease-out-expo)}.case-links a::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(3,4,5,.72),rgba(3,4,5,.5) 42%,rgba(3,4,5,.94))}.case-links a:hover img{opacity:.5;transform:scale(1)}.case-links strong{margin:auto 0 .6rem;font:500 clamp(1.8rem,3.2vw,3rem)/1.02 var(--font-display)}.case-links p{max-width:34ch;margin:0 0 1.2rem;color:rgba(var(--rgb-text),.72);font-size:.92rem;line-height:1.5}.case-links b{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;justify-content:space-between;padding-top:1rem;border-top:1px solid rgba(255,255,255,.14);font:.65rem var(--font-inter);letter-spacing:.12em;text-transform:uppercase;color:rgba(var(--rgb-text),.62)}.research-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:5rem}.research h2{max-width:9ch;font:500 clamp(3rem,5vw,5.5rem)/.95 var(--font-display)}.research-grid>div:last-child{border-top:1px solid rgba(255,255,255,.14)}.research-grid a{display:flex;justify-content:space-between;gap:2rem;padding:1.5rem 0;border-bottom:1px solid rgba(255,255,255,.14);font:500 clamp(1.2rem,2vw,1.8rem)/1.2 var(--font-display)}.faq .u-container{max-width:70rem}.faq details{border-bottom:1px solid rgba(255,255,255,.14)}.faq summary{cursor:pointer;padding:1.5rem 0;font:500 clamp(1.2rem,2vw,1.7rem) var(--font-display)}.faq details p{max-width:50rem;padding:0 0 1.7rem;color:rgba(var(--rgb-text),.68);line-height:1.6}
   @media(max-width:800px){.capability-grid,.metrics,.case-links,.research-grid{grid-template-columns:1fr}.capability-grid h2{margin-top:4rem}.service-hero{min-height:72svh;padding:8rem 0 4rem}.service-hero h1{max-width:100%;font-size:clamp(2.6rem,11.5vw,5.6rem);line-height:.93;overflow-wrap:anywhere;hyphens:auto}.capability-grid>div{min-height:18rem}.metrics strong{font-size:clamp(2.7rem,14vw,5rem);overflow-wrap:anywhere}.research h2{max-width:100%;overflow-wrap:anywhere;hyphens:auto}.research-grid a strong{min-width:0;overflow-wrap:anywhere;hyphens:auto}}@media(pointer:coarse){.capability-grid>div,.case-links a{background:rgba(9,10,11,.92)}}
 
   /* ── Back to the hub ───────────────────────────────────────────────────── */
@@ -252,6 +273,23 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
   @media (pointer: coarse) {
     .back-link { backdrop-filter: none; background: rgba(6, 7, 8, .96); top: 4.6rem; }
+  }
+
+  .metric-note {
+    display: block;
+    margin-top: .55rem;
+    font-family: var(--font-inter);
+    font-size: .64rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), .38);
+  }
+  .proof-note {
+    max-width: 52rem;
+    margin: 0 0 3.4rem;
+    color: rgba(var(--rgb-text), .5);
+    font-size: .86rem;
+    line-height: 1.55;
   }
 
   /* ── Selected films ────────────────────────────────────────────────────── */
