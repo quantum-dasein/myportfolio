@@ -110,7 +110,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
     <section class="capabilities">
       <div class="u-container capability-grid">
         {service.capabilities.map((item, index) => (
-          <div data-reveal><span>0{index + 1}</span><h2 data-sy-reveal="words">{pick(item.title, lang)}</h2><p>{pick(item.text, lang)}</p></div>
+          <div data-reveal><span>0{index + 1}</span><h2 data-sy-reveal="words">{pick(item.title, lang)}</h2><p data-sy-reveal="lines">{pick(item.text, lang)}</p></div>
         ))}
       </div>
     </section>

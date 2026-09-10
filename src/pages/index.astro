@@ -132,7 +132,7 @@ const selectedWork = [
       <span class="s-idx">01 - <span data-i18n="about.label">{t("about.label")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="about.title">{t("about.title")}</h2>
-        <p class="s-lead" data-reveal data-i18n="about.text">{t("about.text")}</p>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="about.text">{t("about.text")}</p>
 
         <div class="pillars">
           {
@@ -156,7 +156,7 @@ const selectedWork = [
       <span class="s-idx">02 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
       <div>
         <h2 class="s-title obj-title" data-sy-reveal="words" data-i18n="objection.title">{t("objection.title")}</h2>
-        <p class="s-lead" data-reveal data-i18n="objection.text">{t("objection.text")}</p>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="objection.text">{t("objection.text")}</p>
 
         <div class="obj-rows">
           {
@@ -187,7 +187,7 @@ const selectedWork = [
       <span class="s-idx">03 - <span data-i18n="record.label">{t("record.label")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="record.title">{t("record.title")}</h2>
-        <p class="record-text" data-reveal data-i18n="record.text">{t("record.text")}</p>
+        <p class="record-text" data-sy-reveal="lines" data-i18n="record.text">{t("record.text")}</p>
         <a
           class="record-link"
           href={lang === "de" ? "/de/rodion-belousov-wien/" : "/en/rodion-belousov-vienna/"}
@@ -208,7 +208,7 @@ const selectedWork = [
       <div class="work-intro">
         <span class="s-idx">04 - <span data-i18n="work.label">{t("work.label")}</span></span>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
-        <p class="s-lead" data-reveal data-i18n="work.text">{t("work.text")}</p>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="work.text">{t("work.text")}</p>
         <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
           <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
@@ -274,6 +274,30 @@ const selectedWork = [
             ))
           }
         </div>
+
+        {/* The deck controls. Hidden until the script turns the column into a
+            deck, so a visitor whose JavaScript failed still gets three cards in
+            a readable column rather than dots that do nothing. */}
+        <div class="deck-ui" data-deck-ui hidden>
+          <button type="button" class="deck-arrow" data-deck-step="-1" aria-label="Previous project">
+            <i aria-hidden="true"></i>
+          </button>
+          <div class="deck-dots" role="tablist" aria-label="Selected work">
+            {selectedWork.map((work, index) => (
+              <button
+                type="button"
+                role="tab"
+                class="deck-dot"
+                data-deck-dot={index}
+                aria-selected={index === 0 ? "true" : "false"}
+                aria-label={tk(work.title)}
+              ><span></span></button>
+            ))}
+          </div>
+          <button type="button" class="deck-arrow" data-deck-step="1" aria-label="Next project">
+            <i aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -287,7 +311,7 @@ const selectedWork = [
       <span class="s-idx">05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
       <div>
         <h2 class="s-title" data-sy-reveal="words" data-i18n="services.teaser.title">{t("services.teaser.title")}</h2>
-        <p class="s-lead" data-reveal data-i18n="services.teaser.text">{t("services.teaser.text")}</p>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="services.teaser.text">{t("services.teaser.text")}</p>
 
         <div class="svc-list">
           {
@@ -347,7 +371,7 @@ const selectedWork = [
       <div>
         <span class="s-idx">06 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
         <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
-        <p class="portal-text" data-reveal data-i18n="portal.text">{t("portal.text")}</p>
+        <p class="portal-text" data-sy-reveal="lines" data-i18n="portal.text">{t("portal.text")}</p>
       </div>
       <a class="archive-button" href="/gallery" data-tunnel data-reveal data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
         <span class="archive-orbit" aria-hidden="true"></span>
@@ -362,7 +386,7 @@ const selectedWork = [
       <span class="s-idx">07 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
       <div>
         <h2 class="contact-title" data-sy-reveal="words" data-i18n="contact.title">{t("contact.title")}</h2>
-        <p class="s-lead" data-reveal data-i18n="contact.text">{t("contact.text")}</p>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="contact.text">{t("contact.text")}</p>
         <div class="contact-links" data-reveal>
           <a href={`mailto:${t("contact.email")}`} data-i18n="contact.email">{t("contact.email")}</a>
           <a href="https://www.behance.net/gallery/146849483/Meine-3D-Projekte" target="_blank" rel="noopener" data-i18n="contact.behance.label">
@@ -1270,12 +1294,18 @@ const selectedWork = [
       box-shadow 0.55s var(--ease-out-expo),
       transform 0.65s var(--ease-out-expo);
 
+    /* The phone reset. `transform` used to carry !important here to beat the
+       desktop collage, which then made every transform on a phone card
+       impossible — including the deck's own shuffle, which computed to `none`
+       no matter what it was set to. The block near the bottom of this file
+       does the same job by specificity and source order, so the flag is gone
+       and phone layouts can move these cards again. */
     @media (--mq-phone) {
       position: relative;
       inset: auto !important;
       width: 100%;
       min-height: 0;
-      transform: none !important;
+      transform: none;
     }
   }
 
@@ -1932,6 +1962,163 @@ const selectedWork = [
     /* One line, so the year stays level with the index rather than stranded
        above a wrapped tag. */
     .work-meta { font-size: 0.56rem; letter-spacing: 0.1em; }
+ 
+    /* ── The deck ──────────────────────────────────────────────────────────
+       Three cards stacked in a column is honest and dull: it reads as a list
+       of things rather than a hand of work. `.is-deck` is added by the script,
+       so this only applies where the shuffle can actually run — without it the
+       column above stays and all three projects stay readable.
+
+       Every card sits in the SAME grid cell, so the deck is exactly as tall as
+       its tallest card with nothing measured in JavaScript, and the shuffle is
+       a transform inside that cell: the card never travels anywhere, it turns
+       back into the stack and the next one takes its place. */
+    .work-grid.is-deck {
+      gap: 0;
+      /* Room under the front card for the two rims behind it. */
+      padding: 1.4rem 0 3.2rem;
+      /* Horizontal drags belong to the deck; vertical ones stay the page's. */
+      touch-action: pan-y;
+      perspective: 900px;
+    }
+
+    .work-grid.is-deck .work-card,
+    .work-grid.is-deck .work-card:nth-child(1),
+    .work-grid.is-deck .work-card:nth-child(2),
+    .work-grid.is-deck .work-card:nth-child(3) {
+      grid-area: 1 / 1;
+      /* --depth 0 is the card in hand, 1 and 2 are behind it. --drag is how far
+         the finger has taken the front card, and is only set while it is down. */
+      --depth: 0;
+      --drag: 0px;
+      --tilt: 0deg;
+      /* Set from the script: +1 for the card one back, -1 for the one behind
+         that, so the stack fans instead of hiding in its own silhouette. */
+      --sway: 0;
+      transform:
+        translate3d(calc(var(--drag) * 0.34), calc(var(--depth) * 1.55rem), 0)
+        rotate(calc(var(--tilt) + var(--sway) * 2.2deg))
+        scale(calc(1 - var(--depth) * 0.05));
+      /* Centre, not below the card: with the origin under it, scaling pulled
+         the cards behind UP and the whole stack hid inside one silhouette. */
+      transform-origin: 50% 50%;
+      opacity: calc(1 - var(--depth) * 0.34);
+      /* The cards share one cell, so the front one needs a floor of its own or
+         the text of the two behind it reads straight through the glass. */
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012)),
+        #06080a;
+      z-index: calc(10 - var(--depth));
+      transition:
+        transform 0.62s var(--ease-out-expo),
+        opacity 0.5s ease,
+        border-color 0.5s ease,
+        box-shadow 0.6s var(--ease-out-expo);
+    }
+    /* While a finger is on it, the card follows the finger without easing. */
+    .work-grid.is-deck.is-dragging .work-card { transition: opacity 0.2s ease; }
+
+    /* "Neon" in a monochrome palette is the palette's own accent pushed until
+       it glows: a lit rim, a bloom under it, and the sheen these cards already
+       carry, run once as the card lands. */
+    .work-grid.is-deck .work-card[data-deck-front] {
+      border-color: rgba(var(--work-accent), 0.7);
+      box-shadow:
+        0 0 0 1px rgba(var(--work-accent), 0.22),
+        0 0 1.1rem rgba(var(--work-accent), 0.3),
+        0 0 3.4rem rgba(var(--work-accent), 0.2),
+        0 0 7rem rgba(var(--work-accent), 0.1),
+        0 2rem 4rem rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      /* The tube itself: a hairline of light along the top edge of the card,
+         which is what makes the rim read as lit rather than merely pale. */
+      animation: deck-pulse 4.5s ease-in-out infinite;
+    }
+    @keyframes deck-pulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.055); }
+    }
+    .work-grid.is-deck .work-card[data-deck-front]::before {
+      opacity: 0.55;
+      transform: translateX(140%);
+      transition: transform 0.9s var(--ease-out-expo), opacity 0.9s ease;
+    }
+    .work-grid.is-deck .work-card:not([data-deck-front])::before {
+      opacity: 0;
+      transform: translateX(-70%);
+    }
+
+    /* Behind the front card the content is texture, not something to read
+       through: dim it so the top card's type is the only type. */
+    .work-grid.is-deck .work-card:not([data-deck-front]) .work-copy { opacity: 0.45; }
+    .work-grid.is-deck .work-card:not([data-deck-front]) figure { opacity: 0.55; }
+
+    /* ── Controls ────────────────────────────────────────────────────────── */
+    .deck-ui {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.1rem;
+      margin-top: 1.5rem;
+    }
+
+    .deck-arrow {
+      display: grid;
+      place-items: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 50%;
+      background: rgba(9, 11, 13, 0.7);
+      cursor: pointer;
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
+    .deck-arrow:active { border-color: rgba(255, 255, 255, 0.45); background: rgba(18, 21, 24, 0.9); }
+    .deck-arrow i {
+      width: 0.42rem;
+      height: 0.42rem;
+      border-top: 1px solid rgba(var(--rgb-text), 0.7);
+      border-right: 1px solid rgba(var(--rgb-text), 0.7);
+      transform: rotate(45deg);
+      margin-left: -0.15rem;
+    }
+    .deck-arrow[data-deck-step="-1"] i { transform: rotate(-135deg); margin: 0 -0.15rem 0 0; }
+
+    .deck-dots { display: flex; align-items: center; gap: 0.55rem; }
+    .deck-dot {
+      width: 1.5rem;
+      height: 1.5rem;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
+    .deck-dot span {
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: rgba(var(--rgb-text), 0.26);
+      transition: background-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s var(--ease-out-expo);
+    }
+    .deck-dot[aria-selected="true"] span {
+      background: #fff;
+      transform: scale(1.35);
+      box-shadow: 0 0 0.7rem rgba(255, 255, 255, 0.6);
+    }
+  }
+
+  /* The controls belong to the deck, and the deck only exists on a phone. This
+     has to be a min-width rule rather than a bare one: a later top-level
+     declaration would beat the `display: flex` inside the block above. */
+  @media (min-width: 768px) { .deck-ui { display: none; } }
+  .deck-ui[hidden] { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .work-grid.is-deck .work-card { transition: opacity 0.2s ease; }
+    .work-grid.is-deck .work-card[data-deck-front]::before { display: none; }
   }
 
   @media (max-width: 760px) {
@@ -2201,4 +2388,139 @@ const selectedWork = [
     addEventListener("resize", requestMobileWork, { passive: true });
   }
 
+  // ── Selected work, as a deck ───────────────────────────────────────────────
+  // On a phone the three cards share one grid cell and only the front one is
+  // in hand. A swipe does not carry the card off the screen — it turns it back
+  // into the stack while the next one rises into the same place, which is what
+  // a shuffle looks like when it happens in your hands rather than on a table.
+  //
+  // The column underneath is the fallback: this script adds `.is-deck`, so if
+  // it never runs, all three cards stay stacked and readable.
+  const deck = document.querySelector<HTMLElement>(".work-grid");
+  const deckUi = document.querySelector<HTMLElement>("[data-deck-ui]");
+  const deckMedia = matchMedia("(max-width: 767px)");
+
+  if (deck && deckUi) {
+    const cards = Array.from(deck.querySelectorAll<HTMLElement>(".work-card"));
+    const dots = Array.from(deckUi.querySelectorAll<HTMLButtonElement>("[data-deck-dot]"));
+    let front = 0;
+    let on = false;
+
+    const paint = () => {
+      cards.forEach((card, index) => {
+        // Depth is how far round the deck this card is from the one in hand,
+        // so the order wraps instead of running out.
+        const depth = (index - front + cards.length) % cards.length;
+        card.style.setProperty("--depth", String(depth));
+        card.style.setProperty("--sway", depth === 1 ? "1" : depth === 2 ? "-1" : "0");
+        card.toggleAttribute("data-deck-front", depth === 0);
+        // Nothing behind the front card should be reachable by tab or by a
+        // stray tap — it is 45% opacity and half a card lower.
+        if ("inert" in HTMLElement.prototype) card.inert = depth !== 0;
+      });
+      dots.forEach((dot, index) => dot.setAttribute("aria-selected", index === front ? "true" : "false"));
+    };
+
+    const go = (step: number) => {
+      front = (front + step + cards.length) % cards.length;
+      paint();
+    };
+
+    const enable = () => {
+      if (on) return;
+      on = true;
+      deck.classList.add("is-deck");
+      deckUi.hidden = false;
+      paint();
+    };
+
+    const disable = () => {
+      if (!on) return;
+      on = false;
+      deck.classList.remove("is-deck");
+      deckUi.hidden = true;
+      front = 0;
+      cards.forEach((card) => {
+        card.style.removeProperty("--depth");
+        card.style.removeProperty("--sway");
+        card.style.removeProperty("--drag");
+        card.style.removeProperty("--tilt");
+        card.removeAttribute("data-deck-front");
+        if ("inert" in HTMLElement.prototype) card.inert = false;
+      });
+    };
+
+    dots.forEach((dot, index) => dot.addEventListener("click", () => { front = index; paint(); }));
+    deckUi.querySelectorAll<HTMLButtonElement>("[data-deck-step]").forEach((button) => {
+      button.addEventListener("click", () => go(Number(button.dataset.deckStep)));
+    });
+
+    // ── The drag ────────────────────────────────────────────────────────────
+    // The front card follows the finger a third of the way, which is enough to
+    // feel like a card and not enough to look like it is leaving. Past the
+    // threshold it shuffles; short of it, it springs back.
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    let decided = false;
+
+    const frontCard = () => cards[front];
+
+    deck.addEventListener("pointerdown", (event) => {
+      if (!on || event.pointerType === "mouse") return;
+      startX = event.clientX;
+      startY = event.clientY;
+      dragging = true;
+      decided = false;
+    }, { passive: true });
+
+    deck.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+
+      if (!decided) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        // A mostly-vertical move is the page being scrolled, not a card being
+        // played. Hand it back rather than fighting it.
+        if (Math.abs(dy) > Math.abs(dx)) { dragging = false; return; }
+        decided = true;
+        deck.classList.add("is-dragging");
+      }
+
+      const card = frontCard();
+      const held = Math.max(-90, Math.min(90, dx));
+      card.style.setProperty("--drag", `${held}px`);
+      card.style.setProperty("--tilt", `${held * 0.035}deg`);
+    }, { passive: true });
+
+    const release = (event: PointerEvent) => {
+      if (!dragging) return;
+      const dx = event.clientX - startX;
+      const card = frontCard();
+      dragging = false;
+      deck.classList.remove("is-dragging");
+      card.style.setProperty("--drag", "0px");
+      card.style.setProperty("--tilt", "0deg");
+      if (decided && Math.abs(dx) > 42) go(dx < 0 ? 1 : -1);
+    };
+
+    deck.addEventListener("pointerup", release);
+    deck.addEventListener("pointercancel", release);
+
+    // A tap on a card behind the front one plays it rather than following its
+    // link — the link is inert anyway, but this makes the stack feel live.
+    cards.forEach((card, index) => {
+      card.addEventListener("click", (event) => {
+        if (!on || index === front) return;
+        event.preventDefault();
+        front = index;
+        paint();
+      });
+    });
+
+    const sync = () => (deckMedia.matches ? enable() : disable());
+    sync();
+    deckMedia.addEventListener("change", sync);
+  }
 </script>
