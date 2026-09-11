@@ -91,13 +91,13 @@ const concepts = [
                 <span class="demo-sector">{concept.sector}</span>
                 <b>{concept.headline}</b>
                 <span class="demo-detail">{concept.detail}</span>
-                <span class="demo-action">{concept.action}<i>↗</i></span>
+                <span class="demo-action">{concept.action}<i aria-hidden="true"></i></span>
               </span>
             </span>
 
             <span class="demo-link">
               <span>{de ? "Angebot für diese Branche" : "Offer for this trade"}</span>
-              <i aria-hidden="true">↗</i>
+              <i aria-hidden="true"></i>
             </span>
           </a>
         </div>
@@ -323,7 +323,39 @@ const concepts = [
     letter-spacing: 0.08em;
     backdrop-filter: blur(10px);
   }
-  .demo-action i { font-style: normal; color: rgb(var(--accent)); }
+  .demo-action i,
+  .demo-link i {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 0.72rem;
+    height: 0.72rem;
+    color: rgb(var(--accent));
+    font-style: normal;
+  }
+  .demo-action i::before,
+  .demo-link i::before {
+    content: "";
+    position: absolute;
+    top: 0.05rem;
+    right: 0.04rem;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+  }
+  .demo-action i::after,
+  .demo-link i::after {
+    content: "";
+    position: absolute;
+    top: 0.38rem;
+    right: 0.07rem;
+    width: 0.68rem;
+    height: 1px;
+    background: currentColor;
+    transform: rotate(-45deg);
+    transform-origin: right center;
+  }
 
   .demo-link {
     position: absolute;
@@ -343,9 +375,6 @@ const concepts = [
     color: rgba(var(--rgb-text), 0.7);
   }
   .demo-link i {
-    font-style: normal;
-    font-size: 0.9rem;
-    color: rgb(var(--accent));
     transition: transform 0.45s var(--ease-out-expo);
   }
 

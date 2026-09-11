@@ -59,17 +59,38 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   </div>
 
   <div class="cf-field">
-    <label for="cf-url"><i aria-hidden="true">02</i><span data-i18n="form.url.label">{t("form.url.label")}</span></label>
+    <label for="cf-url">
+      <i aria-hidden="true">02</i>
+      <span data-i18n="form.url.label">{t("form.url.label")}</span>
+      <em data-url-optional hidden>· optional</em>
+    </label>
     <input
       id="cf-url"
       name="url"
-      type="url"
+      type="text"
       autocomplete="url"
       inputmode="url"
       placeholder={t("form.url.placeholder")}
       data-i18n-attr="placeholder:form.url.placeholder"
+      data-invalid-message={lang === "de"
+        ? "Bitte geben Sie eine Domain wie beispiel.at ein."
+        : "Enter a domain such as example.com."}
       data-audit-url
     />
+    <small
+      class="cf-field-note"
+      data-url-note
+      data-audit-copy={lang === "de"
+        ? "Die Domain genügt — https:// ergänze ich automatisch."
+        : "The domain is enough — https:// is added automatically."}
+      data-optional-copy={lang === "de"
+        ? "Optional — leer lassen, wenn Sie keine Website haben."
+        : "Optional — leave blank if you do not have a website."}
+    >
+      {lang === "de"
+        ? "Die Domain genügt — https:// ergänze ich automatisch."
+        : "The domain is enough — https:// is added automatically."}
+    </small>
   </div>
 
   <div class="cf-row">
@@ -157,6 +178,18 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   }
   .cf-field:focus-within label { color: var(--color-text); }
   .cf-field:focus-within label i { color: var(--color-accent); }
+  .cf-field label em {
+    margin-left: auto;
+    font-style: normal;
+    color: rgba(var(--rgb-text), 0.42);
+  }
+  .cf-field label em[hidden] { display: none; }
+  .cf-field-note {
+    margin-top: -0.15rem;
+    color: rgba(var(--rgb-text), 0.48);
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
 
   .cf select,
   .cf-select-trigger,
@@ -531,6 +564,8 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       const project = new URLSearchParams(location.search).get("project");
       const what = form.elements.namedItem("what") as HTMLSelectElement | null;
       const url = form.elements.namedItem("url") as HTMLInputElement | null;
+      const urlOptional = form.querySelector<HTMLElement>("[data-url-optional]");
+      const urlNote = form.querySelector<HTMLElement>("[data-url-note]");
       if (project && what && Array.from(what.options).some((option) => option.value === project)) {
         what.value = project;
         what.dispatchEvent(new Event("change", { bubbles: true }));
@@ -541,6 +576,8 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
         const audit = what?.value === "audit";
         url.required = audit;
         url.closest(".cf-field")?.classList.toggle("is-required", audit);
+        if (urlOptional) urlOptional.hidden = audit;
+        if (urlNote) urlNote.textContent = audit ? (urlNote.dataset.auditCopy || "") : (urlNote.dataset.optionalCopy || "");
         const intro = form.querySelector<HTMLElement>("[data-audit-intro]");
         if (intro) intro.hidden = !audit;
       };
@@ -581,6 +618,31 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
         status.classList.toggle("is-bad", !ok);
       };
 
+      // Mobile browsers require a scheme for type=url and reject the perfectly
+      // understandable `firma.at`. Accept what people actually type, then
+      // store and send one canonical http(s) URL. Empty stays valid whenever
+      // the selected enquiry is not the website check.
+      const normalizeUrl = () => {
+        if (!url) return true;
+        const raw = url.value.trim();
+        url.setCustomValidity("");
+        if (!raw) return true;
+        try {
+          const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+          const parsed = new URL(candidate);
+          const validProtocol = parsed.protocol === "http:" || parsed.protocol === "https:";
+          const validHost = parsed.hostname.includes(".") && !parsed.hostname.startsWith(".") && !parsed.hostname.endsWith(".");
+          if (!validProtocol || !validHost) throw new Error("invalid website URL");
+          url.value = parsed.pathname === "/" && !parsed.search && !parsed.hash ? parsed.origin : parsed.href;
+          return true;
+        } catch {
+          url.setCustomValidity(url.dataset.invalidMessage || "Enter a valid website address.");
+          return false;
+        }
+      };
+      url?.addEventListener("input", () => url.setCustomValidity(""));
+      url?.addEventListener("blur", normalizeUrl);
+
       // What the visitor picked, in words rather than in slugs — this is the
       // body of the mail Rodion actually reads, so it has to stand on its own.
       const compose = () => {
@@ -600,6 +662,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        normalizeUrl();
         if (!form.reportValidity()) return;
         // The honeypot is invisible and unlabelled, so only a bot fills it.
         // Answer those exactly like a success: nothing sent, nothing learned.
