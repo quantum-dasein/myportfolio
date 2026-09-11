@@ -67,7 +67,7 @@ const paths = { en: "/contact/", de: "/de/kontakt/" };
         light, it is the one someone opens to write. */}
     <ScopeField />
     <div class="u-container ct-grid">
-      <span class="s-idx">01 - <span data-i18n="contact.label">{t("contact.label")}</span></span>
+      <span class="s-idx ct-kicker">{c("Project enquiry / Vienna", "Direktanfrage / Wien")}</span>
 
       <div class="ct-body">
         <h1 class="ct-title" data-sy-reveal="words" data-i18n="form.title">{t("form.title")}</h1>
@@ -103,6 +103,27 @@ const paths = { en: "/contact/", de: "/de/kontakt/" };
       #030405;
   }
   .ct-grid { position: relative; z-index: 1; display: grid; gap: 2rem; }
+
+  .ct-kicker {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.8rem;
+    color: rgba(var(--rgb-text), 0.58);
+    font-family: var(--font-inter);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .ct-kicker::before {
+    content: "";
+    width: 1.8rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(var(--rgb-text), 0.12), rgba(var(--rgb-text), 0.72));
+    box-shadow: 0 0 0.7rem rgba(220, 238, 246, 0.22);
+  }
 
   /* Here the lattice is atmosphere behind a form rather than the subject of the
      section, so it sits further back than it does on the profile page. */

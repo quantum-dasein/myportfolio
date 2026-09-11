@@ -368,18 +368,29 @@ const selectedWork = [
     text={t("scrub.text")}
   />
 
-  <section class="portal" id="archive">
+  <section class="portal" id="archive" data-archive-portal>
+    <div class="portal-atmosphere" aria-hidden="true">
+      <span class="portal-veil" data-portal-veil></span>
+      <span class="portal-beacon portal-beacon-a" data-portal-beacon></span>
+      <span class="portal-beacon portal-beacon-b" data-portal-beacon></span>
+      <span class="portal-beacon portal-beacon-c" data-portal-beacon></span>
+    </div>
     <div class="u-container portal-inner">
-      <div>
-        <span class="s-idx">07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
-        <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
-        <p class="portal-text" data-sy-reveal="lines" data-i18n="portal.text">{t("portal.text")}</p>
+      <div class="portal-copy">
+        <span class="s-idx portal-kicker" data-portal-kicker>07 / <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <h2 class="portal-title" data-portal-title data-i18n="portal.title">{t("portal.title")}</h2>
+        <p class="portal-text" data-portal-text data-i18n="portal.text">{t("portal.text")}</p>
       </div>
-      <a class="archive-button" href="/gallery/" data-tunnel data-reveal data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
-        <span class="archive-orbit" aria-hidden="true"></span>
-        <span class="archive-label" data-i18n="portal.cta">{t("portal.cta")}</span>
-        <span class="archive-arrow css-arrow css-arrow-down" aria-hidden="true"></span>
-      </a>
+      <div class="archive-sphere-stage" data-portal-sphere>
+        <span class="archive-aura" data-portal-aura aria-hidden="true"></span>
+        <span class="archive-halo archive-halo-far" data-portal-halo aria-hidden="true"></span>
+        <span class="archive-halo archive-halo-near" data-portal-halo aria-hidden="true"></span>
+        <a class="archive-button" href="/gallery/" data-tunnel data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
+          <span class="archive-orbit" aria-hidden="true"></span>
+          <span class="archive-label" data-portal-label data-i18n="portal.cta">{t("portal.cta")}</span>
+          <span class="archive-arrow css-arrow css-arrow-down" data-portal-label aria-hidden="true"></span>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -1555,23 +1566,85 @@ const selectedWork = [
 
   .portal {
     position: relative;
-    padding: clamp(7rem, 14vw, 12rem) 0;
+    isolation: isolate;
+    display: grid;
+    min-height: 100svh;
+    align-items: center;
+    padding: clamp(7rem, 12vw, 10rem) 0;
     overflow: hidden;
     border-block: 1px solid rgba(255, 255, 255, 0.045);
     background:
-      radial-gradient(circle at 50% 58%, rgba(255, 255, 255, 0.085), transparent 24rem),
+      radial-gradient(circle at 50% 66%, rgba(255, 255, 255, 0.075), transparent 25rem),
       radial-gradient(circle at 66% 42%, rgba(255, 255, 255, 0.035), transparent 30rem),
       rgba(2, 2, 3, 0.58);
     backdrop-filter: blur(6px);
+    perspective: 1100px;
+  }
+
+  .portal::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 58%, transparent 30%, rgba(0, 0, 0, 0.18) 67%, rgba(0, 0, 0, 0.58) 112%);
+  }
+
+  .portal-atmosphere,
+  .portal-veil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .portal-atmosphere { z-index: 0; overflow: hidden; }
+
+  .portal-veil {
+    background:
+      radial-gradient(circle at 50% 72%, rgba(2, 2, 3, 0.05), rgba(2, 2, 3, 0.5) 34rem),
+      #020203;
+    opacity: 0.18;
+  }
+
+  .portal-beacon {
+    position: absolute;
+    width: 0.24rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgba(236, 247, 252, 0.94);
+    box-shadow:
+      0 0 0.45rem rgba(225, 242, 250, 0.8),
+      0 0 2.1rem rgba(187, 220, 234, 0.48);
+  }
+
+  .portal-beacon::after {
+    content: "";
+    position: absolute;
+    inset: -0.45rem;
+    border: 1px solid rgba(225, 242, 250, 0.18);
+    border-radius: 50%;
+  }
+
+  .portal-beacon-a { top: 31%; left: 18%; }
+  .portal-beacon-b { top: 48%; right: 17%; transform: scale(0.72); }
+  .portal-beacon-c { bottom: 17%; left: 34%; transform: scale(0.52); }
+
+  .portal-copy {
+    position: relative;
+    z-index: 2;
+    transform-style: preserve-3d;
   }
 
   .portal-inner {
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3.5rem;
+    gap: clamp(1.5rem, 3vw, 2.8rem);
     text-align: center;
   }
+
+  .portal-kicker { margin-bottom: 2.5rem; }
 
   .portal-title {
     margin: 0;
@@ -1581,10 +1654,62 @@ const selectedWork = [
     line-height: 0.95;
     letter-spacing: 0;
     text-align: center;
+    text-wrap: balance;
+    transform-origin: 50% 100%;
+  }
+
+  .archive-sphere-stage {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: min(32rem, 92vw);
+    height: clamp(19rem, 28vw, 24rem);
+    place-items: center;
+    margin-top: -1.25rem;
+    transform-style: preserve-3d;
+  }
+
+  .archive-aura,
+  .archive-halo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .archive-aura {
+    z-index: -2;
+    width: min(29rem, 88vw);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle, rgba(212, 228, 235, 0.19) 0, rgba(153, 184, 198, 0.105) 27%, rgba(166, 111, 53, 0.055) 46%, transparent 70%);
+    filter: blur(10px);
+  }
+
+  .archive-halo {
+    z-index: -1;
+    border: 1px solid rgba(222, 237, 243, 0.1);
+    transform: translate(-50%, -50%) rotate(-12deg) scaleY(0.34);
+  }
+
+  .archive-halo-far {
+    width: min(27rem, 84vw);
+    aspect-ratio: 1;
+    border-color: rgba(216, 232, 239, 0.07);
+    box-shadow: 0 0 3.2rem rgba(179, 209, 220, 0.06);
+  }
+
+  .archive-halo-near {
+    width: min(21rem, 68vw);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) rotate(19deg) scaleY(0.42);
   }
 
   .archive-button {
     position: relative;
+    z-index: 2;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -1625,6 +1750,9 @@ const selectedWork = [
   .archive-button::before {
     inset: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.045);
+    background:
+      radial-gradient(circle at 28% 22%, rgba(225, 240, 246, 0.09), transparent 32%),
+      radial-gradient(circle at 72% 74%, rgba(96, 122, 135, 0.08), transparent 38%);
   }
 
   .archive-button::after {
@@ -1694,8 +1822,14 @@ const selectedWork = [
   }
 
   @media (max-width: 760px) {
-    .portal-inner { gap: 2.5rem; }
+    .portal { min-height: auto; padding-block: 7rem 5.5rem; }
+    .portal-inner { gap: 1.5rem; }
+    .portal-kicker { margin-bottom: 1.5rem; }
+    .archive-sphere-stage { height: 18rem; margin-top: 0; }
     .archive-button { width: 13rem; justify-self: center; }
+    .portal-beacon-a { left: 9%; }
+    .portal-beacon-b { right: 8%; }
+    .portal-beacon-c { left: 24%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2313,6 +2447,119 @@ const selectedWork = [
   }
 
   addEventListener("rb:langchange", () => requestAnimationFrame(() => ScrollTrigger.refresh()));
+
+  // ── Archive portal ───────────────────────────────────────────────────────
+  // One scroll-controlled shot instead of three unrelated reveal helpers.
+  // The page remains the camera: darkness opens first, copy resolves through
+  // a mask, and only then does the archive sphere form and light its label.
+  // All expensive work is bounded to this section and mobile skips text blur.
+  const archivePortal = document.querySelector<HTMLElement>("[data-archive-portal]");
+  const portalInner = archivePortal?.querySelector<HTMLElement>(".portal-inner") ?? null;
+  const portalKicker = archivePortal?.querySelector<HTMLElement>("[data-portal-kicker]") ?? null;
+  const portalTitle = archivePortal?.querySelector<HTMLElement>("[data-portal-title]") ?? null;
+  const portalText = archivePortal?.querySelector<HTMLElement>("[data-portal-text]") ?? null;
+  const portalSphere = archivePortal?.querySelector<HTMLElement>("[data-portal-sphere]") ?? null;
+  const portalAura = archivePortal?.querySelector<HTMLElement>("[data-portal-aura]") ?? null;
+  const portalVeil = archivePortal?.querySelector<HTMLElement>("[data-portal-veil]") ?? null;
+  const portalHalos = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-halo]", archivePortal) : [];
+  const portalBeacons = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-beacon]", archivePortal) : [];
+  const portalLabels = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-label]", archivePortal) : [];
+  let portalTimeline: ReturnType<typeof gsap.timeline> | null = null;
+
+  const portalAnimatedParts = [
+    portalInner,
+    portalKicker,
+    portalTitle,
+    portalText,
+    portalSphere,
+    portalAura,
+    portalVeil,
+    ...portalHalos,
+    ...portalBeacons,
+    ...portalLabels,
+  ].filter(Boolean) as HTMLElement[];
+
+  const settleArchivePortal = () => {
+    portalTimeline?.scrollTrigger?.kill();
+    portalTimeline?.kill();
+    portalTimeline = null;
+    gsap.set(portalAnimatedParts, {
+      clearProps: "opacity,visibility,transform,filter,clipPath,willChange",
+    });
+  };
+
+  const initArchivePortal = () => {
+    if (!archivePortal || !portalInner || !portalKicker || !portalTitle || !portalText || !portalSphere || !portalAura || !portalVeil) return;
+    settleArchivePortal();
+    if (reduced || calm()) return;
+
+    const mobile = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+    gsap.set(portalAnimatedParts, { willChange: "transform, opacity" });
+
+    portalTimeline = gsap.timeline({
+      defaults: { ease: "power4.out" },
+      scrollTrigger: {
+        trigger: archivePortal,
+        start: "top 92%",
+        end: mobile ? "top 24%" : "top 18%",
+        scrub: mobile ? 0.42 : 0.78,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    portalTimeline
+      .from(portalInner, { scale: 0.975, z: -64, duration: 1.05, ease: "none" }, 0)
+      .from(portalVeil, { opacity: 1, duration: 0.9, ease: "none" }, 0)
+      .from(portalKicker, { autoAlpha: 0, y: -22, duration: 0.24 }, 0.06)
+      .from(portalTitle, {
+        autoAlpha: 0,
+        y: mobile ? 34 : 62,
+        scale: 0.975,
+        filter: mobile ? "none" : "blur(14px)",
+        clipPath: "inset(0 0 100% 0)",
+        duration: 0.54,
+      }, 0.12)
+      .from(portalText, {
+        autoAlpha: 0,
+        y: mobile ? 20 : 30,
+        clipPath: "inset(0 0 100% 0)",
+        duration: 0.38,
+      }, 0.38)
+      .from(portalAura, { autoAlpha: 0, scale: 0.18, duration: 0.66, ease: "power2.out" }, 0.2)
+      .from(portalHalos, {
+        autoAlpha: 0,
+        scale: 0.24,
+        rotation: -34,
+        duration: 0.7,
+        stagger: 0.07,
+      }, 0.25)
+      .from(portalSphere, {
+        autoAlpha: 0,
+        y: mobile ? 52 : 88,
+        scale: 0.07,
+        rotation: -5,
+        duration: 0.72,
+        ease: "expo.out",
+      }, 0.27)
+      .from(portalBeacons, {
+        autoAlpha: 0,
+        y: mobile ? 12 : 28,
+        scale: 0.1,
+        duration: 0.34,
+        stagger: 0.055,
+      }, 0.46)
+      .from(portalLabels, {
+        autoAlpha: 0,
+        y: 10,
+        duration: 0.2,
+        stagger: 0.035,
+      }, 0.78);
+
+    ScrollTrigger.refresh();
+  };
+
+  document.fonts.ready.then(() => requestAnimationFrame(initArchivePortal));
+  addEventListener("rb:calmchange", () => requestAnimationFrame(initArchivePortal));
 
   const tiltCards = gsap.utils.toArray<HTMLElement>("[data-tilt-card]");
   if (finePointer) tiltCards.forEach((card) => {
