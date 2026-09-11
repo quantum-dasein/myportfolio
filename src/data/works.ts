@@ -208,4 +208,20 @@ export const works: Work[] = [
       de: "Das erste FIDIC-OSH-Treffen in Taschkent, Juni 2026 — Vertragsmanager, Ingenieure und Claims-Spezialisten an einem Tisch, und die Sitzung, aus der der FIDIC Club entstand. Am selben Tag gedreht und geschnitten, im Format, in dem der Kunde tatsächlich publiziert: vertikal, untertitelt, unter einer Minute.",
     },
   },
+  {
+    id: "summer-school-georgia-2026",
+    img: "/portfolio/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel-poster.webp",
+    video: "/portfolio/video/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel.mp4",
+    ratio: "vertical",
+    type: "reel",
+    title: "Summer School Georgia 2026",
+    kCat: "gallery.7.cat",
+    href: "https://t.me/fidicuzb",
+    hrefLabel: "PLAY REEL",
+    detail: {
+      tools: "ON LOCATION / PREMIERE PRO",
+      en: "Three days of advanced contract management in Borjomi — 41 practical questions across 18 blocks, from programme and delay analysis through variations and claims to DAAB and arbitration. Cut from the week's footage into something the client could publish while the cohort was still in the room.",
+      de: "Drei Tage Advanced Contract Management in Bordschomi — 41 Praxisfragen in 18 Blöcken, von Programme und Delay Analysis über Variations und Claims bis DAAB und Schiedsverfahren. Aus dem Material der Woche zu etwas geschnitten, das der Kunde publizieren konnte, solange die Gruppe noch im Raum saß.",
+    },
+  },
 ];

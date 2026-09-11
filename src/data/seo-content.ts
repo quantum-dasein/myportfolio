@@ -265,7 +265,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     // The two cases whose sites carry motion of their own — a background film
     // on one, CSS-only motion on the other. Not FIDIC: it is a text platform.
     cases: ["bridge", "academy"],
-    reel: ["squidz-pos-display", "lake-como-interior-film", "alpine-equipment-product-film", "fidic-osh-first-meeting"],
+    reel: ["squidz-pos-display", "lake-como-interior-film", "alpine-equipment-product-film", "fidic-osh-first-meeting", "summer-school-georgia-2026"],
     paths: { en: "/en/3d-animation-video-vienna/", de: "/de/3d-animation-video-wien/" },
     title: c("Video, reels and 3D animation in Vienna.", "Video, Reels und 3D-Animation in Wien."),
     description: c(
