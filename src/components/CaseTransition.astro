@@ -120,8 +120,18 @@
 </style>
 
 <script>
-  import * as THREE from "three";
+  // Type-only: erased at build, so every `THREE.Mesh` annotation below still
+  // reads the same and none of it reaches the browser. The runtime namespace is
+  // fetched on intent instead — see loadThree(). Statically importing three here
+  // cost every page carrying this component 528 KB of JavaScript to download and
+  // parse for a transition most visitors never trigger, and this component is on
+  // nearly every page.
+  import type * as THREE from "three";
   import gsap from "gsap";
+
+  let TH: typeof import("three");
+  let threeRequest: Promise<typeof import("three")> | null = null;
+  const loadThree = () => (threeRequest ??= import("three").then((m) => (TH = m)));
   // This site is a classic MPA — ClientRouter was removed. A module script is
   // deferred, so the DOM is already parsed when it runs; there is no page-load
   // event to wait for and no client router to navigate through.
@@ -234,37 +244,37 @@
       positions[i * 3 + 1] = (Math.random() - .5) * 22;
       positions[i * 3 + 2] = (Math.random() - .5) * 32 - 4;
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const points = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xe9f0f3, size: .035, transparent: true, opacity: .72 }));
+    const geometry = new TH.BufferGeometry();
+    geometry.setAttribute("position", new TH.BufferAttribute(positions, 3));
+    const points = new TH.Points(geometry, new TH.PointsMaterial({ color: 0xe9f0f3, size: .035, transparent: true, opacity: .72 }));
     points.userData.spin = .025;
     target.add(points);
     animated.push(points);
   }
 
   function bridgeWorld(target: THREE.Scene) {
-    const group = new THREE.Group();
-    const graphite = new THREE.MeshPhysicalMaterial({ color: 0x111416, metalness: .86, roughness: .22, clearcoat: .82, transparent: true, opacity: .08 });
-    const road = new THREE.MeshPhysicalMaterial({ color: 0x20252a, metalness: .7, roughness: .34, transparent: true, opacity: .08 });
-    const chrome = new THREE.MeshStandardMaterial({ color: 0xbfc8ce, metalness: .95, roughness: .15, transparent: true, opacity: .12 });
-    const signal = new THREE.MeshStandardMaterial({ color: 0xf5f7f8, emissive: 0xd8b777, emissiveIntensity: 2.2, metalness: .65, roughness: .16 });
-    const wireMaterial = new THREE.LineBasicMaterial({ color: 0xf2f6f8, transparent: true, opacity: .82 });
+    const group = new TH.Group();
+    const graphite = new TH.MeshPhysicalMaterial({ color: 0x111416, metalness: .86, roughness: .22, clearcoat: .82, transparent: true, opacity: .08 });
+    const road = new TH.MeshPhysicalMaterial({ color: 0x20252a, metalness: .7, roughness: .34, transparent: true, opacity: .08 });
+    const chrome = new TH.MeshStandardMaterial({ color: 0xbfc8ce, metalness: .95, roughness: .15, transparent: true, opacity: .12 });
+    const signal = new TH.MeshStandardMaterial({ color: 0xf5f7f8, emissive: 0xd8b777, emissiveIntensity: 2.2, metalness: .65, roughness: .16 });
+    const wireMaterial = new TH.LineBasicMaterial({ color: 0xf2f6f8, transparent: true, opacity: .82 });
 
     const deckCount = lowPower ? 24 : 34;
     for (let i = 0; i < deckCount; i++) {
       const finalZ = 5.2 - i * 1.18;
-      const slab = new THREE.Mesh(new THREE.BoxGeometry(6.6, .18, 1.08), i % 4 === 0 ? graphite.clone() : road.clone());
+      const slab = new TH.Mesh(new TH.BoxGeometry(6.6, .18, 1.08), i % 4 === 0 ? graphite.clone() : road.clone());
       slab.position.set(0, 0, finalZ);
       slab.userData.role = "deck";
       slab.userData.finalZ = finalZ;
-      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(slab.geometry), wireMaterial.clone());
+      const edges = new TH.LineSegments(new TH.EdgesGeometry(slab.geometry), wireMaterial.clone());
       edges.userData.role = "wire";
       slab.add(edges);
       group.add(slab);
       animated.push(slab, edges);
 
       [-1.35, 1.35].forEach((x) => {
-        const lane = new THREE.Mesh(new THREE.BoxGeometry(.035, .025, .86), signal);
+        const lane = new TH.Mesh(new TH.BoxGeometry(.035, .025, .86), signal);
         lane.position.set(x, .105, finalZ);
         lane.userData.role = "lane";
         lane.userData.finalZ = finalZ;
@@ -275,17 +285,17 @@
 
     const towerZs = [-9.2, -25.7];
     towerZs.forEach((z, towerIndex) => {
-      const tower = new THREE.Group();
+      const tower = new TH.Group();
       tower.position.z = z;
       tower.userData.role = "tower";
       [-2.75, 2.75].forEach((x) => {
-        const pylon = new THREE.Mesh(new THREE.BoxGeometry(.48, 7.4, .58), chrome.clone());
+        const pylon = new TH.Mesh(new TH.BoxGeometry(.48, 7.4, .58), chrome.clone());
         pylon.position.set(x, 3.7, 0);
-        const outline = new THREE.LineSegments(new THREE.EdgesGeometry(pylon.geometry), wireMaterial.clone());
+        const outline = new TH.LineSegments(new TH.EdgesGeometry(pylon.geometry), wireMaterial.clone());
         pylon.add(outline);
         tower.add(pylon);
       });
-      const crown = new THREE.Mesh(new THREE.BoxGeometry(6.05, .34, .46), chrome.clone());
+      const crown = new TH.Mesh(new TH.BoxGeometry(6.05, .34, .46), chrome.clone());
       crown.position.y = 6.55;
       tower.add(crown);
       group.add(tower);
@@ -295,14 +305,14 @@
         const distance = 2.7 + i * 1.75;
         [-1, 1].forEach((side) => {
           [-1, 1].forEach((bank) => {
-            const start = new THREE.Vector3(bank * 2.72, 6.15 - i * .22, z);
-            const end = new THREE.Vector3(bank * 3.12, .18, z + side * distance);
+            const start = new TH.Vector3(bank * 2.72, 6.15 - i * .22, z);
+            const end = new TH.Vector3(bank * 3.12, .18, z + side * distance);
             const midpoint = start.clone().add(end).multiplyScalar(.5);
             const direction = end.clone().sub(start);
             const length = direction.length();
-            const cable = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, length, 6), signal.clone());
+            const cable = new TH.Mesh(new TH.CylinderGeometry(.018, .018, length, 6), signal.clone());
             cable.position.copy(midpoint);
-            cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+            cable.quaternion.setFromUnitVectors(new TH.Vector3(0, 1, 0), direction.normalize());
             cable.userData.role = "cable";
             cable.userData.order = towerIndex * 14 + i * 2 + (side > 0 ? 1 : 0);
             group.add(cable);
@@ -318,7 +328,7 @@
   }
 
   function bookWorld(target: THREE.Scene) {
-    const book = new THREE.Group();
+    const book = new TH.Group();
     const atlasTexture = (pageIndex: number, cover = false) => {
       const textureCanvas = document.createElement("canvas");
       textureCanvas.width = lowPower ? 512 : 1024;
@@ -361,23 +371,23 @@
       ["20.1  CLAIMS", "20.2  NOTICE", "21.6  DAAB", "08.5  TIME"].forEach((line, lineIndex) => {
         context.fillText(line, 82, 330 + lineIndex * 58);
       });
-      const texture = new THREE.CanvasTexture(textureCanvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
+      const texture = new TH.CanvasTexture(textureCanvas);
+      texture.colorSpace = TH.SRGBColorSpace;
       texture.anisotropy = Math.min(renderer?.capabilities.getMaxAnisotropy() || 4, 8);
       return texture;
     };
-    const coverMat = new THREE.MeshPhysicalMaterial({ map: atlasTexture(0, true), color: 0xffffff, metalness: .32, roughness: .32, clearcoat: 1 });
-    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xb8c1c7, metalness: .9, roughness: .18 });
-    const back = new THREE.Mesh(new THREE.BoxGeometry(7.8, 5.15, .18), coverMat.clone());
+    const coverMat = new TH.MeshPhysicalMaterial({ map: atlasTexture(0, true), color: 0xffffff, metalness: .32, roughness: .32, clearcoat: 1 });
+    const edgeMat = new TH.MeshStandardMaterial({ color: 0xb8c1c7, metalness: .9, roughness: .18 });
+    const back = new TH.Mesh(new TH.BoxGeometry(7.8, 5.15, .18), coverMat.clone());
     back.position.z = -.32;
     book.add(back);
     animated.push(back);
 
     for (let i = 0; i < 9; i++) {
-      const pivot = new THREE.Group();
+      const pivot = new TH.Group();
       pivot.position.set(-3.72, 0, -.18 + i * .032);
-      const pageMaterial = new THREE.MeshStandardMaterial({ map: atlasTexture(i), color: 0xffffff, roughness: .68, side: THREE.DoubleSide });
-      const page = new THREE.Mesh(new THREE.PlaneGeometry(7.35, 4.72, 16, 10), pageMaterial);
+      const pageMaterial = new TH.MeshStandardMaterial({ map: atlasTexture(i), color: 0xffffff, roughness: .68, side: TH.DoubleSide });
+      const page = new TH.Mesh(new TH.PlaneGeometry(7.35, 4.72, 16, 10), pageMaterial);
       page.position.x = 3.675;
       pivot.add(page);
       book.add(pivot);
@@ -386,22 +396,22 @@
       animated.push(pivot);
     }
 
-    const coverPivot = new THREE.Group();
+    const coverPivot = new TH.Group();
     coverPivot.position.x = -3.9;
     coverPivot.userData.cover = true;
-    const cover = new THREE.Mesh(new THREE.BoxGeometry(7.8, 5.15, .14), coverMat);
+    const cover = new TH.Mesh(new TH.BoxGeometry(7.8, 5.15, .14), coverMat);
     cover.position.x = 3.9;
     coverPivot.add(cover);
     book.add(coverPivot);
     animated.push(coverPivot);
 
-    const spine = new THREE.Mesh(new THREE.BoxGeometry(.15, 5.28, .45), edgeMat);
+    const spine = new TH.Mesh(new TH.BoxGeometry(.15, 5.28, .45), edgeMat);
     spine.position.set(-3.92, 0, -.05);
     book.add(spine);
     animated.push(spine);
-    const orbit = new THREE.Mesh(
-      new THREE.TorusGeometry(5.25, .014, 5, 180),
-      new THREE.MeshBasicMaterial({ color: 0xc9d1d6, transparent: true, opacity: .34 }),
+    const orbit = new TH.Mesh(
+      new TH.TorusGeometry(5.25, .014, 5, 180),
+      new TH.MeshBasicMaterial({ color: 0xc9d1d6, transparent: true, opacity: .34 }),
     );
     orbit.rotation.set(1.12, .08, .1);
     orbit.position.z = -1.8;
@@ -417,23 +427,23 @@
 
   function init(kind: CaseKind) {
     disposeScene();
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowPower, alpha: false, powerPreference: "high-performance" });
+    renderer = new TH.WebGLRenderer({ canvas, antialias: !lowPower, alpha: false, powerPreference: "high-performance" });
     renderer.setPixelRatio(lowPower ? 1 : Math.min(devicePixelRatio, 1.5));
     renderer.setSize(innerWidth, innerHeight, false);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.outputColorSpace = TH.SRGBColorSpace;
+    renderer.toneMapping = TH.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.35;
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020304);
-    scene.fog = new THREE.FogExp2(0x020304, .04);
-    camera = new THREE.PerspectiveCamera(kind === "bridge" ? 58 : 46, innerWidth / innerHeight, .1, 120);
+    scene = new TH.Scene();
+    scene.background = new TH.Color(0x020304);
+    scene.fog = new TH.FogExp2(0x020304, .04);
+    camera = new TH.PerspectiveCamera(kind === "bridge" ? 58 : 46, innerWidth / innerHeight, .1, 120);
     camera.position.set(0, kind === "bridge" ? .72 : .15, kind === "bridge" ? 8.2 : 9.4);
     if (kind === "bridge") camera.lookAt(0, -.1, -24);
-    scene.add(new THREE.HemisphereLight(0xdde8ee, 0x050607, 1.5));
-    const key = new THREE.DirectionalLight(0xffffff, 6);
+    scene.add(new TH.HemisphereLight(0xdde8ee, 0x050607, 1.5));
+    const key = new TH.DirectionalLight(0xffffff, 6);
     key.position.set(-4, 7, 8);
     scene.add(key);
-    const rim = new THREE.PointLight(kind === "bridge" ? 0xd7e0e5 : 0xbcc9d2, 18, 36);
+    const rim = new TH.PointLight(kind === "bridge" ? 0xd7e0e5 : 0xbcc9d2, 18, 36);
     rim.position.set(5, -1, 5);
     scene.add(rim);
     addStars(scene);
@@ -491,7 +501,7 @@
     else reveal();
   }
 
-  function play(kind: CaseKind, direction: "depart" | "exit", done?: () => void) {
+  async function play(kind: CaseKind, direction: "depart" | "exit", done?: () => void) {
     if (running) return;
     running = true;
     const returning = direction === "exit";
@@ -515,6 +525,16 @@
       else reset();
     };
     safetyTimer = window.setTimeout(finish, 3000);
+
+    // Everything above is DOM and CSS: the overlay, the HUD and the navigation
+    // failsafe are already up before the engine is asked for. So the wait costs
+    // the visitor nothing they can see, and on any link they hovered first it is
+    // already resolved. If the failsafe fired while we waited, the document is
+    // navigating — do not start building a scene for it.
+    try { await loadThree(); }
+    catch { finish(); return; }
+    if (finished) return;
+
     let object: THREE.Group;
     try { object = init(kind); }
     catch { finish(); return; }
@@ -761,6 +781,16 @@
   }
 
   window.__rbCaseTransition = navigate;
+
+  // Intent, not load. A pointer arriving over a case link, or a keyboard
+  // reaching it, is the earliest honest signal that the engine will be needed;
+  // by the time the click lands it is usually parsed and warm.
+  const wantsScene = (target: EventTarget | null) =>
+    target instanceof Element && Boolean(target.closest("a[data-case-link], a[data-case-exit], a[data-case-back]"));
+  const prefetchThree = (event: Event) => { if (wantsScene(event.target)) loadThree().catch(() => {}); };
+  addEventListener("pointerover", prefetchThree, { passive: true });
+  addEventListener("focusin", prefetchThree);
+  addEventListener("touchstart", prefetchThree, { passive: true });
 
   document.addEventListener("click", (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

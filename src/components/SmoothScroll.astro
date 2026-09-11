@@ -17,6 +17,21 @@
   window.scrollVelocity = 0;
   window.scrollDirection = 1;
 
+  // One flag for the whole page. Decorative layers — the star drift, the grain,
+  // the dot field — stand still while the reader is moving and pick up again the
+  // moment they stop. Nobody resolves a 26-second drift mid-scroll, and on a
+  // throttled machine those layers were costing a measured 2.5 fps of the scroll
+  // itself. Deliberately does not read layout, so the listener stays free.
+  {
+    const root = document.documentElement;
+    let idle = 0;
+    addEventListener("scroll", () => {
+      root.classList.add("rb-scrolling");
+      clearTimeout(idle);
+      idle = window.setTimeout(() => root.classList.remove("rb-scrolling"), 160);
+    }, { passive: true });
+  }
+
   // Touch scroll stays entirely browser-owned, including momentum and toolbar
   // resizing on iOS. Do not write scrollTo from a native scroll/scrollend event.
   const nativeScroll = matchMedia("(pointer: coarse)").matches;

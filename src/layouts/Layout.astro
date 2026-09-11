@@ -523,6 +523,14 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     animation: fx-grain 0.8s steps(2) infinite;
   }
 
+  /* Both layers are fixed and full-screen, so each is a composited surface the
+     browser re-blends on every scrolled frame. Holding them still while the page
+     moves hands that work back without touching how either one looks. */
+  :global(html.rb-scrolling) .site-fx__stars,
+  :global(html.rb-scrolling) .site-fx__grain {
+    animation-play-state: paused;
+  }
+
   .site-fx__scan {
     display: none;
   }
