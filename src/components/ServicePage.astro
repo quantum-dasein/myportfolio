@@ -285,7 +285,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       <div class="u-container"><span class="eyebrow" data-reveal>FAQ</span>{service.faq.map((item) => <details data-reveal><summary>{pick(item.question, lang)}</summary><p>{pick(item.answer, lang)}</p></details>)}</div>
     </section>
 
-    {scope && (
+    {scope && serviceKey !== "motion" && (
       <section class="service-cta">
         <div class="u-container">
           <span class="eyebrow" data-reveal>{de ? "WAS ES KOSTET" : "WHAT IT COSTS"}</span>
