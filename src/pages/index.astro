@@ -382,9 +382,6 @@ const selectedWork = [
         <p class="portal-text" data-portal-text data-i18n="portal.text">{t("portal.text")}</p>
       </div>
       <div class="archive-sphere-stage" data-portal-sphere>
-        <span class="archive-aura" data-portal-aura aria-hidden="true"></span>
-        <span class="archive-halo archive-halo-far" data-portal-halo aria-hidden="true"></span>
-        <span class="archive-halo archive-halo-near" data-portal-halo aria-hidden="true"></span>
         <a class="archive-button" href="/gallery/" data-tunnel data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
           <span class="archive-orbit" aria-hidden="true"></span>
           <span class="archive-label" data-portal-label data-i18n="portal.cta">{t("portal.cta")}</span>
@@ -1640,11 +1637,11 @@ const selectedWork = [
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(1.5rem, 3vw, 2.8rem);
+    gap: 3.5rem;
     text-align: center;
   }
 
-  .portal-kicker { margin-bottom: 2.5rem; }
+  .portal-kicker { margin-bottom: 2rem; }
 
   .portal-title {
     margin: 0;
@@ -1662,49 +1659,8 @@ const selectedWork = [
     position: relative;
     z-index: 1;
     display: grid;
-    width: min(32rem, 92vw);
-    height: clamp(19rem, 28vw, 24rem);
     place-items: center;
-    margin-top: -1.25rem;
     transform-style: preserve-3d;
-  }
-
-  .archive-aura,
-  .archive-halo {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  .archive-aura {
-    z-index: -2;
-    width: min(29rem, 88vw);
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%);
-    background:
-      radial-gradient(circle, rgba(212, 228, 235, 0.19) 0, rgba(153, 184, 198, 0.105) 27%, rgba(166, 111, 53, 0.055) 46%, transparent 70%);
-    filter: blur(10px);
-  }
-
-  .archive-halo {
-    z-index: -1;
-    border: 1px solid rgba(222, 237, 243, 0.1);
-    transform: translate(-50%, -50%) rotate(-12deg) scaleY(0.34);
-  }
-
-  .archive-halo-far {
-    width: min(27rem, 84vw);
-    aspect-ratio: 1;
-    border-color: rgba(216, 232, 239, 0.07);
-    box-shadow: 0 0 3.2rem rgba(179, 209, 220, 0.06);
-  }
-
-  .archive-halo-near {
-    width: min(21rem, 68vw);
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%) rotate(19deg) scaleY(0.42);
   }
 
   .archive-button {
@@ -1750,9 +1706,6 @@ const selectedWork = [
   .archive-button::before {
     inset: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.045);
-    background:
-      radial-gradient(circle at 28% 22%, rgba(225, 240, 246, 0.09), transparent 32%),
-      radial-gradient(circle at 72% 74%, rgba(96, 122, 135, 0.08), transparent 38%);
   }
 
   .archive-button::after {
@@ -1823,9 +1776,8 @@ const selectedWork = [
 
   @media (max-width: 760px) {
     .portal { min-height: auto; padding-block: 7rem 5.5rem; }
-    .portal-inner { gap: 1.5rem; }
+    .portal-inner { gap: 2.5rem; }
     .portal-kicker { margin-bottom: 1.5rem; }
-    .archive-sphere-stage { height: 18rem; margin-top: 0; }
     .archive-button { width: 13rem; justify-self: center; }
     .portal-beacon-a { left: 9%; }
     .portal-beacon-b { right: 8%; }
@@ -2459,9 +2411,7 @@ const selectedWork = [
   const portalTitle = archivePortal?.querySelector<HTMLElement>("[data-portal-title]") ?? null;
   const portalText = archivePortal?.querySelector<HTMLElement>("[data-portal-text]") ?? null;
   const portalSphere = archivePortal?.querySelector<HTMLElement>("[data-portal-sphere]") ?? null;
-  const portalAura = archivePortal?.querySelector<HTMLElement>("[data-portal-aura]") ?? null;
   const portalVeil = archivePortal?.querySelector<HTMLElement>("[data-portal-veil]") ?? null;
-  const portalHalos = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-halo]", archivePortal) : [];
   const portalBeacons = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-beacon]", archivePortal) : [];
   const portalLabels = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-label]", archivePortal) : [];
   let portalTimeline: ReturnType<typeof gsap.timeline> | null = null;
@@ -2472,9 +2422,7 @@ const selectedWork = [
     portalTitle,
     portalText,
     portalSphere,
-    portalAura,
     portalVeil,
-    ...portalHalos,
     ...portalBeacons,
     ...portalLabels,
   ].filter(Boolean) as HTMLElement[];
@@ -2489,7 +2437,7 @@ const selectedWork = [
   };
 
   const initArchivePortal = () => {
-    if (!archivePortal || !portalInner || !portalKicker || !portalTitle || !portalText || !portalSphere || !portalAura || !portalVeil) return;
+    if (!archivePortal || !portalInner || !portalKicker || !portalTitle || !portalText || !portalSphere || !portalVeil) return;
     settleArchivePortal();
     if (reduced || calm()) return;
 
@@ -2525,14 +2473,6 @@ const selectedWork = [
         clipPath: "inset(0 0 100% 0)",
         duration: 0.38,
       }, 0.38)
-      .from(portalAura, { autoAlpha: 0, scale: 0.18, duration: 0.66, ease: "power2.out" }, 0.2)
-      .from(portalHalos, {
-        autoAlpha: 0,
-        scale: 0.24,
-        rotation: -34,
-        duration: 0.7,
-        stagger: 0.07,
-      }, 0.25)
       .from(portalSphere, {
         autoAlpha: 0,
         y: mobile ? 52 : 88,
