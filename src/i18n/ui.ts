@@ -1039,14 +1039,14 @@ export const ui = {
     "studio.cta.insight": "Wo KI hilft — und wo sie das falsche Werkzeug ist",
     "studio.cta.live": "Archiv öffnen",
 
-    "services.teaser.title": "Sieben Wege zu starten. Kein Mindestprojekt.",
+    "services.teaser.title": "Sieben Wege zu starten. Kein Min­dest­pro­jekt.",
     "services.teaser.text":
       "Eine Landingpage, ein Reel, ein konkreter SEO-Fix — oder eine Plattform in drei Sprachen. Startpreise und Zeitrahmen sehen Sie, bevor Sie ein Formular ausfüllen.",
     "services.eyebrow": "Websites · Video · SEO / Wien",
     "services.title": "Eine Seite, ein Reel oder das ganze System.",
     "services.lead": "Starten Sie mit dem, was jetzt fertig werden muss. Eine Landingpage, ein sauberer Hochformat-Schnitt oder ein konkreter SEO-Fix ist hier ein vollständiger Auftrag — kein Einstieg in ein größeres Paket. Brauchen Sie Website, Shop, Plattform oder 3D-Produktion, gibt es das ebenfalls.",
     "services.scope.label": "Was Sie brauchen",
-    "services.scope.title": "Sieben sinnvolle Größen, kein Mindestprojekt.",
+    "services.scope.title": "Sieben sinnvolle Größen, kein Min­dest­pro­jekt.",
     "services.scope.lead": "Startpreise, keine Angebote: Die echte Zahl steht binnen eines Tages fest, sobald der Umfang klar ist. Ein Reel ist ein genauso vollständiger Auftrag wie eine Plattform.",
     "services.scope.note": "Nicht auf der Liste, oder unsicher, was zutrifft? Schreiben Sie trotzdem — es unbeholfen zu beschreiben ist völlig in Ordnung, das Sortieren ist mein Job.",
     "services.scope.cta": "Festpreis anfragen",

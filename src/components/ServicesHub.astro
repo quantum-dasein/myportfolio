@@ -406,6 +406,12 @@ const research = [1, 2, 3, 4].map((n) => ({
     letter-spacing: -0.035em;
     margin: 0 0 2.5rem;
     max-width: 18ch;
+    /* German compounds outrun the line on a phone. Hyphenation where a
+       dictionary exists, and the soft hyphens carried in the string itself
+       where one does not — the reset's overflow-wrap: break-word stays as the
+       last resort it is meant to be. */
+    hyphens: auto;
+    -webkit-hyphens: auto;
   }
 
   /* ── Service cards ─────────────────────────────────────────────────────── */

@@ -2146,6 +2146,14 @@ const selectedWork = [
       max-width: 100%;
       font-size: clamp(2.55rem, 12vw, 3.45rem);
       line-height: .98;
+      /* German compounds are longer than a phone is wide at 3.45rem, and the
+         reset's overflow-wrap: break-word then breaks them wherever it likes —
+         "Mindestprojekt" filled the line exactly and left its full stop alone on
+         the next one. Hyphenation gives the browser a legitimate break to
+         prefer; the soft hyphens in the dictionary give it one even where no
+         hyphenation dictionary is installed. */
+      hyphens: auto;
+      -webkit-hyphens: auto;
     }
     .s-lead { margin-top: 1.25rem; font-size: .98rem; line-height: 1.55; }
 
