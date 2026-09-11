@@ -37,8 +37,17 @@
   camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio ?? 1, 2));
+  // The sculpture is raymarched in a fragment shader and the scene is drawn
+  // TWICE per frame — once into the refraction target, once to the screen. That
+  // makes cost scale with pixel count twice over, so on a 2x display an
+  // uncapped ratio was raymarching ten megapixels sixty times a second for a
+  // soft chrome object that carries no fine detail. It starts capped and tunes
+  // itself down from there; see the frame sampler in the ticker below.
+  let pixelRatio = Math.min(window.devicePixelRatio ?? 1, 1.75);
+  // Supersampling above 1.5 already resolves the edges; MSAA on top of it is
+  // paid for and not seen.
+  const renderer = new THREE.WebGLRenderer({ antialias: pixelRatio < 1.5 });
+  renderer.setPixelRatio(pixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor("#fff");
   renderer.setClearAlpha(0);
@@ -500,8 +509,43 @@ void main() {
   let pixelToUnit = -FRUSTUM_SIZE / window.innerHeight;
   let isPlaced = true;
 
+  // Measure this machine instead of guessing at it. Over the first stretch of
+  // frames, if the renderer cannot hold roughly fifty, step the resolution down
+  // one notch and look again. A fast GPU never leaves 1.75; a laptop that
+  // stutters lands on something it can actually hold, which is the whole point.
+  // One-way only — stepping back up would oscillate on a borderline device.
+  const RATIO_STEPS = [1.75, 1.35, 1];
+  let ratioStep = RATIO_STEPS.indexOf(pixelRatio);
+  if (ratioStep < 0) ratioStep = pixelRatio > 1.35 ? 0 : pixelRatio > 1 ? 1 : 2;
+  let sampleCount = 0;
+  let sampleTotal = 0;
+  let lastFrame = 0;
+
+  const applyPixelRatio = (next: number) => {
+    if (next === pixelRatio) return;
+    pixelRatio = next;
+    renderer.setPixelRatio(pixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    globals.uResolution.value.set(canvas.width, canvas.height);
+  };
+
+  const sampleFrame = (now: number) => {
+    if (ratioStep >= RATIO_STEPS.length - 1) return;   // already at the floor
+    if (!lastFrame) { lastFrame = now; return; }
+    const delta = (now - lastFrame) * 1000;
+    lastFrame = now;
+    if (delta > 200) return;                            // a tab coming back, not a slow frame
+    sampleTotal += delta;
+    if (++sampleCount < 90) return;
+    const average = sampleTotal / sampleCount;
+    sampleCount = 0;
+    sampleTotal = 0;
+    if (average > 20) applyPixelRatio(RATIO_STEPS[++ratioStep]);
+  };
+
   gsap.ticker.fps(60);
   gsap.ticker.add((t) => {
+    sampleFrame(t);
     globals.uTime.value = t * 1000;
 
     const vel = isPlaced ? 0 : window.scrollVelocity;
@@ -670,7 +714,7 @@ void main() {
 
       pixelToUnit = -FRUSTUM_SIZE / this.height;
 
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio ?? 1, 2));
+      renderer.setPixelRatio(pixelRatio);
       renderer.setSize(this.width, this.height);
 
       globals.uResolution.value.set(canvas.width, canvas.height);
