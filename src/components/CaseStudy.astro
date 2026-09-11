@@ -741,7 +741,16 @@ const caseSchema = {
     align-items: end;
   }
   .fidic-platform-head .chapter-label { grid-column: 1 / -1; }
-  .fidic-platform-head h2 { max-width: 13ch; margin: 0; font: 500 clamp(3.2rem,5.3vw,5.8rem)/.92 var(--font-display); text-wrap: balance; }
+  /* The constraint here is the grid column, not max-width. The container stops
+     growing at its max width, so from about 1440 up this column is fixed near
+     700px — while 5vw kept enlarging the type all the way to 1920, where
+     "Betriebssystem" alone measures 731px and no longer fits its own column.
+     The reset's overflow-wrap then broke it mid-word: "Betriebssyste / m für".
+     Capping the type where the column stops growing is the fix; measured, the
+     German sets as two balanced lines from 1280 to 1920 and the English as
+     three. A ch-based max-width is no help — ch follows the digit width of the
+     display face, not the words, and it was never the binding limit. */
+  .fidic-platform-head h2 { margin: 0; font: 500 clamp(3.2rem, 5vw, 72px)/.94 var(--font-display); text-wrap: balance; }
   .fidic-platform-head > p { margin: 0; color: rgba(var(--rgb-text),.7); font-size: clamp(1.05rem,1.6vw,1.35rem); line-height: 1.55; }
 
   .fidic-atlas {
@@ -1607,15 +1616,50 @@ const caseSchema = {
       min-height: 0;
       backdrop-filter: none;
     }
-    .fidic-layers { grid-template-columns: 1fr; }
+    /* ── Card sets become rails ──────────────────────────────────────────
+       Stacked one per row, these three sets were 4058 px of the page on a
+       393 px screen — five and a half screens of swiping past cards that are
+       siblings, not sequence. Side by side on a snapping rail each set is one
+       screen, nothing is dropped, and the next card peeking past the edge is
+       the only affordance needed. The ledger below stays vertical: its rows are
+       a problem against its fix, which is a comparison, not a set. */
+    .fidic-layers,
+    .data-pipeline,
+    .runtime-grid {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-columns: none;
+      grid-auto-columns: 78%;
+      gap: .6rem;
+      /* Break out of the container so a card can sit under the gutter: the rail
+         is the full screen and carries the gutter as its own scroll padding. */
+      width: 100%;
+      max-width: none;
+      padding-inline: var(--container-offset);
+      padding-bottom: .5rem;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: var(--container-offset);
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .fidic-layers::-webkit-scrollbar,
+    .data-pipeline::-webkit-scrollbar,
+    .runtime-grid::-webkit-scrollbar { display: none; }
+    .fidic-layers > article,
+    .data-pipeline > li,
+    .runtime-grid > article { scroll-snap-align: start; }
+
     .fidic-layers article { min-height: 15rem; }
 
-    .data-pipeline,
-    .runtime-grid { grid-template-columns: 1fr; }
     .data-pipeline li { min-height: 0; }
     .runtime-grid article { min-height: 0; }
     .pipeline-meta,
     .runtime-grid small { position: static; display: block; max-width: 100%; margin-top: .35rem; text-align: left; }
+    /* The 4rem drop under the number is a desktop composition device; in a
+       78%-wide card it is just a hole above the title. */
+    .fidic-layers h3 { margin-top: 1.6rem; }
     .data-pipeline h3 { margin-top: 1.1rem; }
     .runtime-grid h3 { margin-top: 1.1rem; }
 
