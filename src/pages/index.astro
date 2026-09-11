@@ -127,20 +127,20 @@ const selectedWork = [
     texts={["Landing Pages", "Business Websites", "Shorts & Reels", "SEO", "Motion & 3D", "Vienna"]}
   />
 
-  <section class="section approach" id="about" data-home-scene>
+  <section class="section approach" id="about">
     <div class="u-container section-grid">
-      <span class="s-idx" data-home-index>01 - <span data-i18n="about.label">{t("about.label")}</span></span>
+      <span class="s-idx">01 - <span data-i18n="about.label">{t("about.label")}</span></span>
       <div>
-        <h2 class="s-title" data-home-title data-i18n="about.title">{t("about.title")}</h2>
-        <p class="s-lead" data-home-copy data-i18n="about.text">{t("about.text")}</p>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="about.title">{t("about.title")}</h2>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="about.text">{t("about.text")}</p>
 
         <div class="pillars">
           {
             pillars.map((pillar, index) => (
-              <article class="pillar glass-tilt" data-home-card>
+              <article class="pillar glass-tilt" data-reveal data-tilt-card>
                 <span class="pillar-glint" aria-hidden="true"></span>
                 <span class="pillar-index">{String(index + 1).padStart(2, "0")}</span>
-                <h3 data-i18n={pillar.title}>{tk(pillar.title)}</h3>
+                <h3 data-sy-reveal="words" data-i18n={pillar.title}>{tk(pillar.title)}</h3>
                 <p data-i18n={pillar.text}>{tk(pillar.text)}</p>
               </article>
             ))
@@ -155,12 +155,12 @@ const selectedWork = [
        be the professional record, and repeating it here made both look like
        padding for search. This band is the pointer, and the home page stays
        about the work. -->
-  <section class="section record" id="record" data-home-scene>
+  <section class="section record" id="record">
     <div class="u-container section-grid">
-      <span class="s-idx" data-home-index>02 - <span data-i18n="record.label">{t("record.label")}</span></span>
+      <span class="s-idx">02 - <span data-i18n="record.label">{t("record.label")}</span></span>
       <div>
-        <h2 class="s-title" data-home-title data-i18n="record.title">{t("record.title")}</h2>
-        <p class="record-text" data-home-copy data-i18n="record.text">{t("record.text")}</p>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="record.title">{t("record.title")}</h2>
+        <p class="record-text" data-sy-reveal="lines" data-i18n="record.text">{t("record.text")}</p>
         <a
           class="record-link"
           href={lang === "de" ? "/de/rodion-belousov-wien/" : "/en/rodion-belousov-vienna/"}
@@ -168,7 +168,6 @@ const selectedWork = [
           data-lang-href-de="/de/rodion-belousov-wien/"
           data-cursor="OPEN"
           data-magnetic
-          data-home-tail
         >
           <span data-i18n="record.cta">{t("record.cta")}</span>
           <span class="css-arrow" aria-hidden="true"></span>
@@ -177,30 +176,30 @@ const selectedWork = [
     </div>
   </section>
 
-  <section class="section work" id="work" data-home-scene>
+  <section class="section work" id="work">
     <div class="u-container work-composition">
       <div class="work-intro">
-        <span class="s-idx" data-home-index>03 - <span data-i18n="work.label">{t("work.label")}</span></span>
-        <h2 class="s-title" data-home-title data-i18n="work.title">{t("work.title")}</h2>
-        <p class="s-lead" data-home-copy data-i18n="work.text">{t("work.text")}</p>
-        <a class="work-archive-link" href="/gallery/" data-tunnel data-cursor="VIEW" data-home-tail>
+        <span class="s-idx">03 - <span data-i18n="work.label">{t("work.label")}</span></span>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="work.text">{t("work.text")}</p>
+        <a class="work-archive-link" href="/gallery/" data-tunnel data-cursor="VIEW">
           <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
 
         <!-- The third case is this site itself. It is a text link rather than a
              card: the stage above is art-directed around exactly two cards. -->
-        <a class="work-archive-link meta" href="/work/studio/" data-cursor="READ" data-magnetic data-home-tail>
+        <a class="work-archive-link meta" href="/work/studio/" data-cursor="READ" data-magnetic>
           <span data-i18n="studio.eyebrow">{t("studio.eyebrow")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
         <!-- These chips used to read "Solo Build / Claude / Cursor / Codex",
              which advertised the one part of the work a visitor can already buy
              for themselves. They name what the two systems actually are now. -->
-        <div class="work-signals" aria-label="What these three projects prove" data-home-tail>
+        <div class="work-signals" aria-label="What these three projects prove">
           <span>Solo Build</span><span>3 Languages</span><span>Live Data</span><span>Maintained</span>
         </div>
       </div>
 
-      <div class="work-stage" data-home-stage>
+      <div class="work-stage">
         <div class="work-core" aria-hidden="true">
           <span class="work-core-shine"></span>
           <span class="work-core-grid"></span>
@@ -219,7 +218,7 @@ const selectedWork = [
         <div class="work-grid">
           {
             selectedWork.map((work, index) => (
-              <article class="work-card" style={`--case-index:${index}`} data-home-card>
+              <article class="work-card" style={`--case-index:${index}`}>
                 <a
                   href={work.href}
                   target={work.href.startsWith("http") ? "_blank" : undefined}
@@ -235,7 +234,7 @@ const selectedWork = [
                       <span>{String(index + 1).padStart(2, "0")} / <span data-i18n={work.tag}>{tk(work.tag)}</span></span>
                       <span data-i18n={work.year}>{tk(work.year)}</span>
                     </div>
-                    <h3 data-i18n={work.title}>{tk(work.title)}</h3>
+                    <h3 data-sy-reveal="words" data-i18n={work.title}>{tk(work.title)}</h3>
                     <p class="work-role" data-i18n={work.role}>{tk(work.role)}</p>
                     <p data-i18n={work.text}>{tk(work.text)}</p>
                     <span class="work-cta">
@@ -279,17 +278,17 @@ const selectedWork = [
   <!-- After the proof, answer the buying question: what makes even a small job
        safe to commission. The old AI objection introduced a doubt the visitor
        might never have had and made the whole page sound defensive. -->
-  <section class="section objection" id="objection" data-home-scene>
+  <section class="section objection" id="objection">
     <div class="u-container section-grid">
-      <span class="s-idx" data-home-index>04 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
+      <span class="s-idx">04 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
       <div>
-        <h2 class="s-title obj-title" data-home-title data-i18n="objection.title">{t("objection.title")}</h2>
-        <p class="s-lead" data-home-copy data-i18n="objection.text">{t("objection.text")}</p>
+        <h2 class="s-title obj-title" data-sy-reveal="words" data-i18n="objection.title">{t("objection.title")}</h2>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="objection.text">{t("objection.text")}</p>
 
         <div class="obj-rows">
           {
             [1, 2, 3].map((n) => (
-              <article class="obj-row" data-home-card>
+              <article class="obj-row" data-reveal>
                 <h3 data-i18n={`objection.${n}.title`}>{tk(`objection.${n}.title`)}</h3>
                 <p data-i18n={`objection.${n}.text`}>{tk(`objection.${n}.text`)}</p>
               </article>
@@ -297,7 +296,7 @@ const selectedWork = [
           }
         </div>
 
-        <a class="obj-cta" href="/services/#scope" data-i18n-attr="href:hero.cta.primary.href" data-cursor="OPEN" data-magnetic data-home-tail>
+        <a class="obj-cta" href="/services/#scope" data-i18n-attr="href:hero.cta.primary.href" data-cursor="OPEN" data-magnetic>
           <span data-i18n="objection.cta">{t("objection.cta")}</span>
           <i class="ui-arrow" aria-hidden="true"></i>
         </a>
@@ -309,12 +308,12 @@ const selectedWork = [
        on-page entry: a teaser that reads as part of the story and hands off to
        the /services hub. Card hrefs come from the dictionary, so they follow
        the active language to the matching localized deep-dive. -->
-  <section class="section services-teaser" id="services" data-home-scene>
+  <section class="section services-teaser" id="services">
     <div class="u-container section-grid">
-      <span class="s-idx" data-home-index>05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+      <span class="s-idx">05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
       <div>
-        <h2 class="s-title" data-home-title data-i18n="services.teaser.title">{t("services.teaser.title")}</h2>
-        <p class="s-lead" data-home-copy data-i18n="services.teaser.text">{t("services.teaser.text")}</p>
+        <h2 class="s-title" data-sy-reveal="words" data-i18n="services.teaser.title">{t("services.teaser.title")}</h2>
+        <p class="s-lead" data-sy-reveal="lines" data-i18n="services.teaser.text">{t("services.teaser.text")}</p>
 
         <div class="svc-list">
           {
@@ -323,7 +322,7 @@ const selectedWork = [
                 class="svc-item"
                 href={tk(`services.${n}.href`)}
                 data-i18n-attr={`href:services.${n}.href, data-transition-label:services.${n}.title`}
-                data-home-card
+                data-reveal
                 data-cursor="OPEN"
                 data-transition-label={tk(`services.${n}.title`)}
               >
@@ -338,7 +337,7 @@ const selectedWork = [
           }
         </div>
 
-        <a class="svc-all" href="/services/" data-i18n-attr="href:hero.cta.primary.href" data-home-tail data-cursor="OPEN" data-magnetic>
+        <a class="svc-all" href="/services/" data-i18n-attr="href:hero.cta.primary.href" data-reveal data-cursor="OPEN" data-magnetic>
           <span data-i18n="nav.services">{t("nav.services")}</span>
           <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
@@ -369,14 +368,14 @@ const selectedWork = [
     text={t("scrub.text")}
   />
 
-  <section class="portal" id="archive" data-home-scene>
+  <section class="portal" id="archive">
     <div class="u-container portal-inner">
       <div>
-        <span class="s-idx" data-home-index>07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
-        <h2 class="portal-title" data-home-title data-i18n="portal.title">{t("portal.title")}</h2>
-        <p class="portal-text" data-home-copy data-i18n="portal.text">{t("portal.text")}</p>
+        <span class="s-idx">07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
+        <p class="portal-text" data-sy-reveal="lines" data-i18n="portal.text">{t("portal.text")}</p>
       </div>
-      <a class="archive-button" href="/gallery/" data-tunnel data-home-card data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
+      <a class="archive-button" href="/gallery/" data-tunnel data-reveal data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
         <span class="archive-orbit" aria-hidden="true"></span>
         <span class="archive-label" data-i18n="portal.cta">{t("portal.cta")}</span>
         <span class="archive-arrow css-arrow css-arrow-down" aria-hidden="true"></span>
@@ -452,8 +451,6 @@ const selectedWork = [
       linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.018) 49%, transparent 66%);
     opacity: calc(0.28 + var(--scene-progress, 1) * 0.54);
   }
-
-  [data-home-scene] { --scene-progress: 1; }
 
   .section-grid,
   .work-composition,
@@ -531,16 +528,6 @@ const selectedWork = [
     -webkit-hyphens: none;
     overflow-wrap: normal;
     text-wrap: balance;
-  }
-
-  [data-home-title],
-  [data-home-copy],
-  [data-home-index],
-  [data-home-card],
-  [data-home-tail],
-  [data-home-stage] {
-    backface-visibility: hidden;
-    transform-origin: 50% 100%;
   }
 
   /* ── Services & Research teaser (hands off to /services) ───────────────── */
@@ -707,6 +694,10 @@ const selectedWork = [
   }
 
   .pillars {
+    --tilt-x: 0deg;
+    --tilt-y: 0deg;
+    --glint-x: 50%;
+    --glint-y: 50%;
     display: grid;
     /* Reflow by the space actually available instead of one hard breakpoint:
        a fixed repeat(3, 1fr) squeezed the columns at browser zoom until long
@@ -717,6 +708,7 @@ const selectedWork = [
     grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
     gap: clamp(0.9rem, 2vw, 1.3rem);
     margin-top: 4rem;
+    perspective: 1100px;
   }
 
   .pillar {
@@ -731,18 +723,22 @@ const selectedWork = [
     background:
       radial-gradient(circle at var(--glint-x) var(--glint-y), rgba(var(--panel-accent), 0.18), transparent 34%),
       linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(154, 181, 192, 0.024) 48%, rgba(0, 0, 0, 0.08)),
-      rgba(10, 13, 17, 0.7);
+      rgba(5, 7, 9, 0.92);
     backdrop-filter: blur(20px) saturate(0.95);
     box-shadow:
       0 2rem 5rem rgba(0, 0, 0, 0.24),
       inset 0 1px 0 rgba(255, 255, 255, 0.045),
       inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-    transform: translate3d(0, var(--lift, 0), 0);
+    transform:
+      rotateX(var(--tilt-x))
+      rotateY(var(--tilt-y))
+      translate3d(0, var(--lift, 0), 0);
+    transform-style: preserve-3d;
     transition:
       box-shadow 0.5s var(--ease-out-expo),
       border-color 0.5s var(--ease-out-expo),
       background 0.5s var(--ease-out-expo),
-      transform .7s cubic-bezier(.16, 1, .3, 1);
+      transform 0.25s var(--ease-out-expo);
   }
 
   .pillar:nth-child(2) { --panel-accent: 194, 201, 205; }
@@ -772,7 +768,7 @@ const selectedWork = [
   }
 
   .pillar:hover {
-    --lift: -3px;
+    --lift: -10px;
     border-color: rgba(var(--panel-accent), 0.38);
     box-shadow:
       0 2.8rem 7rem rgba(0, 0, 0, 0.38),
@@ -787,6 +783,7 @@ const selectedWork = [
   .pillar > *:not(.pillar-glint) {
     position: relative;
     z-index: 1;
+    transform: translateZ(34px);
   }
 
   .pillar-glint {
@@ -794,7 +791,7 @@ const selectedWork = [
     inset: -40%;
     z-index: 0;
     pointer-events: none;
-    background: linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.045), transparent 68%);
+    background: conic-gradient(from 120deg at var(--glint-x) var(--glint-y), transparent, rgba(255, 255, 255, 0.055), transparent 32%);
     opacity: 0;
     transition: opacity 0.45s var(--ease-out-expo);
   }
@@ -2022,33 +2019,61 @@ const selectedWork = [
     .work-grid.is-deck .work-card:nth-child(2),
     .work-grid.is-deck .work-card:nth-child(3) {
       grid-area: 1 / 1;
+      /* --depth 0 is the card in hand, 1 and 2 are behind it. --drag is how far
+         the finger has taken the front card, and is only set while it is down. */
       --depth: 0;
       --drag: 0px;
+      --tilt: 0deg;
+      /* Set from the script: +1 for the card one back, -1 for the one behind
+         that, so the stack fans instead of hiding in its own silhouette. */
+      --sway: 0;
       transform:
-        translate3d(calc(var(--drag) * 0.18), calc(var(--depth) * .7rem), 0)
-        scale(calc(1 - var(--depth) * 0.018));
+        translate3d(calc(var(--drag) * 0.34), calc(var(--depth) * 1.55rem), 0)
+        rotate(calc(var(--tilt) + var(--sway) * 2.2deg))
+        scale(calc(1 - var(--depth) * 0.05));
+      /* Centre, not below the card: with the origin under it, scaling pulled
+         the cards behind UP and the whole stack hid inside one silhouette. */
       transform-origin: 50% 50%;
-      opacity: calc(1 - var(--depth) * 0.44);
+      opacity: calc(1 - var(--depth) * 0.34);
+      /* The cards share one cell, so the front one needs a floor of its own or
+         the text of the two behind it reads straight through the glass. */
       background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.008)),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012)),
         #06080a;
       z-index: calc(10 - var(--depth));
       transition:
-        transform .9s cubic-bezier(.16, 1, .3, 1),
-        opacity .75s ease,
-        border-color .75s ease,
-        box-shadow .9s cubic-bezier(.16, 1, .3, 1);
+        transform 0.62s var(--ease-out-expo),
+        opacity 0.5s ease,
+        border-color 0.5s ease,
+        box-shadow 0.6s var(--ease-out-expo);
     }
-    .work-grid.is-deck.is-dragging .work-card { transition: opacity .2s ease; }
+    /* While a finger is on it, the card follows the finger without easing. */
+    .work-grid.is-deck.is-dragging .work-card { transition: opacity 0.2s ease; }
 
+    /* "Neon" in a monochrome palette is the palette's own accent pushed until
+       it glows: a lit rim, a bloom under it, and the sheen these cards already
+       carry, run once as the card lands. */
     .work-grid.is-deck .work-card[data-deck-front] {
-      border-color: rgba(var(--work-accent), .42);
+      border-color: rgba(var(--work-accent), 0.7);
       box-shadow:
-        0 1.6rem 3.6rem rgba(0, 0, 0, .58),
-        inset 0 1px 0 rgba(255, 255, 255, .14);
+        0 0 0 1px rgba(var(--work-accent), 0.22),
+        0 0 1.1rem rgba(var(--work-accent), 0.3),
+        0 0 3.4rem rgba(var(--work-accent), 0.2),
+        0 0 7rem rgba(var(--work-accent), 0.1),
+        0 2rem 4rem rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      /* The tube itself: a hairline of light along the top edge of the card,
+         which is what makes the rim read as lit rather than merely pale. */
+      animation: deck-pulse 4.5s ease-in-out infinite;
+    }
+    @keyframes deck-pulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.055); }
     }
     .work-grid.is-deck .work-card[data-deck-front]::before {
-      display: none;
+      opacity: 0.55;
+      transform: translateX(140%);
+      transition: transform 0.9s var(--ease-out-expo), opacity 0.9s ease;
     }
     .work-grid.is-deck .work-card:not([data-deck-front])::before {
       opacity: 0;
@@ -2212,95 +2237,71 @@ const selectedWork = [
     .work-core-shine { animation-duration: 24s; }
   }
 
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    will-change: transform, opacity;
+  }
+
+  :global(html.is-motion-ready) [data-reveal]:not(.is-revealed) {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
 </style>
 
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
+  import { REVEAL } from "../utils/reveals";
 
   gsap.registerPlugin(ScrollTrigger);
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
   const calm = () => document.documentElement.classList.contains("rb-calm");
   let motionStarted = false;
-
-  const initHomeScenes = () => {
-    const scenes = gsap.utils.toArray<HTMLElement>("[data-home-scene]");
-    const compact = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
-
-    scenes.forEach((scene) => {
-      const index = scene.querySelector<HTMLElement>("[data-home-index]");
-      const title = scene.querySelector<HTMLElement>("[data-home-title]");
-      const copy = scene.querySelector<HTMLElement>("[data-home-copy]");
-      const stage = scene.querySelector<HTMLElement>("[data-home-stage]");
-      const cards = gsap.utils.toArray<HTMLElement>("[data-home-card]", scene);
-      const tails = gsap.utils.toArray<HTMLElement>("[data-home-tail]", scene);
-      const all = [index, title, copy, stage, ...cards, ...tails].filter(Boolean) as HTMLElement[];
-
-      const show = () => {
-        scene.style.setProperty("--scene-progress", "1");
-        gsap.set(all, { opacity: 1, x: 0, y: 0, rotationX: 0, scale: 1, clearProps: "transform" });
-      };
-
-      if (reduced || calm()) {
-        show();
-        return;
-      }
-
-      /* Nothing is hidden and nothing "fires" when the section crosses a
-         threshold. The whole scene settles continuously with the scroll, so a
-         slow wheel movement produces a slow visual movement rather than a
-         stack of discrete entrance animations. */
-      const timeline = gsap.timeline({
-        defaults: { ease: "none", force3D: true },
-        scrollTrigger: {
-          trigger: scene,
-          start: "top 96%",
-          end: compact ? "top 58%" : "top 42%",
-          scrub: compact ? .55 : 1.05,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      timeline.fromTo(scene, { "--scene-progress": .24 }, { "--scene-progress": 1, duration: 1 }, 0);
-      if (index) timeline.fromTo(index,
-        { opacity: .62, y: compact ? 5 : 9 },
-        { opacity: 1, y: 0, duration: .58 }, 0);
-      if (title) timeline.fromTo(title,
-        { opacity: .72, y: compact ? 14 : 28, scale: compact ? .997 : .988 },
-        { opacity: 1, y: 0, scale: 1, duration: .88 }, .03);
-      if (copy) timeline.fromTo(copy,
-        { opacity: .68, y: compact ? 9 : 17 },
-        { opacity: 1, y: 0, duration: .78 }, .12);
-      if (stage) timeline.fromTo(stage,
-        { opacity: .78, y: compact ? 10 : 22, scale: compact ? .998 : .992 },
-        { opacity: 1, y: 0, scale: 1, duration: .82 }, .12);
-      cards.forEach((card, cardIndex) => timeline.fromTo(card,
-        {
-          opacity: compact ? .84 : .72,
-          y: (compact ? 10 : 22) + cardIndex * (compact ? 1.5 : 3),
-          rotationX: compact ? 0 : 1.4,
-          scale: compact ? .998 : .989,
-          transformPerspective: 1000,
-        },
-        { opacity: 1, y: 0, rotationX: 0, scale: 1, duration: .72 },
-        .16 + cardIndex * .035));
-      tails.forEach((tail, tailIndex) => timeline.fromTo(tail,
-        { opacity: .68, y: compact ? 7 : 12 },
-        { opacity: 1, y: 0, duration: .58 },
-        .28 + tailIndex * .025));
-    });
-  };
 
   const initReveals = async () => {
     if (motionStarted) return;
     motionStarted = true;
-    if (reduced) return;
+    const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+
+    if (reduced) {
+      gsap.set(items, { opacity: 1, y: 0 });
+      items.forEach((item) => item.classList.add("is-revealed"));
+      return;
+    }
 
     await document.fonts?.ready;
+    document.documentElement.classList.add("is-motion-ready");
 
     requestAnimationFrame(() => {
-      initHomeScenes();
+      ScrollTrigger.batch(items, {
+        start: "top 88%",
+        once: true,
+        onEnter: (batch) =>
+          gsap.to(batch, {
+            opacity: 1,
+            y: 0,
+            duration: REVEAL.block.duration,
+            ease: REVEAL.ease,
+            stagger: 0.06,
+            overwrite: true,
+            onComplete: () => batch.forEach((item) => (item as HTMLElement).classList.add("is-revealed")),
+          }),
+        onEnterBack: (batch) => {
+          gsap.set(batch, { opacity: 1, y: 0 });
+          batch.forEach((item) => item.classList.add("is-revealed"));
+        },
+      });
       ScrollTrigger.refresh();
     });
   };
@@ -2312,6 +2313,126 @@ const selectedWork = [
   }
 
   addEventListener("rb:langchange", () => requestAnimationFrame(() => ScrollTrigger.refresh()));
+
+  const tiltCards = gsap.utils.toArray<HTMLElement>("[data-tilt-card]");
+  if (finePointer) tiltCards.forEach((card) => {
+    const reset = () => {
+      gsap.to(card, {
+        rotationX: 0,
+        rotationY: 0,
+        z: 0,
+        "--tilt-x": "0deg",
+        "--tilt-y": "0deg",
+        "--glint-x": "50%",
+        "--glint-y": "50%",
+        duration: 0.7,
+        ease: "power3.out",
+      });
+    };
+
+    card.addEventListener("pointermove", (event) => {
+      if (reduced || calm()) return;
+      const rect = card.getBoundingClientRect();
+      const px = (event.clientX - rect.left) / rect.width;
+      const py = (event.clientY - rect.top) / rect.height;
+      const rx = (0.5 - py) * 5;
+      const ry = (px - 0.5) * 7;
+      gsap.to(card, {
+        rotationX: rx,
+        rotationY: ry,
+        z: 10,
+        "--tilt-x": `${rx}deg`,
+        "--tilt-y": `${ry}deg`,
+        "--glint-x": `${px * 100}%`,
+        "--glint-y": `${py * 100}%`,
+        duration: 0.35,
+        ease: "power3.out",
+      });
+    });
+
+    card.addEventListener("pointerleave", reset);
+    card.addEventListener("blur", reset);
+  });
+
+  const jobCards = gsap.utils.toArray<HTMLElement>("[data-job-card]");
+  if (finePointer) jobCards.forEach((card) => {
+    card.addEventListener("pointermove", (event) => {
+      if (reduced || calm()) return;
+      const rect = card.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100;
+      const y = ((event.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty("--job-x", `${x}%`);
+      card.style.setProperty("--job-y", `${y}%`);
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.setProperty("--job-x", "50%");
+      card.style.setProperty("--job-y", "50%");
+    });
+  });
+
+  const workStage = document.querySelector<HTMLElement>(".work-stage");
+  const caseCards = gsap.utils.toArray<HTMLElement>(".work-card");
+  const workOrbits = document.querySelector<HTMLElement>(".work-orbits");
+  const workCore = document.querySelector<HTMLElement>(".work-core");
+
+  if (finePointer) workStage?.addEventListener("pointermove", (event) => {
+    if (reduced || calm() || innerWidth < 760) return;
+    const rect = workStage.getBoundingClientRect();
+    const nx = (event.clientX - rect.left) / rect.width - 0.5;
+    const ny = (event.clientY - rect.top) / rect.height - 0.5;
+    caseCards.forEach((card, index) => {
+      const direction = index === 1 ? -1 : 1;
+      const depth = index === 0 ? 1 : index === 1 ? 0.85 : 0.55;
+      gsap.to(card, {
+        x: nx * 18 * direction * depth,
+        y: ny * 12 * depth,
+        duration: 0.65,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
+    });
+    if (workOrbits) gsap.to(workOrbits, { x: nx * -12, y: ny * -8, duration: 0.9, ease: "power3.out" });
+  });
+
+  if (finePointer) workStage?.addEventListener("pointerleave", () => {
+    gsap.to(caseCards, { x: 0, y: 0, duration: 0.9, ease: "power3.out", overwrite: "auto" });
+    if (workOrbits) gsap.to(workOrbits, { x: 0, y: 0, duration: 1.1, ease: "power3.out" });
+  });
+
+  if (workStage && innerWidth <= 760 && !reduced) {
+    let workVisible = false;
+    let workFrame = 0;
+
+    const renderMobileWork = () => {
+      workFrame = 0;
+      if (!workVisible) return;
+      const rect = workStage.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
+      const travel = progress - 0.5;
+
+      caseCards.forEach((card, index) => {
+        const direction = index === 1 ? 1 : -1;
+        card.style.setProperty("--mobile-card-x", `${direction * 4}px`);
+        card.style.setProperty("--mobile-card-y", `${travel * 34 * direction}px`);
+      });
+      if (workCore) workCore.style.translate = `0 ${travel * -18}px`;
+      if (workOrbits) workOrbits.style.translate = `0 ${travel * 11}px`;
+    };
+
+    const requestMobileWork = () => {
+      if (!workFrame) workFrame = requestAnimationFrame(renderMobileWork);
+    };
+
+    const workObserver = new IntersectionObserver(([entry]) => {
+      workVisible = entry.isIntersecting;
+      if (workVisible) requestMobileWork();
+    }, { rootMargin: "20% 0px" });
+
+    workObserver.observe(workStage);
+    addEventListener("scroll", requestMobileWork, { passive: true });
+    addEventListener("resize", requestMobileWork, { passive: true });
+  }
 
   // ── Selected work, as a deck ───────────────────────────────────────────────
   // On a phone the three cards share one grid cell and only the front one is
@@ -2337,6 +2458,7 @@ const selectedWork = [
         // so the order wraps instead of running out.
         const depth = (index - front + cards.length) % cards.length;
         card.style.setProperty("--depth", String(depth));
+        card.style.setProperty("--sway", depth === 1 ? "1" : depth === 2 ? "-1" : "0");
         card.toggleAttribute("data-deck-front", depth === 0);
         // Nothing behind the front card should be reachable by tab or by a
         // stray tap — it is 45% opacity and half a card lower.
@@ -2366,7 +2488,9 @@ const selectedWork = [
       front = 0;
       cards.forEach((card) => {
         card.style.removeProperty("--depth");
+        card.style.removeProperty("--sway");
         card.style.removeProperty("--drag");
+        card.style.removeProperty("--tilt");
         card.removeAttribute("data-deck-front");
         if ("inert" in HTMLElement.prototype) card.inert = false;
       });
@@ -2413,6 +2537,7 @@ const selectedWork = [
       const card = frontCard();
       const held = Math.max(-90, Math.min(90, dx));
       card.style.setProperty("--drag", `${held}px`);
+      card.style.setProperty("--tilt", `${held * 0.035}deg`);
     }, { passive: true });
 
     const release = (event: PointerEvent) => {
@@ -2422,6 +2547,7 @@ const selectedWork = [
       dragging = false;
       deck.classList.remove("is-dragging");
       card.style.setProperty("--drag", "0px");
+      card.style.setProperty("--tilt", "0deg");
       if (decided && Math.abs(dx) > 42) go(dx < 0 ? 1 : -1);
     };
 

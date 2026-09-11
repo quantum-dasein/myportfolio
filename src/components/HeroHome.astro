@@ -330,10 +330,6 @@ const headline = /[.!?…]$/.test(line1.trim()) ? `${line1} ${line2}` : `${line1
 
   [data-intro] { opacity: 1; transform: none; }
 
-  .hero-title .line {
-    backface-visibility: hidden;
-  }
-
   @keyframes cue {
     0%, 100% { transform: scaleX(0.25); opacity: 0.35; }
     50% { transform: scaleX(1); opacity: 1; }
@@ -417,7 +413,6 @@ const headline = /[.!?…]$/.test(line1.trim()) ? `${line1} ${line2}` : `${line1
 
   const hero = document.querySelector<HTMLElement>("[data-hero]");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const calm = () => document.documentElement.classList.contains("rb-calm");
 
   // The proof number lands rather than just sitting there.
   const countTrustMetric = () => {
@@ -438,43 +433,18 @@ const headline = /[.!?…]$/.test(line1.trim()) ? `${line1} ${line2}` : `${line1
   const revealHero = () => {
     if (!hero || hero.dataset.introPlayed === "true") return;
     hero.dataset.introPlayed = "true";
-    const items = gsap.utils.toArray<HTMLElement>("[data-intro]", hero);
-    const heading = gsap.utils.toArray<HTMLElement>(".hero-title .line", hero);
-    const opening = gsap.utils.toArray<HTMLElement>(".status, .eyebrow", hero);
-    const sub = hero.querySelector<HTMLElement>(".hero-sub");
-    const actions = hero.querySelector<HTMLElement>(".hero-actions");
-    const readout = hero.querySelector<HTMLElement>(".hero-readout");
-    const cue = hero.querySelector<HTMLElement>(".hero-cue");
-
-    if (reduced || calm()) {
-      gsap.set(items, { opacity: 1, y: 0, x: 0, scale: 1, clearProps: "transform" });
-      countTrustMetric();
-      return;
-    }
-
-    /* The loader already supplies the cut into the page. The content should
-       not perform a second reveal after it: everything stays readable and only
-       settles a few pixels into place as one composition. */
-    const timeline = gsap.timeline({ delay: .04, defaults: { ease: "power2.out", force3D: true } });
-    timeline
-      .fromTo(opening,
-        { opacity: .72, y: 6 },
-        { opacity: 1, y: 0, duration: 1.15, stagger: .035 }, 0)
-      .fromTo(heading,
-        { opacity: .82, y: 11, scale: .996 },
-        { opacity: 1, y: 0, scale: 1, duration: 1.45, stagger: .045 }, .02);
-    if (sub) timeline.fromTo(sub,
-      { opacity: .76, y: 9 },
-      { opacity: 1, y: 0, duration: 1.3 }, .12);
-    if (actions) timeline.fromTo(actions,
-      { opacity: .8, y: 7 },
-      { opacity: 1, y: 0, duration: 1.2 }, .18);
-    if (readout) timeline.fromTo(readout,
-      { opacity: .76, x: 7 },
-      { opacity: 1, x: 0, duration: 1.45 }, .14);
-    if (cue) timeline.fromTo(cue,
-      { opacity: .72, y: 5 },
-      { opacity: 1, y: 0, duration: 1.25 }, .22);
+    const items = hero.querySelectorAll<HTMLElement>("[data-intro]");
+    gsap.fromTo(items, { opacity: 0, y: reduced ? 0 : 24 }, {
+      opacity: 1,
+      y: 0,
+      duration: reduced ? 0 : 1.15,
+      stagger: reduced ? 0 : 0.085,
+      delay: reduced ? 0 : 0.14,
+      // The same curve every reveal further down the page uses, so the site
+      // opens the way it continues.
+      ease: "expo.out",
+      overwrite: true,
+    });
     countTrustMetric();
   };
 
