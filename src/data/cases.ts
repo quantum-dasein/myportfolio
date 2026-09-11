@@ -91,7 +91,7 @@ export const cases: Record<CaseId, CaseConfig> = {
     year: "2026",
     liveUrl: "https://www.bridgeconsult.uz/EN/index.html",
     card: "/og/case-bridge-consult.jpg",
-    nextHref: "/work/fidic",
+    nextHref: "/work/fidic/",
     screenIndex: "BC / 01",
     specimen: { name: "BRIDGE CONSULT", moduleB: "NOIR GLASS", moduleC: "CHROME SIGNAL" },
     seo: {
@@ -139,7 +139,7 @@ export const cases: Record<CaseId, CaseConfig> = {
     year: "2026",
     liveUrl: "https://fidic.uz",
     card: "/og/case-fidic.jpg",
-    nextHref: "/work/academy",
+    nextHref: "/work/academy/",
     screenIndex: "FIDIC / 02",
     specimen: { name: "FIDIC.UZ", moduleB: "CONTRACT ATLAS", moduleC: "FIDIC GOLD" },
     seo: {
@@ -185,7 +185,7 @@ export const cases: Record<CaseId, CaseConfig> = {
     year: "2026",
     liveUrl: "https://www.bridgeconsult.uz/academy/",
     card: "/og/case-academy.jpg",
-    nextHref: "/work/bridge-consult",
+    nextHref: "/work/bridge-consult/",
     screenIndex: "ACADEMY / 03",
     specimen: { name: "BRIDGE ACADEMY", moduleB: "EDITORIAL SERIF", moduleC: "DESERT LIGHT" },
     seo: {

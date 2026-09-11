@@ -98,7 +98,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 <Layout lang={lang} alternateUrls={alternates} lockLang title={seoTitle} description={pick(service.description, lang)} image={localizedCard[serviceKey] ? `/og/${localizedCard[serviceKey]}-${lang}.jpg` : og[serviceKey].image} imageAlt={og[serviceKey].alt} structuredData={[serviceSchema, faqSchema, ...videoSchema]}>
   <article class="service-page">
     <!-- Always give a way out: back to the Services & Research hub. -->
-    <a class="back-link" href={de ? "/de/leistungen/" : "/services"} data-cursor="BACK" data-magnetic>
+    <a class="back-link" href={de ? "/de/leistungen/" : "/services/"} data-cursor="BACK" data-magnetic>
       <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
       <span>{de ? "Zurück" : "Back"}</span>
     </a>
@@ -142,7 +142,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
               </figure>
             ))}
           </div>
-          <a class="reel-more" href="/gallery" data-tunnel data-reveal data-cursor="ENTER">
+          <a class="reel-more" href="/gallery/" data-tunnel data-reveal data-cursor="ENTER">
             <span>{de ? "Das gesamte 3D-Archiv" : "The whole 3D archive"}</span>
             <i class="ui-arrow" aria-hidden="true"></i>
           </a>
@@ -220,7 +220,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
             const item = cases[id];
             return (
               <a
-                href={`/work/${item.slug}`}
+                href={`/work/${item.slug}/`}
                 data-case-link={item.warp ? true : undefined}
                 data-reveal
                 data-cursor="OPEN"
@@ -311,7 +311,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
 
     <div class="service-outro">
       <div class="u-container">
-        <a class="outro-link" href={de ? "/de/leistungen/" : "/services"} data-cursor="OPEN" data-magnetic>
+        <a class="outro-link" href={de ? "/de/leistungen/" : "/services/"} data-cursor="OPEN" data-magnetic>
           <i class="ui-arrow ui-arrow-back" aria-hidden="true"></i>
           <span>{de ? "Alle Leistungen & Research" : "All services & research"}</span>
         </a>

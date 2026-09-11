@@ -50,7 +50,7 @@ const selectedWork = [
     year: "work.1.year",
     text: "work.1.text",
     img: "/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp",
-    href: "/work/bridge-consult",
+    href: "/work/bridge-consult/",
     warp: true,
   },
   {
@@ -60,7 +60,7 @@ const selectedWork = [
     year: "work.2.year",
     text: "work.2.text",
     img: "/cases/rodion-belousov-fidic-uz-contract-knowledge-platform-design.webp",
-    href: "/work/fidic",
+    href: "/work/fidic/",
     warp: true,
   },
   // Third on purpose, and small on purpose. Two studies about multilingual
@@ -73,7 +73,7 @@ const selectedWork = [
     year: "work.3.year",
     text: "work.3.text",
     img: "/cases/rodion-belousov-bridge-consult-academy-one-page-course-landing.webp",
-    href: "/work/academy",
+    href: "/work/academy/",
     warp: false,
   },
 ];
@@ -81,8 +81,8 @@ const selectedWork = [
 
 <Layout
   alternateUrls={{ "x-default": "/" }}
-  title="Websites & Video in Vienna — Webdesign, Reels, SEO | Rodion Belousov"
-  description="Landing pages, business websites, shorts, reels, video editing and SEO in Vienna — from one small fixed-price job to full 3D production and multilingual platforms."
+  title="Websites & Video in Vienna | Rodion Belousov"
+  description="Landing pages, business websites, reels, video editing and SEO in Vienna. Small fixed-price jobs, with 3D and multilingual platforms when needed."
   pageType="profile"
   keywords={[
     "Digital Marketer Vienna",
@@ -124,23 +124,23 @@ const selectedWork = [
 
   <TextMarquee
     class="signal-marquee"
-    texts={["Digital Marketing", "Content Systems", "SEO", "Creative Development", "Vienna"]}
+    texts={["Landing Pages", "Business Websites", "Shorts & Reels", "SEO", "Motion & 3D", "Vienna"]}
   />
 
-  <section class="section approach" id="about">
+  <section class="section approach" id="about" data-home-scene>
     <div class="u-container section-grid">
-      <span class="s-idx">01 - <span data-i18n="about.label">{t("about.label")}</span></span>
+      <span class="s-idx" data-home-index>01 - <span data-i18n="about.label">{t("about.label")}</span></span>
       <div>
-        <h2 class="s-title" data-sy-reveal="words" data-i18n="about.title">{t("about.title")}</h2>
-        <p class="s-lead" data-sy-reveal="lines" data-i18n="about.text">{t("about.text")}</p>
+        <h2 class="s-title" data-home-title data-i18n="about.title">{t("about.title")}</h2>
+        <p class="s-lead" data-home-copy data-i18n="about.text">{t("about.text")}</p>
 
         <div class="pillars">
           {
             pillars.map((pillar, index) => (
-              <article class="pillar glass-tilt" data-reveal data-tilt-card>
+              <article class="pillar glass-tilt" data-home-card data-tilt-card>
                 <span class="pillar-glint" aria-hidden="true"></span>
                 <span class="pillar-index">{String(index + 1).padStart(2, "0")}</span>
-                <h3 data-sy-reveal="words" data-i18n={pillar.title}>{tk(pillar.title)}</h3>
+                <h3 data-i18n={pillar.title}>{tk(pillar.title)}</h3>
                 <p data-i18n={pillar.text}>{tk(pillar.text)}</p>
               </article>
             ))
@@ -155,12 +155,12 @@ const selectedWork = [
        be the professional record, and repeating it here made both look like
        padding for search. This band is the pointer, and the home page stays
        about the work. -->
-  <section class="section record" id="record">
+  <section class="section record" id="record" data-home-scene>
     <div class="u-container section-grid">
-      <span class="s-idx">02 - <span data-i18n="record.label">{t("record.label")}</span></span>
+      <span class="s-idx" data-home-index>02 - <span data-i18n="record.label">{t("record.label")}</span></span>
       <div>
-        <h2 class="s-title" data-sy-reveal="words" data-i18n="record.title">{t("record.title")}</h2>
-        <p class="record-text" data-sy-reveal="lines" data-i18n="record.text">{t("record.text")}</p>
+        <h2 class="s-title" data-home-title data-i18n="record.title">{t("record.title")}</h2>
+        <p class="record-text" data-home-copy data-i18n="record.text">{t("record.text")}</p>
         <a
           class="record-link"
           href={lang === "de" ? "/de/rodion-belousov-wien/" : "/en/rodion-belousov-vienna/"}
@@ -168,6 +168,7 @@ const selectedWork = [
           data-lang-href-de="/de/rodion-belousov-wien/"
           data-cursor="OPEN"
           data-magnetic
+          data-home-tail
         >
           <span data-i18n="record.cta">{t("record.cta")}</span>
           <span class="css-arrow" aria-hidden="true"></span>
@@ -176,30 +177,30 @@ const selectedWork = [
     </div>
   </section>
 
-  <section class="section work" id="work">
+  <section class="section work" id="work" data-home-scene>
     <div class="u-container work-composition">
       <div class="work-intro">
-        <span class="s-idx">03 - <span data-i18n="work.label">{t("work.label")}</span></span>
-        <h2 class="s-title" data-sy-reveal="words" data-i18n="work.title">{t("work.title")}</h2>
-        <p class="s-lead" data-sy-reveal="lines" data-i18n="work.text">{t("work.text")}</p>
-        <a class="work-archive-link" href="/gallery" data-tunnel data-cursor="VIEW">
+        <span class="s-idx" data-home-index>03 - <span data-i18n="work.label">{t("work.label")}</span></span>
+        <h2 class="s-title" data-home-title data-i18n="work.title">{t("work.title")}</h2>
+        <p class="s-lead" data-home-copy data-i18n="work.text">{t("work.text")}</p>
+        <a class="work-archive-link" href="/gallery/" data-tunnel data-cursor="VIEW" data-home-tail>
           <span data-i18n="gallery.cta">{t("gallery.cta")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
 
         <!-- The third case is this site itself. It is a text link rather than a
              card: the stage above is art-directed around exactly two cards. -->
-        <a class="work-archive-link meta" href="/work/studio" data-cursor="READ" data-magnetic>
+        <a class="work-archive-link meta" href="/work/studio/" data-cursor="READ" data-magnetic data-home-tail>
           <span data-i18n="studio.eyebrow">{t("studio.eyebrow")}</span><span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
         <!-- These chips used to read "Solo Build / Claude / Cursor / Codex",
              which advertised the one part of the work a visitor can already buy
              for themselves. They name what the two systems actually are now. -->
-        <div class="work-signals" aria-label="What these two systems are">
+        <div class="work-signals" aria-label="What these three projects prove" data-home-tail>
           <span>Solo Build</span><span>3 Languages</span><span>Live Data</span><span>Maintained</span>
         </div>
       </div>
 
-      <div class="work-stage">
+      <div class="work-stage" data-home-stage>
         <div class="work-core" aria-hidden="true">
           <span class="work-core-shine"></span>
           <span class="work-core-grid"></span>
@@ -218,7 +219,7 @@ const selectedWork = [
         <div class="work-grid">
           {
             selectedWork.map((work, index) => (
-              <article class="work-card" style={`--case-index:${index}`}>
+              <article class="work-card" style={`--case-index:${index}`} data-home-card>
                 <a
                   href={work.href}
                   target={work.href.startsWith("http") ? "_blank" : undefined}
@@ -234,7 +235,7 @@ const selectedWork = [
                       <span>{String(index + 1).padStart(2, "0")} / <span data-i18n={work.tag}>{tk(work.tag)}</span></span>
                       <span data-i18n={work.year}>{tk(work.year)}</span>
                     </div>
-                    <h3 data-sy-reveal="words" data-i18n={work.title}>{tk(work.title)}</h3>
+                    <h3 data-i18n={work.title}>{tk(work.title)}</h3>
                     <p class="work-role" data-i18n={work.role}>{tk(work.role)}</p>
                     <p data-i18n={work.text}>{tk(work.text)}</p>
                     <span class="work-cta">
@@ -275,20 +276,20 @@ const selectedWork = [
     </div>
   </section>
 
-  <!-- The AI objection works better after the work has supplied evidence for
-       the answer. Before the cases it introduced a doubt the visitor might not
-       have had yet; here it reads as a position backed by the projects above. -->
-  <section class="section objection" id="objection">
+  <!-- After the proof, answer the buying question: what makes even a small job
+       safe to commission. The old AI objection introduced a doubt the visitor
+       might never have had and made the whole page sound defensive. -->
+  <section class="section objection" id="objection" data-home-scene>
     <div class="u-container section-grid">
-      <span class="s-idx">04 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
+      <span class="s-idx" data-home-index>04 - <span data-i18n="objection.label">{t("objection.label")}</span></span>
       <div>
-        <h2 class="s-title obj-title" data-sy-reveal="words" data-i18n="objection.title">{t("objection.title")}</h2>
-        <p class="s-lead" data-sy-reveal="lines" data-i18n="objection.text">{t("objection.text")}</p>
+        <h2 class="s-title obj-title" data-home-title data-i18n="objection.title">{t("objection.title")}</h2>
+        <p class="s-lead" data-home-copy data-i18n="objection.text">{t("objection.text")}</p>
 
         <div class="obj-rows">
           {
             [1, 2, 3].map((n) => (
-              <article class="obj-row" data-reveal>
+              <article class="obj-row" data-home-card>
                 <h3 data-i18n={`objection.${n}.title`}>{tk(`objection.${n}.title`)}</h3>
                 <p data-i18n={`objection.${n}.text`}>{tk(`objection.${n}.text`)}</p>
               </article>
@@ -296,7 +297,7 @@ const selectedWork = [
           }
         </div>
 
-        <a class="obj-cta" href="/notes" data-cursor="READ" data-magnetic>
+        <a class="obj-cta" href="/services/#scope" data-i18n-attr="href:hero.cta.primary.href" data-cursor="OPEN" data-magnetic data-home-tail>
           <span data-i18n="objection.cta">{t("objection.cta")}</span>
           <i class="ui-arrow" aria-hidden="true"></i>
         </a>
@@ -308,21 +309,21 @@ const selectedWork = [
        on-page entry: a teaser that reads as part of the story and hands off to
        the /services hub. Card hrefs come from the dictionary, so they follow
        the active language to the matching localized deep-dive. -->
-  <section class="section services-teaser" id="services">
+  <section class="section services-teaser" id="services" data-home-scene>
     <div class="u-container section-grid">
-      <span class="s-idx">05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
+      <span class="s-idx" data-home-index>05 - <span data-i18n="nav.services">{t("nav.services")}</span></span>
       <div>
-        <h2 class="s-title" data-sy-reveal="words" data-i18n="services.teaser.title">{t("services.teaser.title")}</h2>
-        <p class="s-lead" data-sy-reveal="lines" data-i18n="services.teaser.text">{t("services.teaser.text")}</p>
+        <h2 class="s-title" data-home-title data-i18n="services.teaser.title">{t("services.teaser.title")}</h2>
+        <p class="s-lead" data-home-copy data-i18n="services.teaser.text">{t("services.teaser.text")}</p>
 
         <div class="svc-list">
           {
-            [1, 2, 3, 4].map((n) => (
+            [1, 2, 3, 4, 5].map((n) => (
               <a
                 class="svc-item"
                 href={tk(`services.${n}.href`)}
                 data-i18n-attr={`href:services.${n}.href, data-transition-label:services.${n}.title`}
-                data-reveal
+                data-home-card
                 data-cursor="OPEN"
                 data-transition-label={tk(`services.${n}.title`)}
               >
@@ -337,7 +338,7 @@ const selectedWork = [
           }
         </div>
 
-        <a class="svc-all" href="/services" data-reveal data-cursor="OPEN" data-magnetic>
+        <a class="svc-all" href="/services/" data-i18n-attr="href:hero.cta.primary.href" data-home-tail data-cursor="OPEN" data-magnetic>
           <span data-i18n="nav.services">{t("nav.services")}</span>
           <span class="css-arrow css-arrow-up" aria-hidden="true"></span>
         </a>
@@ -368,14 +369,14 @@ const selectedWork = [
     text={t("scrub.text")}
   />
 
-  <section class="portal" id="archive">
+  <section class="portal" id="archive" data-home-scene>
     <div class="u-container portal-inner">
       <div>
-        <span class="s-idx">07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
-        <h2 class="portal-title" data-sy-reveal="words" data-i18n="portal.title">{t("portal.title")}</h2>
-        <p class="portal-text" data-sy-reveal="lines" data-i18n="portal.text">{t("portal.text")}</p>
+        <span class="s-idx" data-home-index>07 - <span data-i18n="portal.eyebrow">{t("portal.eyebrow")}</span></span>
+        <h2 class="portal-title" data-home-title data-i18n="portal.title">{t("portal.title")}</h2>
+        <p class="portal-text" data-home-copy data-i18n="portal.text">{t("portal.text")}</p>
       </div>
-      <a class="archive-button" href="/gallery" data-tunnel data-reveal data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
+      <a class="archive-button" href="/gallery/" data-tunnel data-home-card data-cursor="ENTER" data-magnetic aria-label={t("portal.cta")}>
         <span class="archive-orbit" aria-hidden="true"></span>
         <span class="archive-label" data-i18n="portal.cta">{t("portal.cta")}</span>
         <span class="archive-arrow css-arrow css-arrow-down" aria-hidden="true"></span>
@@ -430,6 +431,7 @@ const selectedWork = [
   }
 
   .section {
+    --scene-progress: 1;
     position: relative;
     padding: clamp(6rem, 13vw, 12rem) 0;
     overflow: clip;
@@ -448,7 +450,30 @@ const selectedWork = [
     background:
       radial-gradient(circle at 76% 22%, rgba(255, 255, 255, 0.075), transparent 25rem),
       linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.018) 49%, transparent 66%);
-    opacity: 0.82;
+    opacity: calc(0.28 + var(--scene-progress, 1) * 0.54);
+  }
+
+  [data-home-scene] { --scene-progress: 1; }
+
+  .section-grid,
+  .work-composition,
+  .portal-inner {
+    position: relative;
+    padding-top: 2rem;
+  }
+
+  .section-grid::after,
+  .work-composition::after,
+  .portal-inner::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.09) 42%, transparent 92%);
+    opacity: calc(0.2 + var(--scene-progress, 1) * 0.8);
+    transform: scaleX(var(--scene-progress, 1));
+    transform-origin: left center;
   }
 
   .section-grid,
@@ -465,13 +490,25 @@ const selectedWork = [
   }
 
   .s-idx {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: .65rem;
     margin-bottom: 2rem;
     color: var(--color-text-alt);
     font-family: var(--font-inter);
     font-size: var(--font-size-xs);
     letter-spacing: 0.24em;
     text-transform: uppercase;
+  }
+
+  .s-idx::before {
+    content: "";
+    width: .34rem;
+    height: .34rem;
+    flex: 0 0 auto;
+    border: 1px solid rgba(255, 255, 255, .58);
+    border-radius: 50%;
+    box-shadow: 0 0 1rem rgba(255, 255, 255, calc(var(--scene-progress, 1) * .24));
   }
 
   .s-idx.center {
@@ -501,6 +538,25 @@ const selectedWork = [
     line-height: 1.55;
     text-shadow: 0 1px 18px rgba(0, 0, 0, 0.45);
   }
+
+  .services-teaser .s-title {
+    max-width: 16ch;
+    hyphens: none;
+    -webkit-hyphens: none;
+    overflow-wrap: normal;
+    text-wrap: balance;
+  }
+
+  [data-home-title],
+  [data-home-copy],
+  [data-home-index],
+  [data-home-card],
+  [data-home-tail],
+  [data-home-stage] {
+    will-change: opacity, transform;
+  }
+
+  [data-home-card] { will-change: opacity, clip-path; }
 
   /* ── Services & Research teaser (hands off to /services) ───────────────── */
   .svc-list {
@@ -1153,9 +1209,11 @@ const selectedWork = [
   }
 
   .work-intro .s-title {
-    max-width: 10ch;
+    max-width: 13ch;
     font-size: 4.15rem;
     line-height: 1.02;
+    hyphens: none;
+    -webkit-hyphens: none;
   }
 
   .work-intro .s-lead {
@@ -2137,6 +2195,9 @@ const selectedWork = [
     }
 
     .section { padding: 5.4rem 0; }
+    .section-grid,
+    .work-composition,
+    .portal-inner { padding-top: 1.35rem; }
     .section::before { height: 22rem; opacity: .58; }
     .section-grid,
     .contact-grid { gap: .7rem; }
@@ -2156,6 +2217,10 @@ const selectedWork = [
       -webkit-hyphens: auto;
     }
     .s-lead { margin-top: 1.25rem; font-size: .98rem; line-height: 1.55; }
+
+    .services-teaser .s-title {
+      font-size: clamp(2.15rem, 10.5vw, 3.45rem);
+    }
 
     .pillars { gap: .8rem; margin-top: 2.5rem; }
     .pillar { min-height: 15rem; padding: 1.25rem; backdrop-filter: none; }
@@ -2230,13 +2295,90 @@ const selectedWork = [
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const lightweightMotion = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
   const calm = () => document.documentElement.classList.contains("rb-calm");
   let motionStarted = false;
+
+  const initHomeScenes = () => {
+    const scenes = gsap.utils.toArray<HTMLElement>("[data-home-scene]");
+
+    scenes.forEach((scene) => {
+      const index = scene.querySelector<HTMLElement>("[data-home-index]");
+      const title = scene.querySelector<HTMLElement>("[data-home-title]");
+      const copy = scene.querySelector<HTMLElement>("[data-home-copy]");
+      const stage = scene.querySelector<HTMLElement>("[data-home-stage]");
+      const cards = gsap.utils.toArray<HTMLElement>("[data-home-card]", scene);
+      const tails = gsap.utils.toArray<HTMLElement>("[data-home-tail]", scene);
+      const all = [index, title, copy, stage, ...cards, ...tails].filter(Boolean) as HTMLElement[];
+
+      const show = () => {
+        scene.style.setProperty("--scene-progress", "1");
+        gsap.set(all, { opacity: 1, y: 0, clipPath: "none" });
+      };
+
+      if (reduced || calm()) {
+        show();
+        return;
+      }
+
+      scene.style.setProperty("--scene-progress", "0");
+      if (index) gsap.set(index, { opacity: 0, y: 10 });
+      if (title) gsap.set(title, {
+        opacity: 0,
+        y: lightweightMotion ? 18 : 38,
+        clipPath: lightweightMotion ? "none" : "inset(0 0 100% 0)",
+      });
+      if (copy) gsap.set(copy, { opacity: 0, y: lightweightMotion ? 12 : 22 });
+      if (stage) gsap.set(stage, { opacity: 0 });
+      if (cards.length) gsap.set(cards, {
+        opacity: 0,
+        clipPath: lightweightMotion ? "none" : "inset(0 0 100% 0 round 8px)",
+      });
+      if (tails.length) gsap.set(tails, { opacity: 0, y: 12 });
+
+      const play = () => {
+        if (scene.dataset.scenePlayed === "true") return;
+        scene.dataset.scenePlayed = "true";
+
+        const timeline = gsap.timeline({ defaults: { ease: "power4.out" } });
+        timeline.to(scene, { "--scene-progress": 1, duration: 1.15 }, 0);
+        if (index) timeline.to(index, { opacity: 1, y: 0, duration: .68 }, .04);
+        if (title) timeline.to(title, {
+            opacity: 1,
+            y: 0,
+            clipPath: "inset(0 0 0% 0)",
+            duration: lightweightMotion ? .72 : 1.08,
+          }, .1);
+        if (copy) timeline.to(copy, { opacity: 1, y: 0, duration: .86 }, .25);
+        if (stage) timeline.to(stage, { opacity: 1, duration: .9 }, .3);
+        if (cards.length) timeline.to(cards, {
+            opacity: 1,
+            clipPath: "inset(0 0 0% 0 round 8px)",
+            duration: lightweightMotion ? .62 : .94,
+            stagger: lightweightMotion ? .055 : .1,
+            onComplete: () => gsap.set(cards, { clearProps: "clipPath" }),
+          }, .34);
+        if (tails.length) timeline.to(tails, { opacity: 1, y: 0, duration: .72, stagger: .055 }, .48);
+      };
+
+      ScrollTrigger.create({
+        trigger: scene,
+        start: "top 84%",
+        once: true,
+        onEnter: play,
+        onEnterBack: play,
+      });
+
+      if (scene.getBoundingClientRect().top < innerHeight * .84) play();
+    });
+  };
 
   const initReveals = async () => {
     if (motionStarted) return;
     motionStarted = true;
-    const items = gsap.utils.toArray<HTMLElement>("[data-reveal]");
+    const items = gsap.utils
+      .toArray<HTMLElement>("[data-reveal]")
+      .filter((item) => !item.closest("[data-home-scene]"));
 
     if (reduced) {
       gsap.set(items, { opacity: 1, y: 0 });
@@ -2248,7 +2390,9 @@ const selectedWork = [
     document.documentElement.classList.add("is-motion-ready");
 
     requestAnimationFrame(() => {
-      ScrollTrigger.batch(items, {
+      initHomeScenes();
+
+      if (items.length) ScrollTrigger.batch(items, {
         // 88%, like every other reveal on the site — this was firing at 82%,
         // six per cent of a screen out of step with the split text beside it.
         start: "top 88%",

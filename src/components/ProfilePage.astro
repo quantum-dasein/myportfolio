@@ -83,8 +83,8 @@ const education = [1, 2, 3];
 // three paragraphs asking to be taken at their word.
 const jobLinks: Record<number, Array<{ href: string; key: string; external?: boolean }>> = {
   1: [
-    { href: "/work/bridge-consult", key: "exp.1.link" },
-    { href: "/work/fidic", key: "exp.1.link2" },
+    { href: "/work/bridge-consult/", key: "exp.1.link" },
+    { href: "/work/fidic/", key: "exp.1.link2" },
   ],
   2: [{ href: "https://www.youtube.com/@WinCCOA/playlists", key: "exp.2.link", external: true }],
   3: [{ href: "https://www.youtube.com/watch?v=cC-eCQHxzyA", key: "exp.3.link", external: true }],
@@ -246,8 +246,8 @@ const breadcrumbs = {
            place, so it points at them instead of restating them. -->
       <nav class="pf-elsewhere" data-reveal aria-label={c("Elsewhere on this site", "Weiter auf dieser Website")}>
         <a href="/#work"><span>{c("Selected work", "Ausgewählte Arbeiten")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
-        <a href="/services"><span>{c("Services in detail", "Leistungen im Detail")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
-        <a href="/notes"><span>{c("What broke, and why", "Was kaputtging, und warum")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
+        <a href={de ? "/de/leistungen/" : "/services/"}><span>{c("Services in detail", "Leistungen im Detail")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
+        <a href="/notes/"><span>{c("What broke, and why", "Was kaputtging, und warum")}</span><i class="ui-arrow" aria-hidden="true"></i></a>
       </nav>
 
       <section class="pf-outro" data-reveal>

@@ -69,18 +69,17 @@ export const ui = {
 
     // ── The objection, said out loud ────────────────────────────────────────
     // Buyers are already asking it; a site that pretends otherwise reads as
-    // either naive or evasive. Answering it first is the only version that
-    // converts.
-    "objection.label": "The obvious question",
-    "objection.title": "\u201cWhy pay you when I could just pay for the model?\u201d",
-    "objection.text": "Fair question, and the honest answer is that you can now generate a website. What you cannot generate is someone who knows the subject well enough to catch the answer that is confidently wrong, who decides what not to build, and who is still here in six months when the thing quietly breaks.",
-    "objection.1.title": "You can generate a page",
-    "objection.1.text": "You cannot generate the judgement that its scope is wrong — that the client needed one verifiable proposition, not eleven more pages.",
-    "objection.2.title": "You can generate an article about FIDIC",
-    "objection.2.text": "You cannot tell whether it is correct. That takes knowing the clause, the procurement rule and the practice, and it is the reason the platform can be published at all.",
-    "objection.3.title": "You can generate a fast site",
-    "objection.3.text": "You cannot generate the person who notices, months later, that the site has quietly got slower — and who can tell you by how much, because it was being measured.",
-    "objection.cta": "Read what actually broke",
+    // A buyer needs the practical promise, not a defensive debate about AI.
+    "objection.label": "What matters in practice",
+    "objection.title": "A small job should stay simple.",
+    "objection.text": "You should know what will be delivered, what it costs and when it goes live before work starts. One person writes, designs and builds it, so a landing page or reel does not turn into an agency process.",
+    "objection.1.title": "A clear scope before production",
+    "objection.1.text": "You get the deliverables, exclusions, fixed price and launch date in writing. If the useful answer is one page rather than eleven, that is what gets built.",
+    "objection.2.title": "Work you own",
+    "objection.2.text": "The finished site, source files and agreed video masters are yours. There is no builder subscription and no artificial retainer attached to a small job.",
+    "objection.3.title": "The builder stays reachable",
+    "objection.3.text": "If something breaks or needs to grow, you speak to the person who made it — with the decisions, measurements and technical context still intact.",
+    "objection.cta": "See scope and prices",
     "about.pillar.1.title": "Websites & Shops",
     "about.pillar.1.text":
       "Landing pages and clear business sites first; multilingual platforms and shops when the job genuinely needs them.",
@@ -667,17 +666,17 @@ export const ui = {
     "about.text":
       "Starten Sie mit dem, was jetzt fertig werden muss: einer Seite, einem Reel, einer Speisekarte oder einem SEO-Fix. Strategie, Text, Schnitt, Motion und Entwicklung laufen in einem Workflow — ohne Agentur-Overhead beim kleinen Auftrag und ohne Übergabeverluste beim großen.",
 
-    // ── Der Einwand, laut ausgesprochen ─────────────────────────────────────
-    "objection.label": "Die naheliegende Frage",
-    "objection.title": "\u201eWarum Sie bezahlen, wenn ich einfach das Modell bezahlen kann?\u201c",
-    "objection.text": "Berechtigte Frage, und die ehrliche Antwort lautet: Eine Website lässt sich heute generieren. Nicht generieren lässt sich jemand, der das Thema gut genug kennt, um die selbstbewusst falsche Antwort zu erkennen, der entscheidet, was nicht gebaut wird, und der in sechs Monaten noch da ist, wenn etwas leise kaputtgeht.",
-    "objection.1.title": "Eine Seite lässt sich generieren",
-    "objection.1.text": "Nicht generieren lässt sich das Urteil, dass ihr Scope falsch ist — dass der Kunde ein prüfbares Versprechen brauchte und nicht elf weitere Seiten.",
-    "objection.2.title": "Ein Artikel über FIDIC lässt sich generieren",
-    "objection.2.text": "Ob er stimmt, lässt sich damit nicht sagen. Dafür braucht es die Klausel, die Vergaberegel und die Praxis — und genau deshalb ist die Plattform überhaupt veröffentlichbar.",
-    "objection.3.title": "Eine schnelle Seite lässt sich generieren",
-    "objection.3.text": "Nicht generieren lässt sich die Person, die Monate später bemerkt, dass die Seite still langsamer geworden ist — und die sagen kann, um wie viel, weil gemessen wurde.",
-    "objection.cta": "Nachlesen, was wirklich kaputtging",
+    // ── Was ein kleiner Auftrag praktisch verspricht ────────────────────────
+    "objection.label": "Was in der Praxis zählt",
+    "objection.title": "Ein kleiner Auftrag sollte einfach bleiben.",
+    "objection.text": "Sie wissen vor dem Start, was geliefert wird, was es kostet und wann es live geht. Text, Gestaltung und Umsetzung kommen von einer Person, damit aus einer Landingpage oder einem Reel kein Agenturprozess wird.",
+    "objection.1.title": "Klarer Umfang vor der Produktion",
+    "objection.1.text": "Leistungsumfang, Ausschlüsse, Festpreis und Launch-Termin stehen schriftlich fest. Wenn eine Seite die sinnvolle Lösung ist statt elf, wird genau diese eine gebaut.",
+    "objection.2.title": "Die Arbeit gehört Ihnen",
+    "objection.2.text": "Die fertige Website, Quelldateien und vereinbarten Video-Master gehören Ihnen. Kein Baukasten-Abo und kein künstlicher Retainer für einen kleinen Auftrag.",
+    "objection.3.title": "Der Ersteller bleibt erreichbar",
+    "objection.3.text": "Wenn etwas kaputtgeht oder wachsen soll, sprechen Sie mit der Person, die es gebaut hat — inklusive Entscheidungen, Messwerten und technischem Kontext.",
+    "objection.cta": "Leistungen und Preise ansehen",
     "about.pillar.1.title": "Websites & Shops",
     "about.pillar.1.text":
       "Landingpages und klare Unternehmens-Websites zuerst; mehrsprachige Plattformen und Shops, wenn der Auftrag sie wirklich braucht.",
@@ -1039,7 +1038,7 @@ export const ui = {
     "studio.cta.insight": "Wo KI hilft — und wo sie das falsche Werkzeug ist",
     "studio.cta.live": "Archiv öffnen",
 
-    "services.teaser.title": "Sieben Wege zu starten. Kein Min­dest­pro­jekt.",
+    "services.teaser.title": "Sieben Wege zu starten. Kein Mindestprojekt.",
     "services.teaser.text":
       "Eine Landingpage, ein Reel, ein konkreter SEO-Fix — oder eine Plattform in drei Sprachen. Startpreise und Zeitrahmen sehen Sie, bevor Sie ein Formular ausfüllen.",
     "services.eyebrow": "Websites · Video · SEO / Wien",

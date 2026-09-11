@@ -60,7 +60,7 @@ export const scopes: Scope[] = [
     // The one-page case, which is exactly this scope at full size. It was the
     // only row on the table with no piece of work behind it while a matching
     // case study sat two clicks away.
-    proof: { text: copy("One page, eighteen modules — Bridge Consult Academy", "Eine Seite, achtzehn Module — Bridge Consult Academy"), href: "/work/academy" },
+    proof: { text: copy("One page, eighteen modules — Bridge Consult Academy", "Eine Seite, achtzehn Module — Bridge Consult Academy"), href: "/work/academy/" },
   },
   {
     id: "site",
@@ -130,7 +130,7 @@ export const scopes: Scope[] = [
       copy("Reporting you can read without a marketing degree", "Reporting, das Sie ohne Marketing-Abschluss lesen können"),
     ],
     needs: copy("Access to the site, Search Console and analytics.", "Zugang zur Website, zur Search Console und zu Analytics."),
-    proof: { text: copy("+780% organic search — Bridge Consult", "+780 % organische Suche — Bridge Consult"), href: "/work/bridge-consult" },
+    proof: { text: copy("+780% organic search — Bridge Consult", "+780 % organische Suche — Bridge Consult"), href: "/work/bridge-consult/" },
   },
   {
     id: "platform",
@@ -147,7 +147,7 @@ export const scopes: Scope[] = [
       copy("Multi-language handled in the routing, not bolted on afterwards", "Mehrsprachigkeit im Routing gelöst, nicht nachträglich angeflanscht"),
     ],
     needs: copy("A conversation about what the thing has to do before anyone writes code.", "Ein Gespräch darüber, was das System leisten muss, bevor irgendjemand Code schreibt."),
-    proof: { text: copy("429 pages, 3 languages, 2 900+ tenders — FIDIC.uz", "429 Seiten, 3 Sprachen, 2 900+ Ausschreibungen — FIDIC.uz"), href: "/work/fidic" },
+    proof: { text: copy("429 pages, 3 languages, 2 900+ tenders — FIDIC.uz", "429 Seiten, 3 Sprachen, 2 900+ Ausschreibungen — FIDIC.uz"), href: "/work/fidic/" },
   },
   {
     id: "showreel",
@@ -164,6 +164,6 @@ export const scopes: Scope[] = [
       copy("Fast on a mid-range phone, or it does not ship", "Schnell auf einem Mittelklasse-Handy, sonst geht es nicht live"),
     ],
     needs: copy("A reason for it. If the effect will not earn its weight, I will say so and build the simpler thing.", "Einen Grund dafür. Wenn der Effekt sein Gewicht nicht wert ist, sage ich das und baue die einfachere Variante."),
-    proof: { text: copy("This site, taken apart", "Diese Website, auseinandergenommen"), href: "/work/studio" },
+    proof: { text: copy("This site, taken apart", "Diese Website, auseinandergenommen"), href: "/work/studio/" },
   },
 ];

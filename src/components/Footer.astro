@@ -25,7 +25,7 @@ const order = ["nav.about", "nav.work", "nav.services", "nav.gallery", "nav.cont
 const sections = order
   .map((key) =>
     key === "nav.gallery"
-      ? { title: t("nav.gallery"), url: "/gallery", i18n: "nav.gallery" }
+      ? { title: t("nav.gallery"), url: "/gallery/", i18n: "nav.gallery" }
       : links.find((link) => link.i18n === key),
   )
   .filter((link): link is NonNullable<typeof link> => Boolean(link));
@@ -123,8 +123,8 @@ const sections = order
             data-i18n="footer.profile"
             data-case-exit
           >{t("footer.profile")}</a>
-          <a href="/notes" data-case-exit data-cursor="READ" data-i18n="nav.notes">{t("nav.notes")}</a>
-          <a href="/work/studio" data-case-exit data-cursor="READ" data-i18n="footer.colophon">{t("footer.colophon")}</a>
+          <a href="/notes/" data-case-exit data-cursor="READ" data-i18n="nav.notes">{t("nav.notes")}</a>
+          <a href="/work/studio/" data-case-exit data-cursor="READ" data-i18n="footer.colophon">{t("footer.colophon")}</a>
         </div>
 
         <div class="footer-col">

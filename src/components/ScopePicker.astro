@@ -135,9 +135,9 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
     {!full && (
       <a
         class="sc-more"
-        href={lang === "de" ? "/de/leistungen/#scope" : "/services#scope"}
+        href={lang === "de" ? "/de/leistungen/#scope" : "/services/#scope"}
         data-scope-more
-        data-scope-hub={lang === "de" ? "/de/leistungen/" : "/services"}
+        data-scope-hub={lang === "de" ? "/de/leistungen/" : "/services/"}
         data-cursor="OPEN"
         data-magnetic
       >
@@ -565,7 +565,7 @@ if (picker) {
       // The hub is a real URL per language now, so the handoff has to keep the
       // language it started in: a German profile page must not send a visitor
       // to the English hub with their choice attached.
-      const hub = more.dataset.scopeHub || "/services";
+      const hub = more.dataset.scopeHub || "/services/";
       more.setAttribute("href", `${hub}?project=${encodeURIComponent(id)}#scope`);
       return;
     }

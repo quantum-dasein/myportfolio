@@ -40,7 +40,7 @@ export const works: Work[] = [
     kTitle: "work.1.title",
     kCat: "work.1.tag",
     kText: "work.1.text",
-    href: "/work/bridge-consult",
+    href: "/work/bridge-consult/",
     hrefLabel: "Bridge Consult",
   },
   {
@@ -50,7 +50,7 @@ export const works: Work[] = [
     kTitle: "work.2.title",
     kCat: "work.2.tag",
     kText: "work.2.text",
-    href: "/work/fidic",
+    href: "/work/fidic/",
     hrefLabel: "fidic.uz",
   },
   {
@@ -60,7 +60,7 @@ export const works: Work[] = [
     kTitle: "work.3.title",
     kCat: "work.3.tag",
     kText: "work.3.text",
-    href: "/work/academy",
+    href: "/work/academy/",
     hrefLabel: "Academy",
   },
   {

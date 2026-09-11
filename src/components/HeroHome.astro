@@ -330,6 +330,10 @@ const headline = /[.!?…]$/.test(line1.trim()) ? `${line1} ${line2}` : `${line1
 
   [data-intro] { opacity: 1; transform: none; }
 
+  .hero-title .line {
+    will-change: transform, opacity, clip-path;
+  }
+
   @keyframes cue {
     0%, 100% { transform: scaleX(0.25); opacity: 0.35; }
     50% { transform: scaleX(1); opacity: 1; }
@@ -433,18 +437,43 @@ const headline = /[.!?…]$/.test(line1.trim()) ? `${line1} ${line2}` : `${line1
   const revealHero = () => {
     if (!hero || hero.dataset.introPlayed === "true") return;
     hero.dataset.introPlayed = "true";
-    const items = hero.querySelectorAll<HTMLElement>("[data-intro]");
-    gsap.fromTo(items, { opacity: 0, y: reduced ? 0 : 24 }, {
-      opacity: 1,
-      y: 0,
-      duration: reduced ? 0 : 1.15,
-      stagger: reduced ? 0 : 0.085,
-      delay: reduced ? 0 : 0.14,
-      // The same curve every reveal further down the page uses, so the site
-      // opens the way it continues.
-      ease: "expo.out",
-      overwrite: true,
-    });
+    const items = gsap.utils.toArray<HTMLElement>("[data-intro]", hero);
+    const heading = gsap.utils.toArray<HTMLElement>(".hero-title .line", hero);
+    const opening = gsap.utils.toArray<HTMLElement>(".status, .eyebrow", hero);
+    const sub = hero.querySelector<HTMLElement>(".hero-sub");
+    const actions = hero.querySelector<HTMLElement>(".hero-actions");
+    const readout = hero.querySelector<HTMLElement>(".hero-readout");
+    const cue = hero.querySelector<HTMLElement>(".hero-cue");
+
+    if (reduced) {
+      gsap.set(items, { opacity: 1, y: 0, x: 0, clipPath: "none" });
+      countTrustMetric();
+      return;
+    }
+
+    gsap.set(items, { opacity: 0 });
+    gsap.set(opening, { y: 10 });
+    gsap.set(heading, { yPercent: 108, clipPath: "inset(0 0 100% 0)" });
+    if (sub) gsap.set(sub, { y: 20 });
+    if (actions) gsap.set(actions, { y: 16 });
+    if (readout) gsap.set(readout, { x: 18 });
+    if (cue) gsap.set(cue, { y: 8 });
+
+    const timeline = gsap.timeline({ delay: .1, defaults: { ease: "power4.out" } });
+    timeline
+      .to(opening, { opacity: 1, y: 0, duration: .72, stagger: .06 }, 0)
+      .to(heading, {
+        opacity: 1,
+        yPercent: 0,
+        clipPath: "inset(0 0 0% 0)",
+        duration: 1.08,
+        stagger: .075,
+        onComplete: () => gsap.set(heading, { clearProps: "clipPath" }),
+      }, .08);
+    if (sub) timeline.to(sub, { opacity: 1, y: 0, duration: .86 }, .31);
+    if (actions) timeline.to(actions, { opacity: 1, y: 0, duration: .76 }, .43);
+    if (readout) timeline.to(readout, { opacity: 1, x: 0, duration: .92 }, .5);
+    if (cue) timeline.to(cue, { opacity: 1, y: 0, duration: .7 }, .64);
     countTrustMetric();
   };
 

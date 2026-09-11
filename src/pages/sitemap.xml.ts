@@ -31,14 +31,14 @@ ${localizedUrl("/de/rodion-belousov-wien/", "/en/rodion-belousov-vienna/", "de",
 ${Object.values(serviceContent).flatMap((service) => [localizedUrl(service.paths.en, service.paths.de, "en"), localizedUrl(service.paths.de, service.paths.en, "de")]).join("\n")}
 ${Object.values(insightContent).flatMap((insight) => [localizedUrl(insight.paths.en, insight.paths.de, "en", "0.75"), localizedUrl(insight.paths.de, insight.paths.en, "de", "0.75")]).join("\n")}
 ${url("/", "1.0", "weekly", `<image:image><image:loc>${site}/cases/rodion-belousov-bridge-consult-ai-assisted-web-development-case-study.webp</image:loc><image:title>Rodion Belousov Digital Marketer and Creative Developer Vienna</image:title></image:image>`)}
-${localizedUrl("/services", "/de/leistungen/", "en", "0.9")}
-${localizedUrl("/de/leistungen/", "/services", "de", "0.9")}
+${localizedUrl("/services/", "/de/leistungen/", "en", "0.9")}
+${localizedUrl("/de/leistungen/", "/services/", "de", "0.9")}
 ${Object.values(cases).map((item) => url(`/work/${item.slug}`, "0.9", "monthly", `<image:image><image:loc>${site}${item.image}</image:loc><image:title>${escapeXml(item.seo.title)}</image:title></image:image>`)).join("\n")}
-${url("/work/studio", "0.8", "monthly", `<image:image><image:loc>${site}/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg</image:loc><image:title>How rodionbelousov.studio is built: Astro, Three.js, GLSL and Web Audio</image:title></image:image>`)}
+${url("/work/studio/", "0.8", "monthly", `<image:image><image:loc>${site}/og/rodion-belousov-digital-marketer-creative-developer-vienna.jpg</image:loc><image:title>How rodionbelousov.studio is built: Astro, Three.js, GLSL and Web Audio</image:title></image:image>`)}
 ${localizedUrl("/contact/", "/de/kontakt/", "en", "0.9")}
 ${localizedUrl("/de/kontakt/", "/contact/", "de", "0.9")}
-${url("/notes", "0.8", "weekly")}
-${url("/gallery", "0.8", "monthly", galleryMedia)}
+${url("/notes/", "0.8", "weekly")}
+${url("/gallery/", "0.8", "monthly", galleryMedia)}
 </urlset>`;
 
   return new Response(xml, {

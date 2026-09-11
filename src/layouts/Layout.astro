@@ -277,15 +277,15 @@ const nav: Link[] = isDeck
       // route is the opposite of that.
       {
         title: t("nav.services"),
-        url: lang === "de" ? "/de/leistungen/" : "/services",
+        url: lang === "de" ? "/de/leistungen/" : "/services/",
         i18n: "nav.services",
-        langHref: { en: "/services", de: "/de/leistungen/" },
+        langHref: { en: "/services/", de: "/de/leistungen/" },
       },
       // The engineering log. A finished surface no longer proves much on its
       // own, so the record of what broke — and the two entries where the right
       // call was to bin the work — earns a top-level slot rather than living
       // as a section on /work/studio.
-      { title: t("nav.notes"), url: "/notes", i18n: "nav.notes" },
+      { title: t("nav.notes"), url: "/notes/", i18n: "nav.notes" },
       // Was an anchor to the footer's finale card, whose button then went to the
       // form — two steps to reach the one thing this link promises. Points at
       // the form directly; the finale card still leads there for anyone who
@@ -299,7 +299,7 @@ const nav: Link[] = isDeck
     ];
 const cta = isDeck
   ? { title: t("portal.back"), url: "/", i18n: "portal.back", tunnel: true }
-  : { title: t("nav.gallery"), url: "/gallery", i18n: "nav.gallery", tunnel: true };
+  : { title: t("nav.gallery"), url: "/gallery/", i18n: "nav.gallery", tunnel: true };
 
 // Serialize the full dictionary for the in-page language controller, and set the
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
@@ -580,11 +580,11 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
   // the main thread is idle. Skipped on the gallery itself and on save-data.
   const idle = (window as any).requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 2500));
   const saveData = (navigator as any).connection?.saveData;
-  if (location.pathname !== "/gallery" && !saveData) {
+  if (location.pathname !== "/gallery" && location.pathname !== "/gallery/" && !saveData) {
     idle(() => {
       const link = document.createElement("link");
       link.rel = "prefetch";
-      link.href = "/gallery";
+      link.href = "/gallery/";
       link.as = "document";
       document.head.appendChild(link);
     });
