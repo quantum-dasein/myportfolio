@@ -194,7 +194,7 @@ export const works: Work[] = [
   },
   {
     id: "fidic-osh-first-meeting",
-    img: "/portfolio/rodion-belousov-fidic-osh-first-meeting-event-reel-poster.webp",
+    img: "/portfolio/rodion-belousov-fidic-osh-first-meeting-event-reel-cover.webp",
     video: "/portfolio/video/rodion-belousov-fidic-osh-first-meeting-event-reel.mp4",
     ratio: "vertical",
     type: "reel",
@@ -210,7 +210,7 @@ export const works: Work[] = [
   },
   {
     id: "summer-school-georgia-2026",
-    img: "/portfolio/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel-poster.webp",
+    img: "/portfolio/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel-cover.webp",
     video: "/portfolio/video/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel.mp4",
     ratio: "vertical",
     type: "reel",
