@@ -137,7 +137,7 @@ const selectedWork = [
         <div class="pillars">
           {
             pillars.map((pillar, index) => (
-              <article class="pillar glass-tilt" data-home-card data-tilt-card>
+              <article class="pillar glass-tilt" data-home-card>
                 <span class="pillar-glint" aria-hidden="true"></span>
                 <span class="pillar-index">{String(index + 1).padStart(2, "0")}</span>
                 <h3 data-i18n={pillar.title}>{tk(pillar.title)}</h3>
@@ -470,10 +470,8 @@ const selectedWork = [
     inset: 0 0 auto;
     height: 1px;
     pointer-events: none;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.09) 42%, transparent 92%);
-    opacity: calc(0.2 + var(--scene-progress, 1) * 0.8);
-    transform: scaleX(var(--scene-progress, 1));
-    transform-origin: left center;
+    background: linear-gradient(90deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .045) 48%, transparent 92%);
+    opacity: .72;
   }
 
   .section-grid,
@@ -490,25 +488,13 @@ const selectedWork = [
   }
 
   .s-idx {
-    display: inline-flex;
-    align-items: center;
-    gap: .65rem;
+    display: inline-block;
     margin-bottom: 2rem;
     color: var(--color-text-alt);
     font-family: var(--font-inter);
     font-size: var(--font-size-xs);
     letter-spacing: 0.24em;
     text-transform: uppercase;
-  }
-
-  .s-idx::before {
-    content: "";
-    width: .34rem;
-    height: .34rem;
-    flex: 0 0 auto;
-    border: 1px solid rgba(255, 255, 255, .58);
-    border-radius: 50%;
-    box-shadow: 0 0 1rem rgba(255, 255, 255, calc(var(--scene-progress, 1) * .24));
   }
 
   .s-idx.center {
@@ -553,10 +539,9 @@ const selectedWork = [
   [data-home-card],
   [data-home-tail],
   [data-home-stage] {
-    will-change: opacity, transform;
+    backface-visibility: hidden;
+    transform-origin: 50% 100%;
   }
-
-  [data-home-card] { will-change: opacity, clip-path; }
 
   /* ── Services & Research teaser (hands off to /services) ───────────────── */
   .svc-list {
@@ -722,10 +707,6 @@ const selectedWork = [
   }
 
   .pillars {
-    --tilt-x: 0deg;
-    --tilt-y: 0deg;
-    --glint-x: 50%;
-    --glint-y: 50%;
     display: grid;
     /* Reflow by the space actually available instead of one hard breakpoint:
        a fixed repeat(3, 1fr) squeezed the columns at browser zoom until long
@@ -736,7 +717,6 @@ const selectedWork = [
     grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
     gap: clamp(0.9rem, 2vw, 1.3rem);
     margin-top: 4rem;
-    perspective: 1100px;
   }
 
   .pillar {
@@ -757,16 +737,12 @@ const selectedWork = [
       0 2rem 5rem rgba(0, 0, 0, 0.24),
       inset 0 1px 0 rgba(255, 255, 255, 0.045),
       inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-    transform:
-      rotateX(var(--tilt-x))
-      rotateY(var(--tilt-y))
-      translate3d(0, var(--lift, 0), 0);
-    transform-style: preserve-3d;
+    transform: translate3d(0, var(--lift, 0), 0);
     transition:
       box-shadow 0.5s var(--ease-out-expo),
       border-color 0.5s var(--ease-out-expo),
       background 0.5s var(--ease-out-expo),
-      transform 0.25s var(--ease-out-expo);
+      transform .7s cubic-bezier(.16, 1, .3, 1);
   }
 
   .pillar:nth-child(2) { --panel-accent: 194, 201, 205; }
@@ -796,7 +772,7 @@ const selectedWork = [
   }
 
   .pillar:hover {
-    --lift: -10px;
+    --lift: -3px;
     border-color: rgba(var(--panel-accent), 0.38);
     box-shadow:
       0 2.8rem 7rem rgba(0, 0, 0, 0.38),
@@ -811,7 +787,6 @@ const selectedWork = [
   .pillar > *:not(.pillar-glint) {
     position: relative;
     z-index: 1;
-    transform: translateZ(34px);
   }
 
   .pillar-glint {
@@ -819,7 +794,7 @@ const selectedWork = [
     inset: -40%;
     z-index: 0;
     pointer-events: none;
-    background: conic-gradient(from 120deg at var(--glint-x) var(--glint-y), transparent, rgba(255, 255, 255, 0.055), transparent 32%);
+    background: linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.045), transparent 68%);
     opacity: 0;
     transition: opacity 0.45s var(--ease-out-expo);
   }
@@ -2047,61 +2022,33 @@ const selectedWork = [
     .work-grid.is-deck .work-card:nth-child(2),
     .work-grid.is-deck .work-card:nth-child(3) {
       grid-area: 1 / 1;
-      /* --depth 0 is the card in hand, 1 and 2 are behind it. --drag is how far
-         the finger has taken the front card, and is only set while it is down. */
       --depth: 0;
       --drag: 0px;
-      --tilt: 0deg;
-      /* Set from the script: +1 for the card one back, -1 for the one behind
-         that, so the stack fans instead of hiding in its own silhouette. */
-      --sway: 0;
       transform:
-        translate3d(calc(var(--drag) * 0.34), calc(var(--depth) * 1.55rem), 0)
-        rotate(calc(var(--tilt) + var(--sway) * 2.2deg))
-        scale(calc(1 - var(--depth) * 0.05));
-      /* Centre, not below the card: with the origin under it, scaling pulled
-         the cards behind UP and the whole stack hid inside one silhouette. */
+        translate3d(calc(var(--drag) * 0.18), calc(var(--depth) * .7rem), 0)
+        scale(calc(1 - var(--depth) * 0.018));
       transform-origin: 50% 50%;
-      opacity: calc(1 - var(--depth) * 0.34);
-      /* The cards share one cell, so the front one needs a floor of its own or
-         the text of the two behind it reads straight through the glass. */
+      opacity: calc(1 - var(--depth) * 0.44);
       background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012)),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.008)),
         #06080a;
       z-index: calc(10 - var(--depth));
       transition:
-        transform 0.62s var(--ease-out-expo),
-        opacity 0.5s ease,
-        border-color 0.5s ease,
-        box-shadow 0.6s var(--ease-out-expo);
+        transform .9s cubic-bezier(.16, 1, .3, 1),
+        opacity .75s ease,
+        border-color .75s ease,
+        box-shadow .9s cubic-bezier(.16, 1, .3, 1);
     }
-    /* While a finger is on it, the card follows the finger without easing. */
-    .work-grid.is-deck.is-dragging .work-card { transition: opacity 0.2s ease; }
+    .work-grid.is-deck.is-dragging .work-card { transition: opacity .2s ease; }
 
-    /* "Neon" in a monochrome palette is the palette's own accent pushed until
-       it glows: a lit rim, a bloom under it, and the sheen these cards already
-       carry, run once as the card lands. */
     .work-grid.is-deck .work-card[data-deck-front] {
-      border-color: rgba(var(--work-accent), 0.7);
+      border-color: rgba(var(--work-accent), .42);
       box-shadow:
-        0 0 0 1px rgba(var(--work-accent), 0.22),
-        0 0 1.1rem rgba(var(--work-accent), 0.3),
-        0 0 3.4rem rgba(var(--work-accent), 0.2),
-        0 0 7rem rgba(var(--work-accent), 0.1),
-        0 2rem 4rem rgba(0, 0, 0, 0.7),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      /* The tube itself: a hairline of light along the top edge of the card,
-         which is what makes the rim read as lit rather than merely pale. */
-      animation: deck-pulse 4.5s ease-in-out infinite;
-    }
-    @keyframes deck-pulse {
-      0%, 100% { filter: brightness(1); }
-      50% { filter: brightness(1.055); }
+        0 1.6rem 3.6rem rgba(0, 0, 0, .58),
+        inset 0 1px 0 rgba(255, 255, 255, .14);
     }
     .work-grid.is-deck .work-card[data-deck-front]::before {
-      opacity: 0.55;
-      transform: translateX(140%);
-      transition: transform 0.9s var(--ease-out-expo), opacity 0.9s ease;
+      display: none;
     }
     .work-grid.is-deck .work-card:not([data-deck-front])::before {
       opacity: 0;
@@ -2265,42 +2212,21 @@ const selectedWork = [
     .work-core-shine { animation-duration: 24s; }
   }
 
-  [data-reveal] {
-    opacity: 1;
-    transform: none;
-    will-change: transform, opacity;
-  }
-
-  /* 26px, the same distance every other page starts a block reveal from — this
-     was 36 and read as a different animation to the one beside it. */
-  :global(html.is-motion-ready) [data-reveal]:not(.is-revealed) {
-    opacity: 0;
-    transform: translateY(26px);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    [data-reveal] {
-      opacity: 1;
-      transform: none;
-    }
-  }
 </style>
 
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
-  import { REVEAL } from "../utils/reveals";
 
   gsap.registerPlugin(ScrollTrigger);
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
-  const lightweightMotion = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
   const calm = () => document.documentElement.classList.contains("rb-calm");
   let motionStarted = false;
 
   const initHomeScenes = () => {
     const scenes = gsap.utils.toArray<HTMLElement>("[data-home-scene]");
+    const compact = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
 
     scenes.forEach((scene) => {
       const index = scene.querySelector<HTMLElement>("[data-home-index]");
@@ -2313,7 +2239,7 @@ const selectedWork = [
 
       const show = () => {
         scene.style.setProperty("--scene-progress", "1");
-        gsap.set(all, { opacity: 1, y: 0, clipPath: "none" });
+        gsap.set(all, { opacity: 1, x: 0, y: 0, rotationX: 0, scale: 1, clearProps: "transform" });
       };
 
       if (reduced || calm()) {
@@ -2321,97 +2247,60 @@ const selectedWork = [
         return;
       }
 
-      scene.style.setProperty("--scene-progress", "0");
-      if (index) gsap.set(index, { opacity: 0, y: 10 });
-      if (title) gsap.set(title, {
-        opacity: 0,
-        y: lightweightMotion ? 18 : 38,
-        clipPath: lightweightMotion ? "none" : "inset(0 0 100% 0)",
-      });
-      if (copy) gsap.set(copy, { opacity: 0, y: lightweightMotion ? 12 : 22 });
-      if (stage) gsap.set(stage, { opacity: 0 });
-      if (cards.length) gsap.set(cards, {
-        opacity: 0,
-        clipPath: lightweightMotion ? "none" : "inset(0 0 100% 0 round 8px)",
-      });
-      if (tails.length) gsap.set(tails, { opacity: 0, y: 12 });
-
-      const play = () => {
-        if (scene.dataset.scenePlayed === "true") return;
-        scene.dataset.scenePlayed = "true";
-
-        const timeline = gsap.timeline({ defaults: { ease: "power4.out" } });
-        timeline.to(scene, { "--scene-progress": 1, duration: 1.15 }, 0);
-        if (index) timeline.to(index, { opacity: 1, y: 0, duration: .68 }, .04);
-        if (title) timeline.to(title, {
-            opacity: 1,
-            y: 0,
-            clipPath: "inset(0 0 0% 0)",
-            duration: lightweightMotion ? .72 : 1.08,
-          }, .1);
-        if (copy) timeline.to(copy, { opacity: 1, y: 0, duration: .86 }, .25);
-        if (stage) timeline.to(stage, { opacity: 1, duration: .9 }, .3);
-        if (cards.length) timeline.to(cards, {
-            opacity: 1,
-            clipPath: "inset(0 0 0% 0 round 8px)",
-            duration: lightweightMotion ? .62 : .94,
-            stagger: lightweightMotion ? .055 : .1,
-            onComplete: () => gsap.set(cards, { clearProps: "clipPath" }),
-          }, .34);
-        if (tails.length) timeline.to(tails, { opacity: 1, y: 0, duration: .72, stagger: .055 }, .48);
-      };
-
-      ScrollTrigger.create({
-        trigger: scene,
-        start: "top 84%",
-        once: true,
-        onEnter: play,
-        onEnterBack: play,
+      /* Nothing is hidden and nothing "fires" when the section crosses a
+         threshold. The whole scene settles continuously with the scroll, so a
+         slow wheel movement produces a slow visual movement rather than a
+         stack of discrete entrance animations. */
+      const timeline = gsap.timeline({
+        defaults: { ease: "none", force3D: true },
+        scrollTrigger: {
+          trigger: scene,
+          start: "top 96%",
+          end: compact ? "top 58%" : "top 42%",
+          scrub: compact ? .55 : 1.05,
+          invalidateOnRefresh: true,
+        },
       });
 
-      if (scene.getBoundingClientRect().top < innerHeight * .84) play();
+      timeline.fromTo(scene, { "--scene-progress": .24 }, { "--scene-progress": 1, duration: 1 }, 0);
+      if (index) timeline.fromTo(index,
+        { opacity: .62, y: compact ? 5 : 9 },
+        { opacity: 1, y: 0, duration: .58 }, 0);
+      if (title) timeline.fromTo(title,
+        { opacity: .72, y: compact ? 14 : 28, scale: compact ? .997 : .988 },
+        { opacity: 1, y: 0, scale: 1, duration: .88 }, .03);
+      if (copy) timeline.fromTo(copy,
+        { opacity: .68, y: compact ? 9 : 17 },
+        { opacity: 1, y: 0, duration: .78 }, .12);
+      if (stage) timeline.fromTo(stage,
+        { opacity: .78, y: compact ? 10 : 22, scale: compact ? .998 : .992 },
+        { opacity: 1, y: 0, scale: 1, duration: .82 }, .12);
+      cards.forEach((card, cardIndex) => timeline.fromTo(card,
+        {
+          opacity: compact ? .84 : .72,
+          y: (compact ? 10 : 22) + cardIndex * (compact ? 1.5 : 3),
+          rotationX: compact ? 0 : 1.4,
+          scale: compact ? .998 : .989,
+          transformPerspective: 1000,
+        },
+        { opacity: 1, y: 0, rotationX: 0, scale: 1, duration: .72 },
+        .16 + cardIndex * .035));
+      tails.forEach((tail, tailIndex) => timeline.fromTo(tail,
+        { opacity: .68, y: compact ? 7 : 12 },
+        { opacity: 1, y: 0, duration: .58 },
+        .28 + tailIndex * .025));
     });
   };
 
   const initReveals = async () => {
     if (motionStarted) return;
     motionStarted = true;
-    const items = gsap.utils
-      .toArray<HTMLElement>("[data-reveal]")
-      .filter((item) => !item.closest("[data-home-scene]"));
-
-    if (reduced) {
-      gsap.set(items, { opacity: 1, y: 0 });
-      items.forEach((item) => item.classList.add("is-revealed"));
-      return;
-    }
+    if (reduced) return;
 
     await document.fonts?.ready;
-    document.documentElement.classList.add("is-motion-ready");
 
     requestAnimationFrame(() => {
       initHomeScenes();
-
-      if (items.length) ScrollTrigger.batch(items, {
-        // 88%, like every other reveal on the site — this was firing at 82%,
-        // six per cent of a screen out of step with the split text beside it.
-        start: "top 88%",
-        once: true,
-        onEnter: (batch) =>
-          gsap.to(batch, {
-            opacity: 1,
-            y: 0,
-            duration: REVEAL.block.duration,
-            ease: REVEAL.ease,
-            stagger: 0.06,
-            overwrite: true,
-            onComplete: () => batch.forEach((item) => (item as HTMLElement).classList.add("is-revealed")),
-          }),
-        onEnterBack: (batch) => {
-          gsap.set(batch, { opacity: 1, y: 0 });
-          batch.forEach((item) => item.classList.add("is-revealed"));
-        },
-      });
       ScrollTrigger.refresh();
     });
   };
@@ -2423,129 +2312,6 @@ const selectedWork = [
   }
 
   addEventListener("rb:langchange", () => requestAnimationFrame(() => ScrollTrigger.refresh()));
-
-  const tiltCards = gsap.utils.toArray<HTMLElement>("[data-tilt-card]");
-  if (finePointer) tiltCards.forEach((card) => {
-    const reset = () => {
-      gsap.to(card, {
-        rotationX: 0,
-        rotationY: 0,
-        z: 0,
-        "--tilt-x": "0deg",
-        "--tilt-y": "0deg",
-        "--glint-x": "50%",
-        "--glint-y": "50%",
-        duration: 0.7,
-        ease: "power3.out",
-      });
-    };
-
-    card.addEventListener("pointermove", (event) => {
-      if (reduced || calm()) return;
-      const rect = card.getBoundingClientRect();
-      const px = (event.clientX - rect.left) / rect.width;
-      const py = (event.clientY - rect.top) / rect.height;
-      const rx = (0.5 - py) * 5;
-      const ry = (px - 0.5) * 7;
-      gsap.to(card, {
-        rotationX: rx,
-        rotationY: ry,
-        z: 10,
-        "--tilt-x": `${rx}deg`,
-        "--tilt-y": `${ry}deg`,
-        "--glint-x": `${px * 100}%`,
-        "--glint-y": `${py * 100}%`,
-        duration: 0.35,
-        ease: "power3.out",
-      });
-    });
-
-    card.addEventListener("pointerleave", reset);
-    card.addEventListener("blur", reset);
-  });
-
-  const jobCards = gsap.utils.toArray<HTMLElement>("[data-job-card]");
-  if (finePointer) jobCards.forEach((card) => {
-    card.addEventListener("pointermove", (event) => {
-      if (reduced || calm()) return;
-      const rect = card.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * 100;
-      const y = ((event.clientY - rect.top) / rect.height) * 100;
-      card.style.setProperty("--job-x", `${x}%`);
-      card.style.setProperty("--job-y", `${y}%`);
-    });
-
-    card.addEventListener("pointerleave", () => {
-      card.style.setProperty("--job-x", "50%");
-      card.style.setProperty("--job-y", "50%");
-    });
-  });
-
-  const workStage = document.querySelector<HTMLElement>(".work-stage");
-  const caseCards = gsap.utils.toArray<HTMLElement>(".work-card");
-  const workOrbits = document.querySelector<HTMLElement>(".work-orbits");
-  const workCore = document.querySelector<HTMLElement>(".work-core");
-
-  if (finePointer) workStage?.addEventListener("pointermove", (event) => {
-    if (reduced || calm() || innerWidth < 760) return;
-    const rect = workStage.getBoundingClientRect();
-    const nx = (event.clientX - rect.left) / rect.width - 0.5;
-    const ny = (event.clientY - rect.top) / rect.height - 0.5;
-    // Written for two cards; with three, a shared direction makes the back one
-    // track its neighbour instead of holding its own plane. Depth order drives
-    // both the direction and how far each drifts.
-    caseCards.forEach((card, index) => {
-      const direction = index === 1 ? -1 : 1;
-      const depth = index === 0 ? 1 : index === 1 ? 0.85 : 0.55;
-      gsap.to(card, {
-        x: nx * 18 * direction * depth,
-        y: ny * 12 * depth,
-        duration: 0.65,
-        ease: "power3.out",
-        overwrite: "auto",
-      });
-    });
-    if (workOrbits) gsap.to(workOrbits, { x: nx * -12, y: ny * -8, duration: 0.9, ease: "power3.out" });
-  });
-
-  if (finePointer) workStage?.addEventListener("pointerleave", () => {
-    gsap.to(caseCards, { x: 0, y: 0, duration: 0.9, ease: "power3.out", overwrite: "auto" });
-    if (workOrbits) gsap.to(workOrbits, { x: 0, y: 0, duration: 1.1, ease: "power3.out" });
-  });
-
-  if (workStage && innerWidth <= 760 && !reduced) {
-    let workVisible = false;
-    let workFrame = 0;
-
-    const renderMobileWork = () => {
-      workFrame = 0;
-      if (!workVisible) return;
-      const rect = workStage.getBoundingClientRect();
-      const progress = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
-      const travel = progress - 0.5;
-
-      caseCards.forEach((card, index) => {
-        const direction = index === 1 ? 1 : -1;
-        card.style.setProperty("--mobile-card-x", `${direction * 4}px`);
-        card.style.setProperty("--mobile-card-y", `${travel * 34 * direction}px`);
-      });
-      if (workCore) workCore.style.translate = `0 ${travel * -18}px`;
-      if (workOrbits) workOrbits.style.translate = `0 ${travel * 11}px`;
-    };
-
-    const requestMobileWork = () => {
-      if (!workFrame) workFrame = requestAnimationFrame(renderMobileWork);
-    };
-
-    const workObserver = new IntersectionObserver(([entry]) => {
-      workVisible = entry.isIntersecting;
-      if (workVisible) requestMobileWork();
-    }, { rootMargin: "20% 0px" });
-
-    workObserver.observe(workStage);
-    addEventListener("scroll", requestMobileWork, { passive: true });
-    addEventListener("resize", requestMobileWork, { passive: true });
-  }
 
   // ── Selected work, as a deck ───────────────────────────────────────────────
   // On a phone the three cards share one grid cell and only the front one is
@@ -2571,7 +2337,6 @@ const selectedWork = [
         // so the order wraps instead of running out.
         const depth = (index - front + cards.length) % cards.length;
         card.style.setProperty("--depth", String(depth));
-        card.style.setProperty("--sway", depth === 1 ? "1" : depth === 2 ? "-1" : "0");
         card.toggleAttribute("data-deck-front", depth === 0);
         // Nothing behind the front card should be reachable by tab or by a
         // stray tap — it is 45% opacity and half a card lower.
@@ -2601,9 +2366,7 @@ const selectedWork = [
       front = 0;
       cards.forEach((card) => {
         card.style.removeProperty("--depth");
-        card.style.removeProperty("--sway");
         card.style.removeProperty("--drag");
-        card.style.removeProperty("--tilt");
         card.removeAttribute("data-deck-front");
         if ("inert" in HTMLElement.prototype) card.inert = false;
       });
@@ -2650,7 +2413,6 @@ const selectedWork = [
       const card = frontCard();
       const held = Math.max(-90, Math.min(90, dx));
       card.style.setProperty("--drag", `${held}px`);
-      card.style.setProperty("--tilt", `${held * 0.035}deg`);
     }, { passive: true });
 
     const release = (event: PointerEvent) => {
@@ -2660,7 +2422,6 @@ const selectedWork = [
       dragging = false;
       deck.classList.remove("is-dragging");
       card.style.setProperty("--drag", "0px");
-      card.style.setProperty("--tilt", "0deg");
       if (decided && Math.abs(dx) > 42) go(dx < 0 ? 1 : -1);
     };
 
