@@ -371,9 +371,6 @@ const selectedWork = [
   <section class="portal" id="archive" data-archive-portal>
     <div class="portal-atmosphere" aria-hidden="true">
       <span class="portal-veil" data-portal-veil></span>
-      <span class="portal-beacon portal-beacon-a" data-portal-beacon></span>
-      <span class="portal-beacon portal-beacon-b" data-portal-beacon></span>
-      <span class="portal-beacon portal-beacon-c" data-portal-beacon></span>
     </div>
     <div class="u-container portal-inner">
       <div class="portal-copy">
@@ -1603,29 +1600,6 @@ const selectedWork = [
     opacity: 0.18;
   }
 
-  .portal-beacon {
-    position: absolute;
-    width: 0.24rem;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: rgba(236, 247, 252, 0.94);
-    box-shadow:
-      0 0 0.45rem rgba(225, 242, 250, 0.8),
-      0 0 2.1rem rgba(187, 220, 234, 0.48);
-  }
-
-  .portal-beacon::after {
-    content: "";
-    position: absolute;
-    inset: -0.45rem;
-    border: 1px solid rgba(225, 242, 250, 0.18);
-    border-radius: 50%;
-  }
-
-  .portal-beacon-a { top: 31%; left: 18%; }
-  .portal-beacon-b { top: 48%; right: 17%; transform: scale(0.72); }
-  .portal-beacon-c { bottom: 17%; left: 34%; transform: scale(0.52); }
-
   .portal-copy {
     position: relative;
     z-index: 2;
@@ -1779,9 +1753,6 @@ const selectedWork = [
     .portal-inner { gap: 2.5rem; }
     .portal-kicker { margin-bottom: 1.5rem; }
     .archive-button { width: 13rem; justify-self: center; }
-    .portal-beacon-a { left: 9%; }
-    .portal-beacon-b { right: 8%; }
-    .portal-beacon-c { left: 24%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2346,9 +2317,10 @@ const selectedWork = [
 <script>
   import gsap from "gsap";
   import ScrollTrigger from "gsap/ScrollTrigger";
+  import SplitText from "gsap/SplitText";
   import { REVEAL } from "../utils/reveals";
 
-  gsap.registerPlugin(ScrollTrigger);
+  gsap.registerPlugin(ScrollTrigger, SplitText);
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -2398,13 +2370,10 @@ const selectedWork = [
     addEventListener("rb:loaded", () => void initReveals(), { once: true });
   }
 
-  addEventListener("rb:langchange", () => requestAnimationFrame(() => ScrollTrigger.refresh()));
-
   // ── Archive portal ───────────────────────────────────────────────────────
-  // One scroll-controlled shot instead of three unrelated reveal helpers.
-  // The page remains the camera: darkness opens first, copy resolves through
-  // a mask, and only then does the archive sphere form and light its label.
-  // All expensive work is bounded to this section and mobile skips text blur.
+  // A short pinned scene on desktop: darkness opens, the heading resolves word
+  // by word through masks, the supporting copy follows, and the original archive
+  // button forms last. Touch devices keep the same sequence without pin or blur.
   const archivePortal = document.querySelector<HTMLElement>("[data-archive-portal]");
   const portalInner = archivePortal?.querySelector<HTMLElement>(".portal-inner") ?? null;
   const portalKicker = archivePortal?.querySelector<HTMLElement>("[data-portal-kicker]") ?? null;
@@ -2412,9 +2381,9 @@ const selectedWork = [
   const portalText = archivePortal?.querySelector<HTMLElement>("[data-portal-text]") ?? null;
   const portalSphere = archivePortal?.querySelector<HTMLElement>("[data-portal-sphere]") ?? null;
   const portalVeil = archivePortal?.querySelector<HTMLElement>("[data-portal-veil]") ?? null;
-  const portalBeacons = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-beacon]", archivePortal) : [];
   const portalLabels = archivePortal ? gsap.utils.toArray<HTMLElement>("[data-portal-label]", archivePortal) : [];
   let portalTimeline: ReturnType<typeof gsap.timeline> | null = null;
+  let portalTitleSplit: InstanceType<typeof SplitText> | null = null;
 
   const portalAnimatedParts = [
     portalInner,
@@ -2423,7 +2392,6 @@ const selectedWork = [
     portalText,
     portalSphere,
     portalVeil,
-    ...portalBeacons,
     ...portalLabels,
   ].filter(Boolean) as HTMLElement[];
 
@@ -2431,75 +2399,98 @@ const selectedWork = [
     portalTimeline?.scrollTrigger?.kill();
     portalTimeline?.kill();
     portalTimeline = null;
+    portalTitleSplit?.revert();
+    portalTitleSplit = null;
+
     gsap.set(portalAnimatedParts, {
       clearProps: "opacity,visibility,transform,filter,clipPath,willChange",
     });
   };
 
-  const initArchivePortal = () => {
+  const initArchivePortal = (keepTranslatedText = false) => {
     if (!archivePortal || !portalInner || !portalKicker || !portalTitle || !portalText || !portalSphere || !portalVeil) return;
+    // SplitText remembers the string it originally split. The language
+    // controller has already replaced that string when rb:langchange arrives,
+    // so preserve the new copy across the required SplitText revert.
+    const translatedTitle = keepTranslatedText ? portalTitle.textContent : null;
     settleArchivePortal();
+    if (translatedTitle !== null) portalTitle.textContent = translatedTitle;
     if (reduced || calm()) return;
 
     const mobile = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
-    gsap.set(portalAnimatedParts, { willChange: "transform, opacity" });
+    const desktopScene = !mobile && matchMedia("(min-width: 900px) and (hover: hover) and (pointer: fine)").matches;
+
+    portalTitleSplit = new SplitText(portalTitle, {
+      type: "words",
+      mask: "words",
+      wordsClass: "portal-word",
+      aria: "none",
+      tag: "span",
+    });
+    portalTitleSplit.masks.forEach((mask) => {
+      const element = mask as HTMLElement;
+      element.style.overflow = "hidden";
+      element.style.paddingBottom = "0.08em";
+      element.style.marginBottom = "-0.08em";
+    });
+
+    const titleWords = portalTitleSplit.words as HTMLElement[];
+    gsap.set([...portalAnimatedParts, ...titleWords], { willChange: "transform, opacity" });
 
     portalTimeline = gsap.timeline({
       defaults: { ease: "power4.out" },
       scrollTrigger: {
         trigger: archivePortal,
-        start: "top 92%",
-        end: mobile ? "top 24%" : "top 18%",
-        scrub: mobile ? 0.42 : 0.78,
+        start: desktopScene ? "top top" : "top 90%",
+        end: desktopScene ? "+=110%" : "top 22%",
+        pin: desktopScene,
+        pinSpacing: desktopScene,
+        anticipatePin: desktopScene ? 1 : 0,
+        scrub: desktopScene ? 1.05 : 0.44,
         invalidateOnRefresh: true,
       },
     });
 
     portalTimeline
-      .from(portalInner, { scale: 0.975, z: -64, duration: 1.05, ease: "none" }, 0)
-      .from(portalVeil, { opacity: 1, duration: 0.9, ease: "none" }, 0)
-      .from(portalKicker, { autoAlpha: 0, y: -22, duration: 0.24 }, 0.06)
-      .from(portalTitle, {
+      .from(portalInner, { scale: 0.965, z: -72, duration: 1.1, ease: "none" }, 0)
+      .from(portalVeil, { opacity: 1, duration: 0.82, ease: "none" }, 0)
+      .from(portalKicker, { autoAlpha: 0, y: -18, duration: 0.2 }, 0.08)
+      .from(titleWords, {
         autoAlpha: 0,
-        y: mobile ? 34 : 62,
-        scale: 0.975,
-        filter: mobile ? "none" : "blur(14px)",
-        clipPath: "inset(0 0 100% 0)",
-        duration: 0.54,
-      }, 0.12)
+        yPercent: 122,
+        rotateX: mobile ? 0 : 24,
+        transformOrigin: "50% 100%",
+        duration: 0.48,
+        stagger: 0.045,
+      }, 0.14)
       .from(portalText, {
         autoAlpha: 0,
-        y: mobile ? 20 : 30,
+        y: mobile ? 18 : 26,
+        filter: mobile ? "none" : "blur(8px)",
         clipPath: "inset(0 0 100% 0)",
-        duration: 0.38,
-      }, 0.38)
+        duration: 0.36,
+      }, 0.41)
       .from(portalSphere, {
         autoAlpha: 0,
-        y: mobile ? 52 : 88,
-        scale: 0.07,
-        rotation: -5,
-        duration: 0.72,
+        y: mobile ? 44 : 70,
+        scale: 0.3,
+        rotation: -3,
+        duration: 0.58,
         ease: "expo.out",
-      }, 0.27)
-      .from(portalBeacons, {
-        autoAlpha: 0,
-        y: mobile ? 12 : 28,
-        scale: 0.1,
-        duration: 0.34,
-        stagger: 0.055,
-      }, 0.46)
+      }, 0.5)
       .from(portalLabels, {
         autoAlpha: 0,
         y: 10,
         duration: 0.2,
         stagger: 0.035,
-      }, 0.78);
+      }, 0.82);
 
     ScrollTrigger.refresh();
   };
 
   document.fonts.ready.then(() => requestAnimationFrame(initArchivePortal));
   addEventListener("rb:calmchange", () => requestAnimationFrame(initArchivePortal));
+  addEventListener("rb:langchange", () => requestAnimationFrame(() => initArchivePortal(true)));
 
   const tiltCards = gsap.utils.toArray<HTMLElement>("[data-tilt-card]");
   if (finePointer) tiltCards.forEach((card) => {
