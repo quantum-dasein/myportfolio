@@ -1,0 +1,309 @@
+---
+import type { Lang } from "../i18n/utils";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const de = lang === "de";
+
+const concepts = [
+  {
+    id: "restaurant",
+    href: de
+      ? "/de/website-restaurant-wien/"
+      : "/en/website-for-restaurants-vienna/",
+    sector: de ? "RESTAURANT · 1070 WIEN" : "RESTAURANT · VIENNA 1070",
+    name: "RB / TABLE",
+    headline: de ? "Heute Abend noch ein Tisch." : "A table for tonight.",
+    detail: de
+      ? "Karte · Öffnungszeiten · Reservieren"
+      : "Menu · Hours · Reserve",
+    action: de ? "Tisch reservieren" : "Reserve a table",
+  },
+  {
+    id: "practice",
+    href: de
+      ? "/de/website-arztpraxis-wien/"
+      : "/en/website-for-doctors-vienna/",
+    sector: de ? "ARZTPRAXIS · 1180 WIEN" : "MEDICAL PRACTICE · VIENNA 1180",
+    name: "RB / PRAXIS",
+    headline: de
+      ? "Der nächste Termin, klar erklärt."
+      : "The next appointment, clearly explained.",
+    detail: de
+      ? "Wahlarzt · DE / EN · Barrierefrei"
+      : "Private practice · DE / EN · Accessible",
+    action: de ? "Termin anfragen" : "Request appointment",
+  },
+  {
+    id: "trade",
+    href: de
+      ? "/de/website-handwerker-wien/"
+      : "/en/website-for-tradespeople-vienna/",
+    sector: de
+      ? "HANDWERK · WIEN & UMGEBUNG"
+      : "TRADES · VIENNA & SURROUNDINGS",
+    name: "RB / WERK",
+    headline: de
+      ? "Repariert, bevor es größer wird."
+      : "Fixed before it becomes a bigger job.",
+    detail: de
+      ? "Leistungen · Einsatzgebiet · Rückruf"
+      : "Services · Coverage · Callback",
+    action: de ? "Rückruf anfragen" : "Request a callback",
+  },
+];
+---
+
+<section class="demo-concepts" aria-labelledby="demo-concepts-title">
+  <div class="u-container">
+    <div class="demo-head">
+      <span>{de ? "03 — KONZEPTSTUDIEN" : "03 — CONCEPT STUDIES"}</span>
+      <div>
+        <h2 id="demo-concepts-title">
+          {
+            de
+              ? "So kann der kleine Auftrag aussehen."
+              : "What the small job can look like."
+          }
+        </h2>
+        <p>
+          {
+            de
+              ? "Keine erfundenen Kunden und keine erfundenen Ergebnisse: drei bewusst als Konzept markierte Einstiege für typische Wiener Betriebe."
+              : "No invented clients and no invented results: three clearly labelled concepts for typical Vienna businesses."
+          }
+        </p>
+      </div>
+    </div>
+
+    <div class="demo-grid">
+      {
+        concepts.map((concept, index) => (
+          <a
+            class={`demo-card demo-card--${concept.id}`}
+            href={concept.href}
+            data-reveal
+            data-track="demo_open"
+            data-track-item={concept.id}
+            data-track-place="services-hub"
+            data-cursor="VIEW"
+          >
+            <span class="demo-honesty">
+              {de
+                ? "KONZEPT · KEIN KUNDENPROJEKT"
+                : "CONCEPT · NOT A CLIENT PROJECT"}
+            </span>
+            <div class="demo-browser" aria-hidden="true">
+              <div class="demo-chrome">
+                <>
+                  <i />
+                  <i />
+                  <i />
+                  <span>{concept.id}.wien</span>
+                </>
+              </div>
+              <div class="demo-screen">
+                <header>
+                  <>
+                    <strong>{concept.name}</strong>
+                    <small>{String(index + 1).padStart(2, "0")}</small>
+                  </>
+                </header>
+                <span class="demo-sector">{concept.sector}</span>
+                <b>{concept.headline}</b>
+                <span class="demo-detail">{concept.detail}</span>
+                <span class="demo-action">{concept.action} →</span>
+              </div>
+            </div>
+            <span class="demo-link">
+              {de ? "Angebot für diese Branche" : "Offer for this trade"}
+              <i>→</i>
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .demo-concepts {
+    padding: clamp(4.5rem, 10vw, 9rem) 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .demo-head {
+    display: grid;
+    grid-template-columns: 18rem minmax(0, 1fr);
+    gap: 3rem;
+    margin-bottom: 3rem;
+  }
+  .demo-head > span {
+    font: 0.64rem var(--font-inter);
+    letter-spacing: 0.22em;
+    color: var(--color-text-alt);
+  }
+  .demo-head h2 {
+    max-width: 15ch;
+    margin: 0;
+    font: 500 clamp(2rem, 4.5vw, 4rem)/1 var(--font-display);
+    letter-spacing: -0.035em;
+  }
+  .demo-head p {
+    max-width: 58ch;
+    margin: 1.3rem 0 0;
+    color: rgba(var(--rgb-text), 0.66);
+    line-height: 1.6;
+  }
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .demo-card {
+    min-width: 0;
+    padding: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    background: #050709;
+    color: var(--color-text);
+    transition:
+      transform 0.45s var(--ease-out-expo),
+      border-color 0.35s ease;
+  }
+  .demo-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  .demo-honesty {
+    display: block;
+    padding: 0.25rem 0.25rem 0.85rem;
+    font: 0.54rem var(--font-inter);
+    letter-spacing: 0.16em;
+    color: rgba(var(--rgb-text), 0.38);
+  }
+  .demo-browser {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9px;
+    background: #0a0c0f;
+  }
+  .demo-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.28rem;
+    height: 1.7rem;
+    padding: 0 0.55rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  }
+  .demo-chrome i {
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .demo-chrome span {
+    margin-left: auto;
+    font: 0.48rem var(--font-inter);
+    letter-spacing: 0.08em;
+    color: rgba(var(--rgb-text), 0.3);
+  }
+  .demo-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: 22rem;
+    padding: 1.35rem;
+  }
+  .demo-screen header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .demo-screen header strong {
+    font: 600 0.82rem var(--font-display);
+  }
+  .demo-screen header small {
+    font: 0.52rem var(--font-inter);
+    color: rgba(var(--rgb-text), 0.4);
+  }
+  .demo-sector {
+    margin-top: auto;
+    font: 0.48rem var(--font-inter);
+    letter-spacing: 0.17em;
+    color: rgba(var(--rgb-text), 0.48);
+  }
+  .demo-screen b {
+    display: block;
+    max-width: 10ch;
+    margin: 0.8rem 0 1rem;
+    font: 500 clamp(1.65rem, 3vw, 2.55rem)/0.96 var(--font-display);
+    letter-spacing: -0.045em;
+  }
+  .demo-detail {
+    font-size: 0.63rem;
+    color: rgba(var(--rgb-text), 0.55);
+  }
+  .demo-action {
+    align-self: flex-start;
+    margin-top: 1.35rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    font: 0.52rem var(--font-inter);
+    letter-spacing: 0.08em;
+  }
+  .demo-card--restaurant .demo-screen {
+    background:
+      radial-gradient(
+        circle at 80% 20%,
+        rgba(181, 83, 48, 0.25),
+        transparent 42%
+      ),
+      #130d0b;
+  }
+  .demo-card--practice .demo-screen {
+    background:
+      radial-gradient(
+        circle at 80% 15%,
+        rgba(115, 172, 174, 0.18),
+        transparent 42%
+      ),
+      #091012;
+  }
+  .demo-card--trade .demo-screen {
+    background:
+      linear-gradient(155deg, rgba(214, 171, 57, 0.15), transparent 45%),
+      #11100c;
+  }
+  .demo-link {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0.25rem 0.25rem;
+    font: 0.58rem var(--font-inter);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(var(--rgb-text), 0.62);
+  }
+  .demo-link i {
+    font-style: normal;
+    transition: transform 0.35s var(--ease-out-expo);
+  }
+  .demo-card:hover .demo-link i {
+    transform: translateX(0.3rem);
+  }
+
+  @media (max-width: 900px) {
+    .demo-head {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .demo-grid {
+      grid-template-columns: 1fr;
+    }
+    .demo-screen {
+      min-height: 18rem;
+    }
+  }
+</style>

@@ -31,7 +31,7 @@ const t = useTranslations(lang);
 const ENDPOINT = import.meta.env.PUBLIC_FORM_ENDPOINT ?? "https://formspree.io/f/mjyvjpdk";
 const MAIL = "rodionbelousov@protonmail.com";
 
-const what = ["landing", "site", "film", "shop", "seo", "platform", "showreel", "other"] as const;
+const what = ["audit", "landing", "site", "film", "shop", "seo", "platform", "showreel", "other"] as const;
 // The lattice behind the form is the same one the scope picker drives: every
 // node is a unit of the job, so choosing "a landing page" contracts it to a
 // handful and "a platform" fills it. The ratios live in scopes.ts; "other" is
@@ -43,6 +43,12 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 ---
 
 <form class="cf" data-contact-form data-endpoint={ENDPOINT} data-mail={MAIL} novalidate>
+  <div class="cf-audit-intro" data-audit-intro hidden>
+    <strong>{lang === "de" ? "Kostenloser 3-Punkte-Check" : "Free three-point check"}</strong>
+    <p>{lang === "de"
+      ? "Tragen Sie die Website ein. Sie erhalten drei konkrete Verbesserungen — ohne Verkaufsgespräch."
+      : "Add the website below. You will get three concrete improvements — no sales call."}</p>
+  </div>
   <div class="cf-field">
     <label for="cf-what"><i aria-hidden="true">01</i><span data-i18n="form.what.label">{t("form.what.label")}</span></label>
     <select id="cf-what" name="what" required>
@@ -52,9 +58,23 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
     </select>
   </div>
 
+  <div class="cf-field">
+    <label for="cf-url"><i aria-hidden="true">02</i><span data-i18n="form.url.label">{t("form.url.label")}</span></label>
+    <input
+      id="cf-url"
+      name="url"
+      type="url"
+      autocomplete="url"
+      inputmode="url"
+      placeholder={t("form.url.placeholder")}
+      data-i18n-attr="placeholder:form.url.placeholder"
+      data-audit-url
+    />
+  </div>
+
   <div class="cf-row">
     <div class="cf-field">
-      <label for="cf-when"><i aria-hidden="true">02</i><span data-i18n="form.when.label">{t("form.when.label")}</span></label>
+      <label for="cf-when"><i aria-hidden="true">03</i><span data-i18n="form.when.label">{t("form.when.label")}</span></label>
       <select id="cf-when" name="when" required>
         {when.map((id) => (
           <option value={id} data-i18n={`form.when.${id}`}>{t(`form.when.${id}` as any)}</option>
@@ -62,7 +82,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       </select>
     </div>
     <div class="cf-field">
-      <label for="cf-budget"><i aria-hidden="true">03</i><span data-i18n="form.budget.label">{t("form.budget.label")}</span></label>
+      <label for="cf-budget"><i aria-hidden="true">04</i><span data-i18n="form.budget.label">{t("form.budget.label")}</span></label>
       <select id="cf-budget" name="budget" required>
         {budget.map((id) => (
           <option value={id} data-i18n={`form.budget.${id}`}>{t(`form.budget.${id}` as any)}</option>
@@ -72,7 +92,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   </div>
 
   <div class="cf-field">
-    <label for="cf-email"><i aria-hidden="true">04</i><span data-i18n="form.email.label">{t("form.email.label")}</span></label>
+    <label for="cf-email"><i aria-hidden="true">05</i><span data-i18n="form.email.label">{t("form.email.label")}</span></label>
     <input
       id="cf-email"
       name="email"
@@ -86,7 +106,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   </div>
 
   <div class="cf-field">
-    <label for="cf-message"><i aria-hidden="true">05</i><span data-i18n="form.message.label">{t("form.message.label")}</span></label>
+    <label for="cf-message"><i aria-hidden="true">06</i><span data-i18n="form.message.label">{t("form.message.label")}</span></label>
     <textarea
       id="cf-message"
       name="message"
@@ -110,6 +130,10 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 
 <style>
   .cf { display: grid; gap: 1.35rem; max-width: 34rem; }
+  .cf-audit-intro { padding: 1rem 1.1rem; border: 1px solid rgba(var(--rgb-text), .2); border-radius: 12px; background: rgba(var(--rgb-white), .045); }
+  .cf-audit-intro[hidden] { display: none; }
+  .cf-audit-intro strong { font: 500 1rem var(--font-display); }
+  .cf-audit-intro p { margin: .4rem 0 0; color: var(--color-text-alt); font-size: .82rem; line-height: 1.5; }
   .cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.35rem; }
   .cf-field { position: relative; display: grid; gap: 0.55rem; min-width: 0; }
 
@@ -123,7 +147,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
     color: var(--color-text-alt);
     transition: color 0.3s ease;
   }
-  /* The step number. A form with five questions reads shorter when it says so. */
+  /* Step numbers make a six-question form feel finite rather than open-ended. */
   .cf-field label i {
     font-style: normal;
     font-size: 0.6rem;
@@ -262,6 +286,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 
 <script>
   import { t as translate } from "../utils/i18n";
+  import { getAttribution } from "../utils/analytics";
 
   function initContactForm() {
     document.querySelectorAll<HTMLFormElement>("[data-contact-form]").forEach((form) => {
@@ -275,9 +300,21 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       // the select on its default.
       const project = new URLSearchParams(location.search).get("project");
       const what = form.elements.namedItem("what") as HTMLSelectElement | null;
+      const url = form.elements.namedItem("url") as HTMLInputElement | null;
       if (project && what && Array.from(what.options).some((option) => option.value === project)) {
         what.value = project;
       }
+
+      const syncAudit = () => {
+        if (!url) return;
+        const audit = what?.value === "audit";
+        url.required = audit;
+        url.closest(".cf-field")?.classList.toggle("is-required", audit);
+        const intro = form.querySelector<HTMLElement>("[data-audit-intro]");
+        if (intro) intro.hidden = !audit;
+      };
+      what?.addEventListener("change", syncAudit);
+      syncAudit();
 
       // Tell the lattice how big the job is. It is the same `rb:scope` event the
       // picker sends, so the field behind the form behaves exactly as it does
@@ -296,6 +333,16 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       const label = button.querySelector("span")!;
       const endpoint = form.dataset.endpoint || "";
       const mail = form.dataset.mail || "";
+      let started = false;
+
+      form.addEventListener("focusin", () => {
+        if (started) return;
+        started = true;
+        dispatchEvent(new CustomEvent("rb:track", { detail: {
+          name: "form_start",
+          data: { kind: what?.value || "unknown", placement: location.pathname },
+        } }));
+      });
 
       const say = (key: string, ok: boolean) => {
         status.textContent = translate(key);
@@ -309,8 +356,10 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
         const value = (name: string) => (form.elements.namedItem(name) as HTMLSelectElement | HTMLInputElement)?.value || "";
         const spell = (group: string, id: string) => translate(`form.${group}.${id}`) || id;
         const extra = value("message").trim();
+        const site = value("url").trim();
         return [
           `${translate("form.what.label")} ${spell("what", value("what"))}`,
+          site ? `${translate("form.url.label")} ${site}` : "",
           `${translate("form.when.label")} ${spell("when", value("when"))}`,
           `${translate("form.budget.label")}: ${spell("budget", value("budget"))}`,
           "",
@@ -330,13 +379,17 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
 
         const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
         const body = compose();
+        const attribution = getAttribution();
+        const kind = what?.value || "other";
 
         // Only reachable if the endpoint is deliberately blanked. Kept because
         // losing a written enquiry is worse than one extra tap.
         if (!endpoint) {
-          const subject = encodeURIComponent(`Website enquiry — ${email}`);
-          location.href = `mailto:${mail}?subject=${subject}&body=${encodeURIComponent(body)}`;
+          const subject = encodeURIComponent(`${kind === "audit" ? "Website audit" : "Website enquiry"} — ${email}`);
+          const source = `\n\nSource\nLanding: ${attribution.landing}\nReferrer: ${attribution.referrer}\nCampaign: ${attribution.campaign}`;
+          location.href = `mailto:${mail}?subject=${subject}&body=${encodeURIComponent(body + source)}`;
           say("form.success", true);
+          dispatchEvent(new CustomEvent("rb:track", { detail: { name: "form_success", data: { kind, source: attribution.campaign } } }));
           return;
         }
 
@@ -356,8 +409,11 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
             body: JSON.stringify({
               email,
               _replyto: email,
-              _subject: `Website enquiry — ${email}`,
+              _subject: `${kind === "audit" ? "Website audit" : "Website enquiry"} — ${email}`,
               message: body,
+              landing_page: attribution.landing,
+              referrer: attribution.referrer,
+              campaign: attribution.campaign,
             }),
           });
           if (!response.ok) {
@@ -369,9 +425,12 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
             throw new Error(detail?.errors?.[0]?.message || String(response.status));
           }
           form.reset();
+          syncAudit();
           say("form.success", true);
+          dispatchEvent(new CustomEvent("rb:track", { detail: { name: "form_success", data: { kind, source: attribution.campaign } } }));
         } catch {
           say("form.error", false);
+          dispatchEvent(new CustomEvent("rb:track", { detail: { name: "form_error", data: { kind, placement: location.pathname } } }));
         } finally {
           button.disabled = false;
           label.textContent = idle;

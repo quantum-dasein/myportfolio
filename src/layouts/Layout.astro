@@ -11,6 +11,7 @@ import SoundField from "../components/SoundField.astro";
 import CaseTransition from "../components/CaseTransition.astro";
 import PageTransition from "../components/PageTransition.astro";
 import EasterEgg from "../components/EasterEgg.astro";
+import Analytics from "@vercel/analytics/astro";
 import { ui, defaultLang } from "../i18n/ui";
 import { useTranslations, type Lang } from "../i18n/utils";
 import type { Link } from "../types";
@@ -372,6 +373,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
          whole time the overlay is visible. It carries its own 7s timeout so a
          module that never loads at all still cannot strand the page. -->
     <script is:inline set:html={bootScript} />
+    <Analytics />
     <script is:inline>
       // Apply before layout and history guards can record a stale case offset.
       // Browser Back/Forward keeps its native restoration behaviour.
@@ -574,6 +576,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 <script>
   import "../utils/reveals";
   import "../utils/vitals";
+  import "../utils/analytics";
 
   // Warm up the archive before the likely click: prefetch the /gallery route
   // (and its hashed three.js chunk via the browser's speculative parse) once

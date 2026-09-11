@@ -553,6 +553,7 @@ export const ui = {
     "form.text":
       "Three answers is enough to price it. You get a fixed number and a launch date back, usually the same day.",
     "form.what.label": "What do you need?",
+    "form.what.audit": "A free three-point website check",
     "form.what.landing": "A landing page",
     "form.what.site": "A business website",
     "form.what.film": "A short, reel, video edit or 3D film",
@@ -561,6 +562,8 @@ export const ui = {
     "form.what.platform": "A web app or platform",
     "form.what.showreel": "Something with 3D or heavy motion",
     "form.what.other": "Something else — I will explain",
+    "form.url.label": "Website URL",
+    "form.url.placeholder": "https://your-website.com",
     "form.when.label": "When do you need it?",
     "form.when.asap": "As soon as possible",
     "form.when.month": "Within a month",
@@ -580,7 +583,7 @@ export const ui = {
     "form.sending": "Sending…",
     "form.success": "Got it. I answer every enquiry myself, usually within a day.",
     "form.error": "That did not send. Write to rodionbelousov@protonmail.com and I will pick it up there.",
-    "form.privacy": "Only used to answer you. Not passed on, not added to any list.",
+    "form.privacy": "Used only to answer you and processed through Formspree. Not added to a mailing list.",
 
     // ── Footer ──────────────────────────────────────────────────────────────
     "footer.cta.eyebrow": "Small projects welcome",
@@ -1143,6 +1146,7 @@ export const ui = {
     "form.text":
       "Drei Antworten genügen für einen Preis. Sie bekommen eine feste Zahl und einen Launch-Termin zurück, meist noch am selben Tag.",
     "form.what.label": "Was brauchen Sie?",
+    "form.what.audit": "Einen kostenlosen 3-Punkte-Website-Check",
     "form.what.landing": "Eine Landingpage",
     "form.what.site": "Eine Unternehmens-Website",
     "form.what.film": "Einen Short, ein Reel, einen Videoschnitt oder 3D-Film",
@@ -1151,6 +1155,8 @@ export const ui = {
     "form.what.platform": "Eine Web-App oder Plattform",
     "form.what.showreel": "Etwas mit 3D oder aufwendiger Motion",
     "form.what.other": "Etwas anderes — ich erkläre es",
+    "form.url.label": "Website-URL",
+    "form.url.placeholder": "https://ihre-website.at",
     "form.when.label": "Bis wann?",
     "form.when.asap": "So bald wie möglich",
     "form.when.month": "Innerhalb eines Monats",
@@ -1170,7 +1176,7 @@ export const ui = {
     "form.sending": "Wird gesendet…",
     "form.success": "Angekommen. Ich beantworte jede Anfrage selbst, meist innerhalb eines Tages.",
     "form.error": "Das ging nicht raus. Schreiben Sie an rodionbelousov@protonmail.com, dort erreichen Sie mich sicher.",
-    "form.privacy": "Wird nur zur Beantwortung verwendet. Nicht weitergegeben, nicht in einen Verteiler aufgenommen.",
+    "form.privacy": "Wird nur zur Beantwortung verwendet und über Formspree verarbeitet. Keine Aufnahme in einen Verteiler.",
 
     // ── Footer ──────────────────────────────────────────────────────────────
     "footer.cta.eyebrow": "Kleine Aufträge willkommen",

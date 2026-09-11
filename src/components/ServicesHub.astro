@@ -14,6 +14,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import Layout from "../layouts/Layout.astro";
 import ScopePicker from "./ScopePicker.astro";
+import AuditCta from "./AuditCta.astro";
+import DemoConcepts from "./DemoConcepts.astro";
 import { useTranslations, type Lang, type UIKey } from "../i18n/utils";
 
 interface Props { lang: Lang }
@@ -152,10 +154,16 @@ const research = [1, 2, 3, 4].map((n) => ({
       <ScopePicker lang={lang} />
 
       <p class="svc-scope-note" data-reveal data-i18n="services.scope.note">{t("services.scope.note")}</p>
-      <a class="svc-scope-cta" href={de ? "/de/kontakt/" : "/contact/"} data-scope-cta data-reveal data-cursor="OPEN" data-magnetic>
+      <a class="svc-scope-cta" href={de ? "/de/kontakt/" : "/contact/"} data-scope-cta data-track="quote_open" data-track-item="landing" data-track-place="scope-picker" data-reveal data-cursor="OPEN" data-magnetic>
         <span data-i18n="services.scope.cta">{t("services.scope.cta")}</span>
         <i aria-hidden="true">→</i>
       </a>
+    </div>
+  </section>
+
+  <section class="svc-section audit-section">
+    <div class="u-container">
+      <AuditCta lang={lang} />
     </div>
   </section>
 
@@ -174,6 +182,9 @@ const research = [1, 2, 3, 4].map((n) => ({
               data-reveal
               data-cursor="OPEN"
               data-transition-label={tk(s.title)}
+              data-track="service_open"
+              data-track-item={tk(s.title)}
+              data-track-place="services-hub"
             >
               <span class="card-glint" aria-hidden="true" />
               <span class="card-n">{String(s.n).padStart(2, "0")}</span>
@@ -194,10 +205,12 @@ const research = [1, 2, 3, 4].map((n) => ({
     </div>
   </section>
 
+  <DemoConcepts lang={lang} />
+
   <!-- ── Research ─────────────────────────────────────────────────────────── -->
   <section class="svc-section" id="research">
     <div class="u-container">
-      <span class="svc-idx">03 - <span data-i18n="research.label">{t("research.label")}</span></span>
+      <span class="svc-idx">04 - <span data-i18n="research.label">{t("research.label")}</span></span>
       <h2 class="svc-h2" data-sy-reveal="words" data-i18n="research.title">
         {t("research.title")}
       </h2>
@@ -233,7 +246,7 @@ const research = [1, 2, 3, 4].map((n) => ({
   <!-- ── 03 How the three combine ──────────────────────────────────────── -->
   <section class="svc-section" id="how">
     <div class="u-container">
-      <span class="svc-idx">04 - <span data-i18n="services.how.label">{t("services.how.label")}</span></span>
+      <span class="svc-idx">05 - <span data-i18n="services.how.label">{t("services.how.label")}</span></span>
       <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.how.title">{t("services.how.title")}</h2>
       <p class="svc-section-lead" data-sy-reveal="lines" data-i18n="services.how.lead">{t("services.how.lead")}</p>
 
@@ -256,7 +269,7 @@ const research = [1, 2, 3, 4].map((n) => ({
   <!-- ── 04 FAQ ───────────────────────────────────────────────────────────  -->
   <section class="svc-section" id="faq">
     <div class="u-container">
-      <span class="svc-idx">05 - <span data-i18n="services.faq.label">{t("services.faq.label")}</span></span>
+      <span class="svc-idx">06 - <span data-i18n="services.faq.label">{t("services.faq.label")}</span></span>
       <h2 class="svc-h2" data-sy-reveal="words" data-i18n="services.faq.title">{t("services.faq.title")}</h2>
 
       <div class="svc-faq">
@@ -283,6 +296,7 @@ const research = [1, 2, 3, 4].map((n) => ({
     line-height: 1.6;
     text-wrap: pretty;
   }
+  .audit-section { padding-block: clamp(3rem, 6vw, 5rem); }
   /* A non-navigating variant of .row — same rhythm, no hover or arrow. */
   .row.static { cursor: default; }
 

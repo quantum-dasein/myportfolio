@@ -4,6 +4,8 @@ import { insightContent, pick, serviceContent, type SeoLang, type ServiceKey } f
 import { cases, type CaseId } from "../data/cases";
 import { works } from "../data/works";
 import { scopes, pickScope } from "../data/scopes";
+import AuditCta from "./AuditCta.astro";
+import VideoStarter from "./VideoStarter.astro";
 
 // Proper nouns, not translated.
 const caseName: Record<CaseId, string> = {
@@ -112,6 +114,8 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       </div>
     </header>
 
+    {serviceKey === "motion" && <VideoStarter lang={lang} />}
+
     <section class="capabilities">
       <div class="u-container capability-grid">
         {service.capabilities.map((item, index) => (
@@ -127,7 +131,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
           <div class="reel-grid">
             {reel.map((film) => (
               <figure data-reveal data-film>
-                <button type="button" data-film-play aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
+                <button type="button" data-film-play data-track="video_play" data-track-item={film.id} data-track-place="motion-page" aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
                   <img src={film.img} alt={`${film.title} — ${pick({ en: film.detail!.en, de: film.detail!.de }, lang)}`} loading="lazy" width="800" height="450" />
                   <span class="reel-play" aria-hidden="true"></span>
                 </button>
@@ -166,7 +170,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
           <div class="reel-grid reel-grid--field">
             {fieldReel.map((film) => (
               <figure data-reveal data-film>
-                <button type="button" data-film-play aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
+                <button type="button" data-film-play data-track="video_play" data-track-item={film.id} data-track-place="motion-page" aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
                   <img src={film.img} alt={`${film.title} — ${pick({ en: film.detail!.en, de: film.detail!.de }, lang)}`} loading="lazy" width="464" height="848" />
                   <span class="reel-play" aria-hidden="true"></span>
                 </button>
@@ -271,6 +275,12 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       </section>
     )}
 
+    <section class="service-audit">
+      <div class="u-container">
+        <AuditCta lang={lang} compact />
+      </div>
+    </section>
+
     <section class="faq">
       <div class="u-container"><span class="eyebrow" data-reveal>FAQ</span>{service.faq.map((item) => <details data-reveal><summary>{pick(item.question, lang)}</summary><p>{pick(item.answer, lang)}</p></details>)}</div>
     </section>
@@ -298,7 +308,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
           </dl>
           <p data-reveal>{pickScope(scope.needs, lang)}</p>
           <div class="cta-links" data-reveal>
-            <a class="cta-primary" href={`${de ? "/de/kontakt/" : "/contact/"}?project=${scope.id}`} data-cursor="OPEN" data-magnetic>
+            <a class="cta-primary" href={`${de ? "/de/kontakt/" : "/contact/"}?project=${scope.id}`} data-track="quote_open" data-track-item={scope.id} data-track-place="service-page" data-cursor="OPEN" data-magnetic>
               {de ? "Festpreis anfragen" : "Get a fixed price"}<i class="ui-arrow" aria-hidden="true"></i>
             </a>
             <a class="cta-secondary" href={`${hub}?project=${scope.id}#scope`} data-cursor="VIEW">
@@ -513,6 +523,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
     margin: 1.4rem 0 0;
     font: 500 clamp(2.2rem, 4vw, 3.6rem)/1.02 var(--font-display);
   }
+  .service-audit { border-top: 1px solid rgba(255, 255, 255, .08); }
   .cta-figures {
     display: flex;
     flex-wrap: wrap;

@@ -62,6 +62,9 @@ const loc = (value: { en: string; de: string }) => ({ "data-loc-en": value.en, "
           id={`sc-tab-${s.id}`}
           class="sc-tab"
           data-scope-tab={s.id}
+          data-track="scope_select"
+          data-track-item={s.id}
+          data-track-place="scope-picker"
           data-field={s.field}
           aria-selected={i === 0 ? "true" : "false"}
           aria-controls={`sc-panel-${s.id}`}
@@ -560,6 +563,7 @@ if (picker) {
       link.dataset.scopeCta ||= `${url.pathname}${url.hash}`;
       url.searchParams.set("project", id);
       link.setAttribute("href", `${url.pathname}${url.search}${url.hash}`);
+      link.dataset.trackItem = id;
     });
     if (more) {
       // The hub is a real URL per language now, so the handoff has to keep the
