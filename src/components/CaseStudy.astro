@@ -1821,13 +1821,14 @@ const caseSchema = {
   if (reduced) {
     gsap.set([...reveal, ...kinetic], { opacity: 1, y: 0, rotateX: 0, scale: 1 });
   } else {
-    gsap.set(reveal.filter(item => !item.closest(".case-hero")), { opacity: 0, y: 28 });
+    gsap.set(reveal.filter(item => !item.closest(".case-hero")), { opacity: 0, y: REVEAL.block.distance });
     gsap.set(kinetic, { opacity: 0, y: 34, rotateX: 5, scale: .985 });
     // Each element joins the site-wide reveal wave instead of staggering inside
     // its own batch: block reveals and split text then belong to one cascade in
     // document order, rather than two that merely overlap.
     ScrollTrigger.batch(reveal, {
-      start: "top 88%",
+      start: REVEAL.start,
+      interval: REVEAL.batchInterval,
       once: true,
       onEnter: (batch) =>
         gsap.to(batch, {
@@ -1835,7 +1836,7 @@ const caseSchema = {
           y: 0,
           duration: REVEAL.block.duration,
           ease: REVEAL.ease,
-          stagger: 0.06,
+          stagger: REVEAL.block.stagger,
           overwrite: true,
         }),
       onEnterBack: (batch) => gsap.set(batch, { opacity: 1, y: 0 }),

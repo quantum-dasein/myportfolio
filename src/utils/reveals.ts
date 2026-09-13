@@ -17,7 +17,20 @@ import SplitText from "gsap/SplitText";
 //  shrink from heading to line to block so the eye reads a hierarchy.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const REVEAL_LINE = '0px 0px -12% 0px';
+/** A phone is a small screen, not a different website — but it is also a
+ *  different scroll. Lenis damps the desktop wheel; a phone flings the page
+ *  under your thumb at several times that speed, and every number below was set
+ *  against the slow one. Same curve, same distance, same trigger, and the two
+ *  do not read alike: what settles visibly on a desktop is already finished by
+ *  the time it clears the bottom edge of a phone. The values that follow are
+ *  the ones that differ, and nothing here changes what a desktop does. */
+const touch = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+
+/** Where a reveal starts, measured up from the bottom edge. Touch starts a
+ *  little sooner so the longer travel below has somewhere to happen: at a flick
+ *  the element is still moving as it arrives in the middle of the screen,
+ *  instead of landing before you have seen it. */
+const REVEAL_LINE = touch ? '0px 0px -5% 0px' : '0px 0px -12% 0px';
 
 const observer = new IntersectionObserver(intersectCallback, {
   root: null,
@@ -55,24 +68,10 @@ function visibilityUnobserve(element: HTMLElement, onChange: (entries: Intersect
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** A phone is a small screen, not a different website.
- *
- *  Touch used to get a flat opacity fade in place of the split reveal: one
- *  gesture, 900ms long, for all 84 reveals on the site, while a desktop got
- *  masked words rising off a stagger. That is the whole distance between the
- *  two reading as the same piece of work, and it was paid on the device most
- *  visitors actually arrive on. Touch plays the same choreography now.
- *
- *  What a phone gets instead of a cheaper animation is a shorter one. The same
- *  heading sets as three lines on a desktop and five on a phone, so an
- *  unchanged per-word stagger buys a tail half again as long on the device with
- *  the least patience for it — every value below is tightened for touch and the
- *  tail is capped outright by `stagger()`. The compositor hint costs nothing at
- *  rest either: reveals.css holds it only while the element is playing.
- *
- *  The flat fade is not gone. It is what CALM means now — a reader asking for
- *  less motion, rather than a guess made from the width of their screen. */
-const touch = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+/** Touch used to get a flat opacity fade in place of the split reveal — one
+ *  900ms gesture for all 84 reveals on the site. That fade is not gone: it is
+ *  what CALM means now, which is a reader asking for less motion rather than a
+ *  guess made from the width of their screen. */
 const calmReveal = !reducedMotion && document.documentElement.classList.contains("rb-calm");
 
 /** One shared vocabulary. Every reveal on the site is one of these three, and
@@ -83,12 +82,33 @@ const calmReveal = !reducedMotion && document.documentElement.classList.contains
  *  sluggish on a page you are scrolling through, because the text is still
  *  settling when your eye has already moved on. */
 export const REVEAL = {
-  // The same curve the CSS transitions use (--ease-out-expo), so a card
-  // lifting under the cursor and a heading arriving are the same hand.
-  ease: "expo.out",
-  words: { duration: touch ? 0.58 : 0.66, stagger: touch ? 0.026 : 0.032, tail: touch ? 0.3 : 0.52 },
-  lines: { duration: touch ? 0.62 : 0.7, stagger: touch ? 0.038 : 0.05, tail: touch ? 0.32 : 0.6 },
-  block: { duration: 0.62, distance: 20 },
+  // On a desktop, the same curve the CSS transitions use (--ease-out-expo), so
+  // a card lifting under the cursor and a heading arriving are the same hand.
+  //
+  // expo.out is 49% resolved 60ms in and 89% by 200ms. Under a damped wheel
+  // that front-loading reads as authority — the page answers the moment you ask.
+  // Under a thumb it reads as nothing at all: the element clears the trigger
+  // line and has finished before it is far enough up the screen to look at, so
+  // every block, image and card on a phone simply existed, fully arrived, the
+  // instant it appeared. power2.out spends its travel evenly instead — half the
+  // distance at the halfway mark rather than nine tenths of it — which is the
+  // difference between something arriving and something having arrived.
+  ease: touch ? "power2.out" : "expo.out",
+  words: { duration: touch ? 0.92 : 0.66, stagger: touch ? 0.045 : 0.032, tail: touch ? 0.5 : 0.52 },
+  lines: { duration: touch ? 0.95 : 0.7, stagger: touch ? 0.055 : 0.05, tail: touch ? 0.55 : 0.6 },
+  // Blocks: the whole composition — every card, figure, row and button on the
+  // site moves on these three numbers. 26px of rise is a tenth of a phone
+  // screen's width and reads as a twitch at speed; the travel is set in CSS
+  // from --rb-rise so one value covers every component, and GSAP animates from
+  // whatever it finds there.
+  block: { duration: touch ? 1 : 0.62, distance: touch ? 44 : 28, stagger: touch ? 0.1 : 0.06 },
+  // Where a ScrollTrigger block reveal starts, and how wide a window counts as
+  // one wave. A longer window on touch is what makes a section arrive as a
+  // composition rather than as elements that each happen to be moving: at a
+  // flick, neighbours that cross the line 140ms apart still belong to the same
+  // stagger instead of being dealt two separate hands.
+  start: touch ? "top 96%" : "top 88%",
+  batchInterval: touch ? 0.14 : 0.1,
 } as const;
 
 /** Keeps the rhythm until the tail gets long, then compresses to fit it.

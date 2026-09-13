@@ -523,14 +523,12 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     animation: fx-grain 0.8s steps(2) infinite;
   }
 
-  /* Only the grain stops while the page moves, and only where it is blended.
-     `mix-blend-mode: overlay` is what makes this layer expensive: a blended
-     surface cannot be composited, so shifting it re-blends the full screen on
-     every scrolled frame. The star field has no blend mode — it is a plain
-     transform on a fixed layer, which the compositor moves for nothing — so
-     pausing it bought nothing and cost the one bit of drift a reader might
-     actually notice. On touch the blend is dropped entirely (below), so the
-     grain keeps moving there too. */
+  /* Both layers are fixed and full-screen, so each is a composited surface the
+     browser re-blends on every scrolled frame. Holding them still while the page
+     moves hands that work back without touching how either one looks. Desktop
+     keeps this exactly as it was; touch releases both below, where the reason
+     for the pause — the grain's blend — has been taken away. */
+  :global(html.rb-scrolling) .site-fx__stars,
   :global(html.rb-scrolling) .site-fx__grain {
     animation-play-state: paused;
   }
@@ -587,6 +585,12 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       animation-duration: 1.15s;
     }
 
+    /* With no blend left to resolve, the grain is a composited transform on a
+       fixed layer and the star field always was one. Neither has a reason to
+       hold still, and a phone is scrolling almost all of the time it is being
+       read — a layer that stops whenever the reader moves is a layer they never
+       see move at all. */
+    :global(html.rb-scrolling) .site-fx__stars,
     :global(html.rb-scrolling) .site-fx__grain {
       animation-play-state: running;
     }

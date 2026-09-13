@@ -477,7 +477,7 @@ const notes = allNotes.slice(0, 3).map(({ n }) => ({
   .arrow { width: .45rem; height: .45rem; border-top: 1px solid currentColor; border-right: 1px solid currentColor; transform: rotate(45deg); }
 
   /* ── Reveal base ───────────────────────────────────────────────────────── */
-  [data-reveal] { opacity: 0; transform: translateY(26px); will-change: transform, opacity; }
+  [data-reveal] { opacity: 0; transform: translateY(var(--rb-rise, 26px)); will-change: transform, opacity; }
   @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1; transform: none; } }
 
   /* The pill is fixed, so once the article scrolled up under it, it sat alone
@@ -517,7 +517,8 @@ const notes = allNotes.slice(0, 3).map(({ n }) => ({
     // inside its own batch: block reveals and split text then belong to one
     // cascade in document order, rather than two that merely overlap.
     ScrollTrigger.batch(items, {
-      start: "top 88%",
+      start: REVEAL.start,
+      interval: REVEAL.batchInterval,
       once: true,
       onEnter: (batch) =>
         gsap.to(batch, {
@@ -525,7 +526,7 @@ const notes = allNotes.slice(0, 3).map(({ n }) => ({
           y: 0,
           duration: REVEAL.block.duration,
           ease: REVEAL.ease,
-          stagger: 0.06,
+          stagger: REVEAL.block.stagger,
           overwrite: true,
           onStart: () => batch.forEach((el) => (el as HTMLElement).classList.add("is-in")),
         }),
@@ -540,7 +541,8 @@ const notes = allNotes.slice(0, 3).map(({ n }) => ({
       const obj = { v: 0 };
       ScrollTrigger.create({
         trigger: el,
-        start: "top 88%",
+        start: REVEAL.start,
+        interval: REVEAL.batchInterval,
         once: true,
         onEnter: () =>
           gsap.to(obj, {

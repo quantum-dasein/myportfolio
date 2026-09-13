@@ -2302,7 +2302,7 @@ const selectedWork = [
 
   :global(html.is-motion-ready) [data-reveal]:not(.is-revealed) {
     opacity: 0;
-    transform: translateY(26px);
+    transform: translateY(var(--rb-rise, 26px));
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2343,7 +2343,8 @@ const selectedWork = [
 
     requestAnimationFrame(() => {
       ScrollTrigger.batch(items, {
-        start: "top 88%",
+        start: REVEAL.start,
+        interval: REVEAL.batchInterval,
         once: true,
         onEnter: (batch) =>
           gsap.to(batch, {
@@ -2351,7 +2352,7 @@ const selectedWork = [
             y: 0,
             duration: REVEAL.block.duration,
             ease: REVEAL.ease,
-            stagger: 0.06,
+            stagger: REVEAL.block.stagger,
             overwrite: true,
             onComplete: () => batch.forEach((item) => (item as HTMLElement).classList.add("is-revealed")),
           }),

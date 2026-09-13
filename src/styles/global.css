@@ -28,6 +28,12 @@
   --font-size-sm: 0.9rem;
   --font-size-xs: 0.8rem;
 
+  /* How far a block reveal rises. One value for every component that has a
+     [data-reveal] on it, so the site keeps one distance rather than eight
+     copies of the same number. GSAP animates y to 0 from whatever it reads
+     here, so changing it here changes the motion. */
+  --rb-rise: 26px;
+
   /* colors — noir, smoked glass, restrained silver */
   --rgb-white: 255, 255, 255;
   --rgb-black: 0, 0, 0;
@@ -155,6 +161,15 @@ canvas {
 a,
 button {
   -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 760px), (pointer: coarse) {
+  :root {
+    /* 26px is a twitch on a 390px screen being flung under a thumb. The rise
+       has to be big enough to still be travelling when the element reaches the
+       middle of the screen, which is the only place a reader actually looks. */
+    --rb-rise: 44px;
+  }
 }
 
 @media (max-width: 760px) {
