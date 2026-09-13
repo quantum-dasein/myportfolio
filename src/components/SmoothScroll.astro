@@ -38,14 +38,48 @@
   let lenis: Lenis | null = null;
 
   if (nativeScroll) {
-    window.scrollCurrent = scrollY;
-    let previous = scrollY;
+    // Velocity is measured per frame and decays on its own, the way Lenis
+    // reports it on the other branch. It used to be written only inside this
+    // scroll listener, as the gap between two scroll EVENTS — which has two
+    // faults, and both of them are visible.
+    //
+    // It never came back down. No scroll event means no write, so the last
+    // flick's delta stayed in the global for as long as the reader sat still:
+    // measured at 400 with the page stopped for two and a half seconds, which
+    // the marquee reads as 10.5px a frame against an idle drift of 0.5 — a
+    // ticker sprinting across a page that is not moving, and the hero's panels
+    // spinning at a fifth of a radian a frame next to it. Lenis writes its
+    // velocity from the ticker, so a desktop decays to zero and never showed
+    // this.
+    //
+    // And it was unsmoothed, so `scrollDirection` could invert between two
+    // consecutive frames while the magnitude was still pinned at the marquee's
+    // cap — the whole strip reversing at full speed in a single frame, which is
+    // what reading back up the page looked like. The lerp below is what makes a
+    // direction change cross zero first, which is the only reason the same code
+    // reads calm under a damped wheel.
+    //
+    // The listener still does no layout work of its own: it stores the position
+    // it already reads, and the arithmetic happens on the ticker.
+    let latest = scrollY;
+    let previous = latest;
+    let smoothed = 0;
+    window.scrollCurrent = latest;
+
     addEventListener("scroll", () => {
-      window.scrollVelocity = scrollY - previous;
-      if (window.scrollVelocity) window.scrollDirection = Math.sign(window.scrollVelocity);
-      window.scrollCurrent = previous = scrollY;
+      window.scrollCurrent = latest = scrollY;
       ScrollTrigger.update();
     }, { passive: true });
+
+    addGlobalTicker(() => {
+      smoothed += (latest - previous - smoothed) * 0.18;
+      previous = latest;
+      // Below a twentieth of a pixel a frame nothing on the page can resolve the
+      // difference, and holding an exact zero is what lets a reader see the
+      // decorative layers at rest rather than always mid-flight.
+      window.scrollVelocity = Math.abs(smoothed) < 0.05 ? 0 : smoothed;
+      if (window.scrollVelocity) window.scrollDirection = Math.sign(window.scrollVelocity);
+    });
   } else {
     lenis = new Lenis({
       // syncTouch made Lenis intercept every touchmove to run its own transform

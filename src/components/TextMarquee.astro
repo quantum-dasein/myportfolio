@@ -90,6 +90,7 @@ const { texts, direction, class: className = "" } = Astro.props;
 
   class TextMarquee extends HTMLElement {
     x = 0;
+    speed = 0;
     textWidth = -1;
     direction = 1;
     html: string;
@@ -155,10 +156,30 @@ const { texts, direction, class: className = "" } = Astro.props;
       const dir = this.direction;
       const velocity = Number(window.scrollVelocity) || 0;
       const scrollDirection = Number(window.scrollDirection) || 1;
-      x -=
+
+      // The speed the scroll is asking for — and then eased into, rather than
+      // assumed outright.
+      //
+      // Assuming it is what made reading back up the page look like a glitch.
+      // The boost saturates at its cap once the reader passes 24px a frame,
+      // which a flick clears immediately and stays past on both sides of a
+      // turn, so the only thing that actually changed at the turn was the
+      // sign: the whole strip inverted from +10.5px a frame to -10.5 between
+      // two frames, a 21px jump, measured identically on a phone and on a
+      // desktop. Smoothing the velocity upstream cannot reach it, because at
+      // those speeds both sides are pinned to the cap.
+      //
+      // Eased, the turn crosses zero in about eight frames and settles in half
+      // a second, which is a strip slowing down and coming back rather than one
+      // that flickers. Nothing else moves: the cap, the 0.5 idle drift and the
+      // direction it answers to are all unchanged.
+      const target =
         (Math.min(Math.abs(velocity) * 0.4, 10) + 0.5) *
         scrollDirection *
         dir;
+      this.speed += (target - this.speed) * 0.08;
+
+      x -= this.speed;
 
       while (x <= -txtWidth) x += txtWidth;
       while (x > 0) x -= txtWidth;
