@@ -13,6 +13,14 @@
 
   .i {
     display: inline-block;
+  }
+
+  /* Promoted while it plays, and not one frame longer. A standing will-change on
+     every split piece meant a long page held a compositor layer per word of
+     every heading it had already finished animating — hundreds of them on a
+     phone, for motion that was over. `is-playing` is added the moment the tween
+     is built and dropped on its onComplete. */
+  &.is-playing .i {
     will-change: transform;
     transform: translateZ(0);
   }

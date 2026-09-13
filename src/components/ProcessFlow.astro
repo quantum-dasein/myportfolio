@@ -209,7 +209,6 @@ const previews = [
     .pv-field { opacity: .19; }
     .pv-current [data-flow-strand]:nth-of-type(odd) { display: none; }
     .pv-current--front .pv-pulse, .pv-pulse--second { display: none; }
-    .pv-dust i { animation: none; }
     .pv-halo { width: 100%; left: 0; }
     .pv-halo--write { top: -4%; }
     .pv-halo--scope { top: 30%; }
@@ -245,9 +244,14 @@ const previews = [
     .pv-filament { opacity: .9; }
     .pv-front-strand { stroke-width: .8; }
     /* Continuous animation on a scene that is already scrubbing is where the
-       frames actually go. The dust stays as atmosphere; it just holds still. */
+       frames actually go — but that is about what the scrub has to repaint, and
+       the dust is not part of it. `pv-drift` is transform and opacity on
+       eighteen 2px dots, each on its own layer, dirtying nothing the SVG scene
+       is drawing. It drifts here too; what it drops is the 4px shadow, which is
+       the part that has to be rasterised into each of those layers. The pulse
+       does stay off: that one is a dash offset along a stage-sized path. */
     .pv-pulse { animation: none; }
-    .pv-dust i { animation: none; box-shadow: none; }
+    .pv-dust i { box-shadow: none; }
     /* The real per-frame cost on a phone. The stage is 361×1165 here instead of
        1360×650, and the nine-strand bundle spans all of it, so one dash-offset
        write dirtied the whole stage nine times over. At this width the bundle

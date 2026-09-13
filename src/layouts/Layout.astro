@@ -523,10 +523,14 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     animation: fx-grain 0.8s steps(2) infinite;
   }
 
-  /* Both layers are fixed and full-screen, so each is a composited surface the
-     browser re-blends on every scrolled frame. Holding them still while the page
-     moves hands that work back without touching how either one looks. */
-  :global(html.rb-scrolling) .site-fx__stars,
+  /* Only the grain stops while the page moves, and only where it is blended.
+     `mix-blend-mode: overlay` is what makes this layer expensive: a blended
+     surface cannot be composited, so shifting it re-blends the full screen on
+     every scrolled frame. The star field has no blend mode — it is a plain
+     transform on a fixed layer, which the compositor moves for nothing — so
+     pausing it bought nothing and cost the one bit of drift a reader might
+     actually notice. On touch the blend is dropped entirely (below), so the
+     grain keeps moving there too. */
   :global(html.rb-scrolling) .site-fx__grain {
     animation-play-state: paused;
   }
@@ -570,9 +574,21 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       animation-duration: 42s;
     }
 
+    /* The grain was the site's film texture and a phone got it switched off and
+       turned down to .035, which is close enough to absent. The cost was never
+       the movement, it was the overlay blend underneath it: trade the blend for
+       plain alpha and the same 2-step jitter is a composited transform on a
+       fixed layer, which is free. Slower and slightly dimmer than the desktop
+       so it reads as texture at arm's length rather than as noise, and with no
+       blend to re-resolve it no longer has to hold still while you scroll. */
     .site-fx__grain {
-      opacity: .035;
-      animation: none;
+      opacity: .055;
+      mix-blend-mode: normal;
+      animation-duration: 1.15s;
+    }
+
+    :global(html.rb-scrolling) .site-fx__grain {
+      animation-play-state: running;
     }
 
     .site-fx__vignette {

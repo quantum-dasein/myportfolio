@@ -54,7 +54,26 @@ function visibilityUnobserve(element: HTMLElement, onChange: (entries: Intersect
 
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const lightweightReveal = !reducedMotion && matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+
+/** A phone is a small screen, not a different website.
+ *
+ *  Touch used to get a flat opacity fade in place of the split reveal: one
+ *  gesture, 900ms long, for all 84 reveals on the site, while a desktop got
+ *  masked words rising off a stagger. That is the whole distance between the
+ *  two reading as the same piece of work, and it was paid on the device most
+ *  visitors actually arrive on. Touch plays the same choreography now.
+ *
+ *  What a phone gets instead of a cheaper animation is a shorter one. The same
+ *  heading sets as three lines on a desktop and five on a phone, so an
+ *  unchanged per-word stagger buys a tail half again as long on the device with
+ *  the least patience for it — every value below is tightened for touch and the
+ *  tail is capped outright by `stagger()`. The compositor hint costs nothing at
+ *  rest either: reveals.css holds it only while the element is playing.
+ *
+ *  The flat fade is not gone. It is what CALM means now — a reader asking for
+ *  less motion, rather than a guess made from the width of their screen. */
+const touch = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+const calmReveal = !reducedMotion && document.documentElement.classList.contains("rb-calm");
 
 /** One shared vocabulary. Every reveal on the site is one of these three, and
  *  the travel shrinks down the hierarchy: a heading moves furthest, a line of
@@ -67,10 +86,29 @@ export const REVEAL = {
   // The same curve the CSS transitions use (--ease-out-expo), so a card
   // lifting under the cursor and a heading arriving are the same hand.
   ease: "expo.out",
-  words: { duration: 0.66, stagger: 0.032 },
-  lines: { duration: 0.7, stagger: 0.05 },
+  words: { duration: touch ? 0.58 : 0.66, stagger: touch ? 0.026 : 0.032, tail: touch ? 0.3 : 0.52 },
+  lines: { duration: touch ? 0.62 : 0.7, stagger: touch ? 0.038 : 0.05, tail: touch ? 0.32 : 0.6 },
   block: { duration: 0.62, distance: 20 },
 } as const;
+
+/** Keeps the rhythm until the tail gets long, then compresses to fit it.
+ *
+ *  `each` on its own is what left a twelve-line paragraph on a 390px screen
+ *  still arriving after the reader had scrolled past the end of it. `tail` is
+ *  the longest the last piece may wait; below that nothing changes. */
+const stagger = (count: number, each: number, tail: number) => ({
+  each: count > 1 ? Math.min(each, tail / (count - 1)) : each,
+});
+
+/** The pieces are promoted for the length of the tween and not one frame
+ *  longer. A standing `will-change` on every word of every heading is hundreds
+ *  of compositor layers a phone holds for a page it has finished animating —
+ *  which is the part of this that was genuinely worth optimising. */
+function markPlaying(el: HTMLElement, tween: ReturnType<typeof gsap.to>) {
+  el.classList.add("is-playing");
+  tween.eventCallback("onComplete", () => el.classList.remove("is-playing"));
+  return tween;
+}
 
 /** Play a reveal. Kept as a named export because several pages hand their own
  *  block animation in — one entry point means one place decides whether an
@@ -128,22 +166,23 @@ const fns = {
           lastOut = null
         }
 
-        gsap.fromTo(
-          st.words,
-          {
-            opacity: 1,
-            rotate: 4,
-            yPercent: 118,
-          },
-          {
-            rotate: 0,
-            yPercent: 0,
-            ease: REVEAL.ease,
-            duration: REVEAL.words.duration,
-            stagger: {
-              each: REVEAL.words.stagger,
+        markPlaying(
+          el,
+          gsap.fromTo(
+            st.words,
+            {
+              opacity: 1,
+              rotate: 4,
+              yPercent: 118,
             },
-          },
+            {
+              rotate: 0,
+              yPercent: 0,
+              ease: REVEAL.ease,
+              duration: REVEAL.words.duration,
+              stagger: stagger(st.words.length, REVEAL.words.stagger, REVEAL.words.tail),
+            },
+          ),
         );
       },
       out(next: () => void) {
@@ -180,21 +219,22 @@ const fns = {
           lastOut = null
         }
 
-        gsap.fromTo(
-          st.lines,
-          {
-            rotateX: 32,
-            yPercent: 118,
-          },
-          {
-            rotateX: 0,
-            yPercent: 0,
-            ease: REVEAL.ease,
-            duration: REVEAL.lines.duration,
-            stagger: {
-              each: REVEAL.lines.stagger,
+        markPlaying(
+          el,
+          gsap.fromTo(
+            st.lines,
+            {
+              rotateX: 32,
+              yPercent: 118,
             },
-          },
+            {
+              rotateX: 0,
+              yPercent: 0,
+              ease: REVEAL.ease,
+              duration: REVEAL.lines.duration,
+              stagger: stagger(st.lines.length, REVEAL.lines.stagger, REVEAL.lines.tail),
+            },
+          ),
         );
       },
       out(next: () => void) {
@@ -265,7 +305,7 @@ document.fonts.ready.then(() => {
       return;
     }
 
-    if (lightweightReveal) {
+    if (calmReveal) {
       let animation: Animation | null = null;
       const revealIn = () => {
         animation?.cancel();
@@ -275,9 +315,11 @@ document.fonts.ready.then(() => {
             { opacity: 0, transform: "translate3d(0, 1.15rem, 0)" },
             { opacity: 1, transform: "translate3d(0, 0, 0)" },
           ],
-          // expo.out as a bezier — the same curve the desktop reveals use, so a
-          // phone gets a cheaper animation on an identical rhythm.
-          { duration: 900, easing: "cubic-bezier(.16, 1, .3, 1)", fill: "both" },
+          // expo.out as a bezier — the same curve the split reveals use, so CALM
+          // reads as the same site with the volume down rather than a different
+          // one. 620ms, not 900: this is the whole gesture now, where on the
+          // split path most of that time is the stagger arriving.
+          { duration: 620, easing: "cubic-bezier(.16, 1, .3, 1)", fill: "both" },
         );
       };
       const revealOut = () => {
@@ -296,12 +338,25 @@ document.fonts.ready.then(() => {
         elem.addEventListener('reveal-in', revealIn);
         elem.addEventListener('reveal-out', revealOut);
       } else {
+        // This is the one path that hides its element up front, so it is the one
+        // that can lose it. An observer only reports a change, and a fast flick
+        // can carry a heading from below the line to above the viewport between
+        // two callbacks — no intersection is ever reported and the copy stays at
+        // opacity 0 for the rest of the visit. Anything that ends up behind the
+        // reader is shown outright: the same rule the split path uses for
+        // scrolling back to something it never performed.
         elem.style.opacity = "0";
         const onLightVisibility = (entry: IntersectionObserverEntry) => {
-          if (!entry.isIntersecting) return;
+          if (!entry.isIntersecting) {
+            if (entry.boundingClientRect.bottom > 0) return;
+            visibilityUnobserve(elem, onLightVisibility);
+            scheduleReveal(elem, () => {
+              elem.classList.add("is-in");
+              elem.style.opacity = "";
+            });
+            return;
+          }
           visibilityUnobserve(elem, onLightVisibility);
-          // Same wave, same beat as everything else — a phone gets a cheaper
-          // animation, not a different rhythm.
           scheduleReveal(elem, revealIn);
         };
         visibilityObserve(elem, onLightVisibility);

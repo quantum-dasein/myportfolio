@@ -516,8 +516,13 @@ const sections = order
   }
 
   @media (max-width: 900px), (pointer: coarse) {
-    .terrain,
-    .final-orb { animation: none; }
+    /* The terrain stays still here and the orbs do not. The difference is the
+       mask: `.terrain` is drifted under a radial `mask-image`, so every frame
+       re-rasterises the masked region — that one is worth its cut. `orb-float`
+       is a translateY on an element that already has its own layer from
+       `filter`, so the compositor moves it for nothing, and it is the only
+       thing keeping the closing frame of the site alive on a phone. */
+    .terrain { animation: none; }
     .finale::before { opacity: .32; }
   }
 
