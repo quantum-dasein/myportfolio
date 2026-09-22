@@ -8,6 +8,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createCurator } from './observatory-curator';
 import { archiveWorks } from '../data/observatory';
+import type { HallState } from './observatory-sound';
 
 /*
  * The Observatory, second edition: a black hall of light.
@@ -48,7 +49,7 @@ void main(){vUv=uv;vec3 p=position;
   p.z-=p.x*p.x*uBend*3.;
   p.z+=sin(uv.x*3.14159)*sin(uv.y*3.14159)*uHover*.08;
   gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`;
-const screenFragment=`uniform sampler2D uMap;uniform float uTime,uShift,uReveal,uDim,uHover,uLight,uHolo;uniform vec3 uTint;varying vec2 vUv;
+const screenFragment=`uniform sampler2D uMap;uniform float uTime,uShift,uReveal,uDim,uHover,uLight,uHolo;uniform vec3 uTint,uGlare;varying vec2 vUv;
 ${NOISE}
 void main(){
   vec2 uv=(vUv-.5)*(1.-.025*uHover)+.5;
@@ -61,6 +62,7 @@ void main(){
   float scan=.5+.5*sin(vUv.y*680.-uTime*5.);
   col*=1.-uHolo*(.16*scan+.04*step(.965,hash(vec2(floor(uTime*14.),3.))));
   col+=uHolo*uTint*(.035+glitch*.25);
+  vec2 g=(vUv-uGlare.xy)*vec2(1.,.8);col+=vec3(1.,.95,.88)*(exp(-dot(g,g)*9.)*.1+exp(-dot(g,g)*70.)*.12)*uGlare.z;
   vec2 px=fwidth(vUv);vec2 e=min(vUv,1.-vUv)/px;
   col+=(1.-smoothstep(0.,1.8,min(e.x,e.y)))*.2*(1.-uDim*.6);
   float n=noise(vUv*vec2(5.,3.5)+uTime*.04)*.7+noise(vUv*26.)*.3;
@@ -101,10 +103,10 @@ void main(){vec2 p=vUv-.5;float g=exp(-dot(p,p)*11.);gl_FragColor=vec4(uTint*g*u
 
 const floorShader={
   name:'ObservatoryWetFloor',
-  uniforms:{color:{value:null},tDiffuse:{value:null},textureMatrix:{value:null},uTime:{value:0},uBackground:{value:new THREE.Color()},uBlur:{value:.012},uGrid:{value:0},uGridColor:{value:new THREE.Color(.45,.8,.9)}},
+  uniforms:{color:{value:null},tDiffuse:{value:null},textureMatrix:{value:null},uTime:{value:0},uBackground:{value:new THREE.Color()},uBlur:{value:.012},uGrid:{value:0},uGridColor:{value:new THREE.Color(.45,.8,.9)},uTorch:{value:new THREE.Vector4()}},
   vertexShader:`uniform mat4 textureMatrix;varying vec4 vProj;varying vec3 vWorld;
     void main(){vProj=textureMatrix*vec4(position,1.);vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-  fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime;uniform float uBlur;uniform float uGrid;uniform vec3 uGridColor;uniform vec3 uBackground;varying vec4 vProj;varying vec3 vWorld;
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime;uniform float uBlur;uniform float uGrid;uniform vec3 uGridColor;uniform vec4 uTorch;uniform vec3 uBackground;varying vec4 vProj;varying vec3 vWorld;
     ${NOISE}
     const vec2 taps[12]=vec2[](vec2(-.326,-.406),vec2(-.840,-.074),vec2(-.696,.457),vec2(-.203,.621),vec2(.962,-.195),vec2(.473,-.480),vec2(.519,.767),vec2(.185,-.893),vec2(.507,.064),vec2(.896,.412),vec2(-.322,-.933),vec2(-.792,-.598));
     void main(){
@@ -117,7 +119,9 @@ const floorShader={
       acc/=13.;
       vec3 view=normalize(cameraPosition-vWorld);
       float fresnel=.28+.72*pow(1.-max(view.y,0.),3.);
-      vec3 col=vec3(.009,.010,.013)+acc*fresnel*(.8+wet*.35);
+      vec2 toTorch=vWorld.xz-uTorch.xz;float spot=exp(-dot(toTorch,toTorch)/3.2)*uTorch.w;
+      vec3 col=vec3(.009,.010,.013)+acc*fresnel*(.8+wet*.35)*(1.+spot*3.);
+      col+=vec3(1.,.9,.78)*spot*(.2+wet*.2);
       col+=(fine-.5)*.006;
       float dist=length(cameraPosition.xz-vWorld.xz);
       if(uGrid>.001){
@@ -192,6 +196,16 @@ export class ObservatoryWorld {
   // Opening sequence: 0 = darkness, 1 = the hall at rest.
   intro=1;introStart=Infinity;introSpeed=1;introResolve?:()=>void;
   introDone:Promise<void>=Promise.resolve();
+  // The visitor's hand is a torch: it lights the wet floor, the dust and the prints.
+  torch=new THREE.PointLight('#fff1dc',0,7,1.6);
+  followSpot=new THREE.Group();followFrom=new THREE.Vector3();
+  torchPoint=new THREE.Vector3(0,0,2);torchGoal=new THREE.Vector3();torchPower=0;
+  pointerInside=false;lastPointer=new THREE.Vector2(9,9);pointerMovedAt=-1e9;
+  tilt?:THREE.Vector2;
+  // The astronaut has a life of his own: he steps closer, follows the light, greets, stargazes.
+  hovered=false;lastActivity=0;approach=0;astro=new THREE.Vector2();astroReady=false;
+  roomWeights=[1,0,0,0];wasMoving=false;
+  onFrame?:(state:HallState)=>void;onSettle?:(room:number)=>void;
   onFailure:()=>void;
   tick:(time:number)=>void;
 
@@ -233,6 +247,11 @@ export class ObservatoryWorld {
     this.dust=this.buildDust();this.scene.add(this.dust);
     this.buildBays();
     this.scene.add(this.curator.root);
+    this.scene.add(this.torch);
+    // Unit cone, apex at the origin, opening along +z after the turn: scaled to reach the floor.
+    const spotGeometry=new THREE.ConeGeometry(.9,1,48,1,true);spotGeometry.translate(0,-.5,0);
+    const spotCone=new THREE.Mesh(spotGeometry,new THREE.ShaderMaterial({uniforms:{uTint:{value:new THREE.Color()},uIntensity:{value:0},uTime:{value:0}},vertexShader:beamVertex,fragmentShader:beamFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    spotCone.rotation.x=-Math.PI/2;spotCone.frustumCulled=false;this.followSpot.add(spotCone);this.followSpot.visible=false;this.scene.add(this.followSpot);
 
     const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;
     const shadowCtx=shadowCanvas.getContext('2d')!;const gradient=shadowCtx.createRadialGradient(64,64,4,64,64,62);
@@ -292,14 +311,15 @@ export class ObservatoryWorld {
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('aSeed',new THREE.BufferAttribute(seeds,1));
     const material=new THREE.ShaderMaterial({
-      uniforms:{uTime:{value:0},uCamX:{value:0},uPixelRatio:{value:1},uGap:{value:GAP},uFocus:{value:0},uAmount:{value:1}},
-      vertexShader:`attribute float aSeed;uniform float uTime,uCamX,uPixelRatio,uGap,uFocus,uAmount;varying float vA;
+      uniforms:{uTime:{value:0},uCamX:{value:0},uPixelRatio:{value:1},uGap:{value:GAP},uFocus:{value:0},uAmount:{value:1},uTorch:{value:new THREE.Vector4()}},
+      vertexShader:`attribute float aSeed;uniform float uTime,uCamX,uPixelRatio,uGap,uFocus,uAmount;uniform vec4 uTorch;varying float vA;
         void main(){vec3 p=position;
           p.x=uCamX+mod(p.x-uCamX+36.,72.)-36.+sin(uTime*.17+aSeed*31.)*.35;
           p.y=mod(p.y+uTime*(.04+aSeed*.07),9.)+.15;
           p.z+=cos(uTime*.13+aSeed*17.)*.3;
           float dx=abs(mod(p.x+uGap*.5,uGap)-uGap*.5);
           float beam=exp(-dx*dx/9.)*exp(-(p.z+1.5)*(p.z+1.5)/14.)*smoothstep(0.,2.5,p.y);
+          vec3 lit=p-uTorch.xyz;beam+=exp(-dot(lit,lit)/2.5)*uTorch.w*.9;
           vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
           gl_PointSize=clamp((.7+aSeed*1.6)*uPixelRatio*16./-mv.z,.5,6.);
           vA=(.035+beam*.75)*(.55+.45*sin(uTime*.8+aSeed*50.))*(1.-uFocus*.8)*uAmount*step(aSeed,uAmount*.7+.3);}`,
@@ -326,7 +346,7 @@ export class ObservatoryWorld {
       const pool=new THREE.Mesh(flat,new THREE.ShaderMaterial({uniforms:{uTint:{value:tint.clone()},uIntensity:{value:0}},vertexShader:plainVertex,fragmentShader:poolFragment,...additive}));
       pool.rotation.x=-Math.PI/2;pool.scale.set(w*1.7,7,1);pool.position.set(0,.012,1.4);group.add(pool);
       const screen=new THREE.Mesh(screenGeo,new THREE.ShaderMaterial({
-        uniforms:{uMap:{value:this.placeholder},uTime:{value:0},uShift:{value:0},uReveal:{value:0},uDim:{value:1},uHover:{value:0},uLight:{value:1},uBend:{value:0},uHolo:{value:0},uTint:{value:tint.clone()}},
+        uniforms:{uMap:{value:this.placeholder},uTime:{value:0},uShift:{value:0},uReveal:{value:0},uDim:{value:1},uHover:{value:0},uLight:{value:1},uBend:{value:0},uHolo:{value:0},uTint:{value:tint.clone()},uGlare:{value:new THREE.Vector3()}},
         vertexShader:screenVertex,fragmentShader:screenFragment,transparent:true,fog:false,
       }));
       screen.scale.set(w,h,1);screen.position.set(0,LIFT+h/2,0);screen.userData.index=i;group.add(screen);
@@ -398,20 +418,20 @@ export class ObservatoryWorld {
     if(Math.abs(to-this.position)>GAP*3.5){
       const from=this.position;this.position=to-Math.sign(to-from)*GAP*1.6;this.camera.position.x+=this.position-from;
     }
-    this.target=to;this.lastInput=-1e9;this.dragging=false;this.skipIntro();
+    this.target=to;this.lastInput=-1e9;this.dragging=false;this.skipIntro();this.lastActivity=performance.now();
     void this.prepare(index);
   }
   scrollBy(pixels:number){
     this.skipIntro();
-    this.target=this.clampTarget(this.target+pixels*GAP/560);this.lastInput=performance.now();
+    this.target=this.clampTarget(this.target+pixels*GAP/560);this.lastInput=this.lastActivity=performance.now();
   }
-  dragStart(){this.skipIntro();this.dragging=true;this.dragBase=this.target;this.dragLast=this.target;this.dragTime=performance.now();this.dragSpeed=0;}
+  dragStart(){this.skipIntro();this.lastActivity=performance.now();this.dragging=true;this.dragBase=this.target;this.dragLast=this.target;this.dragTime=performance.now();this.dragSpeed=0;}
   dragMove(pixels:number,span:number){
     if(!this.dragging)return;
     const next=this.clampTarget(this.dragBase-pixels*GAP*1.35/Math.max(320,span),GAP*.45);
     const now=performance.now(),dt=Math.max(1,now-this.dragTime);
     this.dragSpeed=mix(this.dragSpeed,(next-this.dragLast)/dt,.35);this.dragLast=next;this.dragTime=now;
-    this.target=next;this.lastInput=now;
+    this.target=next;this.lastInput=this.lastActivity=now;
   }
   dragEnd(){
     if(!this.dragging)return;this.dragging=false;
@@ -433,7 +453,7 @@ export class ObservatoryWorld {
 
   /* ---------- Opening sequence ---------- */
   armIntro(){this.intro=0;this.introStart=Infinity;this.introSpeed=1;this.introDone=new Promise(resolve=>{this.introResolve=resolve;});}
-  beginIntro(){if(this.intro<1)this.introStart=performance.now();return this.introDone;}
+  beginIntro(){if(this.intro<1)this.introStart=this.lastActivity=performance.now();return this.introDone;}
   skipIntro(){if(this.intro<1)this.introSpeed=4;}
 
   private render(time:number){
@@ -466,10 +486,8 @@ export class ObservatoryWorld {
     this.velocity=dt>0?(x-previous)/dt/GAP:0;
     this.shift=THREE.MathUtils.damp(this.shift,this.calm?0:Math.min(1,Math.abs(this.velocity)*.5),10,dt);
     if(this.isMoving())this.settledAt=time;
-    const moving=!this.calm&&Math.abs(x-previous)>.002;
-    this.walk=THREE.MathUtils.damp(this.walk,moving?Math.min(1,Math.abs(this.velocity)*2.5):0,6,dt);
-    this.phase+=dt*mix(1.1,10.5,this.walk);
-    this.smoothPointer.lerp(this.pointer,1-Math.exp(-dt*3));
+    if(!this.pointer.equals(this.lastPointer)){this.lastPointer.copy(this.pointer);this.pointerMovedAt=time;this.lastActivity=time;}
+    this.smoothPointer.lerp(this.tilt&&time-this.pointerMovedAt>1500?this.tilt:this.pointer,1-Math.exp(-dt*3));
     const parallax=this.calm?0:1;
 
     // Weather of the room(s) around the camera.
@@ -478,22 +496,47 @@ export class ObservatoryWorld {
     const w=this.weather,k=this.calm?1:1-Math.exp(-dt*2.2);
     for(const key of ['density','beam','dust','grid','holo','bloom','projector'] as const)w[key]=mix(w[key],mix(a[key],b[key],t),k);
     w.fog.lerp(a.fog.clone().lerp(b.fog,t),k);
+    this.roomWeights.fill(0);this.roomWeights[this.bays[i0].room]+=1-t;this.roomWeights[this.bays[i1].room]+=t;
     (this.scene.background as THREE.Color).copy(w.fog);
     const fog=this.scene.fog as THREE.FogExp2;fog.color.copy(w.fog);fog.density=w.density;
     const floorUniforms=(this.floor.material as Shader).uniforms;
     floorUniforms.uBackground.value.copy(w.fog);floorUniforms.uGrid.value=w.grid*smooth(.5,1,intro);floorUniforms.uTime.value=this.elapsed;
 
     // Astronaut: a visitor standing in front of the work, seen from behind.
-    const attention=this.calm?0:(.35+.25*Math.sin(this.phase*.3))*(1-this.walk);
-    this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention);
     const narrow=this.narrow();
-    this.curator.root.position.set(x-(narrow?2.2:5.35),(this.curator.root.userData.soleOffset??0),narrow?3.2:.9+this.walk*.5);
-    this.contact.position.set(this.curator.root.position.x,.02,this.curator.root.position.z);
-    const heading=this.velocity>0?Math.PI/2:-Math.PI/2;
+    this.approach=THREE.MathUtils.damp(this.approach,this.hovered&&!this.isMoving()&&!this.calm?1:0,2.2,dt);
+    const goalX=x-(narrow?2.2:mix(5.35,4.8,this.approach)),goalZ=narrow?3.2:mix(.9,.3,this.approach);
+    if(!this.astroReady||this.calm){this.astro.set(goalX,goalZ);this.astroReady=true;}
+    const px=this.astro.x,pz=this.astro.y;
+    this.astro.x=THREE.MathUtils.damp(this.astro.x,goalX,7,dt);this.astro.y=THREE.MathUtils.damp(this.astro.y,goalZ,3.5,dt);
+    const stepX=this.astro.x-px,stepZ=this.astro.y-pz,stride=dt>0?Math.hypot(stepX,stepZ)/dt:0;
+    this.walk=THREE.MathUtils.damp(this.walk,this.calm?0:Math.min(1,stride/2),6,dt);
+    this.phase+=dt*mix(1.1,10.5,this.walk);
+    const root=this.curator.root;
+    root.position.set(this.astro.x,root.userData.soleOffset??0,this.astro.y);
+    this.contact.position.set(this.astro.x,.02,this.astro.y);
+    // Left alone he turns to greet you, then looks up at the stars.
+    const idle=this.calm||intro<1||this.focus>0?0:(time-this.lastActivity)/1000;
+    const greet=smooth(9,9.8,idle)*(1-smooth(15,15.8,idle));
+    const wave=smooth(9.8,10.3,idle)*(1-smooth(13.2,13.8,idle));
+    const stargaze=smooth(16,17.5,idle);
+    const toCamera=Math.atan2(this.camera.position.x-this.astro.x,this.camera.position.z-this.astro.y);
+    const turnTo=(from:number,to:number,amount:number)=>from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*amount;
     // During the opening he first faces us, then turns to the work.
-    const rest=mix(-.25,2.55-this.smoothPointer.x*.25,smooth(.5,.85,intro));
-    const facing=this.walk>.25?heading:rest;
-    this.curator.root.rotation.y=THREE.MathUtils.damp(this.curator.root.rotation.y,facing,intro<1?3:5,dt);
+    let facing=mix(-.25,2.55-this.smoothPointer.x*.25,smooth(.5,.85,intro));
+    facing=turnTo(facing,toCamera,greet);facing=turnTo(facing,toCamera+.7,stargaze);
+    if(this.walk>.3&&stride>.6)facing=Math.atan2(stepX,stepZ);
+    root.rotation.y=turnTo(root.rotation.y,facing,1-Math.exp(-dt*(intro<1?3:5)));
+    const attention=this.calm?0:(.35+.25*Math.sin(this.phase*.3))*(1-this.walk);
+    let pose:{yaw?:number;pitch?:number;wave?:number}|undefined;
+    if(this.torchPower>.05){
+      const dx=this.torchPoint.x-this.astro.x,dy=this.torchPoint.y-1.75,dz=this.torchPoint.z-this.astro.y;
+      const yaw=Math.atan2(Math.sin(Math.atan2(dx,dz)-root.rotation.y),Math.cos(Math.atan2(dx,dz)-root.rotation.y));
+      pose={yaw:THREE.MathUtils.clamp(yaw,-1.15,1.15)*this.torchPower,pitch:-Math.atan2(dy,Math.hypot(dx,dz))*.8*this.torchPower};
+    }
+    if(greet>.01)pose={yaw:(pose?.yaw??0)*(1-greet),pitch:-.08*greet,wave};
+    if(stargaze>.01)pose={yaw:.25*stargaze,pitch:-.8*stargaze};
+    this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention,pose);
 
     // Camera: a low, slightly oblique view so the row recedes into the dark.
     const crane=1-smooth(0,1,intro)**.7;
@@ -513,6 +556,27 @@ export class ObservatoryWorld {
     else this.camera.position.lerp(this.cameraGoal,1-Math.exp(-dt*(intro<1?2.2:4.5)));
     this.camera.lookAt(this.look);
     if(!this.calm&&!narrow)this.camera.rotation.z+=THREE.MathUtils.clamp(this.velocity,-2,2)*-.012*(1-this.focus);
+    // Torch: where the pointer's ray meets the wall of prints, or the floor below it.
+    const torchOn=this.pointerInside&&time-this.pointerMovedAt<(this.mobile?900:4500)&&this.focus<.5&&intro>=.6;
+    this.torchPower=THREE.MathUtils.damp(this.torchPower,torchOn?1:0,torchOn?4:1.2,dt);
+    if(this.torchPower>.001){
+      this.raycaster.setFromCamera(this.pointer,this.camera);const ray=this.raycaster.ray,goal=this.torchGoal;
+      let found=false;
+      if(ray.direction.z<-.01){goal.copy(ray.origin).addScaledVector(ray.direction,(.35-ray.origin.z)/ray.direction.z);found=goal.y>.05;}
+      if(!found&&ray.direction.y<-.01){goal.copy(ray.origin).addScaledVector(ray.direction,Math.min(60,-ray.origin.y/ray.direction.y));found=true;}
+      if(found)this.torchPoint.lerp(goal,1-Math.exp(-dt*9));
+    }
+    const tp=this.torchPoint,power=this.torchPower;
+    this.torch.position.set(tp.x,tp.y+.8,tp.z+1.4);this.torch.intensity=40*power;
+    // A follow-spot from the rig above keeps the light visible as a beam.
+    this.followSpot.visible=power>.01;
+    if(this.followSpot.visible){
+      const from=this.followFrom.set(tp.x-1.2,11,tp.z+3.5);const length=from.distanceTo(tp);
+      this.followSpot.position.copy(from);this.followSpot.lookAt(tp);this.followSpot.children[0].scale.set(1,length,1);
+      const beam=(this.followSpot.children[0] as THREE.Mesh<THREE.ConeGeometry,Shader>).material.uniforms;
+      beam.uIntensity.value=power*(this.mobile?.16:.22);beam.uTime.value=this.elapsed;(beam.uTint.value as THREE.Color).copy(this.torch.color);
+    }this.torch.color.copy(this.tint).lerp(new THREE.Color(1,.95,.88),.6);
+    (floorUniforms.uTorch.value as THREE.Vector4).set(tp.x,tp.y,tp.z,power*(tp.y<.6?1:.45));
 
     this.tint.lerp(bay.tint,1-Math.exp(-dt*2.5));
     this.key.color.copy(this.tint);this.key.position.set(x-4.2,10,4.5);this.key.target.position.set(x-5.3,0,.9);
@@ -538,6 +602,7 @@ export class ObservatoryWorld {
       u.uBend.value=this.shift*.55*(1-this.focus);
       u.uDim.value=(1-bay.active)*(1-this.focus*(isCurrent?1:0))+(isCurrent?0:this.focus);
       u.uLight.value=focusOthers;
+      (u.uGlare.value as THREE.Vector3).set((tp.x-i*GAP)/bay.screen.scale.x+.5,(tp.y-bay.screen.position.y)/bay.screen.scale.y+.5,power*(tp.y>.3?1:.35)*(1-this.focus));
       u.uHolo.value=ROOMS[bay.room].holo*(isCurrent?mix(.3,0,this.focus):1)*(this.calm?.4:1);
       const room=ROOMS[bay.room];
       const light=(.22+.78*bay.active)*bay.reveal*focusOthers;
@@ -560,11 +625,15 @@ export class ObservatoryWorld {
 
     const pr=this.renderer.getPixelRatio();
     this.stars.position.x=x*.92;const stars=this.stars.material.uniforms;stars.uTime.value=this.elapsed;stars.uPixelRatio.value=pr;stars.uLight.value=smooth(0,.5,intro)*(1-w.grid*.5);
-    const dust=this.dust.material.uniforms;dust.uTime.value=this.elapsed;dust.uCamX.value=x;dust.uPixelRatio.value=pr;dust.uFocus.value=this.focus;dust.uAmount.value=w.dust*smooth(.1,.5,intro);
+    const dust=this.dust.material.uniforms;(dust.uTorch.value as THREE.Vector4).set(tp.x,tp.y,tp.z,power);dust.uTime.value=this.elapsed;dust.uCamX.value=x;dust.uPixelRatio.value=pr;dust.uFocus.value=this.focus;dust.uAmount.value=w.dust*smooth(.1,.5,intro);
     this.floor.position.x=x;
     const film=this.finish.uniforms;film.uTime.value=this.calm?0:this.elapsed;film.uShift.value=this.shift;
     film.uExposure.value=smooth(0,.35,intro)*.85+.15*smooth(.02,.1,intro);
     this.bloom.strength=w.bloom+this.shift*.25;
+    this.onFrame?.({speed:Math.abs(this.velocity),rooms:this.roomWeights,focus:this.focus,lamp:intro<.12?0:intro>=.42?1:stutter});
+    const movingNow=this.isMoving();
+    if(this.wasMoving&&!movingNow&&this.focus===0)this.onSettle?.(bay.room);
+    this.wasMoving=movingNow;
     this.composer.render(dt);
   }
 
@@ -582,7 +651,7 @@ export class ObservatoryWorld {
     void this.prepare(index-1);void this.prepare(index+1);void this.prepare(index+2);
     await this.renderer.compileAsync(this.scene,this.camera);
     if(this.disposed)return;
-    this.lastTime=performance.now();
+    this.lastTime=this.lastActivity=performance.now();
     this.frame=requestAnimationFrame(this.tick);
     this.curator.load(()=>!this.isMoving()).then(()=>{if(this.disposed)this.curator.dispose();});
   }

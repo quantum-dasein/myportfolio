@@ -1,6 +1,7 @@
 import { archiveRooms, archiveWorks } from '../data/observatory';
 import { observatoryNotes } from '../data/observatory-notes';
 import type { ObservatoryWorld } from './observatory-void';
+import { createHallSound } from './observatory-sound';
 
 // Real responsive captures, separate from the desktop exhibition textures.
 const mobilePreviews:Record<string,string>={
@@ -19,6 +20,7 @@ export async function mountObservatory(root:HTMLElement){
   const picture=root.querySelector<HTMLPictureElement>('[data-obs-viewer-picture]')!;
   const link=root.querySelector<HTMLAnchorElement>('[data-obs-viewer-link]')!;
   let world:ObservatoryWorld|undefined;
+  const sound=createHallSound();
   let current=0;
   let opening=false,openToken=0;
   let lastNavigation=0;
@@ -139,7 +141,7 @@ export async function mountObservatory(root:HTMLElement){
   }
   let closing=false;
   async function closeViewer(){
-    if(!viewer.open||closing)return;closing=true;
+    if(!viewer.open||closing)return;closing=true;sound.close();
     const media=viewerMedia();const to=world?.screenRect();const from=media.getBoundingClientRect();
     const visible=from.bottom>0&&from.top<innerHeight;
     if(to&&visible&&!world?.isCalm()){
@@ -169,7 +171,7 @@ export async function mountObservatory(root:HTMLElement){
     await Promise.all([world?.focusWork(),decoded]);
     if(token!==openToken||!root.isConnected||!root.classList.contains('is-ready')){return;}
     opening=false;
-    viewer.showModal();viewer.scrollTop=0;
+    viewer.showModal();viewer.scrollTop=0;sound.open();
     await handoff();
     root.classList.remove('is-focusing');world?.pause();
     window.dispatchEvent(new CustomEvent('rb:exhibition-film',{detail:Boolean(work.video)}));
@@ -225,22 +227,28 @@ export async function mountObservatory(root:HTMLElement){
   },{signal});
   stage.addEventListener('pointercancel',()=>{world?.dragEnd();gesture=undefined;stage.style.cursor='grab';},{signal});
   stage.addEventListener('pointermove',event=>{
-    if(!world||opening)return;world.pointer.set(event.clientX/innerWidth*2-1,-(event.clientY/innerHeight*2-1));
+    if(!world||opening)return;world.pointer.set(event.clientX/innerWidth*2-1,-(event.clientY/innerHeight*2-1));world.pointerInside=true;
     if(gesture){
       const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
       if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>6)gesture.axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
       if(gesture.axis&&fluid()){
         world.dragMove(gesture.axis==='x'?dx:dy,gesture.axis==='x'?stage.clientWidth:stage.clientHeight);
-        stage.style.cursor='grabbing';if(hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
+        stage.style.cursor='grabbing';world.hovered=false;if(hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
       }
       return;
     }
     if(event.pointerType==='touch'||world.isMoving())return;
-    const hit=world.hit(event.clientX,event.clientY);stage.style.cursor=hit?'pointer':'grab';
+    const hit=world.hit(event.clientX,event.clientY);stage.style.cursor=hit?'pointer':'grab';world.hovered=hit;
     if(hit&&!hover){hoverTimer=setTimeout(()=>world?.previewFilm(),300);hover=true;}
     if(!hit&&hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
   },{signal});
-  stage.addEventListener('pointerleave',()=>{clearTimeout(hoverTimer);world?.endHover();hover=false;if(world)world.pointer.set(0,0);},{signal});
+  stage.addEventListener('pointerleave',()=>{clearTimeout(hoverTimer);world?.endHover();hover=false;if(world){world.pointer.set(0,0);world.pointerInside=false;world.hovered=false;}},{signal});
+  // Phones: tilting the device shifts the view a little, like leaning in a room.
+  addEventListener('deviceorientation',event=>{
+    if(!world?.mobile||event.gamma===null||event.beta===null)return;
+    const x=Math.max(-1,Math.min(1,event.gamma/28)),y=Math.max(-1,Math.min(1,(45-event.beta)/28));
+    (world.tilt??=new (world.pointer.constructor as any)()).set(x,y);
+  },{signal});
   document.addEventListener('keydown',event=>{
     if(opening){if(event.key==='Escape'){openToken++;opening=false;root.classList.remove('is-focusing');world?.restoreView();}return;}
     if(viewer.open||indexDialog.open||!root.classList.contains('is-ready'))return;
@@ -254,7 +262,7 @@ export async function mountObservatory(root:HTMLElement){
   },{signal});
   addEventListener('rb:langchange',()=>{update();labelCompare();if(viewer.open)fillViewer();},{signal});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();video.pause();}else if(!viewer.open&&!indexDialog.open)world?.resume();},{signal});
-  addEventListener('pagehide',event=>{openToken++;opening=false;root.classList.remove('is-focusing');world?.restoreView();world?.pause();video.pause();if(!(event as PageTransitionEvent).persisted){world?.dispose();events.abort();}},{signal});
+  addEventListener('pagehide',event=>{openToken++;opening=false;root.classList.remove('is-focusing');world?.restoreView();world?.pause();video.pause();if(!(event as PageTransitionEvent).persisted){world?.dispose();sound.dispose();events.abort();}},{signal});
   addEventListener('pageshow',event=>{if((event as PageTransitionEvent).persisted)world?.resume();},{signal});
   update();
   try {
@@ -266,6 +274,8 @@ export async function mountObservatory(root:HTMLElement){
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);
+    if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;
     // First visit of the session opens in darkness; the interface arrives with the light.
     if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}
     await world.start(current);

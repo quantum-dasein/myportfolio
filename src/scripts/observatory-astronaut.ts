@@ -159,8 +159,10 @@ export function createAstronaut(){
   root.scale.setScalar(1.42);
   let mixer:THREE.AnimationMixer|undefined,idle:THREE.AnimationAction|undefined,walk:THREE.AnimationAction|undefined;
   let disposed=false;
-  let activeBones=bones,headYaw=0;
+  let activeBones=bones,headYaw=0,headPitch=0,waveTime=0;
   const headBase=new THREE.Quaternion(),chestBase=new THREE.Quaternion();
+  const armBase=new THREE.Quaternion(),foreBase=new THREE.Quaternion();
+  const armAxis=new THREE.Vector3(0,0,1),foreAxis=new THREE.Vector3(0,0,1),turn=new THREE.Quaternion();
   const gaze=new THREE.Quaternion(),gazeEuler=new THREE.Euler();
   let gazeApplied=false;
   const load=async(canInstall=()=>true)=>{
@@ -184,9 +186,9 @@ export function createAstronaut(){
       activeBones=rig;gazeApplied=false;root.userData.astronautRig='mixamo';
     }catch{if(model)root.remove(model);root.userData.astronautRig='procedural';}
   };
-  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0){
+  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number}){
     // Undo our additive pose before the mixer writes the next animation sample.
-    if(gazeApplied){activeBones.Head.quaternion.copy(headBase);activeBones.Spine2.quaternion.copy(chestBase);}
+    if(gazeApplied){activeBones.Head.quaternion.copy(headBase);activeBones.Spine2.quaternion.copy(chestBase);activeBones.RightArm.quaternion.copy(armBase);activeBones.RightForeArm.quaternion.copy(foreBase);}
     if(mixer){idle?.setEffectiveWeight(1-walking);walk?.setEffectiveWeight(walking);mixer.update(dt);}
     else {
       const swing=Math.sin(phase)*.5*walking;
@@ -195,10 +197,24 @@ export function createAstronaut(){
       bones.LeftArm.rotation.x=-swing*.6;bones.RightArm.rotation.x=swing*.6;
     }
     headBase.copy(activeBones.Head.quaternion);chestBase.copy(activeBones.Spine2.quaternion);
-    if(dt>0)headYaw=THREE.MathUtils.damp(headYaw,(look*.16+attention*.46)*(1-walking),3,dt);
-    gazeEuler.set(-attention*.1*(1-walking),headYaw,(dt>0?Math.sin(phase*.31)*.012:0)*(1-walking));
+    armBase.copy(activeBones.RightArm.quaternion);foreBase.copy(activeBones.RightForeArm.quaternion);
+    // A pose from the hall (following the light, looking up at the sky) overrides the idle glance.
+    const yawGoal=pose?.yaw??(look*.16+attention*.46),pitchGoal=pose?.pitch??-attention*.1;
+    if(dt>0){headYaw=THREE.MathUtils.damp(headYaw,yawGoal*(1-walking),3,dt);headPitch=THREE.MathUtils.damp(headPitch,pitchGoal*(1-walking),2.5,dt);}
+    const headShare=pose?.yaw!==undefined?.65:1;
+    gazeEuler.set(headPitch*.75,headYaw*headShare,(dt>0?Math.sin(phase*.31)*.012:0)*(1-walking));
     gaze.setFromEuler(gazeEuler);activeBones.Head.quaternion.multiply(gaze);
-    gazeEuler.set(0,attention*.065*(1-walking),0);gaze.setFromEuler(gazeEuler);activeBones.Spine2.quaternion.multiply(gaze);gazeApplied=true;
+    gazeEuler.set(headPitch*.25,pose?.yaw!==undefined?headYaw*.35:attention*.065*(1-walking),0);gaze.setFromEuler(gazeEuler);activeBones.Spine2.quaternion.multiply(gaze);
+    // Greeting: the right arm lifts and the forearm swings.
+    const wave=(pose?.wave??0)*(1-walking);
+    if(wave>.001){
+      if(dt>0)waveTime+=dt;
+      const tune=root.userData.waveTune??{arm:[0,0,1,-1.6],fore:[0,0,1,-1.4],swing:.4};
+      armAxis.set(tune.arm[0],tune.arm[1],tune.arm[2]).normalize();foreAxis.set(tune.fore[0],tune.fore[1],tune.fore[2]).normalize();
+      turn.setFromAxisAngle(armAxis,tune.arm[3]*wave);activeBones.RightArm.quaternion.multiply(turn);
+      turn.setFromAxisAngle(foreAxis,(tune.fore[3]+Math.sin(waveTime*9)*tune.swing)*wave);activeBones.RightForeArm.quaternion.multiply(turn);
+    }else waveTime=0;
+    gazeApplied=true;
     light.emissiveIntensity=dt>0?1.55+Math.sin(phase*.45)*.1:1.55;
     root.userData.attention=attention;root.userData.headYaw=headYaw;
   }};
