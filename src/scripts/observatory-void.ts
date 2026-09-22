@@ -205,6 +205,10 @@ export class ObservatoryWorld {
   tilt?:THREE.Vector2;
   // The astronaut has a life of his own: he steps closer, follows the light, greets, stargazes.
   hovered=false;lastActivity=0;approach=0;astro=new THREE.Vector2();astroReady=false;
+  greetW=0;waveW=0;starW=0;sitW=0;
+  autoplayBlocked=new Set<number>();
+  // Adaptive quality: phones and weak GPUs step down instead of stuttering.
+  quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;
   roomWeights=[1,0,0,0];wasMoving=false;
   // Map view: the hall seen from the ceiling, every work laid out as a card.
   overview=0;overviewMotion?:{from:number;to:number;start:number;duration:number;resolve:()=>void};
@@ -264,7 +268,7 @@ export class ObservatoryWorld {
     this.contact=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false}));
     this.contact.rotation.x=-Math.PI/2;this.scene.add(this.contact);
 
-    const target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:this.mobile?2:4});
+    const target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:this.mobile?0:4});
     this.composer=new EffectComposer(this.renderer,target);
     this.composer.addPass(new RenderPass(this.scene,this.camera));
     this.bloom=new UnrealBloomPass(new THREE.Vector2(size.x,size.y),.62,.62,.93);
@@ -283,7 +287,7 @@ export class ObservatoryWorld {
   private narrow(){return this.host.clientWidth<650;}
   private drawingSize(){
     const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight);
-    const ratio=Math.min(devicePixelRatio||1,this.mobile?2:1.6,Math.sqrt(2400000/(w*h)));
+    const ratio=Math.min(devicePixelRatio||1,this.mobile?2:1.6,Math.sqrt(2400000/(w*h)))*(this.quality>=1?.72:1);
     return new THREE.Vector2(Math.round(w*ratio),Math.round(h*ratio));
   }
   private maxX(){return (this.bays.length-1)*GAP;}
@@ -393,9 +397,17 @@ export class ObservatoryWorld {
     bay.loading=this.loader.loadAsync(archiveWorks[index].img).then(texture=>{
       if(this.disposed){texture.dispose();return;}
       texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());
+      // Phones keep prints at 1024px: fifteen full-size textures can exhaust iOS memory.
+      const source=texture.image as HTMLImageElement;
+      if(this.mobile&&source.width>1024){
+        const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=Math.round(1024*source.height/source.width);
+        canvas.getContext('2d')!.drawImage(source,0,0,canvas.width,canvas.height);
+        const small=new THREE.CanvasTexture(canvas);small.colorSpace=THREE.SRGBColorSpace;small.anisotropy=texture.anisotropy;
+        texture.dispose();texture=small;
+      }
       bay.texture=texture;this.renderer.initTexture(texture);
       if(this.previewIndex!==index)bay.screen.material.uniforms.uMap.value=texture;
-      const image=texture.image as HTMLImageElement;const aspect=image.width/image.height;
+      const image=source;const aspect=image.width/image.height;
       const vertical=aspect<1;
       const height=vertical?MAX_V:Math.min(MAX_H,MAX_W/aspect);
       this.layout(bay,height*aspect,height);
@@ -458,11 +470,11 @@ export class ObservatoryWorld {
   /* ---------- Map view ---------- */
   private layoutMap(){
     const cols=this.narrow()?3:5,rows=Math.ceil(this.bays.length/cols),cellX=9.4,cellZ=7.4;
-    const centre=new THREE.Vector3(this.position,3,-6);
-    this.mapSlots=this.bays.map((_,i)=>new THREE.Vector3(centre.x+(i%cols-(cols-1)/2)*cellX,3,centre.z+(Math.floor(i/cols)-(rows-1)/2)*cellZ));
+    const centre=new THREE.Vector3(this.position,.55,-6);
+    this.mapSlots=this.bays.map((_,i)=>new THREE.Vector3(centre.x+(i%cols-(cols-1)/2)*cellX,centre.y,centre.z+(Math.floor(i/cols)-(rows-1)/2)*cellZ));
     const tanV=Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2)),tanH=tanV*this.camera.aspect;
     const height=Math.max((cols*cellX/2+1.5)/tanH,(rows*cellZ/2+2.5)/tanV)*1.04;
-    this.overviewLook.set(centre.x,3,centre.z+1);this.overviewCam.set(centre.x,3+height,centre.z+height*.22);
+    this.overviewLook.set(centre.x,centre.y,centre.z+1);this.overviewCam.set(centre.x,centre.y+height,centre.z+height*.22);
   }
   enterOverview(){
     this.stopPreview();this.dragging=false;this.hovered=false;this.skipIntro();
@@ -501,6 +513,7 @@ export class ObservatoryWorld {
     if(document.hidden)return;
     if(this.mobile&&time-this.lastTime<1000/30-1)return;
     const dt=Math.min((time-this.lastTime)/1000,.05);this.lastTime=time;
+    this.watchQuality(time);
     this.calm=this.isCalm();
     if(!this.calm)this.elapsed+=dt;
     if(this.focusMotion){
@@ -550,12 +563,15 @@ export class ObservatoryWorld {
     // Astronaut: a visitor standing in front of the work, seen from behind.
     const narrow=this.narrow();
     // He stands just off the left edge of the work: clear of the headline, never on the print.
-    const viewing=this.focus>0||Boolean(this.focusMotion)||this.overview>0;
+    const viewing=this.focus>0||Boolean(this.focusMotion);
     if(!viewing)this.approach=THREE.MathUtils.damp(this.approach,this.hovered&&!this.isMoving()&&!this.calm?1:0,2.2,dt);
     const edge=this.bays[this.index].screen.scale.x/2;
     let goalX=x-(narrow?2.2:edge+mix(.6,.25,this.approach)),goalZ=narrow?3.2:mix(1.6,.9,this.approach);
     // While a work is open he simply stays where he is: no shuffling, no re-standing.
     if(viewing&&this.astroReady){goalX=this.astro.x;goalZ=this.astro.y;}
+    // In the map he walks over to the card of the work he was standing at.
+    const mapSlot=this.mapSlots[this.index];
+    if(ov>0&&mapSlot){const card=this.bays[this.index].screen.scale,k=smooth(0,.6,ov);goalX=mix(goalX,mapSlot.x-card.x/2-.9,k);goalZ=mix(goalZ,mapSlot.z+card.y*.15,k);}
     if(!this.astroReady||this.calm){this.astro.set(goalX,goalZ);this.astroReady=true;}
     const px=this.astro.x,pz=this.astro.y;
     this.astro.x=THREE.MathUtils.damp(this.astro.x,goalX,7,dt);this.astro.y=THREE.MathUtils.damp(this.astro.y,goalZ,3.5,dt);
@@ -566,10 +582,14 @@ export class ObservatoryWorld {
     root.position.set(this.astro.x,root.userData.soleOffset??0,this.astro.y);
     this.contact.position.set(this.astro.x,.02,this.astro.y);
     // Left alone he turns to greet you, then looks up at the stars.
-    const idle=this.calm||intro<1||viewing?0:(time-this.lastActivity)/1000;
-    const greet=smooth(9,9.8,idle)*(1-smooth(15,15.8,idle));
-    const wave=smooth(9.8,10.3,idle)*(1-smooth(13.2,13.8,idle));
-    const stargaze=smooth(16,17.5,idle);
+    const idle=this.calm||intro<1||viewing||ov>0?0:(time-this.lastActivity)/1000;
+    // Moods ease in and out, so he gets up like a person, not like a switch.
+    const ease=(v:number,goal:number,up:number,down:number)=>THREE.MathUtils.damp(v,goal,goal>v?up:down,dt);
+    this.greetW=ease(this.greetW,smooth(9,9.8,idle)*(1-smooth(15,15.8,idle)),3,4);
+    this.waveW=ease(this.waveW,smooth(9.8,10.3,idle)*(1-smooth(13.2,13.8,idle)),4,6);
+    this.starW=ease(this.starW,smooth(16,17.5,idle),1.5,2.5);
+    this.sitW=ease(this.sitW,smooth(23,25.5,idle),.85,1.6);
+    const greet=this.greetW,wave=this.waveW,stargaze=this.starW,sit=this.sitW;
     const toCamera=Math.atan2(this.camera.position.x-this.astro.x,this.camera.position.z-this.astro.y);
     const turnTo=(from:number,to:number,amount:number)=>from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*amount;
     // During the opening he first faces us, then turns to the work.
@@ -587,6 +607,8 @@ export class ObservatoryWorld {
     if(greet>.01)pose={yaw:(pose?.yaw??0)*(1-greet),pitch:-.08*greet,wave};
     if(stargaze>.01)pose={yaw:.25*stargaze,pitch:-.8*stargaze};
     if(ov>.3)pose={yaw:0,pitch:-.9*smooth(.3,.8,ov)};
+    if(sit>.001)pose={...(pose??{}),sit,pitch:(pose?.pitch??0)*.7-.25*sit};
+    const visor=root.userData.visorUniforms;if(visor)(visor.uVisorTint.value as THREE.Color).copy(this.tint).lerp(new THREE.Color('#8fa9c9'),.5);
     this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention,pose);
 
     // Camera: a low, slightly oblique view so the row recedes into the dark.
@@ -685,12 +707,12 @@ export class ObservatoryWorld {
 
     // The cinema room plays its films as soon as you stop in front of one.
     const work=archiveWorks[this.index];
-    if(settled&&!this.calm&&this.focus===0&&intro>=1&&bay.room===2&&work.video&&this.previewIndex!==this.index&&this.autoplayAllowed())this.previewFilm(true);
+    if(settled&&!this.calm&&this.focus===0&&ov===0&&intro>=1&&bay.room===2&&work.video&&this.previewIndex!==this.index&&!this.autoplayBlocked.has(this.index)&&this.autoplayAllowed())this.previewFilm(true);
 
     const pr=this.renderer.getPixelRatio();
     this.stars.position.x=x*.92;const stars=this.stars.material.uniforms;stars.uTime.value=this.elapsed;stars.uPixelRatio.value=pr;stars.uLight.value=smooth(0,.5,intro)*(1-w.grid*.5);
     const dust=this.dust.material.uniforms;(dust.uTorch.value as THREE.Vector4).set(tp.x,tp.y,tp.z,power);dust.uTime.value=this.elapsed;dust.uCamX.value=x;dust.uPixelRatio.value=pr;dust.uFocus.value=this.focus;dust.uAmount.value=w.dust*smooth(.1,.5,intro);
-    this.floor.position.x=x;
+    this.floor.position.x=x;if(this.plainFloor)this.plainFloor.position.x=x;
     const film=this.finish.uniforms;film.uTime.value=this.calm?0:this.elapsed;film.uShift.value=this.shift;
     film.uExposure.value=smooth(0,.35,intro)*.85+.15*smooth(.02,.1,intro);
     this.bloom.strength=w.bloom+this.shift*.25;
@@ -699,6 +721,22 @@ export class ObservatoryWorld {
     if(this.wasMoving&&!movingNow&&this.focus===0)this.onSettle?.(bay.room);
     this.wasMoving=movingNow;
     this.composer.render(dt);
+  }
+
+  private watchQuality(time:number){
+    const gap=time-this.lastRenderAt;this.lastRenderAt=time;
+    if(time<this.qualityFrom||gap>250||this.quality>=3)return;
+    this.frameTimes.push(gap);if(this.frameTimes.length<90)return;
+    const average=this.frameTimes.reduce((a,b)=>a+b,0)/this.frameTimes.length;this.frameTimes.length=0;
+    if(average<(this.mobile?42:30))return;
+    this.quality++;this.qualityFrom=time+2500;
+    if(this.quality===1)this.resize();
+    if(this.quality===2)this.bloom.enabled=false;
+    if(this.quality===3){
+      this.floor.visible=false;
+      this.plainFloor=new THREE.Mesh(new THREE.PlaneGeometry(260,120),new THREE.MeshBasicMaterial({color:this.background}));
+      this.plainFloor.rotation.x=-Math.PI/2;this.plainFloor.position.z=-20;this.scene.add(this.plainFloor);
+    }
   }
 
   private autoplayAllowed(){
@@ -715,7 +753,7 @@ export class ObservatoryWorld {
     void this.prepare(index-1);void this.prepare(index+1);void this.prepare(index+2);
     await this.renderer.compileAsync(this.scene,this.camera);
     if(this.disposed)return;
-    this.lastTime=this.lastActivity=performance.now();
+    this.lastTime=this.lastActivity=performance.now();this.qualityFrom=this.lastTime+4000;
     this.frame=requestAnimationFrame(this.tick);
     this.curator.load(()=>!this.isMoving()).then(()=>{if(this.disposed)this.curator.dispose();});
   }
@@ -767,7 +805,8 @@ export class ObservatoryWorld {
       this.previewTexture=new THREE.VideoTexture(video);this.previewTexture.colorSpace=THREE.SRGBColorSpace;
       this.bays[index].screen.material.uniforms.uMap.value=this.previewTexture;
     },{once:true});
-    video.play().catch(()=>{if(this.preview===video)this.stopPreview();});
+    // Low Power Mode and data savers refuse autoplay; remember, never retry every frame.
+    video.play().catch(()=>{if(auto)this.autoplayBlocked.add(index);if(this.preview===video)this.stopPreview();});
   }
   /** Hover ended: hover previews stop, the cinema room keeps playing. */
   endHover(){if(!this.previewAuto)this.stopPreview();}

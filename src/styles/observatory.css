@@ -199,3 +199,13 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 .obs-map-label{position:absolute;left:0;top:0;padding:9px 13px;font:11px var(--obs-mono);letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#0a0b0dcc;border:1px solid #ffffff24;backdrop-filter:blur(8px);white-space:nowrap;opacity:0;transition:opacity .2s ease}
 .obs-map-label.is-visible{opacity:1}
 @media(max-width:600px){.obs-map-hint{bottom:110px;font-size:8px}}
+
+/* Phones held sideways: the work gets the middle band, controls sit on the bottom edge. */
+@media(max-height:500px) and (orientation:landscape){
+  .obs-journey,.obs-signature,.obs-instructions,.obs-current p,.obs-current .obs-eyebrow,.obs-intro p,.obs-intro-rule{display:none!important}
+  .obs-current{bottom:max(14px,env(safe-area-inset-bottom))!important;left:max(5.5%,env(safe-area-inset-left))!important;max-width:44%}
+  .obs-current h2{font-size:clamp(18px,3.2vw,24px)!important;margin:0!important}
+  .obs-actions{bottom:max(10px,env(safe-area-inset-bottom))!important;right:max(5.5%,env(safe-area-inset-right))!important}
+  .obs-intro{top:18%!important}.obs-intro h1{font-size:34px!important}
+  .obs-map-hint{bottom:12px}
+}

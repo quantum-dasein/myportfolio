@@ -29,6 +29,20 @@ function textile(){
   return {map,bump};
 }
 
+// The studio's RB monogram, mounted on the backpack as an engraved plate.
+function monogramPlate(){
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=384;
+  const ctx=canvas.getContext('2d')!;
+  const plate=ctx.createLinearGradient(0,0,0,384);plate.addColorStop(0,'#1b2127');plate.addColorStop(1,'#0c1014');
+  ctx.fillStyle=plate;ctx.fillRect(0,0,512,384);ctx.strokeStyle='#7d8a93';ctx.lineWidth=5;ctx.strokeRect(10,10,492,364);
+  ctx.fillStyle='#9aa7ae';ctx.font='22px monospace';ctx.textAlign='center';ctx.fillText('RODION BELOUSOV · STUDIO',256,356);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;
+  const mark=new Image();mark.decoding='async';
+  mark.onload=()=>{ctx.drawImage(mark,256-150,24,300,300);texture.needsUpdate=true;};
+  mark.src='/brand/rb-monogram-256.png';
+  return texture;
+}
+
 function badge(lines:string[],dark=false){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=384;
   const ctx=canvas.getContext('2d')!;ctx.fillStyle=dark?'#101820':'#cbd2d5';ctx.fillRect(0,0,512,384);
@@ -40,6 +54,14 @@ function badge(lines:string[],dark=false){
 }
 
 /** Original suit geometry/textiles, driven by a locally hosted Mixamo rig. */
+// Measured on the rig: X- swings a thigh forward, X+ bends a knee, Y swings an arm forward.
+const SIT_POSE={drop:1.26,bones:[
+  ['LeftUpLeg',[1,0,0],-2.05],['RightUpLeg',[1,0,0],-2.05],['LeftUpLeg',[0,0,1],.16],['RightUpLeg',[0,0,1],-.16],
+  ['LeftLeg',[1,0,0],1.55],['RightLeg',[1,0,0],1.55],
+  ['Spine1',[1,0,0],.2],
+  ['RightArm',[0,1,0],.95],['LeftArm',[0,1,0],-.95],['RightForeArm',[0,1,0],.55],['LeftForeArm',[0,1,0],-.55],
+] as [string,[number,number,number],number][]};
+
 export function createAstronaut(){
   const root=new THREE.Group();root.name='RB Observatory astronaut';
   const cloth=textile();
@@ -47,7 +69,29 @@ export function createAstronaut(){
   const ceramic=new THREE.MeshPhysicalMaterial({color:'#dbe1e4',roughness:.3,metalness:.2,clearcoat:.5,clearcoatRoughness:.24});
   const graphite=new THREE.MeshStandardMaterial({color:'#171d24',roughness:.68,metalness:.15});
   const metal=new THREE.MeshStandardMaterial({color:'#9cabb5',roughness:.26,metalness:.87});
-  const visor=new THREE.MeshPhysicalMaterial({color:'#08131c',roughness:.075,metalness:.86,clearcoat:1,clearcoatRoughness:.05,iridescence:.22,iridescenceIOR:1.3,envMapIntensity:2.4});
+  const visor=new THREE.MeshPhysicalMaterial({color:'#08131c',roughness:.075,metalness:.86,clearcoat:1,clearcoatRoughness:.05,iridescence:.22,iridescenceIOR:1.3,envMapIntensity:.3});
+  // The visor reflects a sky of its own: drifting nebula, twinkling points and
+  // now and then a flare trail sweeping across, instead of the studio softbox.
+  const visorUniforms={uVisorTime:{value:0},uVisorTint:{value:new THREE.Color('#9fb6d0')},uVisorGlow:{value:1}};
+  root.userData.visorUniforms=visorUniforms;
+  visor.onBeforeCompile=shader=>{
+    Object.assign(shader.uniforms,visorUniforms);
+    shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform float uVisorTime,uVisorGlow;uniform vec3 uVisorTint;').replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+      {
+        vec3 eye=normalize(vViewPosition);vec3 r=reflect(-eye,normal);
+        float facing=1.-max(dot(normal,eye),0.);float edge=.25+.75*facing*facing;
+        vec2 p=vec2(atan(r.x,r.z),r.y*1.6);float t=uVisorTime;
+        vec3 sky=uVisorTint*smoothstep(-.2,.9,sin(p.x*2.3+t*.23)*.5+.5)*smoothstep(-.6,.7,r.y)*.22;
+        sky+=vec3(.55,.32,.62)*pow(max(0.,sin(p.x*1.7-t*.17+p.y*1.3)),7.)*.3;
+        vec2 cell=floor(p*vec2(26.,20.));float h=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
+        vec2 f=fract(p*vec2(26.,20.))-.5;
+        sky+=step(.9,h)*pow(max(0.,sin(t*(1.5+h*3.)+h*40.)),10.)*(1.-smoothstep(.05,.3,length(f)))*1.4;
+        float cycle=fract(t*.07+.3),sweep=(cycle-.15)*7.;
+        float trail=exp(-pow((p.y-(p.x-sweep)*.4-.2)*16.,2.))*smoothstep(.15,.22,cycle)*(1.-smoothstep(.3,.42,cycle))*smoothstep(sweep-1.2,sweep,p.x)*(1.-step(sweep,p.x));
+        sky+=vec3(1.,.82,.58)*trail*1.8;
+        totalEmissiveRadiance+=sky*edge*uVisorGlow;
+      }`);
+  };
   const light=new THREE.MeshStandardMaterial({color:'#d9f0ff',emissive:'#9bc7dc',emissiveIntensity:1.8,roughness:.4});
   const patch=new THREE.MeshStandardMaterial({map:badge(['RB','OBSERVATORY','EXPEDITION 01'],true),roughness:.78});
   const screenCanvas=document.createElement('canvas');screenCanvas.width=256;screenCanvas.height=128;
@@ -56,7 +100,7 @@ export function createAstronaut(){
   for(let i=0;i<3;i++){screenCtx.fillStyle='#29424c';screenCtx.fillRect(16,55+i*19,224,8);screenCtx.fillStyle='#90babb';screenCtx.fillRect(16,55+i*19,170-i*29,8);}
   const screenMap=new THREE.CanvasTexture(screenCanvas);screenMap.colorSpace=THREE.SRGBColorSpace;
   const instruments=new THREE.MeshBasicMaterial({map:screenMap,toneMapped:false});
-  const label=new THREE.MeshStandardMaterial({map:badge(['01','LIFE SUPPORT'],false),roughness:.65});
+  const label=new THREE.MeshStandardMaterial({map:monogramPlate(),roughness:.55,metalness:.25});
 
   function suit(bones:Bones){
     root.updateMatrixWorld(true);
@@ -160,6 +204,7 @@ export function createAstronaut(){
   let mixer:THREE.AnimationMixer|undefined,idle:THREE.AnimationAction|undefined,walk:THREE.AnimationAction|undefined;
   let disposed=false;
   let activeBones=bones,headYaw=0,headPitch=0,waveTime=0;
+  const touched:[THREE.Object3D,THREE.Quaternion][]=[];const hipsBase=new THREE.Vector3();let hipsMoved=false;const scaleProbe=new THREE.Vector3();
   const headBase=new THREE.Quaternion(),chestBase=new THREE.Quaternion();
   const armBase=new THREE.Quaternion(),foreBase=new THREE.Quaternion();
   const armAxis=new THREE.Vector3(0,0,1),foreAxis=new THREE.Vector3(0,0,1),turn=new THREE.Quaternion();
@@ -186,7 +231,9 @@ export function createAstronaut(){
       activeBones=rig;gazeApplied=false;root.userData.astronautRig='mixamo';
     }catch{if(model)root.remove(model);root.userData.astronautRig='procedural';}
   };
-  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number}){
+  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number}){
+    for(const [bone,base] of touched)bone.quaternion.copy(base);touched.length=0;
+    if(hipsMoved){activeBones.Hips.position.copy(hipsBase);hipsMoved=false;}
     // Undo our additive pose before the mixer writes the next animation sample.
     if(gazeApplied){activeBones.Head.quaternion.copy(headBase);activeBones.Spine2.quaternion.copy(chestBase);activeBones.RightArm.quaternion.copy(armBase);activeBones.RightForeArm.quaternion.copy(foreBase);}
     if(mixer){idle?.setEffectiveWeight(1-walking);walk?.setEffectiveWeight(walking);mixer.update(dt);}
@@ -214,8 +261,21 @@ export function createAstronaut(){
       turn.setFromAxisAngle(armAxis,tune.arm[3]*wave);activeBones.RightArm.quaternion.multiply(turn);
       turn.setFromAxisAngle(foreAxis,(tune.fore[3]+Math.sin(waveTime*9)*tune.swing)*wave);activeBones.RightForeArm.quaternion.multiply(turn);
     }else waveTime=0;
+    // Sitting down on the floor: hips lower, knees up, forearms resting on them.
+    const sit=(pose?.sit??0)*(1-walking);
+    if(sit>.001){
+      const tune=root.userData.sitTune??SIT_POSE;
+      const hips=activeBones.Hips;hipsBase.copy(hips.position);hipsMoved=true;
+      hips.parent!.getWorldScale(scaleProbe);hips.position.y-=tune.drop*sit/Math.max(1e-4,scaleProbe.y);
+      for(const [name,axis,angle] of tune.bones){
+        const bone=activeBones[name];if(!bone)continue;
+        touched.push([bone,bone.quaternion.clone()]);
+        turn.setFromAxisAngle(armAxis.set(axis[0],axis[1],axis[2]),angle*sit);bone.quaternion.multiply(turn);
+      }
+    }
     gazeApplied=true;
-    light.emissiveIntensity=dt>0?1.55+Math.sin(phase*.45)*.1:1.55;
+    light.emissiveIntensity=dt>0?.7+Math.sin(phase*.45)*.08:.7;
+    if(dt>0)visorUniforms.uVisorTime.value+=dt;
     root.userData.attention=attention;root.userData.headYaw=headYaw;
   }};
 }
