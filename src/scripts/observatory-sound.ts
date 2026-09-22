@@ -68,9 +68,9 @@ export function createHallSound(){
   addEventListener('rb:exhibition-film',event=>{filmOpen=Boolean((event as CustomEvent).detail);setMaster(wanted());});
 
   const live=()=>Boolean(ctx&&master&&ctx.state==='running'&&wanted());
-  function chime(freq:number,level:number){
+  function chime(freq:number,level:number,delay=0){
     if(!live())return;
-    const now=ctx!.currentTime;
+    const now=ctx!.currentTime+delay;
     for(const [ratio,share,decay] of [[1,1,2.4],[2,.28,1.4],[3.01,.08,.8]] as const){
       const osc=ctx!.createOscillator();osc.type='sine';osc.frequency.value=freq*ratio;const g=ctx!.createGain();
       g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(level*share,now+.02);g.gain.exponentialRampToValueAtTime(.0001,now+decay);
@@ -101,6 +101,11 @@ export function createHallSound(){
     arrive(room:number){
       if(!ctx)return;const now=ctx.currentTime;if(now-lastPing<.4)return;lastPing=now;
       chime([880,587.33,659.25,987.77][room]??880,.045);
+    },
+    // Teleport: a quick glassy arpeggio, falling as he leaves and rising as he lands.
+    teleport(phase:'out'|'in'){
+      const notes=[1760,1318.5,1108.7,880];(phase==='out'?notes:[...notes].reverse()).forEach((freq,i)=>chime(freq,.022,.3+i*.07));
+      swell(phase==='out'?1800:300,phase==='out'?300:1800,.8,.12);swellUntil=(ctx?.currentTime??0)+.8;
     },
     open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
     close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},

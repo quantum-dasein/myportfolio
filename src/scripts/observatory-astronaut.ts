@@ -62,6 +62,10 @@ const SIT_POSE={drop:1.26,bones:[
   ['RightArm',[0,1,0],.95],['LeftArm',[0,1,0],-.95],['RightForeArm',[0,1,0],.55],['LeftForeArm',[0,1,0],-.55],
 ] as [string,[number,number,number],number][]};
 
+// Left arm: Y- brings the upper arm forward, the forearm forward and across the chest.
+// Held in the right hand, the side the camera sees; mirrored axes of the left arm.
+const TABLET_POSE:[string,[number,number,number],number][]=[['RightArm',[0,1,0],.42],['RightForeArm',[0,1,0],1.45]];
+
 export function createAstronaut(){
   const root=new THREE.Group();root.name='RB Observatory astronaut';
   const cloth=textile();
@@ -204,7 +208,14 @@ export function createAstronaut(){
   let mixer:THREE.AnimationMixer|undefined,idle:THREE.AnimationAction|undefined,walk:THREE.AnimationAction|undefined;
   let disposed=false;
   let activeBones=bones,headYaw=0,headPitch=0,waveTime=0;
-  const touched:[THREE.Object3D,THREE.Quaternion][]=[];const hipsBase=new THREE.Vector3();let hipsMoved=false;const scaleProbe=new THREE.Vector3();
+  const touched:[THREE.Object3D,THREE.Quaternion][]=[];
+  const bend=(list:[string,[number,number,number],number][],weight:number)=>{
+    for(const [name,axis,angle] of list){
+      const bone=activeBones[name];if(!bone)continue;
+      touched.push([bone,bone.quaternion.clone()]);
+      turn.setFromAxisAngle(armAxis.set(axis[0],axis[1],axis[2]),angle*weight);bone.quaternion.multiply(turn);
+    }
+  };const hipsBase=new THREE.Vector3();let hipsMoved=false;const scaleProbe=new THREE.Vector3();
   const headBase=new THREE.Quaternion(),chestBase=new THREE.Quaternion();
   const armBase=new THREE.Quaternion(),foreBase=new THREE.Quaternion();
   const armAxis=new THREE.Vector3(0,0,1),foreAxis=new THREE.Vector3(0,0,1),turn=new THREE.Quaternion();
@@ -231,8 +242,8 @@ export function createAstronaut(){
       activeBones=rig;gazeApplied=false;root.userData.astronautRig='mixamo';
     }catch{if(model)root.remove(model);root.userData.astronautRig='procedural';}
   };
-  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number}){
-    for(const [bone,base] of touched)bone.quaternion.copy(base);touched.length=0;
+  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number;tablet?:number}){
+    for(let i=touched.length-1;i>=0;i--)touched[i][0].quaternion.copy(touched[i][1]);touched.length=0;
     if(hipsMoved){activeBones.Hips.position.copy(hipsBase);hipsMoved=false;}
     // Undo our additive pose before the mixer writes the next animation sample.
     if(gazeApplied){activeBones.Head.quaternion.copy(headBase);activeBones.Spine2.quaternion.copy(chestBase);activeBones.RightArm.quaternion.copy(armBase);activeBones.RightForeArm.quaternion.copy(foreBase);}
@@ -267,12 +278,11 @@ export function createAstronaut(){
       const tune=root.userData.sitTune??SIT_POSE;
       const hips=activeBones.Hips;hipsBase.copy(hips.position);hipsMoved=true;
       hips.parent!.getWorldScale(scaleProbe);hips.position.y-=tune.drop*sit/Math.max(1e-4,scaleProbe.y);
-      for(const [name,axis,angle] of tune.bones){
-        const bone=activeBones[name];if(!bone)continue;
-        touched.push([bone,bone.quaternion.clone()]);
-        turn.setFromAxisAngle(armAxis.set(axis[0],axis[1],axis[2]),angle*sit);bone.quaternion.multiply(turn);
-      }
+      bend(tune.bones,sit);
     }
+    // Holding the tablet up in front of the chest, forearm across the body.
+    const hold=(pose?.tablet??0)*(1-sit);
+    if(hold>.001)bend(TABLET_POSE,hold);
     gazeApplied=true;
     light.emissiveIntensity=dt>0?.7+Math.sin(phase*.45)*.08:.7;
     if(dt>0)visorUniforms.uVisorTime.value+=dt;

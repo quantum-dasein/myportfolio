@@ -209,3 +209,8 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
   .obs-intro{top:18%!important}.obs-intro h1{font-size:34px!important}
   .obs-map-hint{bottom:12px}
 }
+
+/* iPhone review fixes. */
+.obs-viewer [data-obs-viewer-meta]:focus{outline:none}
+.obs-viewer.is-handoff .obs-viewer-copy>*,.obs-viewer.is-closing .obs-viewer-copy>*,.obs-viewer.is-closing>:not(.obs-viewer-media){opacity:0;transition:opacity .2s ease}
+.is-map-leaving .obs-map{opacity:0;transition:opacity .25s ease;transition-delay:0s}

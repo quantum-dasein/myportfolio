@@ -205,7 +205,15 @@ export class ObservatoryWorld {
   tilt?:THREE.Vector2;
   // The astronaut has a life of his own: he steps closer, follows the light, greets, stargazes.
   hovered=false;lastActivity=0;approach=0;astro=new THREE.Vector2();astroReady=false;
-  greetW=0;waveW=0;starW=0;sitW=0;
+  greetW=0;waveW=0;starW=0;sitW=0;tabletW=0;
+  // Teleport: he no longer sprints between works; he taps his tablet and beams across.
+  astroIndex=-1;tele:'here'|'leaving'|'gone'|'arriving'='here';teleT=0;
+  dissolve={uDissolve:{value:0},uDissolveColor:{value:new THREE.Color('#8fd8ff')},uDissolveBase:{value:0},uDissolveHeight:{value:2.7}};
+  patched=new WeakSet<THREE.Material>();
+  column!:THREE.Mesh<THREE.CylinderGeometry,Shader>;ring!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
+  tablet=new THREE.Group();tabletCanvas=document.createElement('canvas');tabletTexture!:THREE.CanvasTexture;tabletDrawnAt=0;tabletFlash=0;
+  leftHand?:THREE.Object3D;headBone?:THREE.Object3D;rigTag='';
+  onTeleport?:(phase:'out'|'in')=>void;departure?:{to:number;at:number};
   autoplayBlocked=new Set<number>();
   // Adaptive quality: phones and weak GPUs step down instead of stuttering.
   quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;
@@ -256,6 +264,7 @@ export class ObservatoryWorld {
     this.buildBays();
     this.scene.add(this.curator.root);
     this.scene.add(this.torch);
+    this.buildTeleport();this.buildTablet();this.makeDissolvable(this.curator.root);
     // Unit cone, apex at the origin, opening along +z after the turn: scaled to reach the floor.
     const spotGeometry=new THREE.ConeGeometry(.9,1,48,1,true);spotGeometry.translate(0,-.5,0);
     const spotCone=new THREE.Mesh(spotGeometry,new THREE.ShaderMaterial({uniforms:{uTint:{value:new THREE.Color()},uIntensity:{value:0},uTime:{value:0}},vertexShader:beamVertex,fragmentShader:beamFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
@@ -430,12 +439,19 @@ export class ObservatoryWorld {
     index=THREE.MathUtils.clamp(index,0,this.bays.length-1);
     const to=index*GAP;
     if(this.isCalm()){this.position=this.target=to;this.updateIndex();return;}
+    this.lastInput=-1e9;this.dragging=false;this.skipIntro();this.lastActivity=performance.now();
+    // Cinematic departure: he lifts the tablet and taps before the hall moves.
+    const visible=this.tele==='here'&&this.intro>=1&&this.focus===0&&this.overview===0&&!this.isMoving()&&to!==this.astroIndex*GAP;
+    if(visible){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');this.departure={to,at:performance.now()+650};}
+    else{this.departure=undefined;this.depart(to);}
+    void this.prepare(index);
+  }
+  private depart(to:number){
     // Long jumps enter the last stretch already in motion instead of racing past every room.
     if(Math.abs(to-this.position)>GAP*3.5){
       const from=this.position;this.position=to-Math.sign(to-from)*GAP*1.6;this.camera.position.x+=this.position-from;
     }
-    this.target=to;this.lastInput=-1e9;this.dragging=false;this.skipIntro();this.lastActivity=performance.now();
-    void this.prepare(index);
+    this.target=to;
   }
   scrollBy(pixels:number){
     this.skipIntro();
@@ -465,6 +481,114 @@ export class ObservatoryWorld {
     if(this.previewIndex>=0&&this.previewIndex!==nearest)this.stopPreview();
     for(const i of [nearest,nearest+1,nearest-1,nearest+2,nearest-2])void this.prepare(i);
     this.onIndex?.(nearest);
+  }
+
+  /* ---------- Teleport ---------- */
+  private buildTeleport(){
+    const additive={transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false} as const;
+    this.column=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,4.2,48,1,true),new THREE.ShaderMaterial({
+      uniforms:{uIntensity:{value:0},uTime:{value:0},uColor:{value:new THREE.Color('#8fd8ff')}},vertexShader:beamVertex,
+      fragmentShader:`uniform float uIntensity,uTime;uniform vec3 uColor;varying vec2 vUv;varying vec3 vN;varying vec3 vV;
+        void main(){float rim=pow(1.-abs(dot(normalize(vN),normalize(vV))),1.4);float bands=.5+.5*sin(vUv.y*46.-uTime*16.);
+        float fade=smoothstep(0.,.08,vUv.y)*(1.-smoothstep(.5,1.,vUv.y));gl_FragColor=vec4(uColor*(rim*.9+.15)*(.55+.45*bands)*fade*uIntensity*.8,1.);}`,
+      ...additive,side:THREE.DoubleSide}));
+    this.ring=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.2),new THREE.ShaderMaterial({
+      uniforms:{uIntensity:{value:0},uTime:{value:0},uColor:{value:new THREE.Color('#8fd8ff')}},vertexShader:plainVertex,
+      fragmentShader:`uniform float uIntensity,uTime;uniform vec3 uColor;varying vec2 vUv;
+        void main(){float r=length(vUv-.5)*2.;float wave=exp(-pow((r-fract(uTime*1.3))*9.,2.))*(1.-r);float core=exp(-r*r*5.);
+        gl_FragColor=vec4(uColor*(wave*1.2+core*.5)*uIntensity*step(r,1.),1.);}`,...additive}));
+    this.ring.rotation.x=-Math.PI/2;
+    this.column.visible=this.ring.visible=false;this.scene.add(this.column,this.ring);
+  }
+  /** Every material of the astronaut (and his tablet) can come apart in voxels. */
+  private makeDissolvable(root:THREE.Object3D){
+    root.traverse(object=>{const mesh=object as THREE.Mesh;if(!mesh.isMesh)return;
+      for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material]){
+        if(this.patched.has(material))continue;this.patched.add(material);
+        const previous=material.onBeforeCompile.bind(material),previousKey=material.customProgramCacheKey();
+        material.onBeforeCompile=(shader,renderer)=>{
+          previous(shader,renderer);Object.assign(shader.uniforms,this.dissolve);
+          shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vDissolveWorld;')
+            .replace('#include <project_vertex>','#include <project_vertex>\nvDissolveWorld=(modelMatrix*vec4(transformed,1.)).xyz;');
+          shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
+            varying vec3 vDissolveWorld;uniform float uDissolve,uDissolveBase,uDissolveHeight;uniform vec3 uDissolveColor;
+            float dissolveCut(){return uDissolve*1.3-(1.-clamp((vDissolveWorld.y-uDissolveBase)/uDissolveHeight,0.,1.))*.3;}
+            float dissolveNoise(){return fract(sin(dot(floor(vDissolveWorld*34.),vec3(12.9898,78.233,37.719)))*43758.5453);}`)
+            .replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(uDissolve>0.&&dissolveNoise()<dissolveCut())discard;');
+          if(shader.fragmentShader.includes('totalEmissiveRadiance'))shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',
+            '#include <emissivemap_fragment>\nif(uDissolve>0.){float cut=dissolveCut();totalEmissiveRadiance+=uDissolveColor*(1.-smoothstep(cut,cut+.08,dissolveNoise()))*5.;}');
+        };
+        material.customProgramCacheKey=()=>previousKey+'|dissolve';material.needsUpdate=true;
+      }});
+  }
+  private updateTeleport(dt:number,ov:number,viewing:boolean){
+    if(this.calm){this.tele='here';this.dissolve.uDissolve.value=0;this.curator.root.visible=true;return;}
+    const homeX=this.astroIndex*GAP;
+    const away=Math.abs(this.position-homeX)>GAP*.35||(this.targetIndex()!==this.astroIndex&&Math.abs(this.target-this.position)>GAP*.3);
+    if(this.tele==='here'){
+      if(!viewing&&(ov===0?away:this.index!==this.astroIndex)){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');}
+    }else if(this.tele==='leaving'){
+      this.teleT=Math.min(1,this.teleT+dt/.85);if(this.teleT>=1){this.tele='gone';this.teleT=0;}
+    }else if(this.tele==='gone'){
+      if(ov===0&&!this.isMoving()&&!viewing){this.astroIndex=this.index;this.tele='arriving';this.teleT=0;this.approach=0;this.onTeleport?.('in');}
+    }else{
+      this.teleT=Math.min(1,this.teleT+dt/1.15);if(this.teleT>=1)this.tele='here';
+    }
+    const d=this.tele==='leaving'?smooth(.36,.95,this.teleT):this.tele==='gone'?1:this.tele==='arriving'?1-smooth(.12,.85,this.teleT):0;
+    this.dissolve.uDissolve.value=d;this.curator.root.visible=d<.999;
+  }
+
+  /* ---------- Tablet ---------- */
+  private buildTablet(){
+    this.tabletCanvas.width=256;this.tabletCanvas.height=176;
+    this.tabletTexture=new THREE.CanvasTexture(this.tabletCanvas);this.tabletTexture.colorSpace=THREE.SRGBColorSpace;
+    const body=new THREE.Mesh(new THREE.BoxGeometry(.34,.24,.022),new THREE.MeshStandardMaterial({color:'#1b222a',metalness:.6,roughness:.35}));
+    const screen=new THREE.Mesh(new THREE.PlaneGeometry(.31,.21),new THREE.MeshBasicMaterial({map:this.tabletTexture,toneMapped:false}));
+    screen.position.z=.012;this.tablet.add(body,screen);this.tablet.visible=false;this.scene.add(this.tablet);
+    this.makeDissolvable(this.tablet);this.drawTablet(0);
+  }
+  private drawTablet(time:number){
+    const ctx=this.tabletCanvas.getContext('2d');if(!ctx)return;
+    const W=256,H=176,pulse=.5+.5*Math.sin(time*.006);
+    ctx.fillStyle='#050e16';ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(143,216,255,.08)';ctx.lineWidth=1;
+    for(let x=0;x<W;x+=16){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=16){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.fillStyle='#8fd8ff';ctx.font='bold 11px monospace';ctx.fillText('RB / OBSERVATORY',12,20);
+    ctx.textAlign='right';ctx.fillText(String(this.index+1).padStart(2,'0')+' / '+String(this.bays.length).padStart(2,'0'),W-12,20);ctx.textAlign='left';
+    // The hall as a line of rooms; his position pulses.
+    const count=this.bays.length;
+    for(let i=0;i<count;i++){
+      const px=20+i*(W-40)/(count-1),py=80,on=i===this.index;
+      ctx.fillStyle=on?'#ffffff':['#c7a978','#8fb4d4','#d98fa6','#6fd6c8'][this.bays[i].room];
+      ctx.globalAlpha=on?1:.55;ctx.beginPath();ctx.arc(px,py,on?4:2.5,0,Math.PI*2);ctx.fill();
+      if(on){ctx.globalAlpha=.25+.5*pulse;ctx.strokeStyle='#8fd8ff';ctx.beginPath();ctx.arc(px,py,8+pulse*5,0,Math.PI*2);ctx.stroke();}
+    }
+    ctx.globalAlpha=1;
+    const teleporting=this.tele==='leaving'||this.tele==='arriving';
+    ctx.fillStyle=teleporting?'#ffffff':'#8fd8ff';ctx.font='10px monospace';
+    ctx.fillText(teleporting?'TELEPORT':'SIGNAL  '+'|'.repeat(3+Math.round(pulse*3)),12,H-38);
+    ctx.fillStyle='rgba(143,216,255,.25)';ctx.fillRect(12,H-28,W-24,4);
+    ctx.fillStyle='#8fd8ff';ctx.fillRect(12,H-28,(W-24)*(teleporting?this.teleT:.35+.3*pulse),4);
+    if(this.tabletFlash>.01){ctx.fillStyle='rgba(200,240,255,'+(this.tabletFlash*.85).toFixed(3)+')';ctx.fillRect(0,0,W,H);}
+    this.tabletTexture.needsUpdate=true;
+  }
+  private placeTablet(time:number){
+    const root=this.curator.root,rig=String(root.userData.astronautRig??'');
+    if(rig!==this.rigTag||!this.leftHand){this.rigTag=rig;this.leftHand=undefined;this.headBone=undefined;
+      root.traverse(o=>{if(/RightHand$/.test(o.name))this.leftHand=o;if(/Head$/.test(o.name))this.headBone=o;});}
+    const hand=this.leftHand,head=this.headBone;
+    this.tablet.visible=Boolean(hand&&head)&&root.visible;if(!this.tablet.visible||!hand||!head)return;
+    root.updateMatrixWorld(true);
+    const handPos=hand.getWorldPosition(new THREE.Vector3()),headPos=head.getWorldPosition(new THREE.Vector3());
+    const yaw=root.rotation.y,forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),left=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+    const w=this.tabletW;
+    this.tablet.position.copy(handPos).addScaledVector(forward,mix(.03,.1,w)).addScaledVector(left,mix(-.05,.02,w)).add(new THREE.Vector3(0,mix(-.14,.05,w),0));
+    // Low: carried flat against the thigh. Raised: the screen turns to his visor.
+    const low=new THREE.Object3D();low.position.copy(this.tablet.position);low.lookAt(this.tablet.position.clone().sub(left));
+    const high=new THREE.Object3D();high.position.copy(this.tablet.position);high.lookAt(headPos);
+    this.tablet.quaternion.slerpQuaternions(low.quaternion,high.quaternion,w);
+    if(time-this.tabletDrawnAt>(w>.05||this.tele!=='here'?110:600)){this.tabletDrawnAt=time;this.drawTablet(time);}
   }
 
   /* ---------- Map view ---------- */
@@ -534,6 +658,7 @@ export class ObservatoryWorld {
     }
     const intro=this.intro;
 
+    if(this.departure&&time>=this.departure.at){this.depart(this.departure.to);this.departure=undefined;this.lastInput=-1e9;}
     // Snap once the hand is off the hall.
     if(!this.dragging&&time-this.lastInput>150&&this.focus===0)this.target=THREE.MathUtils.clamp(Math.round(this.target/GAP),0,this.bays.length-1)*GAP;
     const previous=this.position;
@@ -565,14 +690,17 @@ export class ObservatoryWorld {
     // He stands just off the left edge of the work: clear of the headline, never on the print.
     const viewing=this.focus>0||Boolean(this.focusMotion);
     if(!viewing)this.approach=THREE.MathUtils.damp(this.approach,this.hovered&&!this.isMoving()&&!this.calm?1:0,2.2,dt);
-    const edge=this.bays[this.index].screen.scale.x/2;
-    let goalX=x-(narrow?2.2:edge+mix(.6,.25,this.approach)),goalZ=narrow?3.2:mix(1.6,.9,this.approach);
+    if(this.astroIndex<0||this.calm)this.astroIndex=this.index;
+    this.updateTeleport(dt,ov,viewing);
+    // He belongs to one work at a time and stands just off its left edge.
+    const home=this.astroIndex,edge=this.bays[home].screen.scale.x/2,homeCentre=home*GAP;
+    let goalX=homeCentre-(narrow?Math.min(edge+.45,2.4):edge+mix(.6,.25,this.approach)),goalZ=narrow?1.2:mix(1.6,.9,this.approach);
     // While a work is open he simply stays where he is: no shuffling, no re-standing.
     if(viewing&&this.astroReady){goalX=this.astro.x;goalZ=this.astro.y;}
-    // In the map he walks over to the card of the work he was standing at.
-    const mapSlot=this.mapSlots[this.index];
-    if(ov>0&&mapSlot){const card=this.bays[this.index].screen.scale,k=smooth(0,.6,ov);goalX=mix(goalX,mapSlot.x-card.x/2-.9,k);goalZ=mix(goalZ,mapSlot.z+card.y*.15,k);}
-    if(!this.astroReady||this.calm){this.astro.set(goalX,goalZ);this.astroReady=true;}
+    // In the map he rides along with the card of his work.
+    const mapSlot=this.mapSlots[home];let glide=false;
+    if(ov>0&&mapSlot){const card=this.bays[home].screen.scale,k=smooth(0,1,ov*1.4-home/this.bays.length*.4);goalX=mix(goalX,mapSlot.x-card.x/2-.9,k);goalZ=mix(goalZ,mapSlot.z+card.y*.15,k);glide=true;}
+    if(!this.astroReady||this.calm||glide||this.tele!=='here'){this.astro.set(goalX,goalZ);this.astroReady=true;}
     const px=this.astro.x,pz=this.astro.y;
     this.astro.x=THREE.MathUtils.damp(this.astro.x,goalX,7,dt);this.astro.y=THREE.MathUtils.damp(this.astro.y,goalZ,3.5,dt);
     const stepX=this.astro.x-px,stepZ=this.astro.y-pz,stride=dt>0?Math.hypot(stepX,stepZ)/dt:0;
@@ -589,6 +717,11 @@ export class ObservatoryWorld {
     this.waveW=ease(this.waveW,smooth(9.8,10.3,idle)*(1-smooth(13.2,13.8,idle)),4,6);
     this.starW=ease(this.starW,smooth(16,17.5,idle),1.5,2.5);
     this.sitW=ease(this.sitW,smooth(23,25.5,idle),.85,1.6);
+    // Tablet: a glance at it early in a quiet moment, and in hand for every teleport.
+    const checking=smooth(4.5,5.3,idle)*(1-smooth(8.2,9,idle));
+    const beaming=this.tele==='leaving'?1-smooth(.75,.95,this.teleT):this.tele==='arriving'?1-smooth(.35,.7,this.teleT):0;
+    this.tabletW=ease(this.tabletW,Math.max(checking,beaming),this.tele==='leaving'?9:3,3);
+    this.tabletFlash=this.tele==='leaving'?smooth(.22,.3,this.teleT)*(1-smooth(.34,.6,this.teleT)):this.tabletFlash*.9;
     const greet=this.greetW,wave=this.waveW,stargaze=this.starW,sit=this.sitW;
     const toCamera=Math.atan2(this.camera.position.x-this.astro.x,this.camera.position.z-this.astro.y);
     const turnTo=(from:number,to:number,amount:number)=>from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*amount;
@@ -608,8 +741,15 @@ export class ObservatoryWorld {
     if(stargaze>.01)pose={yaw:.25*stargaze,pitch:-.8*stargaze};
     if(ov>.3)pose={yaw:0,pitch:-.9*smooth(.3,.8,ov)};
     if(sit>.001)pose={...(pose??{}),sit,pitch:(pose?.pitch??0)*.7-.25*sit};
+    if(this.tabletW>.01){const t=this.tabletW;pose={...(pose??{}),tablet:t,yaw:mix(pose?.yaw??0,-.28,t),pitch:mix(pose?.pitch??0,.5,t)};}
     const visor=root.userData.visorUniforms;if(visor)(visor.uVisorTint.value as THREE.Color).copy(this.tint).lerp(new THREE.Color('#8fa9c9'),.5);
     this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention,pose);
+    this.placeTablet(time);
+    this.column.position.set(this.astro.x,2.1,this.astro.y);this.ring.position.set(this.astro.x,.03,this.astro.y);
+    const beam=this.tele==='leaving'?smooth(.3,.55,this.teleT)*(1-smooth(.85,1,this.teleT)):this.tele==='arriving'?smooth(0,.12,this.teleT)*(1-smooth(.55,1,this.teleT)):0;
+    this.column.material.uniforms.uIntensity.value=beam;this.column.material.uniforms.uTime.value=this.elapsed;this.column.visible=beam>.001;
+    this.ring.material.uniforms.uIntensity.value=beam;this.ring.material.uniforms.uTime.value=this.elapsed;this.ring.visible=beam>.001;
+    (this.contact.material as THREE.MeshBasicMaterial).opacity=1-this.dissolve.uDissolve.value;
 
     // Camera: a low, slightly oblique view so the row recedes into the dark.
     const crane=1-smooth(0,1,intro)**.7;
@@ -755,7 +895,7 @@ export class ObservatoryWorld {
     if(this.disposed)return;
     this.lastTime=this.lastActivity=performance.now();this.qualityFrom=this.lastTime+4000;
     this.frame=requestAnimationFrame(this.tick);
-    this.curator.load(()=>!this.isMoving()).then(()=>{if(this.disposed)this.curator.dispose();});
+    this.curator.load(()=>!this.isMoving()).then(()=>{if(this.disposed)this.curator.dispose();else this.makeDissolvable(this.curator.root);});
   }
 
   focusWork(){

@@ -121,7 +121,9 @@ export async function mountObservatory(root:HTMLElement){
   // it leaves its 3D position, becomes the page, and lands back on close.
   const handoffEase='cubic-bezier(.76,0,.18,1)';
   const viewerMedia=()=>archiveWorks[current].video?video:image;
-  const chrome=()=>[...viewer.children].filter(child=>!child.classList.contains('obs-viewer-media')) as HTMLElement[];
+  // Phone case cards flatten their copy with display:contents, which ignores opacity:
+  // animate the real boxes inside instead.
+  const chrome=()=>[...viewer.children].filter(child=>!child.classList.contains('obs-viewer-media')).flatMap(child=>getComputedStyle(child).display==='contents'?[...child.children]:[child]) as HTMLElement[];
   function flight(from:DOMRect,to:DOMRect){
     // Differently shaped media (phone captures) cross-fade instead of stretching.
     if(!from.width||!to.width||Math.abs(from.width/from.height-to.width/to.height)/(to.width/to.height)>.25)return null;
@@ -148,12 +150,13 @@ export async function mountObservatory(root:HTMLElement){
     if(to&&visible&&!world?.isCalm()){
       video.pause();
       const end=flight(to,from);const duration=world?.mobile?520:760;
+      viewer.classList.add('is-closing');
       chrome().forEach(element=>element.animate([{opacity:1},{opacity:0}],{duration:220,fill:'forwards'}));
       const back=viewer.animate([{backgroundColor:'rgba(5,6,7,1)'},{backgroundColor:'rgba(5,6,7,0)'}],{duration,easing:'ease-in-out',fill:'forwards'});
       const move=media.animate(end?[{transform:'none',transformOrigin:'0 0'},{transform:end,transformOrigin:'0 0'}]:[{opacity:1},{opacity:0}],{duration,easing:handoffEase,fill:'forwards'});
       await move.finished.catch(()=>{});
       viewer.close();
-      move.cancel();back.cancel();viewer.getAnimations({subtree:true}).forEach(animation=>animation.cancel());
+      move.cancel();back.cancel();viewer.getAnimations({subtree:true}).forEach(animation=>animation.cancel());viewer.classList.remove('is-closing');
     }else viewer.close();
     closing=false;
   }
@@ -219,8 +222,9 @@ export async function mountObservatory(root:HTMLElement){
   async function leaveMap(index?:number){
     if(!world||!mapping)return;
     mapping=false;labelIndexButton();mapLabel.classList.remove('is-visible');world.mapHover=-1;stage.style.cursor='grab';
+    root.classList.add('is-map-leaving');
     const leaving=world.exitOverview(index);
-    await leaving;if(!mapping)root.classList.remove('is-overview');
+    await leaving;if(!mapping)root.classList.remove('is-overview','is-map-leaving');
   }
   indexButton.addEventListener('click',event=>{
     if(opening)return;
@@ -322,7 +326,7 @@ export async function mountObservatory(root:HTMLElement){
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
-    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);
     if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;
     // First visit of the session opens in darkness; the interface arrives with the light.
     if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}
