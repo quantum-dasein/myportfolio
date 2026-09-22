@@ -24,7 +24,7 @@ export async function mountObservatory(root:HTMLElement){
   let lastNavigation=0;
   let wheelDistance=0;
   let wheelTime=0;
-  let gesture:{x:number;y:number;id:number}|undefined;
+  let gesture:{x:number;y:number;id:number;axis:string}|undefined;
   let hoverTimer:ReturnType<typeof setTimeout>|undefined;
   let hover=false;
   let viewerTrigger:HTMLElement|null=null;
@@ -64,14 +64,28 @@ export async function mountObservatory(root:HTMLElement){
     root.querySelector('[data-obs-prev]')!.setAttribute('aria-label',de()?'Vorheriges Werk':'Previous work');
     root.querySelector('[data-obs-next]')!.setAttribute('aria-label',de()?'Nächstes Werk':'Next work');
   }
-  function navigate(index:number,throttle=false){
-    if(index<0||index>=archiveWorks.length||index===current||viewer.open||indexDialog.open||opening)return;
-    const now=performance.now();if(throttle&&now-lastNavigation<1250)return;lastNavigation=now;
-    const jump=Math.abs(index-current)>1;
-    current=index;world?.select(index);update();
-    if(jump&&!world?.isCalm())stage.animate([{opacity:.35},{opacity:1}],{duration:700,easing:'ease-out'});
+  // The hall is continuous: the world reports whichever work is in front of the camera.
+  const aimed=()=>world&&!world.disposed?world.targetIndex():current;
+  function setCurrent(index:number){
+    if(index===current)return;current=index;update();
     try{sessionStorage.setItem('rb-observatory-index',String(current));}catch{}
-    clearTimeout(hoverTimer);hover=false;stage.style.cursor='grab';
+    clearTimeout(hoverTimer);hover=false;
+  }
+  function navigate(index:number,throttle=false){
+    if(index<0||index>=archiveWorks.length||viewer.open||indexDialog.open||opening)return;
+    const now=performance.now();if(throttle&&now-lastNavigation<1250)return;lastNavigation=now;
+    if(!world){setCurrent(index);return;}
+    if(index===aimed()&&!world.isMoving())return;
+    const jump=Math.abs(index-current)>3;
+    world.select(index);if(world.isCalm())setCurrent(index);
+    if(jump&&!world.isCalm())stage.animate([{opacity:.35},{opacity:1}],{duration:700,easing:'ease-out'});
+  }
+  function revealShell(){
+    root.classList.remove('is-intro');
+    root.querySelectorAll<HTMLElement>('.obs-shell > *').forEach((element,i)=>{
+      const opacity=getComputedStyle(element).opacity;if(opacity==='0')return;
+      element.animate([{opacity:0,translate:'0 16px'},{opacity,translate:'0 0'}],{duration:900,delay:i*75,easing:'cubic-bezier(.2,.7,.2,1)',fill:'backwards'});
+    });
   }
   const detailsToggle=root.querySelector<HTMLButtonElement>('[data-obs-details]')!;
   detailsToggle.addEventListener('click',()=>{
@@ -175,8 +189,8 @@ export async function mountObservatory(root:HTMLElement){
   const labelCompare=()=>root.querySelectorAll<HTMLInputElement>('[data-obs-compare-range]').forEach(range=>range.setAttribute('aria-label',de()?'Szene und Markenversion vergleichen':'Compare scene and brand version'));
   labelCompare();
   root.querySelector('[data-obs-open]')!.addEventListener('click',openViewer,{signal});
-  root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(current-1),{signal});
-  root.querySelector('[data-obs-next]')!.addEventListener('click',()=>navigate(current+1),{signal});
+  root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(aimed()-1),{signal});
+  root.querySelector('[data-obs-next]')!.addEventListener('click',()=>navigate(aimed()+1),{signal});
   root.querySelector('[data-obs-index]')!.addEventListener('click',()=>{if(opening)return;world?.pause();clearTimeout(hoverTimer);indexDialog.showModal();},{signal});
   root.querySelector('[data-obs-close-index]')!.addEventListener('click',()=>indexDialog.close(),{signal});
   indexDialog.addEventListener('close',()=>world?.resume(),{signal});
@@ -187,34 +201,54 @@ export async function mountObservatory(root:HTMLElement){
   },{signal});
   stage.addEventListener('wheel',event=>{
     if(!root.classList.contains('is-ready')||viewer.open||indexDialog.open||opening)return;
-    event.preventDefault();const now=performance.now();if(now-wheelTime>180)wheelDistance=0;wheelTime=now;
-    wheelDistance+=event.deltaY*(event.deltaMode===1?16:1);
-    if(Math.abs(wheelDistance)>45){navigate(current+(wheelDistance>0?1:-1),true);wheelDistance=0;}
+    event.preventDefault();
+    const unit=event.deltaMode===1?16:event.deltaMode===2?innerHeight:1;
+    const delta=(Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:event.deltaY)*unit;
+    if(world&&!world.isCalm()){world.scrollBy(delta);return;}
+    const now=performance.now();if(now-wheelTime>180)wheelDistance=0;wheelTime=now;
+    wheelDistance+=delta;
+    if(Math.abs(wheelDistance)>45){navigate(aimed()+(wheelDistance>0?1:-1),true);wheelDistance=0;}
   },{passive:false,signal});
-  stage.addEventListener('pointerdown',event=>{gesture={x:event.clientX,y:event.clientY,id:event.pointerId};stage.setPointerCapture(event.pointerId);},{signal});
+  // Drag the hall: it follows the hand, a flick carries on, and it settles on a work.
+  const fluid=()=>Boolean(world&&!world.isCalm()&&root.classList.contains('is-ready'));
+  stage.addEventListener('pointerdown',event=>{
+    if(event.button>0||viewer.open||indexDialog.open||opening)return;
+    gesture={x:event.clientX,y:event.clientY,id:event.pointerId,axis:''};stage.setPointerCapture(event.pointerId);
+    if(fluid())world!.dragStart();
+  },{signal});
   stage.addEventListener('pointerup',event=>{
     if(!gesture)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
-    if(Math.max(Math.abs(dx),Math.abs(dy))>35)navigate(current+((Math.abs(dx)>Math.abs(dy)?-dx:-dy)<0?-1:1));
+    if(fluid()){world!.dragEnd();if(!gesture.axis&&world!.hit(event.clientX,event.clientY))openViewer();}
+    else if(Math.max(Math.abs(dx),Math.abs(dy))>35)navigate(aimed()+((Math.abs(dx)>Math.abs(dy)?-dx:-dy)<0?-1:1));
     else if(world?.hit(event.clientX,event.clientY))openViewer();
-    gesture=undefined;if(stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);
+    gesture=undefined;stage.style.cursor='grab';if(stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);
   },{signal});
-  stage.addEventListener('pointercancel',()=>{gesture=undefined;},{signal});
+  stage.addEventListener('pointercancel',()=>{world?.dragEnd();gesture=undefined;stage.style.cursor='grab';},{signal});
   stage.addEventListener('pointermove',event=>{
     if(!world||opening)return;world.pointer.set(event.clientX/innerWidth*2-1,-(event.clientY/innerHeight*2-1));
-    if(event.pointerType==='touch'||gesture)return;
+    if(gesture){
+      const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+      if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>6)gesture.axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
+      if(gesture.axis&&fluid()){
+        world.dragMove(gesture.axis==='x'?dx:dy,gesture.axis==='x'?stage.clientWidth:stage.clientHeight);
+        stage.style.cursor='grabbing';if(hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
+      }
+      return;
+    }
+    if(event.pointerType==='touch'||world.isMoving())return;
     const hit=world.hit(event.clientX,event.clientY);stage.style.cursor=hit?'pointer':'grab';
     if(hit&&!hover){hoverTimer=setTimeout(()=>world?.previewFilm(),300);hover=true;}
-    if(!hit&&hover){clearTimeout(hoverTimer);world.stopPreview();hover=false;}
+    if(!hit&&hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
   },{signal});
-  stage.addEventListener('pointerleave',()=>{clearTimeout(hoverTimer);world?.stopPreview();hover=false;if(world)world.pointer.set(0,0);},{signal});
+  stage.addEventListener('pointerleave',()=>{clearTimeout(hoverTimer);world?.endHover();hover=false;if(world)world.pointer.set(0,0);},{signal});
   document.addEventListener('keydown',event=>{
     if(opening){if(event.key==='Escape'){openToken++;opening=false;root.classList.remove('is-focusing');world?.restoreView();}return;}
     if(viewer.open||indexDialog.open||!root.classList.contains('is-ready'))return;
     if(event.altKey||event.ctrlKey||event.metaKey)return;
     if((event.target as HTMLElement).closest('button,a,input,textarea,select'))return;
     if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp','Home','End','Enter',' '].includes(event.key))event.preventDefault();
-    if(event.key==='ArrowRight'||event.key==='ArrowDown')navigate(current+1,true);
-    if(event.key==='ArrowLeft'||event.key==='ArrowUp')navigate(current-1,true);
+    if(event.key==='ArrowRight'||event.key==='ArrowDown')navigate(aimed()+1,Boolean(world?.isCalm()));
+    if(event.key==='ArrowLeft'||event.key==='ArrowUp')navigate(aimed()-1,Boolean(world?.isCalm()));
     if(event.key==='Home')navigate(0);if(event.key==='End')navigate(archiveWorks.length-1);
     if(event.key==='Enter'||event.key===' ')openViewer();
   },{signal});
@@ -230,11 +264,20 @@ export async function mountObservatory(root:HTMLElement){
     current=Number.isInteger(saved)&&saved>=0&&saved<archiveWorks.length?saved:0;
     update();
     if(bootFailed){fallback();return;}
-    world=new ObservatoryWorld(stage,fallback);await world.start(current);
+    let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
+    world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
+    // First visit of the session opens in darkness; the interface arrives with the light.
+    if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}
+    await world.start(current);
     if(world.disposed||bootFailed)return;
     root.classList.add('is-ready');
     // Reveal only after the selected bay, camera and actual first frame agree.
     await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
     finishBoot();window.dispatchEvent(new CustomEvent('rb:webgl-ready'));
+    if(root.classList.contains('is-intro')){
+      await world.beginIntro();
+      if(!world.disposed)revealShell();
+      try{sessionStorage.setItem('rb-observatory-intro','1');}catch{}
+    }
   }catch(error){console.warn('The Observatory: showing the accessible collection.',error);world?.dispose();fallback();}
 }

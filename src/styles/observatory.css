@@ -182,3 +182,7 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 .obs-process-steps li{font-size:13px;line-height:1.6;color:#b9c1c3;border-top:1px solid #ffffff1c;padding-top:14px}
 .obs-process-steps b{display:block;font:10px var(--obs-mono);letter-spacing:.12em;color:#fff;margin-bottom:8px}
 @media(max-width:600px){.obs-process{padding-top:36px;margin-top:32px}.obs-process-head{display:block}.obs-process-head h3{margin-top:10px;font-size:26px}.obs-process-steps{grid-template-columns:1fr;gap:16px}.obs-compare-line i{width:40px;height:40px;margin:-20px 0 0 -20px}}
+
+/* Opening sequence: the interface waits for the light. */
+.observatory.is-intro .obs-shell{opacity:0;pointer-events:none}
+.observatory.is-ready .obs-stage{cursor:grab}
