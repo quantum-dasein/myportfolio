@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Spatial from "../components/Spatial.astro";
-import ArchiveMobile from "../components/ArchiveMobile.astro";
+import Observatory from "../components/Observatory.astro";
 import { works } from "../data/works";
 ---
 
@@ -9,8 +8,8 @@ import { works } from "../data/works";
   mode="deck"
   title="3D, Motion & Creative Development Archive | Rodion Belousov"
   description="Explore Rodion Belousov's interactive archive of Cinema 4D and Redshift renders, After Effects motion design, product films and WebGL case studies."
-  image="/og/gallery.jpg"
-  imageAlt="Rodion Belousov — the archive: onyx-glass portals into 3D, motion and creative development work"
+  image="/og/observatory-astronaut.jpg"
+  imageAlt="Rodion Belousov — The Observatory: a spatial collection of 3D, motion and digital worlds"
   keywords={[
     "Cinema 4D artist Vienna",
     "Redshift renderer portfolio",
@@ -31,18 +30,16 @@ import { works } from "../data/works";
       thumbnailUrl: new URL(work.img, "https://rodionbelousov.studio").toString(),
       ...(work.video ? {
         contentUrl: new URL(work.video, "https://rodionbelousov.studio").toString(),
-        uploadDate: "2026-07-14",
       } : {}),
     })),
   }}
 >
   <section class="u-sr-only" aria-labelledby="archive-title">
-    <h1 id="archive-title">Cinema 4D, Redshift and Motion Design Archive</h1>
+    <h2 id="archive-title">Cinema 4D, Redshift and Motion Design Archive</h2>
     <p>Interactive portfolio by Rodion Belousov featuring 3D product visualization, architectural rendering, After Effects motion design, Premiere Pro editing, Photoshop art direction, Astro and Three.js development.</p>
     <ul>
       {works.map((work) => <li>{work.title ?? work.hrefLabel}</li>)}
     </ul>
   </section>
-  <ArchiveMobile />
-  <Spatial />
+  <Observatory />
 </Layout>

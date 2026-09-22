@@ -20,7 +20,7 @@
     visibility: visible;
     pointer-events: auto;
   }
-  .tunnel-black { position: absolute; inset: 0; background: #000; opacity: 0; }
+  .tunnel-black { position: absolute; z-index: 1; inset: 0; background: #000; opacity: 0; }
   :global(html.rb-warp-arriving) .tunnel-black { opacity: 1; }
   .tunnel-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .tunnel-hud {
@@ -71,7 +71,10 @@
   let completingBack = false;
   let rafId = 0;
   let safetyTimer = 0;
+  let arrivalAnimation: Animation | undefined;
+  let releaseArrival: (() => void) | undefined;
   let dir = 1;
+  let previousDraw = 0;
   const state = { speed: 0, alpha: 1 };
 
   // Size the canvas ONCE now — after W/H/focal are declared above. Calling
@@ -88,14 +91,14 @@
   };
 
   function resize() {
-    const dpr = lowPower ? 1 : Math.min(devicePixelRatio || 1, 1.45);
+    const dpr = 1;
     W = canvas.width = Math.floor(innerWidth * dpr);
     H = canvas.height = Math.floor(innerHeight * dpr);
     cx = W / 2; cy = H / 2; focal = W * .52;
   }
 
   function initStars() {
-    stars = Array.from({ length: lowPower ? 220 : 620 }, () => ({
+    stars = Array.from({ length: lowPower ? 280 : 640 }, () => ({
       x: (Math.random() * 2 - 1) * W,
       y: (Math.random() * 2 - 1) * H,
       z: Math.random() * W + 1,
@@ -103,11 +106,13 @@
     }));
   }
 
-  function draw() {
+  function draw(time = performance.now()) {
     if (!running) return;
+    const delta=previousDraw?Math.min((time-previousDraw)/16.667,2):1;
+    previousDraw=time;
     ctx.fillStyle = `rgba(0,0,0,${Math.max(.12, .46 - state.speed / 300)})`;
     ctx.fillRect(0, 0, W, H);
-    const speed = state.speed;
+    const speed = state.speed * delta;
     for (const star of stars) {
       const previous = star.z;
       star.z -= speed * dir;
@@ -141,10 +146,13 @@
 
   function reset() {
     clearTimeout(safetyTimer);
+    arrivalAnimation?.cancel();arrivalAnimation=undefined;
+    if(releaseArrival)removeEventListener('rb:observatory-ready',releaseArrival);
+    releaseArrival=undefined;
     running = false;
     cancelAnimationFrame(rafId);
-    gsap.killTweensOf([state, black, hud]);
-    state.speed = 0;
+    gsap.killTweensOf([state, black, hud, root]);
+    state.speed = 0;previousDraw=0;root.style.opacity="";
     black.style.opacity = "0";
     root.classList.remove("is-active");
     document.documentElement.classList.remove("rb-transitioning", "rb-warp-arriving");
@@ -159,7 +167,8 @@
     document.documentElement.classList.add("rb-transitioning");
     root.classList.add("is-active");
     initStars();
-    state.speed = 5;
+    state.speed = .65;previousDraw=0;
+    root.style.opacity="0";
     state.alpha = 1;
     black.style.opacity = "0";
     draw();
@@ -170,42 +179,59 @@
       clearTimeout(safetyTimer);
       complete();
     };
-    safetyTimer = window.setTimeout(finish, 1650);
+    const duration=reverse ? 1.15 : 1.85;
+    safetyTimer = window.setTimeout(finish, duration*1000+400);
+    // A visible gathering phase, then sustained acceleration and a short cover.
+    // Speeds are time-based, so 60 Hz phones and 144 Hz desktops feel the same.
     gsap.timeline({ onComplete: finish })
-      .to(hud, { opacity: 1, duration: .25 }, 0)
-      .to(state, { speed: 112, duration: 1.05, ease: "power3.in" }, 0)
-      .to(black, { opacity: 1, duration: .48, ease: "power2.in" }, .72);
+      .to(root, {opacity:1,duration:.26,ease:'power1.out'},0)
+      .to(hud, {opacity:1,duration:.35},.12)
+      .to(state, {speed:7,duration:duration*.35,ease:'power2.in'},0)
+      .to(state, {speed:40,duration:duration*.35,ease:'power2.in'},duration*.35)
+      .to(state, {speed:135,duration:duration*.3,ease:'power3.in'},duration*.7)
+      .to(black, {opacity:1,duration:.2,ease:'power2.in'},duration-.2);
   }
 
   function arrive(clearOrigin = false, reverse = false) {
-    if (reduced) { reset(); return; }
-    if (running) reset();
-    running = true;
-    dir = reverse ? -1 : 1;
-    document.documentElement.classList.add("rb-transitioning");
-    root.classList.add("is-active");
-    initStars();
-    state.speed = 105;
-    state.alpha = 1;
-    black.style.opacity = "1";
-    draw();
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(safetyTimer);
-        reset();
-        if (clearOrigin) {
-          sessionStorage.removeItem("rb-warp-origin");
-          sessionStorage.removeItem("rb-warp-scroll");
-          sessionStorage.removeItem("rb-warp-return");
-        }
+    reset();running=true;
+    document.documentElement.classList.add('rb-warp-arriving');
+    root.classList.add('is-active');black.style.opacity='1';hud.style.opacity='1';
+    const finish=()=>{
+      reset();
+      if(clearOrigin){
+        sessionStorage.removeItem('rb-warp-origin');sessionStorage.removeItem('rb-warp-scroll');sessionStorage.removeItem('rb-warp-return');
+      }
     };
-    safetyTimer = window.setTimeout(finish, 1750);
-    gsap.timeline({ onComplete: finish })
-      .to(black, { opacity: 0, duration: .7, ease: "power2.out" }, .12)
-      .to(state, { speed: 2.8, duration: 1.25, ease: "power3.out" }, 0)
-      .fromTo(hud, { opacity: 1 }, { opacity: 0, duration: .35 }, .62);
+    const reveal=()=>{
+      if(!releaseArrival)return;
+      removeEventListener('rb:observatory-ready',releaseArrival);releaseArrival=undefined;clearTimeout(safetyTimer);
+      if(reduced){finish();return;}
+      arrivalAnimation=root.animate([{opacity:1},{opacity:0}],{duration:reverse?1050:850,easing:'cubic-bezier(.22,.61,.36,1)'});
+      arrivalAnimation.onfinish=finish;
+      safetyTimer=window.setTimeout(finish,1500);
+    };
+    releaseArrival=reveal;
+    const gallery=document.querySelector('[data-observatory]');
+    if(isGallery&&gallery&&!gallery.classList.contains('is-ready')&&!gallery.classList.contains('is-fallback')){
+      addEventListener('rb:observatory-ready',reveal,{once:true});
+      // Independent of rendering: a failed WebGL boot exposes the real fallback.
+      safetyTimer=window.setTimeout(reveal,10500);
+    }else if(clearOrigin){
+      // Back can be a fresh document, not just BFCache. Restore after layout and
+      // synchronize Lenis too, or its next tick immediately snaps back to zero.
+      const y=Number(sessionStorage.getItem('rb-warp-scroll')||0);
+      const started=performance.now();let stable=0;
+      const restore=()=>{
+        if(!running)return;
+        (window as any).__rbLenis?.resize();
+        (window as any).__rbLenis?.scrollTo(y,{immediate:true,force:true});
+        scrollTo({top:y,behavior:'instant'});
+        stable=Math.abs(scrollY-y)<3?stable+1:0;
+        if((performance.now()-started>350&&stable>=4)||performance.now()-started>1400)reveal();
+        else requestAnimationFrame(restore);
+      };
+      requestAnimationFrame(restore);
+    }else requestAnimationFrame(()=>requestAnimationFrame(reveal));
   }
 
   function enterArchive(href: string) {
@@ -240,14 +266,6 @@
 
   addEventListener("popstate", () => {
     if (!isGallery || !sessionStorage.getItem("rb-warp-origin")) return;
-    if (lowPower) {
-      reset(); // kill any active warp before leaving so nothing streams on
-      sessionStorage.removeItem("rb-warp-return");
-      sessionStorage.removeItem("rb-warp-arrive");
-      sessionStorage.removeItem("rb-warp-origin");
-      history.back();
-      return;
-    }
     depart(() => {
       sessionStorage.setItem("rb-warp-arrive", "1");
       sessionStorage.setItem("rb-warp-return", "1");
@@ -262,7 +280,7 @@
   // pageshow safety net catches anything that still slips through.
   addEventListener("pagehide", () => reset());
   addEventListener("pageshow", (event) => {
-    if (event.persisted && running) reset();
+    if(event.persisted){reset();completingBack=false;}
     if (!event.persisted || sessionStorage.getItem("rb-warp-return") !== "1" || !originMatches()) return;
     reset();
     sessionStorage.removeItem("rb-warp-arrive");
@@ -272,11 +290,15 @@
 
   document.addEventListener("click", (event) => {
     const anchor = (event.target as HTMLElement)?.closest<HTMLAnchorElement>("a[data-tunnel]");
-    if (!anchor) return;
+    if (!anchor || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || anchor.target === "_blank") return;
     const url = new URL(anchor.href, location.href);
     event.preventDefault();
     if (isGallery && sessionStorage.getItem("rb-warp-origin")) {
       returnToOrigin();
+      return;
+    }
+    if(isGallery){
+      depart(()=>{sessionStorage.setItem('rb-warp-arrive','1');sessionStorage.setItem('rb-warp-return','1');navigate(url.href);},true);
       return;
     }
     if (url.pathname === location.pathname) return;

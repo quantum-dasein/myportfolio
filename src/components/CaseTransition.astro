@@ -120,7 +120,7 @@
 </style>
 
 <script>
-  import * as THREE from "three";
+  import type { Group, Mesh, Object3D, PerspectiveCamera, Scene, WebGLRenderer } from "three";
   import gsap from "gsap";
   // This site is a classic MPA — ClientRouter was removed. A module script is
   // deferred, so the DOM is already parsed when it runs; there is no page-load
@@ -129,6 +129,21 @@
 
   type CaseKind = "bridge" | "fidic";
   type TransitionOptions = { href: string; kind?: CaseKind; title?: string; sector?: number };
+  type ThreeModule = typeof import("../utils/threeRuntime");
+
+  // Three.js used to be part of every page's initial graph even though this
+  // canvas exists only for two optional case-study transitions. Keep the exact
+  // transition, but fetch and parse the engine only when a relevant link is
+  // approached or a transition actually starts.
+  let THREE: ThreeModule;
+  let threePromise: Promise<ThreeModule> | null = null;
+  const loadThree = () => {
+    threePromise ??= import("../utils/threeRuntime").then((module) => {
+      THREE = module;
+      return module;
+    });
+    return threePromise;
+  };
 
   declare global {
     interface Window {
@@ -162,14 +177,14 @@
     meter = root.querySelector<HTMLElement>("[data-transition-meter]")!;
     casePage = document.querySelector<HTMLElement>("[data-case-page]");
   }
-  let renderer: THREE.WebGLRenderer | null = null;
-  let scene: THREE.Scene | null = null;
-  let camera: THREE.PerspectiveCamera | null = null;
+  let renderer: WebGLRenderer | null = null;
+  let scene: Scene | null = null;
+  let camera: PerspectiveCamera | null = null;
   let frame = 0;
   let running = false;
   let completingBack = false;
   let clock = 0;
-  let animated: THREE.Object3D[] = [];
+  let animated: Object3D[] = [];
   let safetyTimer = 0;
 
   const normalize = (value: string) => new URL(value, location.href).href;
@@ -226,7 +241,7 @@
     disposeScene();
   }
 
-  function addStars(target: THREE.Scene) {
+  function addStars(target: Scene) {
     const count = lowPower ? 220 : 900;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -242,7 +257,7 @@
     animated.push(points);
   }
 
-  function bridgeWorld(target: THREE.Scene) {
+  function bridgeWorld(target: Scene) {
     const group = new THREE.Group();
     const graphite = new THREE.MeshPhysicalMaterial({ color: 0x111416, metalness: .86, roughness: .22, clearcoat: .82, transparent: true, opacity: .08 });
     const road = new THREE.MeshPhysicalMaterial({ color: 0x20252a, metalness: .7, roughness: .34, transparent: true, opacity: .08 });
@@ -317,7 +332,7 @@
     return group;
   }
 
-  function bookWorld(target: THREE.Scene) {
+  function bookWorld(target: Scene) {
     const book = new THREE.Group();
     const atlasTexture = (pageIndex: number, cover = false) => {
       const textureCanvas = document.createElement("canvas");
@@ -491,9 +506,17 @@
     else reveal();
   }
 
-  function play(kind: CaseKind, direction: "depart" | "exit", done?: () => void) {
+  async function play(kind: CaseKind, direction: "depart" | "exit", done?: () => void) {
     if (running) return;
     running = true;
+    try {
+      await loadThree();
+    } catch {
+      running = false;
+      if (done) done();
+      else reset();
+      return;
+    }
     const returning = direction === "exit";
     const isDe = document.documentElement.lang === "de-AT";
     document.documentElement.classList.add("rb-transitioning");
@@ -515,7 +538,7 @@
       else reset();
     };
     safetyTimer = window.setTimeout(finish, 3000);
-    let object: THREE.Group;
+    let object: Group;
     try { object = init(kind); }
     catch { finish(); return; }
     if (!camera) { finish(); return; }
@@ -543,7 +566,7 @@
         gsap.set(item.position, { x: 0, y: 0, z: returning ? item.userData.finalZ : item.userData.finalZ - 28 - (i % 5) * 2 });
         gsap.set(item.rotation, { z: 0 });
         gsap.set(item.scale, { x: returning ? 1 : .42 });
-        gsap.set((item as THREE.Mesh).material, { opacity: returning ? .94 : .06 });
+        gsap.set((item as Mesh).material, { opacity: returning ? .94 : .06 });
       });
       lanes.forEach((item, i) => gsap.set(item.position, { z: returning ? item.userData.finalZ : item.userData.finalZ - 28 - (i % 7) }));
       towers.forEach((item) => gsap.set(item.scale, { y: returning ? 1 : .015 }));
@@ -587,7 +610,7 @@
         decks.forEach((item, i) => {
           tl.to(item.position, { z: item.userData.finalZ, duration: .68, ease: "back.out(1.18)" }, i * .022)
             .to(item.scale, { x: 1, duration: .52 }, i * .022)
-            .to((item as THREE.Mesh).material, { opacity: .94, duration: .52 }, .22 + i * .016);
+            .to((item as Mesh).material, { opacity: .94, duration: .52 }, .22 + i * .016);
         });
         lanes.forEach((item, i) => tl.to(item.position, { z: item.userData.finalZ, duration: .58 }, .18 + i * .009));
         towers.forEach((item, i) => tl.to(item.scale, { y: 1, duration: .85, ease: "power4.out" }, .48 + i * .16));
@@ -613,7 +636,7 @@
           const side = i % 2 === 0 ? -1 : 1;
           tl.to(item.position, { x: side * (2.4 + (i % 5) * .45), y: .3 + (i % 4) * .18, z: item.userData.finalZ - 10, duration: .72, ease: "power3.in" }, .4 + i * .012)
             .to(item.rotation, { z: side * (.04 + (i % 3) * .025), duration: .64 }, .4 + i * .012)
-            .to((item as THREE.Mesh).material, { opacity: 0, duration: .5 }, .52 + i * .009);
+            .to((item as Mesh).material, { opacity: 0, duration: .5 }, .52 + i * .009);
         });
         towers.forEach((item, i) => tl.to(item.scale, { y: .015, duration: .62, ease: "power3.in" }, .7 + i * .12));
         // Camera pulls back from t=0 (motion is immediate) and the canvas fades
@@ -761,6 +784,17 @@
   }
 
   window.__rbCaseTransition = navigate;
+
+  const prewarmCaseTransition = (event: Event) => {
+    if (lowPower || !(event.target instanceof Element)) return;
+    const link = event.target.closest<HTMLAnchorElement>("a[data-case-link], a[data-case-back], a[data-case-exit]");
+    if (!link) return;
+    if (link.hasAttribute("data-case-link") && !kindFromHref(link.href)) return;
+    if (!casePage && !link.hasAttribute("data-case-link")) return;
+    void loadThree();
+  };
+  document.addEventListener("pointerover", prewarmCaseTransition, { passive: true });
+  document.addEventListener("focusin", prewarmCaseTransition, { passive: true });
 
   document.addEventListener("click", (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

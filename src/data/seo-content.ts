@@ -208,7 +208,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     scope: "showreel",
     proofKind: "standard",
     cases: ["bridge", "fidic"],
-    reel: ["lake-como-interior-film"],
+    reel: ["lake-como-interior-film", "refurbed-product-ecosystem-concept"],
     paths: { en: "/en/creative-development-vienna/", de: "/de/creative-development-wien/" },
     title: c("Creative development that still loads fast.", "Creative Development, das trotzdem schnell lädt."),
     description: c(
@@ -217,8 +217,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     ),
     eyebrow: c("Creative Development / Vienna", "Creative Development / Wien"),
     lead: c(
-      "The bespoke WebGL on this site — the object in the hero, an archive you fly through, two case openings drawn for their own projects — while the page you are reading still hits a one-second LCP. That is the discipline: motion that argues for the brand, cut the moment it costs more than it returns.",
-      "Die eigenen WebGL-Szenen auf dieser Website — das Objekt im Hero, ein Archiv, durch das Sie fliegen, zwei Case-Öffnungen, für ihr jeweiliges Projekt gezeichnet — während die Seite, die Sie gerade lesen, trotzdem einen LCP von einer Sekunde erreicht. Das ist die Disziplin: Motion, die für die Marke argumentiert — und die fliegt, sobald sie mehr kostet als sie bringt.",
+      "The bespoke WebGL on this site — the object in the hero, an exhibition you walk through, two case openings drawn for their own projects — while the page you are reading still hits a one-second LCP. That is the discipline: motion that argues for the brand, cut the moment it costs more than it returns.",
+      "Die eigenen WebGL-Szenen auf dieser Website — das Objekt im Hero, eine Ausstellung, durch die Sie gehen, zwei Case-Öffnungen, für ihr jeweiliges Projekt gezeichnet — während die Seite, die Sie gerade lesen, trotzdem einen LCP von einer Sekunde erreicht. Das ist die Disziplin: Motion, die für die Marke argumentiert — und die fliegt, sobald sie mehr kostet als sie bringt.",
     ),
     capabilities: [
       { title: c("Real-time and WebGL", "Real-time und WebGL"), text: c("Three.js and hand-written GLSL where the subject genuinely benefits — a raymarched glass form behind the type, a bridge that assembles itself as its case study opens, a contract atlas that unfolds. Four scenes on FIDIC.uz, each loaded only on the page that uses it and only once the browser is idle.", "Three.js und handgeschriebenes GLSL dort, wo das Thema wirklich profitiert — eine raymarchte Glasform hinter der Typografie, eine Brücke, die sich beim Öffnen ihrer Case Study zusammensetzt, ein Vertragsatlas, der sich aufblättert. Vier Szenen auf FIDIC.uz, jede nur auf ihrer Seite geladen und erst, wenn der Browser Leerlauf hat.") },
@@ -232,7 +232,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       // works in it; adding the Academy case made that a stale number nobody
       // would have caught, because it is plausible either way — which is the
       // whole failure mode this file's numbers are prone to.
-      { value: String(works.length), label: c("interactive archive sectors", "interaktive Archiv-Sektoren"), note: c("three case portals and nine 3D works", "drei Case-Portale und neun 3D-Arbeiten") },
+      { value: String(works.length), label: c("interactive archive sectors", "interaktive Archiv-Sektoren"), note: c("three case portals, ten 3D works and two event films", "drei Case-Portale, zehn 3D-Arbeiten und zwei Eventfilme") },
       { value: "60 FPS", label: c("target for motion and WebGL experiences", "Zielwert für Motion- und WebGL-Erlebnisse"), note: c("measured on a mid-range phone, not a workstation", "auf einem Mittelklasse-Handy gemessen, nicht auf einer Workstation") },
       { value: "~3 s", label: c("before the WebGL chunk starts downloading at all", "bis der WebGL-Chunk überhaupt zu laden beginnt"), note: c("well past the window that decides LCP", "weit nach dem Fenster, das den LCP entscheidet") },
     ],
@@ -265,7 +265,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     // The two cases whose sites carry motion of their own — a background film
     // on one, CSS-only motion on the other. Not FIDIC: it is a text platform.
     cases: ["bridge", "academy"],
-    reel: ["squidz-pos-display", "lake-como-interior-film", "alpine-equipment-product-film", "fidic-osh-first-meeting", "summer-school-georgia-2026"],
+    reel: ["squidz-pos-display", "lake-como-interior-film", "alpine-equipment-product-film", "refurbed-product-ecosystem-concept", "fidic-osh-first-meeting", "summer-school-georgia-2026"],
     paths: { en: "/en/3d-animation-video-vienna/", de: "/de/3d-animation-video-wien/" },
     title: c("Video, reels and 3D animation in Vienna.", "Video, Reels und 3D-Animation in Wien."),
     description: c(
@@ -322,7 +322,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       },
     ],
     proof: [
-      { value: "09", label: c("3D works in the public archive — six stills, three films", "3D-Arbeiten im öffentlichen Archiv — sechs Stills, drei Filme") },
+      { value: String(works.filter((work) => work.type === "reel" && work.ratio !== "vertical").length).padStart(2, "0"), label: c("3D works in the public archive — six stills, four films", "3D-Arbeiten im öffentlichen Archiv — sechs Stills, vier Filme") },
       { value: "SIEMENS", label: c("two years of 2D tutorial and safety video for WinCC OA", "zwei Jahre 2D-Tutorial- und Safety-Video für WinCC OA") },
       { value: "C4D + RS", label: c("Cinema 4D and Redshift, cut in After Effects and Premiere", "Cinema 4D und Redshift, geschnitten in After Effects und Premiere") },
     ],

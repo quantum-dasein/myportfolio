@@ -162,13 +162,13 @@ const cards = [
     en: {
       eyebrow: "3D & Motion / Vienna",
       title: "3D animation\nand video.",
-      spec: [["From", "€890"], ["Pipeline", "C4D + Redshift"], ["In the archive", "9 works"]],
+      spec: [["From", "€890"], ["Pipeline", "C4D + Redshift"], ["In the archive", "10 works"]],
       foot: "PRODUCT FILM · INTERIORS · EXPLAINERS · WEB LOOPS",
     },
     de: {
       eyebrow: "3D & Motion / Wien",
       title: "3D-Animation\nund Video.",
-      spec: [["Ab", "890 €"], ["Pipeline", "C4D + Redshift"], ["Im Archiv", "9 Arbeiten"]],
+      spec: [["Ab", "890 €"], ["Pipeline", "C4D + Redshift"], ["Im Archiv", "10 Arbeiten"]],
       foot: "PRODUKTFILM · INTERIEUR · ERKLÄRVIDEO · WEB-LOOPS",
     },
   },
@@ -613,6 +613,7 @@ let written = 0;
 let missingPlates = new Set();
 
 for (const card of cards) {
+  if (process.argv[2] && card.file !== process.argv[2]) continue;
   for (const lang of ["en", "de"]) {
     const copy = card[lang];
     if (!copy) continue;

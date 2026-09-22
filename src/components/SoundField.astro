@@ -68,7 +68,8 @@
   }
 
   const isCalm = () => document.documentElement.classList.contains("rb-calm");
-  const level = () => (enabled && !isCalm() && !document.hidden ? 1 : 0);
+  let exhibitionFilmOpen = false;
+  const level = () => (enabled && !isCalm() && !document.hidden && !exhibitionFilmOpen ? 1 : 0);
 
   function ensureContext() {
     if (ctx) return ctx;
@@ -270,6 +271,10 @@
   }, { passive: true });
 
   addEventListener("rb:calmchange", () => fade(level(), 0.35));
+  addEventListener("rb:exhibition-film", (event) => {
+    exhibitionFilmOpen = Boolean((event as CustomEvent).detail);
+    fade(level(), 0.3);
+  });
 
   // The secret transmission opening — a heavier cue than a click, if sound is on.
   addEventListener("rb:egg", () => play("thunk", THUNK_LEVEL));

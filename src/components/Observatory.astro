@@ -1,0 +1,84 @@
+---
+import { archiveRooms, archiveWorks } from '../data/observatory';
+import { observatoryProcess } from '../data/observatory-process';
+import MusicCredit from './MusicCredit.astro';
+import ObservatoryIcon from './ObservatoryIcon.astro';
+import '../styles/observatory.css';
+const title = (work: typeof archiveWorks[number]) => work.title ?? work.hrefLabel;
+---
+<script is:inline>
+  document.documentElement.classList.add('obs-booting');
+  window.__obsBootExpired = false;
+  window.__obsBootTimer = setTimeout(() => {
+    window.__obsBootExpired = true;
+    document.documentElement.classList.remove('obs-booting');
+    window.dispatchEvent(new Event('rb:observatory-timeout'));
+  }, 10000);
+</script>
+<section class="observatory" data-observatory aria-label="The Observatory — interactive portfolio">
+  <div class="obs-boot" role="status"><span class="obs-boot-orbit" aria-hidden="true"></span><span>THE OBSERVATORY</span><small class="obs-en">Entering the collection</small><small class="obs-de">Die Sammlung öffnet sich</small></div>
+  <div class="obs-stage" data-obs-stage aria-hidden="true"></div>
+  <div class="obs-shell">
+    <div class="obs-topline"><span>RB / THE OBSERVATORY</span><div class="obs-toolbar"><button class="obs-details-toggle" data-obs-details aria-expanded="false" aria-controls="obs-current-meta obs-room-meta"><span class="obs-en">Details</span><span class="obs-de">Details</span></button><button class="obs-index-toggle" data-obs-index><span class="obs-en">All works</span><span class="obs-de">Alle Arbeiten</span><ObservatoryIcon name="grid" /></button></div></div>
+    <div class="obs-intro">
+      <span class="obs-eyebrow"><span class="obs-en">A collection outside of time</span><span class="obs-de">Eine Sammlung außerhalb der Zeit</span></span>
+      <h1>The<br /><em>Observatory.</em></h1>
+      <p><span class="obs-en">Spaces. Objects. Moving images.<br />A walk through the work of Rodion Belousov.</span><span class="obs-de">Räume. Objekte. Bewegte Bilder.<br />Ein Rundgang durch Rodion Belousovs Arbeiten.</span></p>
+      <span class="obs-intro-rule"></span>
+    </div>
+    <div class="obs-room-sign" id="obs-room-meta"><span data-obs-room-number>01 / 04</span><span data-obs-room-name>Atmospheres</span><i></i></div>
+    <div class="obs-instructions"><span class="obs-scroll-symbol" aria-hidden="true"></span><span class="obs-en">Scroll or swipe to explore · Click the artwork to enter</span><span class="obs-de">Scrollen oder wischen · Zum Öffnen auf das Werk klicken</span></div>
+    <div class="obs-current" aria-live="polite" aria-atomic="true">
+      <span class="obs-eyebrow" id="obs-current-meta"><span data-obs-number>01</span><span class="obs-divider">/</span><span data-obs-category>3D Interior</span></span>
+      <h2 data-obs-title>{title(archiveWorks[0])}</h2>
+      <p data-obs-room-description>{archiveRooms[0].subtitle.en}</p>
+    </div>
+    <div class="obs-actions">
+      <button class="obs-open" data-obs-open><span class="obs-en">View work</span><span class="obs-de">Werk ansehen</span><ObservatoryIcon name="open" /></button>
+      <div class="obs-stepper"><button data-obs-prev aria-label="Previous work"><ObservatoryIcon name="previous" /></button><span><b data-obs-position>01</b> / {String(archiveWorks.length).padStart(2,'0')}</span><button data-obs-next aria-label="Next work"><ObservatoryIcon name="next" /></button></div>
+    </div>
+    <nav class="obs-journey" aria-label="Exhibition rooms">
+      {archiveRooms.map((room, roomIndex) => <button data-obs-room={roomIndex} aria-current={roomIndex===0 ? 'step' : undefined}><span class="obs-room-track"><i data-obs-room-progress={roomIndex}></i></span><span class="obs-room-label"><b>0{roomIndex+1}</b><span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span><small>{String(room.ids.length).padStart(2,'0')}</small></span></button>)}
+    </nav>
+    <span class="obs-signature">CURATED BY RODION BELOUSOV · VIENNA</span>
+  </div>
+
+  <dialog class="obs-index" data-obs-index-dialog aria-labelledby="obs-index-title" data-lenis-prevent>
+    <header><div><span class="obs-eyebrow">THE OBSERVATORY / INDEX</span><h2 id="obs-index-title"><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2></div><button data-obs-close-index aria-label="Close index"><ObservatoryIcon name="close" /></button></header>
+    {archiveRooms.map((room, roomIndex) => <section><h3>0{roomIndex+1} / <span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span></h3><div class="obs-index-works">{archiveWorks.filter(work => work.roomIndex===roomIndex).map(work => <button data-obs-select={archiveWorks.indexOf(work)}><img src={work.img} alt="" loading="lazy" width="160" height="100" /><span><b>{title(work)}</b><small>{work.video ? 'FILM' : work.type==='case' ? 'WEB / CASE STUDY' : '3D / STILL'}</small></span><ObservatoryIcon name="open" /></button>)}</div></section>)}
+    <footer class="obs-credits"><span class="obs-en">Custom procedural spacesuit, woven textile textures and equipment. Rig &amp; animation:</span><span class="obs-de">Prozeduraler Raumanzug mit gewebten Texturen und Ausrüstung. Rig &amp; Animation:</span> <a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo / Xbot</a>, via <a href="https://threejs.org/examples/webgl_animation_skinning_additive_blending.html" target="_blank" rel="noopener">Three.js</a>.</footer>
+  </dialog>
+
+  <dialog class="obs-viewer" data-obs-viewer aria-labelledby="obs-viewer-title" data-lenis-prevent>
+    <header><span class="obs-eyebrow" data-obs-viewer-meta tabindex="-1" autofocus></span><button data-obs-close-viewer aria-label="Back to the gallery"><span class="obs-en">Back to the gallery</span><span class="obs-de">Zurück zur Galerie</span> <ObservatoryIcon name="close" /></button></header>
+    <div class="obs-viewer-media"><picture data-obs-viewer-picture><source data-obs-viewer-mobile media="(max-width: 600px)" /><img data-obs-viewer-image alt="" hidden /></picture><video data-obs-viewer-video controls playsinline preload="none" hidden></video></div>
+    <div class="obs-viewer-copy"><div><h2 id="obs-viewer-title" data-obs-viewer-title></h2><span class="obs-eyebrow" data-obs-viewer-tools></span></div><div><p data-obs-viewer-description></p><a data-obs-viewer-link href="/" hidden><span class="obs-en">Open project</span><span class="obs-de">Projekt öffnen</span> <ObservatoryIcon name="open" /></a>{archiveWorks.filter(work=>work.musicCredit).map(work=><div data-obs-credit={work.id} hidden><MusicCredit credit={work.musicCredit!}/></div>)}</div></div>
+    {Object.entries(observatoryProcess).map(([id, process]) => (
+      <section class="obs-process" data-obs-process={id} hidden>
+        <div class="obs-process-head"><span class="obs-eyebrow"><span class="obs-en">Process</span><span class="obs-de">Prozess</span></span><h3><span class="obs-en">{process.heading[0]}</span><span class="obs-de">{process.heading[1]}</span></h3></div>
+        <div class="obs-compare" data-obs-compare style="--split:50%">
+          <img src={process.after} alt="" loading="lazy" width="1280" height="720" />
+          <img class="obs-compare-before" src={process.before} alt="" loading="lazy" width="1280" height="720" />
+          <span class="obs-compare-line" aria-hidden="true"><i></i></span>
+          <span class="obs-compare-label is-before" aria-hidden="true">01 <span class="obs-en">{process.labels[0][0]}</span><span class="obs-de">{process.labels[0][1]}</span></span>
+          <span class="obs-compare-label is-after" aria-hidden="true">02 <span class="obs-en">{process.labels[1][0]}</span><span class="obs-de">{process.labels[1][1]}</span></span>
+          <input type="range" min="0" max="100" value="50" data-obs-compare-range aria-label="Compare scene and brand version" />
+        </div>
+        <ol class="obs-process-steps">{process.steps.map((step, index) => <li><b>0{index + 1}</b><span class="obs-en">{step[0]}</span><span class="obs-de">{step[1]}</span></li>)}</ol>
+      </section>
+    ))}
+    <details class="obs-notes" data-obs-notes>
+      <summary><span class="obs-en">Studio notes</span><span class="obs-de">Notizen zum Projekt</span><ObservatoryIcon name="next" /></summary>
+      <dl><div><dt><span class="obs-en">Focus</span><span class="obs-de">Fokus</span></dt><dd data-obs-note-focus></dd></div><div><dt><span class="obs-en">Approach</span><span class="obs-de">Ansatz</span></dt><dd data-obs-note-approach></dd></div><div data-obs-note-role-row hidden><dt><span class="obs-en">Contribution</span><span class="obs-de">Beitrag</span></dt><dd data-obs-note-role></dd></div></dl>
+    </details>
+  </dialog>
+
+  <div class="obs-fallback">
+    <header><span class="obs-eyebrow">RB / THE OBSERVATORY</span><h2><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2><p><span class="obs-en">3D, motion and digital worlds by Rodion Belousov.</span><span class="obs-de">3D, Motion und digitale Welten von Rodion Belousov.</span></p></header>
+    <div class="obs-fallback-grid">{archiveWorks.map(work=><a href={work.video ?? work.href}><img src={work.img} alt={title(work)} loading="lazy" width="640" height="400"/><span>{title(work)}</span></a>)}</div>
+  </div>
+</section>
+<script>
+  import { mountObservatory } from '../scripts/observatory';
+  mountObservatory(document.querySelector<HTMLElement>('[data-observatory]')!);
+</script>

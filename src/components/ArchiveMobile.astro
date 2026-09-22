@@ -15,6 +15,7 @@
 //  like on desktop.
 // ─────────────────────────────────────────────────────────────────────────────
 import { works } from "../data/works";
+import MusicCredit from "./MusicCredit.astro";
 import { ui } from "../i18n/ui";
 
 const en = ui.en as Record<string, string>;
@@ -102,6 +103,7 @@ const total = String(works.length).padStart(2, "0");
             )}
           </p>
           {w.detail?.tools && <span class="ma-tools mono dim">{w.detail.tools}</span>}
+          {w.musicCredit && <MusicCredit credit={w.musicCredit} />}
           {w.video ? (
             <button class="ma-link mono" type="button" data-ma-play>PLAY FILM<i aria-hidden="true"></i></button>
           ) : (

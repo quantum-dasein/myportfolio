@@ -69,7 +69,7 @@
 
 <script>
   const canvas = document.querySelector<HTMLCanvasElement>("[data-scope-field]");
-  const ctx = canvas?.getContext("2d", { alpha: true });
+  const ctx = canvas?.getContext("2d", { alpha: true, desynchronized: true });
 
   if (canvas && ctx) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -85,7 +85,11 @@
       /(^|-)2g$/.test(nav.connection?.effectiveType || "") ||
       (nav.deviceMemory !== undefined && nav.deviceMemory <= 2);
 
-    const COUNT = coarse ? 130 : 260;
+    // This is an ambient field, not a game surface. A restrained geometry and
+    // 30 fps look identical at its rotation speed while cutting the busiest
+    // part of this page's paint work by roughly half.
+    const COUNT = coarse ? 108 : 220;
+    const FRAME_MS = 1000 / 30;
     type Node = { x: number; y: number; z: number; lit: number; target: number };
 
     // Fibonacci sphere: an even spread with no seams or polar clustering, and
@@ -114,13 +118,14 @@
     let height = 0;
     let dpr = 1;
     let frame = 0;
+    let lastTick = 0;
     let kick = 0;
     let visible = true;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      dpr = Math.min(devicePixelRatio || 1, coarse ? 1.5 : 2);
+      dpr = Math.min(devicePixelRatio || 1, coarse ? 1.25 : 1.5);
       width = rect.width;
       height = rect.height;
       canvas.width = Math.round(width * dpr);
@@ -189,21 +194,27 @@
       }
     };
 
-    const tick = () => {
+    const tick = (now: number) => {
       if (!visible) { frame = 0; return; }
-      spin += 0.0016 + kick;
-      kick *= 0.9;
-      if (kick < 0.0002) kick = 0;
-      pointerX += (targetX - pointerX) * 0.05;
-      pointerY += (targetY - pointerY) * 0.05;
-      draw();
+      const elapsed = lastTick ? now - lastTick : FRAME_MS;
+      if (elapsed >= FRAME_MS) {
+        const step = Math.min(2.5, elapsed / (1000 / 60));
+        lastTick = now - (elapsed % FRAME_MS);
+        spin += (0.0016 + kick) * step;
+        kick *= Math.pow(0.9, step);
+        if (kick < 0.0002) kick = 0;
+        const follow = 1 - Math.pow(0.95, step);
+        pointerX += (targetX - pointerX) * follow;
+        pointerY += (targetY - pointerY) * follow;
+        draw();
+      }
       frame = requestAnimationFrame(tick);
     };
 
     const start = () => {
       if (!frame && visible && !reduced && !frugal) frame = requestAnimationFrame(tick);
     };
-    const stop = () => { cancelAnimationFrame(frame); frame = 0; };
+    const stop = () => { cancelAnimationFrame(frame); frame = 0; lastTick = 0; };
 
     resize();
     addEventListener("resize", () => { resize(); draw(); }, { passive: true });

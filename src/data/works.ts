@@ -25,6 +25,7 @@ export interface Work {
   kText?: string;
   href: string;
   hrefLabel: string;
+  musicCredit?: { title: string; artist: string; url: string; license: string; licenseUrl: string };
   detail?: {
     tools: string;
     en: string;
@@ -193,6 +194,21 @@ export const works: Work[] = [
     },
   },
   {
+    id: "refurbed-product-ecosystem-concept",
+    img: "/portfolio/rodion-belousov-refurbed-product-ecosystem-concept-poster.webp",
+    video: "/portfolio/video/rodion-belousov-refurbed-product-ecosystem-concept-scored.mp4",
+    type: "reel",
+    title: "Refurbed — Product Ecosystem (Concept)",
+    kCat: "gallery.8.cat",
+    href: "/portfolio/video/rodion-belousov-refurbed-product-ecosystem-concept-scored.mp4",
+    hrefLabel: "PLAY FILM",
+    detail: {
+      tools: "CINEMA 4D / AFTER EFFECTS",
+      en: "An independent concept film for Refurbed: laptops, phones and tablets move through colourful workspaces, product stages and a playful children's room. 3D scene design, camera animation and screen compositing in Cinema 4D and After Effects. Self-initiated spec work; not commissioned by or affiliated with Refurbed.",
+      de: "Ein unabhängiger Konzeptfilm für Refurbed: Laptops, Smartphones und Tablets in farbenfrohen Arbeitswelten, auf Produktpodesten und in einem verspielten Kinderzimmer. 3D-Szenengestaltung, Kameraanimation und Screen-Compositing in Cinema 4D und After Effects. Freies Konzeptprojekt; kein Auftrag von oder Zusammenarbeit mit Refurbed.",
+    },
+  },
+  {
     id: "fidic-osh-first-meeting",
     img: "/portfolio/rodion-belousov-fidic-osh-first-meeting-event-reel-cover.webp",
     video: "/portfolio/video/rodion-belousov-fidic-osh-first-meeting-event-reel.mp4",
@@ -210,18 +226,22 @@ export const works: Work[] = [
   },
   {
     id: "summer-school-georgia-2026",
-    img: "/portfolio/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel-cover.webp",
-    video: "/portfolio/video/rodion-belousov-summer-school-georgia-2026-delay-analysis-reel.mp4",
+    img: "/portfolio/rodion-belousov-bridge-consult-georgia-summer-school-2026-cover.webp",
+    video: "/portfolio/video/rodion-belousov-bridge-consult-georgia-summer-school-2026.mp4",
     ratio: "vertical",
     type: "reel",
     title: "Summer School Georgia 2026",
     kCat: "gallery.7.cat",
     href: "https://t.me/fidicuzb",
     hrefLabel: "PLAY REEL",
+    musicCredit: {
+      title: "Felicity", artist: "Scott Buckley", url: "https://www.scottbuckley.com.au/",
+      license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    },
     detail: {
       tools: "ON LOCATION / PREMIERE PRO",
-      en: "Three days of advanced contract management in Borjomi — 41 practical questions across 18 blocks, from programme and delay analysis through variations and claims to DAAB and arbitration. Cut from the week's footage into something the client could publish while the cohort was still in the room.",
-      de: "Drei Tage Advanced Contract Management in Bordschomi — 41 Praxisfragen in 18 Blöcken, von Programme und Delay Analysis über Variations und Claims bis DAAB und Schiedsverfahren. Aus dem Material der Woche zu etwas geschnitten, das der Kunde publizieren konnte, solange die Gruppe noch im Raum saß.",
+      en: "Bridge Consult's Summer School in Georgia, 2026 — a vertical event film connecting Borjomi's landscape with workshops, delay analysis, group discussions and the people behind the programme.",
+      de: "Bridge Consults Summer School in Georgien, 2026 — ein vertikaler Eventfilm, der Bordschomis Landschaft mit Workshops, Verzögerungsanalysen, Gruppendiskussionen und den Menschen hinter dem Programm verbindet.",
     },
   },
 ];

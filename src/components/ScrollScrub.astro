@@ -3,7 +3,7 @@
 //  ScrollScrub.astro — Apple-style scroll-scrubbed product film.
 //
 //  A tall section with a sticky viewport; scroll progress is mapped straight
-//  onto video.currentTime, so Rodion's 3D product animation turns under the
+//  onto independently decoded film frames, so the animation turns under the
 //  visitor's own scroll instead of autoplaying past them.
 //
 //  Sticky (CSS) rather than a GSAP pin: no pin-spacer to fight with Lenis.
@@ -11,6 +11,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 interface Props {
   video: string;
+  sequence?: string;
+  frames?: number;
   poster: string;
   eyebrowKey?: string;
   titleKey?: string;
@@ -20,10 +22,10 @@ interface Props {
   text?: string;
 }
 
-const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = Astro.props;
+const { video, poster, sequence, frames = 360, eyebrowKey, titleKey, textKey, eyebrow, title, text } = Astro.props;
 ---
 
-<section class="scrub" data-scrub>
+<section class="scrub" data-scrub data-sequence={sequence} data-frames={frames}>
   <div class="scrub-sticky">
     <video
       class="scrub-vid"
@@ -35,6 +37,7 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
       aria-hidden="true"
       data-scrub-video></video>
 
+    <canvas class="scrub-vid scrub-sequence" data-scrub-canvas width="1280" height="720" hidden aria-hidden="true"></canvas>
     <div class="scrub-veil" aria-hidden="true"></div>
 
     <div class="scrub-copy">
@@ -78,6 +81,8 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
        the render actually read. */
     filter: contrast(1.12) brightness(0.92) saturate(0.62);
   }
+
+  .scrub-sequence[hidden] { display: none; }
 
   .scrub-veil {
     position: absolute;
@@ -196,99 +201,6 @@ const { video, poster, eyebrowKey, titleKey, textKey, eyebrow, title, text } = A
 </style>
 
 <script>
-  import gsap from "gsap";
-  import ScrollTrigger from "gsap/ScrollTrigger";
-
-  gsap.registerPlugin(ScrollTrigger);
-
-  const section = document.querySelector<HTMLElement>("[data-scrub]");
-  const video = document.querySelector<HTMLVideoElement>("[data-scrub-video]");
-  const bar = document.querySelector<HTMLElement>("[data-scrub-bar]");
-  const frame = document.querySelector<HTMLElement>("[data-scrub-frame]");
-
-  if (section && video) {
-    const coarse = matchMedia("(pointer: coarse)").matches;
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // ── Attach the source late ────────────────────────────────────────────
-    // The film is ~13 MB. Shipped as `src` + `preload="auto"` in the markup it
-    // was pulled in full on first paint, from the top of the page, for every
-    // visitor — this section starts three screens down. On a phone on a weak
-    // connection that saturates the pipe for minutes: the page paints, then
-    // sits there feeling frozen while the video streams in behind it. The
-    // poster carries the section until the source is actually wanted.
-    const conn = (navigator as any).connection;
-    const frugal = !!conn && (conn.saveData === true || /(^|\W)2g$/.test(conn.effectiveType || ""));
-    const attach = (mode: "metadata" | "auto") => {
-      if (video.dataset.scrubAttached || frugal) return;
-      video.dataset.scrubAttached = "1";
-      video.preload = mode;
-      video.src = video.dataset.scrubSrc || "";
-    };
-
-    if (coarse || reduced) {
-      // fallback: just play it — and only fetch it once it is actually on screen
-      video.loop = true;
-      const io = new IntersectionObserver(
-        ([e]) => {
-          if (!e.isIntersecting) return video.pause();
-          attach("auto");
-          video.play().catch(() => {});
-        },
-        { threshold: 0.2 },
-      );
-      io.observe(section);
-    } else {
-      // Scrubbing needs the clip buffered, so start the fetch a screen out
-      // rather than at the moment it becomes visible.
-      const near = new IntersectionObserver(([e]) => {
-        if (!e.isIntersecting) return;
-        near.disconnect();
-        attach("auto");
-      }, { rootMargin: "100% 0px" });
-      near.observe(section);
-      let duration = 0;
-      const ready = () => {
-        duration = video.duration || 0;
-        ScrollTrigger.refresh();
-      };
-      if (video.readyState >= 1) ready();
-      else video.addEventListener("loadedmetadata", ready, { once: true });
-
-      // Seeking every frame thrashes the decoder; throttle to the target frame
-      // and let the browser settle between seeks.
-      let target = 0;
-      let seeking = false;
-      const apply = () => {
-        if (!duration || seeking) return;
-        if (Math.abs(video.currentTime - target) < 0.02) return;
-        seeking = true;
-        video.currentTime = target;
-      };
-      video.addEventListener("seeked", () => {
-        seeking = false;
-        apply();
-      });
-
-      ScrollTrigger.create({
-        trigger: section,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
-        onUpdate: (self) => {
-          const p = self.progress;
-          target = p * duration;
-          apply();
-          if (bar) bar.style.width = `${(p * 100).toFixed(1)}%`;
-          // Read as an edit suite, not a progress bar: real frame numbers off
-          // the clip's own duration (25fps), so the count means something.
-          if (frame) {
-            const total = Math.max(1, Math.round(duration * 25));
-            const current = Math.round(p * total);
-            frame.textContent = `FRAME ${String(current).padStart(4, "0")} / ${String(total).padStart(4, "0")}`;
-          }
-        },
-      });
-    }
-  }
+  import { mountScrollFilm } from '../scripts/scroll-film';
+  document.querySelectorAll<HTMLElement>('[data-scrub]').forEach(mountScrollFilm);
 </script>

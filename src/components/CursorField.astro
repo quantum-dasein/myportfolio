@@ -176,7 +176,22 @@
     private mcx = 0;
     private mcy = 0;
     private blur = 1.2;
+    private ticking = false;
+    private idleFrames = 0;
     private tick = () => this.render();
+
+    private wake() {
+      this.idleFrames = 0;
+      if (this.ticking) return;
+      this.ticking = true;
+      gsap.ticker.add(this.tick);
+    }
+
+    private sleep() {
+      if (!this.ticking) return;
+      gsap.ticker.remove(this.tick);
+      this.ticking = false;
+    }
 
     connectedCallback() {
       if (matchMedia("(pointer: coarse)").matches) return;
@@ -184,7 +199,6 @@
       addEventListener("pointermove", this.onMove, { passive: true });
       addEventListener("pointerover", this.onOver, { passive: true });
       addEventListener("pointerout", this.onOut, { passive: true });
-      gsap.ticker.add(this.tick);
     }
 
     disconnectedCallback() {
@@ -192,13 +206,14 @@
       removeEventListener("pointermove", this.onMove);
       removeEventListener("pointerover", this.onOver);
       removeEventListener("pointerout", this.onOut);
-      gsap.ticker.remove(this.tick);
+      this.sleep();
     }
 
     private onMove = (event: PointerEvent) => {
       document.body.classList.add("is-cursor-active");
       this.tx = event.clientX;
       this.ty = event.clientY;
+      this.wake();
 
       // Only record the target here — the pull is eased in the render loop, so
       // it glides instead of snapping to every raw pointer sample.
@@ -230,6 +245,7 @@
       if (this.label) this.label.textContent = mode;
       this.classList.add("is-action");
       this.targetScale = 1.05;
+      this.wake();
     };
 
     private onOut = (event: PointerEvent) => {
@@ -240,6 +256,7 @@
       this.mty = 0;
       this.classList.remove("is-action");
       this.targetScale = 1;
+      this.wake();
     };
 
     private render() {
@@ -280,6 +297,15 @@
       this.style.setProperty("--trail", `${distance}px`);
       this.style.setProperty("--angle", `${angle}deg`);
       this.style.setProperty("--lens-blur", `${this.blur.toFixed(2)}px`);
+
+      const moving =
+        Math.abs(this.tx - this.lx) > 0.05 ||
+        Math.abs(this.ty - this.ly) > 0.05 ||
+        Math.abs(this.targetScale - this.scale) > 0.001 ||
+        Math.abs(this.mtx - this.mcx) > 0.05 ||
+        Math.abs(this.mty - this.mcy) > 0.05;
+      this.idleFrames = moving ? 0 : this.idleFrames + 1;
+      if (this.idleFrames > 8) this.sleep();
     }
   }
 

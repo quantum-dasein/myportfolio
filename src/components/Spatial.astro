@@ -18,6 +18,7 @@
 //  60fps: capped DPR, gsap.ticker, pause when hidden, full .dispose().
 // ─────────────────────────────────────────────────────────────────────────────
 import { works } from "../data/works";
+import MusicCredit from "./MusicCredit.astro";
 ---
 
 <div class="space" data-space-stage></div>
@@ -70,6 +71,9 @@ import { works } from "../data/works";
     <span class="film-note__tools mono" data-film-tools></span>
     <div class="film-note__line" aria-hidden="true"><i></i><b><span class="film-note__arrow"></span></b></div>
     <p data-film-copy></p>
+    {works.filter((work) => work.musicCredit).map((work) => (
+      <div data-film-credit={work.id} hidden><MusicCredit credit={work.musicCredit!} /></div>
+    ))}
   </aside>
 
   <!-- corner brackets -->
@@ -1120,6 +1124,9 @@ import { works } from "../data/works";
       const copy = document.querySelector<HTMLElement>("[data-film-copy]");
       if (tools) tools.textContent = w.detail?.tools ?? "";
       if (copy) copy.textContent = w.detail?.[activeLang === "de" ? "de" : "en"] ?? "";
+      document.querySelectorAll<HTMLElement>("[data-film-credit]").forEach((credit) => {
+        credit.hidden = credit.dataset.filmCredit !== w.id;
+      });
       const idxEl = document.querySelector("[data-marker-idx]");
       if (idxEl) idxEl.textContent = String(i + 1).padStart(2, "0");
       const sec = document.querySelector("[data-hud-sector]");

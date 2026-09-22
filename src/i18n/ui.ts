@@ -363,6 +363,7 @@ export const ui = {
     "gallery.5.cat": "Generative",
     "gallery.6.cat": "Motion",
     "gallery.7.cat": "Event Film",
+    "gallery.8.cat": "3D Motion / Concept",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
     // hrefs live in the dictionary too, so the language switcher points each
@@ -394,7 +395,7 @@ export const ui = {
       "Going to the archive isn't a page load, it's a flight. A hyperspace tunnel accelerates into black, navigates, then decelerates out of it on the other side — so the trip reads as one continuous move.",
     "studio.sys.3.title": "The archive",
     "studio.sys.3.text":
-      "Onyx-glass portal frames at increasing depth. Scroll flies the camera through them; each project is refracted through the glass until you fly into it and land inside its own world.",
+      "The Observatory: a walk through four spatial collections with an animated guide, changing architecture and unfolding exhibition panels. Scroll, swipe or use the index; films open with native controls and the gallery remembers your place.",
     "studio.sys.4.title": "The case worlds",
     "studio.sys.4.text":
       "Opening Bridge Consult assembles a bridge — deck slabs, pylons and cables in sequence. Opening FIDIC unfolds a contract atlas and turns its pages. Neither one is a modal.",
@@ -534,7 +535,7 @@ export const ui = {
     "portal.eyebrow": "The Archive",
     "portal.title": "Enter the archive.",
     "portal.text":
-      "A dark spatial archive of visual experiments, campaign assets and web fragments. Fly through.",
+      "The Observatory — a walk through spaces, objects, moving images and digital worlds. Four collections, one spatial journey.",
     "portal.cta": "Enter the archive",
     "portal.back": "Studio",
 
@@ -963,6 +964,7 @@ export const ui = {
     "gallery.5.cat": "Generativ",
     "gallery.6.cat": "Motion",
     "gallery.7.cat": "Eventfilm",
+    "gallery.8.cat": "3D-Motion / Konzept",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
     "hero.trust.label": "Bewährt bei",
@@ -992,7 +994,7 @@ export const ui = {
       "Der Weg ins Archiv ist kein Seitenaufruf, sondern ein Flug. Ein Hyperraum-Tunnel beschleunigt ins Schwarz, navigiert und bremst auf der anderen Seite wieder heraus — die Reise liest sich als eine durchgehende Bewegung.",
     "studio.sys.3.title": "Das Archiv",
     "studio.sys.3.text":
-      "Portalrahmen aus Onyxglas in zunehmender Tiefe. Scrollen fliegt die Kamera hindurch; jedes Projekt wird durchs Glas gebrochen, bis du hineinfliegst und in seiner eigenen Welt landest.",
+      "The Observatory: ein Rundgang durch vier räumliche Sammlungen mit animiertem Begleiter, wechselnder Architektur und sich entfaltenden Ausstellungspanelen. Scrollen, wischen oder direkt im Index wählen; Filme öffnen sich mit normalen Videosteuerungen, die Galerie merkt sich deinen Standort.",
     "studio.sys.4.title": "Die Case-Welten",
     "studio.sys.4.text":
       "Bridge Consult zu öffnen baut eine Brücke — Fahrbahnplatten, Pylone und Seile der Reihe nach. FIDIC zu öffnen klappt einen Vertragsatlas auf und blättert seine Seiten. Beides ist kein Modal.",
@@ -1127,7 +1129,7 @@ export const ui = {
     "portal.eyebrow": "Das Archiv",
     "portal.title": "Betritt das Archiv.",
     "portal.text":
-      "Ein dunkles räumliches Archiv aus visuellen Experimenten, Campaign Assets und Web-Fragmenten. Flieg hindurch.",
+      "The Observatory — ein Rundgang durch Räume, Objekte, bewegte Bilder und digitale Welten. Vier Sammlungen, eine räumliche Reise.",
     "portal.cta": "Ins Archiv eintreten",
     "portal.back": "Studio",
 

@@ -6,6 +6,7 @@ import { works } from "../data/works";
 import { scopes, pickScope } from "../data/scopes";
 import AuditCta from "./AuditCta.astro";
 import VideoStarter from "./VideoStarter.astro";
+import MusicCredit from "./MusicCredit.astro";
 
 // Proper nouns, not translated.
 const caseName: Record<CaseId, string> = {
@@ -128,7 +129,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
       <section class="reel-strip" id="reel">
         <div class="u-container">
           <span class="eyebrow" data-reveal>{de ? "AUSSCHNITTE" : "SELECTED FILMS"}</span>
-          <div class="reel-grid">
+          <div class:list={["reel-grid", { "reel-grid--paired": reel.length % 2 === 0 }]}>
             {reel.map((film) => (
               <figure data-reveal data-film>
                 <button type="button" data-film-play data-track="video_play" data-track-item={film.id} data-track-place="motion-page" aria-label={`${de ? "Film abspielen" : "Play film"}: ${film.title}`}>
@@ -137,11 +138,12 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
                 </button>
                 {/* preload="none" is the whole point: the poster is an image, the
                     film is 4 MB, and most visitors will read the page instead. */}
-                <video data-film-video src={film.video} poster={film.img} preload="none" playsinline loop controls hidden></video>
+                <video data-film-video src={film.video} poster={film.img} preload="none" playsinline controls hidden aria-label={film.title}></video>
                 <figcaption>
                   <strong>{film.title}</strong>
                   <span>{film.detail!.tools}</span>
                   <p>{pick({ en: film.detail!.en, de: film.detail!.de }, lang)}</p>
+                  {film.musicCredit && <MusicCredit credit={film.musicCredit} />}
                 </figcaption>
               </figure>
             ))}
@@ -174,11 +176,12 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
                   <img src={film.img} alt={`${film.title} — ${pick({ en: film.detail!.en, de: film.detail!.de }, lang)}`} loading="lazy" width="464" height="848" />
                   <span class="reel-play" aria-hidden="true"></span>
                 </button>
-                <video data-film-video src={film.video} poster={film.img} preload="none" playsinline loop controls hidden></video>
+                <video data-film-video src={film.video} poster={film.img} preload="none" playsinline controls hidden aria-label={film.title}></video>
                 <figcaption>
                   <strong>{film.title}</strong>
                   <span>{film.detail!.tools}</span>
                   <p>{pick({ en: film.detail!.en, de: film.detail!.de }, lang)}</p>
+                  {film.musicCredit && <MusicCredit credit={film.musicCredit} />}
                 </figcaption>
               </figure>
             ))}
@@ -393,6 +396,7 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
     margin-top: 1.8rem;
   }
   .reel-grid figure { margin: 0; }
+  .reel-grid--paired { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .reel-grid [data-film-play] {
     position: relative;
@@ -420,8 +424,8 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
     background: #07080a;
   }
   .reel-grid video { border: 1px solid rgba(255, 255, 255, .12); border-radius: 6px; }
-  /* `display: block` above outranks the reset's [hidden] rule, which is how the
-     film ended up playing controls underneath its own poster. */
+  /* Both halves of the swap must override their explicit display rules. */
+  .reel-grid [data-film-play][hidden],
   .reel-grid video[hidden] { display: none; }
   .reel-grid [data-film-play] img { transition: transform .6s var(--ease-out-expo), opacity .4s ease; }
   .reel-grid [data-film-play]:hover img { transform: scale(1.03); opacity: .82; }
@@ -479,7 +483,8 @@ const og: Record<ServiceKey, { image: string; alt: string }> = {
   .reel-grid--field figcaption { padding-top: 0; max-width: 46ch; }
   @media (max-width: 560px) {
     .reel-grid--field figure { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .reel-grid--field [data-film-play] { max-width: 17rem; }
+    .reel-grid--field [data-film-play],
+    .reel-grid--field video { max-width: 17rem; }
     .reel-grid--field figcaption { padding-top: .9rem; }
   }
 

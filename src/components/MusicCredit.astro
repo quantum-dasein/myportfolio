@@ -1,0 +1,17 @@
+---
+import type { Work } from "../data/works";
+interface Props { credit: NonNullable<Work["musicCredit"]> }
+const { credit } = Astro.props;
+---
+<small class="music-credit">
+  Music: “{credit.title}” — <a href={credit.url} target="_blank" rel="noopener">{credit.artist}</a> ·
+  <a href={credit.licenseUrl} target="_blank" rel="noopener">{credit.license}</a> ·
+  <span class="credit-en">shortened and faded</span><span class="credit-de">gekürzt und ausgeblendet</span>
+</small>
+<style>
+  .music-credit { display: block; margin-top: .8rem; color: rgba(255,255,255,.6); font-size: .7rem; line-height: 1.5; }
+  a { color: inherit; text-decoration: underline; text-underline-offset: .2em; }
+  .credit-de { display: none; }
+  :global(html[lang="de-AT"]) .credit-en { display: none; }
+  :global(html[lang="de-AT"]) .credit-de { display: inline; }
+</style>

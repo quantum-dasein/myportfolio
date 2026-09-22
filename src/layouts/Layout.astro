@@ -578,18 +578,23 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
   import "../utils/vitals";
   import "../utils/analytics";
 
-  // Warm up the archive before the likely click: prefetch the /gallery route
-  // (and its hashed three.js chunk via the browser's speculative parse) once
-  // the main thread is idle. Skipped on the gallery itself and on save-data.
-  const idle = (window as any).requestIdleCallback ?? ((fn: () => void) => setTimeout(fn, 2500));
+  // Warm the archive on intent, not merely because the current page became
+  // idle. Background-prefetching its large document on every route competed
+  // with the page the visitor was actually scrolling through.
   const saveData = (navigator as any).connection?.saveData;
   if (location.pathname !== "/gallery" && location.pathname !== "/gallery/" && !saveData) {
-    idle(() => {
+    let archivePrefetched = false;
+    const prefetchArchive = (event: Event) => {
+      if (archivePrefetched || !(event.target instanceof Element)) return;
+      if (!event.target.closest('a[href="/gallery/"], a[href="/gallery"]')) return;
+      archivePrefetched = true;
       const link = document.createElement("link");
       link.rel = "prefetch";
       link.href = "/gallery/";
       link.as = "document";
       document.head.appendChild(link);
-    });
+    };
+    document.addEventListener("pointerover", prefetchArchive, { passive: true });
+    document.addEventListener("focusin", prefetchArchive, { passive: true });
   }
 </script>
