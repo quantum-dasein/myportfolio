@@ -30,7 +30,7 @@ export async function mountObservatory(root:HTMLElement){
   let hoverTimer:ReturnType<typeof setTimeout>|undefined;
   let hover=false;
   let viewerTrigger:HTMLElement|null=null;
-  let mapping=false;
+  let mapping=false,firstPerson=false;
   const events=new AbortController();
   const signal=events.signal;
   const de=()=>document.documentElement.lang.startsWith('de');
@@ -55,7 +55,7 @@ export async function mountObservatory(root:HTMLElement){
     text('[data-obs-title]',workTitle(work));
     text('[data-obs-category]',dict()[work.kCat]??(work.video?'Motion':'3D'));
     text('[data-obs-room-number]',`0${work.roomIndex+1} / 04`);
-    text('[data-obs-room-name]',room[lang]);text('[data-obs-room-description]',room.subtitle[lang]);
+    text('[data-obs-room-name]',room[lang]);text('[data-obs-hud-room]',room[lang]);text('[data-obs-hud-work]',`${String(current+1).padStart(2,'0')} / ${String(archiveWorks.length).padStart(2,'0')}`);text('[data-obs-room-description]',room.subtitle[lang]);
     root.querySelectorAll<HTMLButtonElement>('[data-obs-room]').forEach(button=>{
       const ri=Number(button.dataset.obsRoom);if(ri===work.roomIndex)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
       const start=archiveWorks.findIndex(item=>item.roomIndex===ri);
@@ -74,13 +74,13 @@ export async function mountObservatory(root:HTMLElement){
     try{sessionStorage.setItem('rb-observatory-index',String(current));}catch{}
     clearTimeout(hoverTimer);hover=false;
   }
-  function navigate(index:number,throttle=false){
+  function navigate(index:number,throttle=false,mode:'walk'|'teleport'='walk'){
     if(index<0||index>=archiveWorks.length||viewer.open||indexDialog.open||opening)return;
     const now=performance.now();if(throttle&&now-lastNavigation<1250)return;lastNavigation=now;
     if(!world){setCurrent(index);return;}
     if(index===aimed()&&!world.isMoving())return;
     const jump=Math.abs(index-current)>3;
-    world.select(index);if(world.isCalm())setCurrent(index);
+    world.select(index,mode);if(world.isCalm())setCurrent(index);
     if(jump&&!world.isCalm())stage.animate([{opacity:.35},{opacity:1}],{duration:700,easing:'ease-out'});
   }
   function revealShell(){
@@ -215,6 +215,7 @@ export async function mountObservatory(root:HTMLElement){
   }
   async function enterMap(){
     if(!world||mapping||opening||viewer.open)return;
+    if(firstPerson)setFirstPerson(false);
     mapping=true;labelIndexButton();root.classList.add('is-overview');
     clearTimeout(hoverTimer);world.endHover();hover=false;
     await world.enterOverview();
@@ -235,7 +236,7 @@ export async function mountObservatory(root:HTMLElement){
   root.querySelector('[data-obs-close-index]')!.addEventListener('click',()=>indexDialog.close(),{signal});
   indexDialog.addEventListener('close',()=>world?.resume(),{signal});
   root.querySelectorAll<HTMLElement>('[data-obs-select]').forEach(button=>button.addEventListener('click',()=>{indexDialog.close();navigate(Number(button.dataset.obsSelect));},{signal}));
-  root.querySelectorAll<HTMLElement>('[data-obs-room]').forEach(button=>button.addEventListener('click',()=>navigate(archiveWorks.findIndex(work=>work.roomIndex===Number(button.dataset.obsRoom))),{signal}));
+  root.querySelectorAll<HTMLElement>('[data-obs-room]').forEach(button=>button.addEventListener('click',()=>navigate(archiveWorks.findIndex(work=>work.roomIndex===Number(button.dataset.obsRoom)),false,'teleport'),{signal}));
   for(const dialog of [viewer,indexDialog])dialog.addEventListener('click',event=>{
     if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom){if(dialog===viewer)void closeViewer();else dialog.close();}
   },{signal});
@@ -250,15 +251,26 @@ export async function mountObservatory(root:HTMLElement){
     if(Math.abs(wheelDistance)>45){navigate(aimed()+(wheelDistance>0?1:-1),true);wheelDistance=0;}
   },{passive:false,signal});
   // Drag the hall: it follows the hand, a flick carries on, and it settles on a work.
+  let lookX=0,lookY=0;
+  const eyesButton=root.querySelector<HTMLButtonElement>('[data-obs-eyes]')!;
+  function setFirstPerson(on:boolean){
+    if(!world||on===firstPerson)return;
+    if(on&&mapping)void leaveMap();
+    firstPerson=on;world.setFirstPerson(on);sound.firstPerson(on);
+    root.classList.toggle('is-first-person',on);eyesButton.setAttribute('aria-pressed',String(on));
+    eyesButton.setAttribute('aria-label',on?(de()?'Zurück zur Außenansicht':'Back to the outside view'):(de()?'Durch die Augen des Astronauten sehen':'See through the astronaut’s eyes'));
+  }
+  eyesButton.addEventListener('click',()=>{if(!opening&&!viewer.open)setFirstPerson(!firstPerson);},{signal});
   const fluid=()=>Boolean(world&&!world.isCalm()&&!mapping&&root.classList.contains('is-ready'));
   stage.addEventListener('pointerdown',event=>{
     if(event.button>0||viewer.open||indexDialog.open||opening)return;
-    gesture={x:event.clientX,y:event.clientY,id:event.pointerId,axis:''};stage.setPointerCapture(event.pointerId);
-    if(fluid())world!.dragStart();
+    gesture={x:event.clientX,y:event.clientY,id:event.pointerId,axis:''};lookX=event.clientX;lookY=event.clientY;stage.setPointerCapture(event.pointerId);
+    if(fluid()&&!firstPerson)world!.dragStart();
   },{signal});
   stage.addEventListener('pointerup',event=>{
     if(!gesture)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
-    if(mapping){
+    if(firstPerson){if(!gesture.axis&&world?.hit(event.clientX,event.clientY))openViewer();}
+    else if(mapping){
       const picked=Math.max(Math.abs(dx),Math.abs(dy))<10?world!.pick(event.clientX,event.clientY):-1;
       if(picked>=0)void leaveMap(picked);
     }else if(fluid()){world!.dragEnd();if(!gesture.axis&&world!.hit(event.clientX,event.clientY))openViewer();}
@@ -282,6 +294,7 @@ export async function mountObservatory(root:HTMLElement){
     if(gesture){
       const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
       if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>6)gesture.axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
+      if(firstPerson&&gesture.axis){world.lookBy(event.clientX-lookX,event.clientY-lookY);lookX=event.clientX;lookY=event.clientY;stage.style.cursor='grabbing';return;}
       if(gesture.axis&&fluid()){
         world.dragMove(gesture.axis==='x'?dx:dy,gesture.axis==='x'?stage.clientWidth:stage.clientHeight);
         stage.style.cursor='grabbing';world.hovered=false;if(hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
@@ -303,6 +316,7 @@ export async function mountObservatory(root:HTMLElement){
   document.addEventListener('keydown',event=>{
     if(opening){if(event.key==='Escape'){openToken++;opening=false;void returnToHall();}return;}
     if(mapping){if(event.key==='Escape'){event.preventDefault();void leaveMap();}return;}
+    if(firstPerson&&event.key==='Escape'&&!viewer.open&&!indexDialog.open){event.preventDefault();setFirstPerson(false);return;}
     if(viewer.open||indexDialog.open||!root.classList.contains('is-ready'))return;
     if(event.altKey||event.ctrlKey||event.metaKey)return;
     if((event.target as HTMLElement).closest('button,a,input,textarea,select'))return;
@@ -326,7 +340,7 @@ export async function mountObservatory(root:HTMLElement){
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
-    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);world.onLand=()=>sound.land();
     if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;
     // First visit of the session opens in darkness; the interface arrives with the light.
     if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}

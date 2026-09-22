@@ -84,7 +84,7 @@ export function createHallSound(){
     air.gain.gain.cancelScheduledValues(now);air.gain.gain.setValueAtTime(air.gain.gain.value,now);
     air.gain.gain.linearRampToValueAtTime(level,now+duration*.5);air.gain.gain.linearRampToValueAtTime(0,now+duration);
   }
-  let swellUntil=0;
+  let swellUntil=0;let breathTimer:ReturnType<typeof setInterval>|undefined;
 
   return {
     frame(state:HallState){
@@ -107,8 +107,25 @@ export function createHallSound(){
       const notes=[1760,1318.5,1108.7,880];(phase==='out'?notes:[...notes].reverse()).forEach((freq,i)=>chime(freq,.022,.3+i*.07));
       swell(phase==='out'?1800:300,phase==='out'?300:1800,.8,.12);swellUntil=(ctx?.currentTime??0)+.8;
     },
-    open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
+    // A low-gravity landing: a soft, deep touch on the floor.
+    land(){
+      if(!live())return;const now=ctx!.currentTime;
+      const osc=ctx!.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(95,now);osc.frequency.exponentialRampToValueAtTime(48,now+.35);
+      const g=ctx!.createGain();g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.18,now+.015);g.gain.exponentialRampToValueAtTime(.0001,now+.45);
+      osc.connect(g).connect(master!);osc.start(now);osc.stop(now+.5);osc.onended=()=>osc.disconnect();
+    },
+    // Inside the helmet: slow breathing, in and out.
+    firstPerson(on:boolean){
+      clearInterval(breathTimer);breathTimer=undefined;
+      if(!on)return;
+      const breathe=()=>{if(!live()||!air)return;const now=ctx!.currentTime;
+        air.filter.frequency.cancelScheduledValues(now);air.filter.frequency.setValueAtTime(260,now);air.filter.frequency.linearRampToValueAtTime(820,now+1.3);air.filter.frequency.linearRampToValueAtTime(300,now+3.2);
+        air.gain.gain.cancelScheduledValues(now);air.gain.gain.setValueAtTime(air.gain.gain.value,now);
+        air.gain.gain.linearRampToValueAtTime(.16,now+1.2);air.gain.gain.linearRampToValueAtTime(.03,now+1.8);air.gain.gain.linearRampToValueAtTime(.12,now+2.6);air.gain.gain.linearRampToValueAtTime(0,now+3.4);
+        swellUntil=now+3.4;};
+      breathe();breathTimer=setInterval(breathe,4600);
+    },    open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
     close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},
-    dispose(){void ctx?.close();},
+    dispose(){clearInterval(breathTimer);void ctx?.close();},
   };
 }
