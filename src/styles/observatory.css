@@ -186,3 +186,16 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 /* Opening sequence: the interface waits for the light. */
 .observatory.is-intro .obs-shell{opacity:0;pointer-events:none}
 .observatory.is-ready .obs-stage{cursor:grab}
+
+/* The interface returns slowly, after the camera is back in the hall. */
+.obs-shell{transition:opacity .9s cubic-bezier(.2,.7,.2,1)}
+.is-focusing .obs-shell{transition:opacity .3s ease}
+
+/* Map view: the hall from the ceiling. Only the top bar stays. */
+.obs-map{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity .6s ease}
+.is-overview .obs-map{opacity:1;transition-delay:.6s}
+.is-overview .obs-shell>:not(.obs-topline){opacity:0!important;pointer-events:none!important;transition:opacity .4s ease}
+.obs-map-hint{position:absolute;left:50%;bottom:36px;transform:translateX(-50%);font:10px var(--obs-mono);letter-spacing:.14em;text-transform:uppercase;color:#cfd6d8;white-space:nowrap}
+.obs-map-label{position:absolute;left:0;top:0;padding:9px 13px;font:11px var(--obs-mono);letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#0a0b0dcc;border:1px solid #ffffff24;backdrop-filter:blur(8px);white-space:nowrap;opacity:0;transition:opacity .2s ease}
+.obs-map-label.is-visible{opacity:1}
+@media(max-width:600px){.obs-map-hint{bottom:110px;font-size:8px}}

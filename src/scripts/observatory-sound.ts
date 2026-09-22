@@ -3,49 +3,55 @@
  * It sits under the studio drone (SoundField) and follows the same switch:
  * silent unless the visitor turned sound on, muted in Calm mode, in a hidden
  * tab and while a film plays in the viewer.
+ *
+ * Everything is soft and tonal: slow pads through a low-pass filter, a breath
+ * of air when the hall moves and a small glass chime when it settles. No raw
+ * noise beds and no fast modulation, which read as hiss and engine rattle.
  */
 export type HallState={speed:number;rooms:number[];focus:number;lamp:number};
 
+// One chord per room, all in A so crossing rooms never clashes.
+const CHORDS=[
+  [110,164.81,220,277.18],   // Atmospheres: A major, warm and low
+  [146.83,220,293.66,329.63],// Objects: D add9, open and still
+  [110,130.81,164.81,196],   // Moving images: A minor 7, a cinema dusk
+  [220,329.63,440,493.88],   // Digital worlds: high, airy fifths
+];
+const LEVEL=.55;
+
 export function createHallSound(){
-  let ctx:AudioContext|undefined,master:GainNode|undefined;
-  let wind:{gain:GainNode;filter:BiquadFilterNode}|undefined;
-  const layers:GainNode[]=[];
-  let filmOpen=false,lastLamp=0,lastPing=0;
+  let ctx:AudioContext|undefined,master:GainNode|undefined,air:{gain:GainNode;filter:BiquadFilterNode}|undefined;
+  const pads:GainNode[]=[];
+  let filmOpen=false,lastLamp=0,lastPing=0,lastRooms='';
   const html=document.documentElement;
   const wanted=()=>html.classList.contains('rb-sound')&&!html.classList.contains('rb-calm')&&!document.hidden&&!filmOpen;
 
-  function noise(context:AudioContext){
-    const buffer=context.createBuffer(1,context.sampleRate*2,context.sampleRate);const data=buffer.getChannelData(0);
-    let brown=0;for(let i=0;i<data.length;i++){const white=Math.random()*2-1;brown=(brown+.02*white)/1.02;data[i]=white*.55+brown*2.2;}
-    const source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.start();return source;
-  }
   function build(){
     const Ctor=window.AudioContext||(window as any).webkitAudioContext;if(!Ctor)return;
-    ctx=new Ctor();master=ctx.createGain();master.gain.value=0;master.connect(ctx.destination);
-    // Movement: air rushing past, brighter the faster you go.
-    const air=noise(ctx),filter=ctx.createBiquadFilter();filter.type='bandpass';filter.frequency.value=380;filter.Q.value=.8;
-    const gain=ctx.createGain();gain.gain.value=0;air.connect(filter).connect(gain).connect(master);wind={gain,filter};
-    // 0 Atmospheres: a warm low breath of the room.
-    const warm=ctx.createGain();warm.gain.value=0;const low=ctx.createBiquadFilter();low.type='lowpass';low.frequency.value=220;noise(ctx).connect(low).connect(warm).connect(master);
-    // 1 Objects: two slow metallic partials, like a struck plinth ringing out.
-    const metal=ctx.createGain();metal.gain.value=0;const ring=ctx.createGain();ring.gain.value=.65;
-    for(const [freq,level] of [[196,.5],[293.7*1.004,.28],[587.3,.08]] as const){const osc=ctx.createOscillator();osc.frequency.value=freq;const g=ctx.createGain();g.gain.value=level;osc.connect(g).connect(ring);osc.start();}
-    const beat=ctx.createOscillator();beat.frequency.value=.23;const depth=ctx.createGain();depth.gain.value=.35;beat.connect(depth).connect(ring.gain);beat.start();
-    ring.connect(metal).connect(master);
-    // 2 Cinema: the purr of a projector, a filtered rattle at twenty-four frames.
-    const projector=ctx.createGain();projector.gain.value=0;const shutter=ctx.createGain();shutter.gain.value=.5;
-    const band=ctx.createBiquadFilter();band.type='bandpass';band.frequency.value=900;band.Q.value=1.4;
-    noise(ctx).connect(band).connect(shutter).connect(projector);
-    const frames=ctx.createOscillator();frames.type='square';frames.frequency.value=24;const frameDepth=ctx.createGain();frameDepth.gain.value=.45;frames.connect(frameDepth).connect(shutter.gain);frames.start();
-    projector.connect(master);
-    // 3 Digital: a thin shimmering carrier.
-    const digital=ctx.createGain();digital.gain.value=0;const shimmer=ctx.createGain();shimmer.gain.value=.7;
-    for(const [freq,level] of [[1318.5,.22],[1975.5,.12],[2637,.05]] as const){const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;const g=ctx.createGain();g.gain.value=level;osc.connect(g).connect(shimmer);osc.start();}
-    const trem=ctx.createOscillator();trem.frequency.value=6.5;const tremDepth=ctx.createGain();tremDepth.gain.value=.3;trem.connect(tremDepth).connect(shimmer.gain);trem.start();
-    shimmer.connect(digital).connect(master);
-    layers.push(warm,metal,projector,digital);
+    ctx=new Ctor({latencyHint:'playback'});
+    master=ctx.createGain();master.gain.value=0;
+    const soften=ctx.createBiquadFilter();soften.type='lowpass';soften.frequency.value=2400;
+    const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-20;limiter.ratio.value=6;
+    master.connect(soften).connect(limiter).connect(ctx.destination);
+    // Air: filtered pink-ish noise, only audible while the hall moves.
+    const buffer=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);const data=buffer.getChannelData(0);
+    let b0=0,b1=0,b2=0;for(let i=0;i<data.length;i++){const w=Math.random()*2-1;b0=.99765*b0+w*.099;b1=.963*b1+w*.2965;b2=.57*b2+w*1.0526;data[i]=(b0+b1+b2+w*.1848)*.12;}
+    const noise=ctx.createBufferSource();noise.buffer=buffer;noise.loop=true;noise.start();
+    const filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=300;filter.Q.value=.3;
+    const gain=ctx.createGain();gain.gain.value=0;noise.connect(filter).connect(gain).connect(master);air={gain,filter};
+    // Pads: detuned triangle pairs, a slow breathing filter per room.
+    CHORDS.forEach((chord,room)=>{
+      const pad=ctx!.createGain();pad.gain.value=0;
+      const tone=ctx!.createBiquadFilter();tone.type='lowpass';tone.frequency.value=room===3?1600:700;tone.Q.value=.4;
+      const sway=ctx!.createOscillator();sway.frequency.value=.05+room*.013;const swayDepth=ctx!.createGain();swayDepth.gain.value=room===3?500:220;
+      sway.connect(swayDepth).connect(tone.frequency);sway.start();
+      chord.forEach((freq,n)=>{for(const detune of [-6,6]){
+        const osc=ctx!.createOscillator();osc.type=n===0?'sine':'triangle';osc.frequency.value=freq;osc.detune.value=detune;
+        const g=ctx!.createGain();g.gain.value=(n===0?.5:.26)/chord.length;osc.connect(g).connect(tone);osc.start();
+      }});
+      tone.connect(pad).connect(master!);pads.push(pad);
+    });
   }
-  const levels=[.09,.018,.05,.012];
 
   function ensure(){
     if(!wanted())return false;
@@ -53,46 +59,51 @@ export function createHallSound(){
     if(ctx&&ctx.state==='suspended')void ctx.resume().catch(()=>{});
     return Boolean(ctx&&ctx.state==='running');
   }
-  function set(param:AudioParam,value:number,time=.12){if(ctx)param.setTargetAtTime(value,ctx.currentTime,time);}
-  function master_(on:boolean){if(master&&ctx)set(master.gain,on?1:0,on?.6:.15);}
+  const ramp=(param:AudioParam,value:number,time:number)=>{if(ctx)param.setTargetAtTime(value,ctx.currentTime,time);};
+  const setMaster=(on:boolean)=>{if(master)ramp(master.gain,on?LEVEL:0,on?.8:.2);};
   // Chrome only lets audio start after a gesture; the drone uses the same rule.
-  ['pointerdown','keydown','touchstart'].forEach(type=>addEventListener(type,()=>{if(wanted()){ensure();master_(true);}},{passive:true}));
-  new MutationObserver(()=>{if(wanted())ensure();master_(wanted());}).observe(html,{attributes:true,attributeFilter:['class']});
-  document.addEventListener('visibilitychange',()=>master_(wanted()));
-  addEventListener('rb:exhibition-film',event=>{filmOpen=Boolean((event as CustomEvent).detail);master_(wanted());});
+  ['pointerdown','keydown','touchstart'].forEach(type=>addEventListener(type,()=>{if(wanted()){ensure();setMaster(true);}},{passive:true}));
+  new MutationObserver(()=>{if(wanted())ensure();setMaster(wanted());}).observe(html,{attributes:true,attributeFilter:['class']});
+  document.addEventListener('visibilitychange',()=>setMaster(wanted()));
+  addEventListener('rb:exhibition-film',event=>{filmOpen=Boolean((event as CustomEvent).detail);setMaster(wanted());});
 
-  function ping(room:number){
-    if(!ctx||!master||ctx.state!=='running'||!wanted())return;
-    const now=ctx.currentTime;if(now-lastPing<.25)return;lastPing=now;
-    const base=[392,440,329.6,523.3][room]??392;
-    for(const [ratio,level,decay] of [[1,.05,1.6],[2.01,.018,.9],[3.02,.007,.5]] as const){
-      const osc=ctx.createOscillator();osc.frequency.value=base*ratio;const g=ctx.createGain();
-      g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(level,now+.012);g.gain.exponentialRampToValueAtTime(.0001,now+decay);
-      osc.connect(g).connect(master);osc.start(now);osc.stop(now+decay+.05);osc.onended=()=>osc.disconnect();
+  const live=()=>Boolean(ctx&&master&&ctx.state==='running'&&wanted());
+  function chime(freq:number,level:number){
+    if(!live())return;
+    const now=ctx!.currentTime;
+    for(const [ratio,share,decay] of [[1,1,2.4],[2,.28,1.4],[3.01,.08,.8]] as const){
+      const osc=ctx!.createOscillator();osc.type='sine';osc.frequency.value=freq*ratio;const g=ctx!.createGain();
+      g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(level*share,now+.02);g.gain.exponentialRampToValueAtTime(.0001,now+decay);
+      osc.connect(g).connect(master!);osc.start(now);osc.stop(now+decay+.05);osc.onended=()=>osc.disconnect();
     }
   }
-  function burst(duration:number,from:number,to:number,level:number){
-    if(!ctx||!master||ctx.state!=='running'||!wanted())return;
-    const now=ctx.currentTime;const source=noise(ctx);const filter=ctx.createBiquadFilter();filter.type='bandpass';filter.Q.value=1.1;
-    filter.frequency.setValueAtTime(from,now);filter.frequency.exponentialRampToValueAtTime(to,now+duration);
-    const g=ctx.createGain();g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(level,now+duration*.45);g.gain.linearRampToValueAtTime(0,now+duration);
-    source.connect(filter).connect(g).connect(master);source.stop(now+duration+.05);source.onended=()=>source.disconnect();
+  function swell(from:number,to:number,duration:number,level:number){
+    if(!live()||!air)return;
+    const now=ctx!.currentTime;
+    air.filter.frequency.cancelScheduledValues(now);air.filter.frequency.setValueAtTime(from,now);air.filter.frequency.exponentialRampToValueAtTime(to,now+duration);
+    air.gain.gain.cancelScheduledValues(now);air.gain.gain.setValueAtTime(air.gain.gain.value,now);
+    air.gain.gain.linearRampToValueAtTime(level,now+duration*.5);air.gain.gain.linearRampToValueAtTime(0,now+duration);
   }
+  let swellUntil=0;
 
   return {
     frame(state:HallState){
-      if(!ctx||!wind||ctx.state!=='running')return;
+      if(!ctx||!air||ctx.state!=='running')return;
+      // Parameter updates are cheap, but only send them when something changed.
       const speed=Math.min(1,state.speed);
-      set(wind.gain.gain,speed*speed*.16*(1-state.focus),.08);
-      set(wind.filter.frequency,300+speed*1500,.1);
-      layers.forEach((layer,i)=>set(layer.gain,(state.rooms[i]??0)*levels[i]*(1-state.focus*.8)*state.lamp,.5));
-      // The lamp clicks every time it catches during the opening.
-      if(state.lamp>.5!==lastLamp>.5&&state.lamp<1)burst(.04,3200,2400,.12);
+      if(ctx.currentTime>swellUntil){ramp(air.gain.gain,speed*speed*.5*(1-state.focus),.25);ramp(air.filter.frequency,260+speed*700,.3);}
+      const key=state.rooms.map(v=>v.toFixed(2)).join()+state.focus.toFixed(2)+state.lamp.toFixed(1);
+      if(key!==lastRooms){lastRooms=key;pads.forEach((pad,i)=>ramp(pad.gain,(state.rooms[i]??0)*.22*(1-state.focus*.7)*state.lamp,1.2));}
+      // The lamp catches with a tiny glassy tick during the opening.
+      if(state.lamp>.5&&lastLamp<=.5&&state.lamp<1)chime(1318.5,.025);
       lastLamp=state.lamp;
     },
-    arrive:ping,
-    open(){burst(.9,260,2600,.12);},
-    close(){burst(.7,2400,300,.09);},
+    arrive(room:number){
+      if(!ctx)return;const now=ctx.currentTime;if(now-lastPing<.4)return;lastPing=now;
+      chime([880,587.33,659.25,987.77][room]??880,.045);
+    },
+    open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
+    close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},
     dispose(){void ctx?.close();},
   };
 }

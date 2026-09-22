@@ -30,6 +30,7 @@ export async function mountObservatory(root:HTMLElement){
   let hoverTimer:ReturnType<typeof setTimeout>|undefined;
   let hover=false;
   let viewerTrigger:HTMLElement|null=null;
+  let mapping=false;
   const events=new AbortController();
   const signal=events.signal;
   const de=()=>document.documentElement.lang.startsWith('de');
@@ -156,8 +157,14 @@ export async function mountObservatory(root:HTMLElement){
     }else viewer.close();
     closing=false;
   }
+  // Titles fade back only once the camera has returned, so they never sit on the print.
+  async function returnToHall(){
+    const token=openToken;
+    await world?.restoreView();
+    if(token===openToken&&!viewer.open&&!opening)root.classList.remove('is-focusing');
+  }
   async function openViewer(){
-    if(viewer.open||indexDialog.open||opening)return;
+    if(viewer.open||indexDialog.open||opening||mapping)return;
     opening=true;const token=++openToken;root.classList.add('is-focusing');
     viewerTrigger=document.activeElement as HTMLElement;
     world?.stopPreview();clearTimeout(hoverTimer);fillViewer();root.querySelector<HTMLDetailsElement>('[data-obs-notes]')!.open=false;
@@ -173,14 +180,15 @@ export async function mountObservatory(root:HTMLElement){
     opening=false;
     viewer.showModal();viewer.scrollTop=0;sound.open();
     await handoff();
-    root.classList.remove('is-focusing');world?.pause();
+    // The interface stays hidden until the camera is back in the hall (see close).
+    world?.pause();
     window.dispatchEvent(new CustomEvent('rb:exhibition-film',{detail:Boolean(work.video)}));
     if(work.video&&viewer.open)video.play().catch(()=>{});
   }
   viewer.addEventListener('cancel',event=>{event.preventDefault();void closeViewer();},{signal});
   viewer.addEventListener('close',()=>{
     video.pause();video.removeAttribute('src');video.load();video.style.removeProperty('aspect-ratio');mobileSource.removeAttribute('srcset');image.removeAttribute('src');
-    root.classList.remove('is-focusing');world?.resume();world?.restoreView();viewerTrigger?.focus({preventScroll:true});
+    world?.resume();void returnToHall();viewerTrigger?.focus({preventScroll:true});
     window.dispatchEvent(new CustomEvent('rb:exhibition-film',{detail:false}));
   },{signal});
   root.querySelector('[data-obs-close-viewer]')!.addEventListener('click',()=>void closeViewer(),{signal});
@@ -193,7 +201,33 @@ export async function mountObservatory(root:HTMLElement){
   root.querySelector('[data-obs-open]')!.addEventListener('click',openViewer,{signal});
   root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(aimed()-1),{signal});
   root.querySelector('[data-obs-next]')!.addEventListener('click',()=>navigate(aimed()+1),{signal});
-  root.querySelector('[data-obs-index]')!.addEventListener('click',()=>{if(opening)return;world?.pause();clearTimeout(hoverTimer);indexDialog.showModal();},{signal});
+  // All works: with a mouse or finger the camera rises and the hall becomes a map;
+  // from the keyboard, or in Calm mode, the accessible list opens instead.
+  const indexButton=root.querySelector<HTMLButtonElement>('[data-obs-index]')!;
+  const mapLabel=root.querySelector<HTMLElement>('[data-obs-map-label]')!;
+  function labelIndexButton(){
+    indexButton.querySelector('.obs-en')!.textContent=mapping?'Back to the hall':'All works';
+    indexButton.querySelector('.obs-de')!.textContent=mapping?'Zurück in den Saal':'Alle Arbeiten';
+    indexButton.setAttribute('aria-pressed',String(mapping));
+  }
+  async function enterMap(){
+    if(!world||mapping||opening||viewer.open)return;
+    mapping=true;labelIndexButton();root.classList.add('is-overview');
+    clearTimeout(hoverTimer);world.endHover();hover=false;
+    await world.enterOverview();
+  }
+  async function leaveMap(index?:number){
+    if(!world||!mapping)return;
+    mapping=false;labelIndexButton();mapLabel.classList.remove('is-visible');world.mapHover=-1;stage.style.cursor='grab';
+    const leaving=world.exitOverview(index);
+    await leaving;if(!mapping)root.classList.remove('is-overview');
+  }
+  indexButton.addEventListener('click',event=>{
+    if(opening)return;
+    if(world&&!world.isCalm()&&event.detail!==0){void(mapping?leaveMap():enterMap());return;}
+    if(mapping)void leaveMap();
+    world?.pause();clearTimeout(hoverTimer);indexDialog.showModal();
+  },{signal});
   root.querySelector('[data-obs-close-index]')!.addEventListener('click',()=>indexDialog.close(),{signal});
   indexDialog.addEventListener('close',()=>world?.resume(),{signal});
   root.querySelectorAll<HTMLElement>('[data-obs-select]').forEach(button=>button.addEventListener('click',()=>{indexDialog.close();navigate(Number(button.dataset.obsSelect));},{signal}));
@@ -203,7 +237,7 @@ export async function mountObservatory(root:HTMLElement){
   },{signal});
   stage.addEventListener('wheel',event=>{
     if(!root.classList.contains('is-ready')||viewer.open||indexDialog.open||opening)return;
-    event.preventDefault();
+    event.preventDefault();if(mapping)return;
     const unit=event.deltaMode===1?16:event.deltaMode===2?innerHeight:1;
     const delta=(Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:event.deltaY)*unit;
     if(world&&!world.isCalm()){world.scrollBy(delta);return;}
@@ -212,7 +246,7 @@ export async function mountObservatory(root:HTMLElement){
     if(Math.abs(wheelDistance)>45){navigate(aimed()+(wheelDistance>0?1:-1),true);wheelDistance=0;}
   },{passive:false,signal});
   // Drag the hall: it follows the hand, a flick carries on, and it settles on a work.
-  const fluid=()=>Boolean(world&&!world.isCalm()&&root.classList.contains('is-ready'));
+  const fluid=()=>Boolean(world&&!world.isCalm()&&!mapping&&root.classList.contains('is-ready'));
   stage.addEventListener('pointerdown',event=>{
     if(event.button>0||viewer.open||indexDialog.open||opening)return;
     gesture={x:event.clientX,y:event.clientY,id:event.pointerId,axis:''};stage.setPointerCapture(event.pointerId);
@@ -220,7 +254,10 @@ export async function mountObservatory(root:HTMLElement){
   },{signal});
   stage.addEventListener('pointerup',event=>{
     if(!gesture)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
-    if(fluid()){world!.dragEnd();if(!gesture.axis&&world!.hit(event.clientX,event.clientY))openViewer();}
+    if(mapping){
+      const picked=Math.max(Math.abs(dx),Math.abs(dy))<10?world!.pick(event.clientX,event.clientY):-1;
+      if(picked>=0)void leaveMap(picked);
+    }else if(fluid()){world!.dragEnd();if(!gesture.axis&&world!.hit(event.clientX,event.clientY))openViewer();}
     else if(Math.max(Math.abs(dx),Math.abs(dy))>35)navigate(aimed()+((Math.abs(dx)>Math.abs(dy)?-dx:-dy)<0?-1:1));
     else if(world?.hit(event.clientX,event.clientY))openViewer();
     gesture=undefined;stage.style.cursor='grab';if(stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);
@@ -228,6 +265,16 @@ export async function mountObservatory(root:HTMLElement){
   stage.addEventListener('pointercancel',()=>{world?.dragEnd();gesture=undefined;stage.style.cursor='grab';},{signal});
   stage.addEventListener('pointermove',event=>{
     if(!world||opening)return;world.pointer.set(event.clientX/innerWidth*2-1,-(event.clientY/innerHeight*2-1));world.pointerInside=true;
+    if(mapping){
+      const picked=world.pick(event.clientX,event.clientY);world.mapHover=picked;stage.style.cursor=picked>=0?'pointer':'default';
+      if(picked>=0){
+        const work=archiveWorks[picked];
+        mapLabel.textContent=`${String(picked+1).padStart(2,'0')} · ${workTitle(work)}`;
+        mapLabel.style.transform=`translate(${Math.min(event.clientX+18,innerWidth-mapLabel.offsetWidth-12)}px,${event.clientY+18}px)`;
+      }
+      mapLabel.classList.toggle('is-visible',picked>=0);
+      return;
+    }
     if(gesture){
       const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
       if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>6)gesture.axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
@@ -250,7 +297,8 @@ export async function mountObservatory(root:HTMLElement){
     (world.tilt??=new (world.pointer.constructor as any)()).set(x,y);
   },{signal});
   document.addEventListener('keydown',event=>{
-    if(opening){if(event.key==='Escape'){openToken++;opening=false;root.classList.remove('is-focusing');world?.restoreView();}return;}
+    if(opening){if(event.key==='Escape'){openToken++;opening=false;void returnToHall();}return;}
+    if(mapping){if(event.key==='Escape'){event.preventDefault();void leaveMap();}return;}
     if(viewer.open||indexDialog.open||!root.classList.contains('is-ready'))return;
     if(event.altKey||event.ctrlKey||event.metaKey)return;
     if((event.target as HTMLElement).closest('button,a,input,textarea,select'))return;
