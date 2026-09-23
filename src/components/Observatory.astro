@@ -43,7 +43,14 @@ const { start } = Astro.props;
       <button class="obs-open" data-obs-open><span class="obs-en">View work</span><span class="obs-de">Werk ansehen</span><ObservatoryIcon name="open" /></button>
       <div class="obs-stepper"><button data-obs-prev aria-label="Previous work"><ObservatoryIcon name="previous" /></button><span><b data-obs-position>01</b> / {String(archiveWorks.length).padStart(2,'0')}</span><button data-obs-next aria-label="Next work"><ObservatoryIcon name="next" /></button></div>
     </div>
-    <nav class="obs-journey" aria-label="Exhibition rooms">
+    <div class="obs-filter" role="group" aria-label="Show works by kind">
+      {[
+        { id: 'all', en: 'All', de: 'Alle', count: archiveWorks.length },
+        { id: '3d', en: '3D', de: '3D', count: archiveWorks.filter(w => (w.detail?.tools ?? '').includes('CINEMA 4D')).length },
+        { id: 'film', en: 'Film', de: 'Film', count: archiveWorks.filter(w => w.video).length },
+        { id: 'web', en: 'Web', de: 'Web', count: archiveWorks.filter(w => w.type === 'case').length },
+      ].map(chip => <button type="button" data-obs-filter={chip.id} aria-pressed={chip.id === 'all' ? 'true' : 'false'}><span class="obs-en">{chip.en}</span><span class="obs-de">{chip.de}</span><small>{String(chip.count).padStart(2, '0')}</small></button>)}
+    </div>    <nav class="obs-journey" aria-label="Exhibition rooms">
       {archiveRooms.map((room, roomIndex) => <button data-obs-room={roomIndex} aria-current={roomIndex===0 ? 'step' : undefined}><span class="obs-room-track"><i data-obs-room-progress={roomIndex}></i></span><span class="obs-room-label"><b>0{roomIndex+1}</b><span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span><small>{String(room.ids.length).padStart(2,'0')}</small></span></button>)}
     </nav>
     <span class="obs-signature">CURATED BY RODION BELOUSOV · VIENNA</span>

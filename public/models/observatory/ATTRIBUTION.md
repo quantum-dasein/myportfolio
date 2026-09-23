@@ -18,3 +18,5 @@ The skeleton and idle/walk animations remain Mixamo's work and are credited in
 the collection index. A procedural astronaut rig provides an offline fallback.
 
 curator-motion-v1.glb is the runtime derivative: only the skeleton and the idle/walk channels used by the suit are retained. Unused body meshes and other animation clips are removed.
+
+- ship.glb: 'Spaceship' by Quaternius, CC0 1.0 (public domain), https://poly.pizza/m/Jqfed124pQ. Materials are replaced at runtime.

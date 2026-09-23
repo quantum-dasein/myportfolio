@@ -87,6 +87,23 @@ export async function mountObservatory(root:HTMLElement){
     world.select(index,mode);if(world.isCalm())setCurrent(index);
     if(jump&&!world.isCalm())stage.animate([{opacity:.35},{opacity:1}],{duration:700,easing:'ease-out'});
   }
+  // Filter by kind: the matching works stay lit, the arrows and the wheel skip the rest.
+  const KINDS:Record<string,(w:typeof archiveWorks[number])=>boolean>={
+    all:()=>true,'3d':w=>(w.detail?.tools??'').includes('CINEMA 4D'),film:w=>Boolean(w.video),web:w=>w.type==='case',
+  };
+  let filterMask:boolean[]|null=null;
+  const allowed=(i:number)=>!filterMask||filterMask[i];
+  const stepFrom=(from:number,dir:number)=>{let i=from+dir;while(i>=0&&i<archiveWorks.length&&!allowed(i))i+=dir;return i;};
+  root.querySelectorAll<HTMLButtonElement>('[data-obs-filter]').forEach(chip=>chip.addEventListener('click',()=>{
+    const kind=chip.dataset.obsFilter??'all';
+    root.querySelectorAll<HTMLButtonElement>('[data-obs-filter]').forEach(other=>other.setAttribute('aria-pressed',String(other===chip)));
+    filterMask=kind==='all'?null:archiveWorks.map(KINDS[kind]);
+    world?.setFilter(filterMask);root.classList.toggle('is-filtered',Boolean(filterMask));
+    if(filterMask&&!filterMask[aimed()]){
+      let best=-1;filterMask.forEach((ok,i)=>{if(ok&&(best<0||Math.abs(i-aimed())<Math.abs(best-aimed())))best=i;});
+      if(best>=0)navigate(best,false,Math.abs(best-aimed())>3?'teleport':'walk');
+    }
+  },{signal}));
   // Crossing a gate: the name of the room you enter, large and brief, like a film title.
   const roomCard=root.querySelector<HTMLElement>('[data-obs-room-card]')!;
   function showRoomCard(room:number){
@@ -342,8 +359,8 @@ export async function mountObservatory(root:HTMLElement){
   const labelCompare=()=>root.querySelectorAll<HTMLInputElement>('[data-obs-compare-range]').forEach(range=>range.setAttribute('aria-label',de()?'Szene und Markenversion vergleichen':'Compare scene and brand version'));
   labelCompare();
   root.querySelector('[data-obs-open]')!.addEventListener('click',openViewer,{signal});
-  root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(aimed()-1),{signal});
-  root.querySelector('[data-obs-next]')!.addEventListener('click',()=>{if(aimed()>=archiveWorks.length-1&&!world?.isMoving())setFinale(true);else navigate(aimed()+1);},{signal});
+  root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(stepFrom(aimed(),-1)),{signal});
+  root.querySelector('[data-obs-next]')!.addEventListener('click',()=>{if(aimed()>=archiveWorks.length-1&&!world?.isMoving())setFinale(true);else navigate(stepFrom(aimed(),1));},{signal});
   // The end of the hall: a last gate, a signal sent from his tablet, and an invitation.
   const finale=root.querySelector<HTMLElement>('[data-obs-finale]')!;let inFinale=false,overscroll=0;
   function setFinale(on:boolean){
@@ -408,7 +425,7 @@ export async function mountObservatory(root:HTMLElement){
       if(Math.abs(wheelDistance)>40){
         const side=world.lookSide(),forward=wheelDistance>0;wheelDistance=0;
         const step=forward?(side||1):(side?-side:-1);
-        if(now-lastNavigation>900){lastNavigation=now;navigate(aimed()+step);}
+        if(now-lastNavigation>900){lastNavigation=now;navigate(stepFrom(aimed(),step));}
       }
       return;
     }
@@ -522,8 +539,8 @@ export async function mountObservatory(root:HTMLElement){
       // Up walks towards your gaze, down walks away from it.
       const side=world.lookSide(),step=event.key==='ArrowUp'?(side||1):(side?-side:-1);navigate(aimed()+step,true);
     }else{
-      if(event.key==='ArrowRight'||event.key==='ArrowUp')navigate(aimed()+1,Boolean(world?.isCalm()));
-      if(event.key==='ArrowLeft'||event.key==='ArrowDown')navigate(aimed()-1,Boolean(world?.isCalm()));
+      if(event.key==='ArrowRight'||event.key==='ArrowUp')navigate(stepFrom(aimed(),1),Boolean(world?.isCalm()));
+      if(event.key==='ArrowLeft'||event.key==='ArrowDown')navigate(stepFrom(aimed(),-1),Boolean(world?.isCalm()));
     }
     if(event.key==='Home')navigate(0);if(event.key==='End')navigate(archiveWorks.length-1);
     if(event.key==='Enter'||event.key===' ')openViewer();
@@ -539,9 +556,11 @@ export async function mountObservatory(root:HTMLElement){
     let saved=0;try{saved=Number(sessionStorage.getItem('rb-observatory-index')??0);}catch{}
     current=Number.isInteger(saved)&&saved>=0&&saved<archiveWorks.length?saved:0;
     const linked=archiveWorks.findIndex(work=>work.id===root.dataset.obsStart);if(linked>=0)current=linked;
+    if(new URLSearchParams(location.search).has('reel'))current=0;
     update();
     if(bootFailed){fallback();return;}
-    let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
+    const reel=new URLSearchParams(location.search).has('reel');if(reel)root.classList.add('is-reel');
+    let intro=reel;try{intro=reel||!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
     world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);void loadStars();world.onGate=room=>{showRoomCard(room);sound.gate();};
     world.setPortalTexts(portalLines());addEventListener('rb:langchange',()=>world?.setPortalTexts(portalLines()),{signal});
@@ -564,6 +583,22 @@ export async function mountObservatory(root:HTMLElement){
       await world.beginIntro();
       if(!world.disposed)revealShell();
       try{sessionStorage.setItem('rb-observatory-intro','1');}catch{}
+    }
+    if(reel){
+      // Showreel: a scripted tour for screen capture, with the interface hidden.
+      const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+      (window as any).__reelDone=false;
+      await wait(1800);
+      for(const i of [1,2,3])(navigate(i),await wait(2300));
+      navigate(6,false,'teleport');await wait(3600);
+      navigate(7);await wait(2600);navigate(8);await wait(2600);
+      await enterMap();await wait(2600);await leaveMap(9);await wait(3200);
+      setFirstPerson(true);await wait(2600);world.lookBy(-260,-160);await wait(2200);world.lookBy(260,160);await wait(1200);
+      navigate(10);await wait(2600);navigate(11);await wait(2400);
+      setFirstPerson(false);await wait(2200);
+      navigate(12,false,'teleport');await wait(3400);navigate(13);await wait(2300);navigate(14);await wait(2600);
+      setFinale(true);await wait(3500);
+      (window as any).__reelDone=true;
     }
   }catch(error){console.warn('The Observatory: showing the accessible collection.',error);world?.dispose();fallback();}
 }

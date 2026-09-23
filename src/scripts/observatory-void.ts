@@ -35,7 +35,7 @@ type Bay={
   pool:THREE.Mesh<THREE.PlaneGeometry,Shader>;
   texture?:THREE.Texture;loading?:Promise<void>;
   projector?:THREE.Mesh<THREE.BufferGeometry,Shader>;
-  tint:THREE.Color;reveal:number;active:number;hover:number;room:number;lum:number;edge:THREE.Color;
+  tint:THREE.Color;reveal:number;active:number;hover:number;room:number;lum:number;edge:THREE.Color;match:number;
 };
 
 // Each room has its own weather. Values blend continuously as the camera travels.
@@ -438,7 +438,7 @@ export class ObservatoryWorld {
         vertexShader:screenVertex,fragmentShader:screenFragment,transparent:true,fog:false,
       }));
       screen.scale.set(w,h,1);screen.position.set(0,LIFT+h/2,0);screen.userData.index=i;group.add(screen);
-      const bay:Bay={group,screen,halo,beam,pool,tint,reveal:0,active:0,hover:0,room:work.roomIndex,lum:.4,edge:new THREE.Color('#d9dee4')};
+      const bay:Bay={group,screen,halo,beam,pool,tint,reveal:0,active:0,hover:0,match:1,room:work.roomIndex,lum:.4,edge:new THREE.Color('#d9dee4')};
       // The cinema room: every film is thrown onto its frame by a projector overhead.
       if(ROOMS[work.roomIndex].projector){
         bay.projector=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.ShaderMaterial({uniforms:{uTint:{value:tint.clone()},uIntensity:{value:0},uTime:{value:0}},vertexShader:projectorVertex,fragmentShader:projectorFragment,...additive,side:THREE.DoubleSide}));
@@ -771,6 +771,27 @@ export class ObservatoryWorld {
     if(shipModel)try{
       const gltf=await loader.loadAsync(shipModel.src);if(this.disposed)return;
       const ship=gltf.scene;fit(ship,shipModel.height);
+      // Restyle any craft into the suit's family: ceramic hull, graphite panels, glowing engines.
+      const ceramic=new THREE.MeshPhysicalMaterial({color:'#dfe4e8',roughness:.32,metalness:.18,clearcoat:.6,clearcoatRoughness:.25});
+      const graphite=new THREE.MeshStandardMaterial({color:'#1a2027',roughness:.45,metalness:.65});
+      const engine=new THREE.MeshStandardMaterial({color:'#0c1a24',emissive:'#8fd8ff',emissiveIntensity:2.2,roughness:.4});
+      ship.traverse(object=>{const mesh=object as THREE.Mesh;if(!mesh.isMesh)return;
+        const restyle=(m:THREE.Material)=>{
+          const source=m as THREE.MeshStandardMaterial;
+          // Atlas-textured craft: keep the panel layout, but read it as light/dark only.
+          if(source.map){
+            const hull=new THREE.MeshPhysicalMaterial({map:source.map,roughness:.34,metalness:.25,clearcoat:.5,clearcoatRoughness:.3});
+            hull.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
+              `#include <map_fragment>
+              float luma=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));
+              diffuseColor.rgb=mix(vec3(.035,.045,.055),vec3(.86,.89,.91),smoothstep(.12,.32,luma));`);};
+            return hull;
+          }
+          const hsl={h:0,s:0,l:0};source.color?.getHSL(hsl);return hsl.l<.3?graphite:ceramic;
+        };
+        mesh.material=Array.isArray(mesh.material)?mesh.material.map(restyle):restyle(mesh.material);
+      });
+      void engine;
       this.ship.add(ship);this.ship.position.set(shipModel.x,0,shipModel.z);this.ship.rotation.y=shipModel.rotation;this.scene.add(this.ship);
     }catch(error){console.warn('Observatory ship failed',error);}
   }
@@ -1114,6 +1135,16 @@ export class ObservatoryWorld {
     this.planet.frustumCulled=false;this.scene.add(this.planet);
   }
 
+  /* ---------- Filter by kind ---------- */
+  filterMask:boolean[]|null=null;
+  setFilter(mask:boolean[]|null){this.filterMask=mask;this.lastActivity=performance.now();}
+  /** Nearest work to a fractional position that passes the filter. */
+  snapIndex(f:number){
+    const n=this.bays.length,base=THREE.MathUtils.clamp(Math.round(f),0,n-1);
+    if(!this.filterMask||this.filterMask[base])return base;
+    let best=base,bestD=Infinity;this.filterMask.forEach((ok,i)=>{if(ok&&Math.abs(i-f)<bestD){bestD=Math.abs(i-f);best=i;}});return best;
+  }
+
   /* ---------- Map view ---------- */
   private layoutMap(){
     const cols=this.narrow()?3:5,rows=Math.ceil(this.bays.length/cols),cellX=9.4,cellZ=7.4;
@@ -1193,7 +1224,7 @@ export class ObservatoryWorld {
 
     if(this.departure&&time>=this.departure.at){this.depart(this.departure.to);this.departure=undefined;this.lastInput=-1e9;}
     // Snap once the hand is off the hall.
-    if(!this.dragging&&time-this.lastInput>150&&this.focus===0)this.target=THREE.MathUtils.clamp(Math.round(this.target/GAP),0,this.bays.length-1)*GAP;
+    if(!this.dragging&&time-this.lastInput>150&&this.focus===0)this.target=this.snapIndex(this.target/GAP)*GAP;
     const previous=this.position;
     this.position=this.calm?this.target:THREE.MathUtils.damp(this.position,this.target,this.dragging?11:4.2,dt);
     if(Math.abs(this.position-this.target)<.0005)this.position=this.target;
@@ -1415,11 +1446,14 @@ export class ObservatoryWorld {
       u.uTime.value=this.elapsed;u.uReveal.value=bay.reveal;u.uShift.value=this.shift;u.uHover.value=bay.hover;
       u.uBend.value=this.shift*.55*(1-this.focus);
       u.uDim.value=(1-bay.active)*(1-this.focus*(isCurrent?1:0))+(isCurrent?0:this.focus);
+      // Filter: works outside the chosen kind sink into the dark; the rest keep their light.
+      bay.match=THREE.MathUtils.damp(bay.match,!this.filterMask||this.filterMask[i]?1:0,this.calm?100:5,dt);
+      u.uDim.value=Math.max(u.uDim.value,(1-bay.match)*.9);
       u.uLight.value=focusOthers*(this.exhibits.has(i)?.5:1);
       (u.uGlare.value as THREE.Vector3).set((tp.x-i*GAP)/bay.screen.scale.x+.5,(tp.y-bay.screen.position.y)/bay.screen.scale.y+.5,power*(tp.y>.3?1:.35)*(1-this.focus));
       u.uHolo.value=ROOMS[bay.room].holo*(isCurrent?mix(.3,0,this.focus):1)*(this.calm?.4:1);
       const room=ROOMS[bay.room];
-      let light=(.22+.78*bay.active)*bay.reveal*focusOthers;
+      let light=(.22+.78*bay.active)*bay.reveal*focusOthers*mix(.08,1,bay.match)+(this.filterMask&&this.filterMask[i]&&!isCurrent?.18*bay.match:0);
       if(ov>0){
         light=mix(light,(this.mapHover===i?1:.55)*bay.reveal,ov);
         u.uDim.value=mix(u.uDim.value,this.mapHover===i?0:.28,ov);u.uHolo.value*=1-ov;u.uBend.value*=1-ov;
@@ -1481,6 +1515,8 @@ export class ObservatoryWorld {
     if(this.curator.root.visible&&this.fp<.5&&this.astroIndex===this.index){
       const a=this.curator.root.position;add(this.projected.set(a.x-.5,a.y,a.z));add(this.projected.set(a.x+.5,a.y+2.5,a.z));
     }
+    // The parked ship shares the focus when it is in the shot.
+    if(this.ship.children.length&&Math.abs(this.ship.position.x-this.position)<GAP*.8){const s=this.ship.position;add(this.projected.set(s.x-2.2,s.y,s.z));add(this.projected.set(s.x+2.2,s.y+1.6,s.z));}
     const pad=.03,k=1-Math.exp(-dt*6);
     this.focusRect.x=mix(this.focusRect.x,Math.max(0,x0-pad),k);this.focusRect.y=mix(this.focusRect.y,Math.max(0,y0-pad),k);
     this.focusRect.z=mix(this.focusRect.z,Math.min(1,x1+pad),k);this.focusRect.w=mix(this.focusRect.w,Math.min(1,y1+pad),k);

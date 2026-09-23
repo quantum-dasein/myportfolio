@@ -10,5 +10,6 @@ export const workModels: Record<string, WorkModel> = {
 
 /** The astronaut's ship, parked in the hall at the start. Positions are in metres. */
 export type ShipModel = { src: string; x: number; z: number; rotation: number; height: number };
-export const shipModel: ShipModel | null = null;
+// Placeholder until Rodion's own ship is exported: 'Spaceship' by Quaternius, CC0 (poly.pizza/m/Jqfed124pQ).
+export const shipModel: ShipModel | null = { src: '/models/observatory/ship.glb', x: 5.2, z: -3.6, rotation: -2.1, height: 1.1 };
 // e.g. { src: '/models/observatory/ship.glb', x: 4.5, z: 3.2, rotation: -0.6, height: 2.4 }

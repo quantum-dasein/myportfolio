@@ -387,3 +387,21 @@ html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:non
 .observatory .obs-shell,.observatory .obs-stage,.observatory .obs-map,.observatory .obs-finale{touch-action:none}
 .observatory .obs-shell button,.observatory .obs-shell a{touch-action:manipulation}
 .obs-viewer,.obs-index,.obs-secret{touch-action:pan-y}
+
+/* Filter by kind. */
+.obs-filter{position:absolute;left:5.5%;bottom:92px;display:flex;gap:6px;pointer-events:auto;padding:4px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.obs-filter button{display:inline-flex;align-items:baseline;gap:6px;min-height:32px;padding:0 14px;border-radius:999px;font:500 12px/1 var(--font-display);color:#c3cbce;background:none;border:0;cursor:pointer;transition:background .3s,color .3s}
+.obs-filter button small{font-size:9px;opacity:.55;letter-spacing:.06em}
+.obs-filter button:hover{color:#fff;background:rgba(255,255,255,.06)}
+.obs-filter button[aria-pressed="true"]{background:#f3f5f6;color:#060708}
+.obs-filter button[aria-pressed="true"] small{opacity:.6}
+.observatory:not(.has-details) .obs-current>p{display:none}
+@media(max-width:600px){.obs-filter{left:50%;transform:translateX(-50%);bottom:auto;top:132px}.obs-filter button{min-height:34px;padding:0 12px}}
+@media(max-height:650px) and (min-width:601px){.obs-filter{bottom:62px}}
+@media(max-height:500px) and (orientation:landscape){.obs-filter{display:none}}
+.is-overview .obs-filter,.is-first-person .obs-filter,.is-finale .obs-filter{opacity:0;pointer-events:none}
+.obs-filter{bottom:auto;top:154px}
+@media(min-width:1700px){.obs-filter{top:176px}}
+@media(max-height:650px) and (min-width:601px){.obs-filter{top:126px;bottom:auto}}
+@media(max-width:600px){.obs-filter{top:132px}.obs-intro{top:max(21%,196px)!important}}
+.observatory.is-reel .obs-shell,.observatory.is-reel .obs-map-hint,.observatory.is-reel .obs-visor-hud,.observatory.is-reel .obs-room-card span,.observatory.is-reel .obs-room-card i{visibility:hidden!important}.observatory.is-reel .obs-stage{cursor:none!important}html:has(.observatory.is-reel) :is(header,.site-header,.rb-cursor,[class*=cursor]){visibility:hidden!important}
