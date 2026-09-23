@@ -859,9 +859,17 @@ export class ObservatoryWorld {
       transparent:true,fog:false,depthWrite:false,toneMapped:false}));
     membrane.position.set(x,LIFT+h/2,0);
     const aura=new THREE.Mesh(new THREE.PlaneGeometry(w+6,h+6),new THREE.ShaderMaterial({
-      uniforms:{uTint:{value:new THREE.Color('#7fd0ff')},uIntensity:{value:0},uSize:{value:new THREE.Vector2(w+6,h+6)}},
-      vertexShader:plainVertex,fragmentShader:haloFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
-    aura.position.set(x,LIFT+h/2,-.3);this.portal.add(aura);this.portalAura=aura;
+      uniforms:{uTint:{value:new THREE.Color('#7fd0ff')},uIntensity:{value:0},uTime:{value:0}},
+      vertexShader:plainVertex,
+      // A round, breathing corona with slow rays: light pouring out of the opening, not a coloured box.
+      fragmentShader:`uniform vec3 uTint;uniform float uIntensity,uTime;varying vec2 vUv;
+        void main(){vec2 p=(vUv-.5)*vec2(1.18,1.);float r=length(p)*2.;float a=atan(p.y,p.x);
+          float core=exp(-r*r*3.2),corona=exp(-r*2.4)*.55;
+          float rays=pow(.5+.5*sin(a*9.+uTime*.35),6.)*.35+pow(.5+.5*sin(a*5.-uTime*.22+1.3),8.)*.25;
+          float g=(core+corona*(1.+rays))*smoothstep(1.,.55,r);
+          gl_FragColor=vec4(uTint*g*uIntensity,1.);}`,
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    aura.position.set(x,LIFT+h/2,-.3);aura.scale.set(1.45,1.45,1);this.portal.add(aura);this.portalAura=aura;
     const pool=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:{uTint:{value:new THREE.Color('#6fc6ff')},uIntensity:{value:0}},vertexShader:plainVertex,fragmentShader:poolFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
     pool.rotation.x=-Math.PI/2;pool.scale.set(w*1.8,7,1);pool.position.set(x,.012,1.6);
     this.portal.add(membrane,pool);this.portal.visible=false;this.scene.add(this.portal);
@@ -896,7 +904,7 @@ export class ObservatoryWorld {
     u.uTextAlpha.value=smooth(0,.14,ph)*(1-smooth(.86,1,ph));
     u.uIntensity.value=smooth(.4,.8,this.intro)*(1-ov)*(this.calm?.8:1);
     this.portalPool.material.uniforms.uIntensity.value=.34*(1+this.finale*2)*u.uIntensity.value;
-    this.portalAura.material.uniforms.uIntensity.value=(.22+.06*Math.sin(this.elapsed*1.7)+this.finale*.6)*u.uIntensity.value;
+    this.portalAura.material.uniforms.uIntensity.value=(.42+.1*Math.sin(this.elapsed*1.3)+this.finale*.8)*u.uIntensity.value;this.portalAura.material.uniforms.uTime.value=this.elapsed;
   }
 
   /* ---------- Stars left by visitors ---------- */

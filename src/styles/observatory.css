@@ -446,3 +446,25 @@ html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:non
 .obs-filter .obs-tour-toggle::before{content:"";position:absolute;left:-3px;top:9px;bottom:9px;width:1px;background:rgba(255,255,255,.14)}
 .obs-filter .obs-tour-toggle span[aria-hidden]{font-size:8px!important;line-height:1}
 .obs-intro h1{font-size:clamp(48px,5.6vw,92px)!important}
+
+/* Tour, round two: a toolbar pill and a small caption card with its own controls. */
+.observatory .obs-tour-toggle{font:500 13px/1 var(--font-display)!important;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px!important;border-radius:999px!important;color:#dff4ff!important;background:rgba(143,216,255,.08)!important;border:1px solid rgba(143,216,255,.35)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);cursor:pointer;transition:background .3s,border-color .3s,transform .3s cubic-bezier(.2,.7,.2,1)}
+.observatory .obs-tour-toggle .obs-icon{width:13px;height:13px;fill:currentColor;stroke:none}
+.observatory .obs-tour-toggle:hover{background:rgba(143,216,255,.16)!important;transform:translateY(-1px)}
+.observatory .obs-tour-toggle[aria-pressed="true"]{background:#8fd8ff!important;color:#04121c!important;border-color:transparent!important}
+.obs-tour-caption{bottom:188px;width:min(460px,88vw);padding:18px 20px 0;border-radius:18px;background:rgba(6,9,13,.72);border:1px solid rgba(143,216,255,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);text-align:left;overflow:hidden}
+.is-touring .obs-tour-caption{pointer-events:auto}
+.obs-tour-title{display:block;margin-top:8px;font:500 22px/1.15 var(--font-display);letter-spacing:-.02em;color:#fff}
+.obs-tour-caption p{margin:6px 0 12px;font:400 14px/1.5 var(--font-display);color:#c9d2d5;text-shadow:none}
+.obs-tour-dots{display:flex;gap:6px;margin-bottom:12px}
+.obs-tour-dots button{width:8px;height:8px;padding:0;border-radius:50%;border:0;background:rgba(255,255,255,.22);cursor:pointer}
+.obs-tour-dots button.is-on{background:#8fd8ff;width:22px;border-radius:4px}
+.obs-tour-controls{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+.obs-tour-controls button{display:inline-grid;place-items:center;min-width:38px;height:38px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#fff;font:500 12px/1 var(--font-display);cursor:pointer}
+.obs-tour-controls button .obs-icon{width:16px;height:16px}
+.obs-tour-controls [data-obs-tour-open]{flex:1;background:#f3f5f6;color:#060708;border-color:transparent}
+.obs-tour-progress{margin:0 -20px;border-radius:0}
+.is-touring .obs-current,.is-touring .obs-actions{opacity:.25}
+@media(max-width:600px){.obs-tour-caption{top:auto;bottom:112px;width:calc(100% - 24px)}.obs-tour-title{font-size:19px}.obs-tour-caption p{font-size:13px}.observatory .obs-tour-toggle{padding:0!important;width:44px;min-height:44px;justify-content:center}.observatory .obs-tour-toggle :is(.obs-en,.obs-de){display:none!important}.is-touring .obs-current,.is-touring .obs-actions,.is-touring .obs-journey{opacity:0;pointer-events:none}}
+.obs-tour-controls [data-obs-tour-open],.obs-tour-controls [data-obs-tour-open] *{color:#060708!important}
+@media(min-width:601px){.obs-tour-caption{left:5.5%;transform:translate(0,12px)}.is-touring .obs-tour-caption{transform:none}}

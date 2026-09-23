@@ -87,53 +87,48 @@ export async function mountObservatory(root:HTMLElement){
     world.select(index,mode);if(world.isCalm())setCurrent(index);
     if(jump&&!world.isCalm())stage.animate([{opacity:.35},{opacity:1}],{duration:700,easing:'ease-out'});
   }
-  // Filter by kind: the matching works stay lit, the arrows and the wheel skip the rest.
-  const KINDS:Record<string,(w:typeof archiveWorks[number])=>boolean>={
-    all:()=>true,'3d':w=>(w.detail?.tools??'').includes('CINEMA 4D'),film:w=>Boolean(w.video),web:w=>w.type==='case',
-  };
-  let filterMask:boolean[]|null=null;
-  const allowed=(i:number)=>!filterMask||filterMask[i];
-  // The filter only highlights; movement stays free.
   const stepFrom=(from:number,dir:number)=>from+dir;
-  root.querySelectorAll<HTMLButtonElement>('[data-obs-filter]').forEach(chip=>chip.addEventListener('click',()=>{
-    const kind=chip.dataset.obsFilter??'all';
-    root.querySelectorAll<HTMLButtonElement>('[data-obs-filter]').forEach(other=>other.setAttribute('aria-pressed',String(other===chip)));
-    filterMask=kind==='all'?null:archiveWorks.map(KINDS[kind]);
-    world?.setFilter(filterMask);root.classList.toggle('is-filtered',Boolean(filterMask));
-  },{signal}));
-  // Guided tour: the astronaut leads through six works with a line of context each,
-  // then walks you to the portal. Any touch, key or wheel hands control back.
-  const TOUR=[0,1,7,9,12,14];const TOUR_HOLD=6200;
+  // Guided tour: the astronaut leads through six works, each with its title and a line
+  // of context. Step back or forward, open the work, or end it; wheel, keys and drags
+  // on the hall hand control back.
+  const TOUR=[0,1,7,9,12,14];const TOUR_HOLD=7000;
   const tourButton=root.querySelector<HTMLButtonElement>('[data-obs-tour]')!,tourCaption=root.querySelector<HTMLElement>('[data-obs-tour-caption]')!;
-  let touring=0;
+  const tourBar=tourCaption.querySelector<HTMLElement>('[data-obs-tour-bar]')!,tourDots=tourCaption.querySelector<HTMLElement>('[data-obs-tour-dots]')!;
+  let touring=false,tourStep=0,tourTimer:ReturnType<typeof setTimeout>|undefined;
+  TOUR.forEach((_,i)=>{const dot=document.createElement('button');dot.type='button';dot.setAttribute('aria-label',`${i+1}`);dot.addEventListener('click',()=>showTourStep(i));tourDots.append(dot);});
   function stopTour(){
-    if(!touring)return;touring=0;tourButton.setAttribute('aria-pressed','false');root.classList.remove('is-touring');
-    tourCaption.querySelector<HTMLElement>('[data-obs-tour-bar]')!.getAnimations().forEach(a=>a.cancel());
+    if(!touring)return;touring=false;clearTimeout(tourTimer);tourButton.setAttribute('aria-pressed','false');root.classList.remove('is-touring');
+    tourBar.getAnimations().forEach(a=>a.cancel());
   }
-  async function runTour(){
+  function showTourStep(step:number){
+    if(!touring)return;
+    if(step>=TOUR.length){stopTour();navigate(archiveWorks.length);return;}
+    tourStep=Math.max(0,step);clearTimeout(tourTimer);
+    const index=TOUR[tourStep],work=archiveWorks[index],note=observatoryNotes[work.id],l=de()?1:0;
+    if(index!==aimed())navigate(index,false,Math.abs(index-aimed())>3?'teleport':'walk');
+    text('[data-obs-tour-step]',`${de()?'Führung':'Tour'} · ${String(tourStep+1).padStart(2,'0')} / ${String(TOUR.length).padStart(2,'0')}`);
+    text('[data-obs-tour-title]',workTitle(work));
+    text('[data-obs-tour-text]',note?.focus[l]??work.detail?.[de()?'de':'en']??'');
+    [...tourDots.children].forEach((dot,i)=>dot.classList.toggle('is-on',i===tourStep));
+    tourBar.getAnimations().forEach(a=>a.cancel());
+    tourBar.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:TOUR_HOLD,easing:'linear',fill:'forwards'});
+    tourTimer=setTimeout(()=>showTourStep(tourStep+1),TOUR_HOLD);
+  }
+  function runTour(){
     if(touring){stopTour();return;}
     if(!world||viewer.open||mapping)return;
     if(firstPerson)setFirstPerson(false);if(inFinale)setFinale(false);
-    const token=++tourSeq;touring=token;tourButton.setAttribute('aria-pressed','true');root.classList.add('is-touring');
-    const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
-    for(let step=0;step<TOUR.length;step++){
-      if(touring!==token)return;
-      const index=TOUR[step],work=archiveWorks[index],note=observatoryNotes[work.id],l=de()?1:0;
-      if(index!==aimed())navigate(index,false,Math.abs(index-aimed())>3?'teleport':'walk');
-      text('[data-obs-tour-step]',`${de()?'Führung':'Tour'} · ${step+1} / ${TOUR.length}`);
-      text('[data-obs-tour-text]',note?.focus[l]??work.detail?.[de()?'de':'en']??'');
-      const bar=tourCaption.querySelector<HTMLElement>('[data-obs-tour-bar]')!;bar.getAnimations().forEach(a=>a.cancel());
-      bar.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:TOUR_HOLD,easing:'linear',fill:'forwards'});
-      await wait(TOUR_HOLD);
-    }
-    if(touring!==token)return;
-    stopTour();navigate(archiveWorks.length);
+    touring=true;tourButton.setAttribute('aria-pressed','true');root.classList.add('is-touring');showTourStep(0);
   }
-  let tourSeq=0;
-  tourButton.addEventListener('click',event=>{event.stopPropagation();void runTour();},{signal});
-  for(const type of ['wheel','keydown'] as const)addEventListener(type,event=>{if(touring&&!(event.target as HTMLElement)?.closest?.('[data-obs-tour]'))stopTour();},{signal,passive:true});
-  stage.addEventListener('pointerdown',()=>stopTour(),{signal});
-  // Crossing a gate: the name of the room you enter, large and brief, like a film title.
+  tourButton.addEventListener('click',event=>{event.stopPropagation();runTour();},{signal});
+  tourCaption.querySelector('[data-obs-tour-prev]')!.addEventListener('click',()=>showTourStep(tourStep-1),{signal});
+  tourCaption.querySelector('[data-obs-tour-next]')!.addEventListener('click',()=>showTourStep(tourStep+1),{signal});
+  tourCaption.querySelector('[data-obs-tour-stop]')!.addEventListener('click',()=>stopTour(),{signal});
+  tourCaption.querySelector('[data-obs-tour-open]')!.addEventListener('click',()=>{clearTimeout(tourTimer);tourBar.getAnimations().forEach(a=>a.pause());void openViewer();},{signal});
+  // Reading a work pauses the tour; closing it resumes at the next stop.
+  viewer.addEventListener('close',()=>{if(touring)setTimeout(()=>showTourStep(tourStep+1),1600);},{signal});
+  for(const type of ['wheel','keydown'] as const)addEventListener(type,event=>{if(touring&&!viewer.open&&!(event.target as HTMLElement)?.closest?.('[data-obs-tour-caption],[data-obs-tour]'))stopTour();},{signal,passive:true});
+  stage.addEventListener('pointerdown',()=>stopTour(),{signal});  // Crossing a gate: the name of the room you enter, large and brief, like a film title.
   const roomCard=root.querySelector<HTMLElement>('[data-obs-room-card]')!;
   let pendingRoom=-1,announcedRoom=-1,announcedAt=-1e9;
   function showRoomCard(room:number){
