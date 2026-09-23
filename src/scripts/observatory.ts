@@ -83,6 +83,16 @@ export async function mountObservatory(root:HTMLElement){
     world.select(index,mode);if(world.isCalm())setCurrent(index);
     if(jump&&!world.isCalm())stage.animate([{opacity:.35},{opacity:1}],{duration:700,easing:'ease-out'});
   }
+  // Crossing a gate: the name of the room you enter, large and brief, like a film title.
+  const roomCard=root.querySelector<HTMLElement>('[data-obs-room-card]')!;
+  function showRoomCard(room:number){
+    if(mapping||viewer.open||opening||root.classList.contains('is-intro'))return;
+    const info=archiveRooms[room],lang=de()?'de':'en';
+    roomCard.querySelector('[data-obs-card-num]')!.textContent=`0${room+1} / 04`;
+    roomCard.querySelector('[data-obs-card-name]')!.textContent=info[lang];
+    roomCard.querySelector('[data-obs-card-sub]')!.textContent=info.subtitle[lang];
+    roomCard.classList.remove('is-on');void roomCard.offsetWidth;roomCard.classList.add('is-on');
+  }
   function revealShell(){
     root.classList.remove('is-intro');
     root.querySelectorAll<HTMLElement>('.obs-shell > *').forEach((element,i)=>{
@@ -340,7 +350,7 @@ export async function mountObservatory(root:HTMLElement){
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
-    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);world.onLand=()=>sound.land();
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);world.onGate=room=>{showRoomCard(room);sound.gate();};world.onLand=()=>sound.land();
     if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;
     // First visit of the session opens in darkness; the interface arrives with the light.
     if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}

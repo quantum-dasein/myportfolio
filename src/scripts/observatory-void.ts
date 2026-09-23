@@ -227,7 +227,15 @@ export class ObservatoryWorld {
   // The visitor's hand is a torch: it lights the wet floor, the dust and the prints.
   torch=new THREE.PointLight('#fff1dc',0,7,1.6);
   // Light spilling off the lit print onto whoever stands beside it.
-  spill=new THREE.PointLight('#ffffff',0,7.5,1.7);spillColor=new THREE.Color('#d9dee4');
+  spill=new THREE.PointLight('#ffffff',0,7.5,1.7);spillColor=new THREE.Color('#d9dee4');scratchColor=new THREE.Color();
+  // Dust kicked up by his leaps, settling slowly in the faint gravity.
+  puffs:{points:THREE.Points<THREE.BufferGeometry,Shader>;age:number}[]=[];puffSlot=0;
+  // The film on screen lights the cinema: its colour and brightness, sampled live.
+  cinemaColor=new THREE.Color('#d98fa6');cinemaTarget=new THREE.Color('#d98fa6');cinemaLum=.3;cinemaLumTarget=.3;cinemaMix=0;
+  filmProbe?:CanvasRenderingContext2D;filmSampledAt=0;
+  // Light gates between the rooms: you pass through them, the room changes around you.
+  gates:{mesh:THREE.Mesh<THREE.PlaneGeometry,Shader>;x:number;side:number;passAt:number;room:number;back:number}[]=[];
+  onGate?:(room:number)=>void;
   followSpot=new THREE.Group();followFrom=new THREE.Vector3();
   torchPoint=new THREE.Vector3(0,0,2);torchGoal=new THREE.Vector3();torchPower=0;
   pointerInside=false;lastPointer=new THREE.Vector2(9,9);pointerMovedAt=-1e9;
@@ -295,6 +303,7 @@ export class ObservatoryWorld {
     this.scene.add(this.floor);
 
     this.stars=this.buildStars();this.scene.add(this.stars);
+    this.buildPuffs();this.buildGates();
     this.dust=this.buildDust();this.scene.add(this.dust);
     this.buildBays();
     this.scene.add(this.curator.root);
@@ -579,7 +588,7 @@ export class ObservatoryWorld {
     if(this.calm){this.tele='here';this.hop=undefined;this.dissolve.uDissolve.value=0;this.curator.root.visible=true;return;}
     if(this.tele==='here'&&this.hop){
       this.hop.t=Math.min(1,this.hop.t+dt/this.hop.dur);
-      if(this.hop.t>=1){this.astroIndex=this.hop.index;this.hop=undefined;this.landing=1;this.onLand?.();}
+      if(this.hop.t>=1){this.astroIndex=this.hop.index;this.puff(this.hop.toX,this.hop.toZ,1+this.hop.height*.18);this.hop=undefined;this.landing=1;this.onLand?.();}
     }
     if(this.tele==='here'&&!this.hop){
       const home=this.anchor(this.astroIndex,this.anchorScratch);
@@ -591,6 +600,7 @@ export class ObservatoryWorld {
         else{
           const to=this.anchor(this.index,new THREE.Vector2()),span=Math.max(1,steps);
           this.hop={fromX:this.astro.x,fromZ:this.astro.y,toX:to.x,toZ:to.y,t:0,dur:.8+.16*span,height:1.3+.45*span,index:this.index};
+          this.puff(this.astro.x,this.astro.y,.45);
           // Through his eyes the leap faces the next work, wherever you were looking.
           if(this.fpGoal)this.lookGoal.set(0,0);
         }
@@ -656,6 +666,113 @@ export class ObservatoryWorld {
     this.tablet.position.copy(handPos).addScaledVector(forward,.2).addScaledVector(left,.06).add(new THREE.Vector3(0,.1,0));
     this.tablet.lookAt(headPos);this.tablet.scale.setScalar(smooth(.06,.45,w));
     if(time-this.tabletDrawnAt>(w>.05||this.tele!=='here'?110:600)){this.tabletDrawnAt=time;this.drawTablet(time);}
+  }
+
+  /* ---------- Dust from the leaps ---------- */
+  private buildPuffs(){
+    let seed=5519;const random=()=>((seed=seed*16807%2147483647)-1)/2147483646;
+    const count=this.mobile?70:120;
+    for(let slot=0;slot<3;slot++){
+      const seeds=new Float32Array(count*4);for(let i=0;i<seeds.length;i++)seeds[i]=random();
+      const geometry=new THREE.BufferGeometry();
+      geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(count*3),3));
+      geometry.setAttribute('aSeed',new THREE.BufferAttribute(seeds,4));
+      const material=new THREE.ShaderMaterial({
+        uniforms:{uOrigin:{value:new THREE.Vector3()},uAge:{value:99},uStrength:{value:1},uPixelRatio:{value:1},uTint:{value:new THREE.Color('#f4e6d2')}},
+        vertexShader:`attribute vec4 aSeed;uniform vec3 uOrigin;uniform float uAge,uStrength,uPixelRatio;varying float vA;
+          void main(){
+            float a=aSeed.x*6.2832,speed=(.5+aSeed.z*1.9)*uStrength,t=uAge;
+            vec3 v=vec3(cos(a)*speed,(.18+aSeed.y*.75)*speed*.9,sin(a)*speed*.55);
+            float drag=(1.-exp(-t*1.5))/1.5;
+            vec3 p=uOrigin+vec3(v.x*drag,v.y*drag-.5*.22*t*t,v.z*drag);p.y=max(p.y,.03);
+            vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
+            gl_PointSize=clamp((1.2+aSeed.w*2.8)*uPixelRatio*20./-mv.z,.7,11.);
+            vA=smoothstep(0.,.05,t)*(1.-smoothstep(.6,2.8+aSeed.w*1.8,t))*(.35+.65*aSeed.y);}`,
+        fragmentShader:`uniform vec3 uTint;varying float vA;void main(){float d=length(gl_PointCoord-.5);gl_FragColor=vec4(uTint*vA*(1.-smoothstep(.08,.5,d))*1.5,1.);}`,
+        transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
+      });
+      const points=new THREE.Points(geometry,material);points.frustumCulled=false;points.visible=false;this.scene.add(points);
+      this.puffs.push({points,age:99});
+    }
+  }
+  private puff(x:number,z:number,strength:number){
+    if(this.calm||!this.puffs.length)return;
+    const p=this.puffs[this.puffSlot++%this.puffs.length];
+    p.age=0;p.points.visible=true;const u=p.points.material.uniforms;
+    (u.uOrigin.value as THREE.Vector3).set(x,.05,z);u.uStrength.value=strength;
+    (u.uTint.value as THREE.Color).copy(this.spillColor).lerp(new THREE.Color('#f4ead8'),.55);
+  }
+  private updatePuffs(dt:number){
+    const pr=this.renderer.getPixelRatio();
+    for(const p of this.puffs){
+      if(!p.points.visible)continue;p.age+=dt;
+      const u=p.points.material.uniforms;u.uAge.value=p.age;u.uPixelRatio.value=pr;
+      if(p.age>5||this.fp>.9)p.points.visible=false;
+    }
+  }
+
+  /* ---------- Living cinema ---------- */
+  private sampleFilm(time:number,dt:number){
+    const playing=Boolean(this.preview&&this.previewTexture&&this.previewIndex>=0&&this.bays[this.previewIndex].room===2);
+    this.cinemaMix=THREE.MathUtils.damp(this.cinemaMix,playing?1:0,playing?2.5:4,dt);
+    if(playing&&time-this.filmSampledAt>130){
+      this.filmSampledAt=time;
+      if(!this.filmProbe){const c=document.createElement('canvas');c.width=c.height=8;this.filmProbe=c.getContext('2d',{willReadFrequently:true})??undefined;}
+      try{
+        const ctx=this.filmProbe!;ctx.drawImage(this.preview!,0,0,8,8);const data=ctx.getImageData(0,0,8,8).data;
+        let r=0,g=0,b=0;for(let p=0;p<data.length;p+=4){r+=data[p];g+=data[p+1];b+=data[p+2];}
+        const n=data.length/4;this.cinemaLumTarget=(r*.2126+g*.7152+b*.0722)/n/255;
+        const hsl={h:0,s:0,l:0};this.cinemaTarget.setRGB(r/n/255,g/n/255,b/n/255,THREE.SRGBColorSpace).getHSL(hsl);
+        this.cinemaTarget.setHSL(hsl.h,Math.min(1,hsl.s*1.6+.1),.6);
+      }catch{}
+    }
+    // Cuts in the film flash through the room, but never strobe.
+    this.cinemaColor.lerp(this.cinemaTarget,1-Math.exp(-dt*5));
+    this.cinemaLum=THREE.MathUtils.damp(this.cinemaLum,this.cinemaLumTarget,6,dt);
+  }
+
+  /* ---------- Gates between rooms ---------- */
+  private buildGates(){
+    const palette=['#e2c48f','#9cc3e6','#e59ab3','#7fe3d4'];
+    archiveWorks.forEach((work,i)=>{
+      const next=archiveWorks[i+1];if(!next||next.roomIndex===work.roomIndex)return;
+      const mesh=new THREE.Mesh(new THREE.PlaneGeometry(19,8.4),new THREE.ShaderMaterial({
+        uniforms:{uTint:{value:new THREE.Color(palette[next.roomIndex])},uIntensity:{value:0},uNear:{value:0},uTime:{value:0},uPass:{value:9},uHit:{value:new THREE.Vector2(.7,.3)}},
+        vertexShader:plainVertex,
+        fragmentShader:`uniform vec3 uTint;uniform float uIntensity,uNear,uTime,uPass;uniform vec2 uHit;varying vec2 vUv;
+          ${NOISE}
+          void main(){
+            vec2 p=vUv;
+            vec2 e=min(p,1.-p);float frame=min(e.x*19.,e.y*8.4);
+            float line=exp(-frame*frame*55.)+exp(-frame*6.)*.16;
+            float floorLine=exp(-p.y*p.y*900.)*.8;
+            float shimmer=noise(p*vec2(38.,16.)+vec2(0.,uTime*.35))*noise(p*vec2(7.,3.)-uTime*.08);
+            float membrane=shimmer*.12*uNear;
+            float ring=exp(-pow((length((p-uHit)*vec2(19.,8.4))-uPass*9.)*1.1,2.))*exp(-uPass*1.4)*step(0.,uPass);
+            float a=(line*(.35+.65*uNear)+floorLine*(.4+.6*uNear)+membrane+ring*.9)*uIntensity;
+            gl_FragColor=vec4(uTint*a,1.);
+          }`,
+        transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide,
+      }));
+      mesh.rotation.y=Math.PI/2;mesh.position.set((i+.5)*GAP,4.2,6.2);mesh.frustumCulled=false;this.scene.add(mesh);
+      this.gates.push({mesh,x:(i+.5)*GAP,side:0,passAt:-1e9,room:next.roomIndex,back:work.roomIndex});
+    });
+  }
+  private updateGates(x:number,ov:number,time:number){
+    const cam=this.camera.position;
+    for(const gate of this.gates){
+      const d=cam.x-gate.x,side=Math.sign(d);
+      if(gate.side!==0&&side!==gate.side&&ov===0){
+        gate.passAt=time;
+        (gate.mesh.material.uniforms.uHit.value as THREE.Vector2).set(THREE.MathUtils.clamp((cam.z-(gate.mesh.position.z-9.5))/19,0,1),THREE.MathUtils.clamp(cam.y/8.4,0,1));
+        this.onGate?.(side>0?gate.room:gate.back);
+      }
+      gate.side=side;
+      const u=gate.mesh.material.uniforms,near=Math.exp(-d*d/60);
+      u.uNear.value=near;u.uTime.value=this.elapsed;u.uPass.value=(time-gate.passAt)/1000;
+      u.uIntensity.value=(this.calm?.5:1)*(1-ov)*(1-this.focus)*smooth(.4,.8,this.intro)*(Math.abs(gate.x-x)<GAP*3?1:0);
+      gate.mesh.visible=u.uIntensity.value>.002;
+    }
   }
 
   /* ---------- Through his eyes ---------- */
@@ -957,7 +1074,8 @@ export class ObservatoryWorld {
     this.tint.lerp(bay.tint,1-Math.exp(-dt*2.5));
     {
       const home=this.bays[this.astroIndex>=0?this.astroIndex:this.index],s=home.screen;
-      this.spillColor.lerp(home.edge,1-Math.exp(-dt*2.5));
+      const filmHere=this.previewIndex===this.astroIndex&&this.previewTexture?this.cinemaMix:0;
+      this.spillColor.lerp(this.scratchColor.copy(home.edge).lerp(this.cinemaColor,filmHere),1-Math.exp(-dt*(filmHere>0?6:2.5)));
       this.spill.color.copy(this.spillColor);
       this.spill.position.set(this.astroIndex*GAP-s.scale.x/2+.3,Math.min(s.position.y-.6,1.9),1.1);
       this.spill.intensity=(this.mobile?4.5:5.5)*home.reveal*mix(.55,1.1,home.active)*mix(1.3,.6,home.lum)*(1-this.focus*.8)*(1-this.fp)*(1-this.overview)*smooth(.3,.6,this.intro);
@@ -1008,11 +1126,18 @@ export class ObservatoryWorld {
         bay.group.rotation.x=-Math.PI/2*local;
       }else{bay.group.position.set(i*GAP,0,0);bay.group.rotation.x=0;}
       if(bay.projector){
-        const playing=this.previewIndex===i&&this.previewTexture?1:.35;
-        bay.projector.material.uniforms.uIntensity.value=light*.06*playing*(1-this.focus)*(1-ov);
+        // A running film throws its own changing colour and brightness into the room.
+        const live=this.previewIndex===i&&this.previewTexture?this.cinemaMix:0;
+        const glow=mix(.35,.55+this.cinemaLum*1.1,live);
+        this.scratchColor.copy(bay.tint).lerp(this.cinemaColor,live);
+        for(const mesh of [bay.projector,bay.pool,bay.halo,bay.beam])(mesh.material.uniforms.uTint.value as THREE.Color).copy(this.scratchColor);
+        bay.projector.material.uniforms.uIntensity.value=light*.06*glow*(1-this.focus)*(1-ov);
         bay.projector.material.uniforms.uTime.value=this.elapsed;
+        bay.pool.material.uniforms.uIntensity.value*=mix(1,.8+this.cinemaLum*2.2,live);
       }
     });
+    this.sampleFilm(time,dt);
+    this.updatePuffs(dt);this.updateGates(x,ov,time);
 
     // The cinema room plays its films as soon as you stop in front of one.
     const work=archiveWorks[this.index];

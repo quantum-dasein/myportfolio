@@ -124,7 +124,9 @@ export function createHallSound(){
         air.gain.gain.linearRampToValueAtTime(.16,now+1.2);air.gain.gain.linearRampToValueAtTime(.03,now+1.8);air.gain.gain.linearRampToValueAtTime(.12,now+2.6);air.gain.gain.linearRampToValueAtTime(0,now+3.4);
         swellUntil=now+3.4;};
       breathe();breathTimer=setInterval(breathe,4600);
-    },    open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
+    },    // Through a gate: a soft rising air and two quiet notes.
+    gate(){swell(260,1500,1.4,.18);swellUntil=(ctx?.currentTime??0)+1.4;chime(659.25,.02,.15);chime(987.77,.016,.32);},
+    open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
     close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},
     dispose(){clearInterval(breathTimer);void ctx?.close();},
   };
