@@ -91,7 +91,7 @@ export function createAstronaut(){
         vec2 f=fract(p*vec2(26.,20.))-.5;
         sky+=step(.9,h)*pow(max(0.,sin(t*(1.5+h*3.)+h*40.)),10.)*(1.-smoothstep(.05,.3,length(f)))*1.4;
         float cycle=fract(t*.07+.3),sweep=(cycle-.15)*7.;
-        float trail=exp(-pow((p.y-(p.x-sweep)*.4-.2)*16.,2.))*smoothstep(.15,.22,cycle)*(1.-smoothstep(.3,.42,cycle))*smoothstep(sweep-1.2,sweep,p.x)*(1.-step(sweep,p.x));
+        float trail=exp(-((p.y-(p.x-sweep)*.4-.2)*16.)*((p.y-(p.x-sweep)*.4-.2)*16.))*smoothstep(.15,.22,cycle)*(1.-smoothstep(.3,.42,cycle))*smoothstep(sweep-1.2,sweep,p.x)*(1.-step(sweep,p.x));
         sky+=vec3(1.,.82,.58)*trail*1.8;
         totalEmissiveRadiance+=sky*edge*uVisorGlow;
       }`);

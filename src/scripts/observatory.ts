@@ -111,6 +111,41 @@ export async function mountObservatory(root:HTMLElement){
   }
   secret.addEventListener('close',()=>world?.resume(),{signal});
   root.querySelector('[data-obs-close-secret]')!.addEventListener('click',()=>secret.close(),{signal});
+  // Stars left by visitors: a city and a date, one per visitor per day.
+  const starButton=root.querySelector<HTMLButtonElement>('[data-obs-star]')!;
+  const starTip=root.querySelector<HTMLElement>('[data-obs-star-tip]')!;
+  let starCount=0,myStar:any=null;
+  try{myStar=JSON.parse(localStorage.getItem('rb-star')??'null');}catch{}
+  const dateLabel=(t:number)=>new Intl.DateTimeFormat(de()?'de-AT':'en-GB',{day:'numeric',month:'short',year:'numeric'}).format(new Date(t));
+  const starLabel=(star:any)=>{const mine=myStar&&star.t===myStar.t;const who=mine?(de()?'Ihr Stern':'Your star'):(star.city?(de()?`Ein Besuch aus ${star.city}`:`A visitor from ${star.city}`):(de()?'Ein Besuch':'A visitor'));return `✦ ${who} · ${dateLabel(star.t)}`;};
+  function showStarCount(){text('[data-obs-star-count]',starCount?`✦ ${starCount} ${de()?(starCount===1?'Stern':'Sterne'):(starCount===1?'star':'stars')}`:'');}
+  function markStarButton(){
+    const done=Boolean(myStar&&Date.now()-myStar.t<86400000);starButton.disabled=done;
+    starButton.querySelector('.obs-en')!.textContent=done?'Your star is up':'Leave a star';starButton.querySelector('.obs-de')!.textContent=done?'Ihr Stern leuchtet':'Stern hinterlassen';
+  }
+  async function loadStars(){
+    try{
+      const response=await fetch('/api/stars/',{headers:{Accept:'application/json'}});if(!response.ok)throw 0;
+      const data=await response.json();let stars=Array.isArray(data.stars)?data.stars:[];
+      if(myStar&&!stars.some((s:any)=>s.t===myStar.t))stars=[myStar,...stars];
+      starCount=Math.max(Number(data.count)||0,stars.length);world?.setVisitorStars(stars);
+    }catch{if(myStar){world?.setVisitorStars([myStar]);starCount=1;}}
+    showStarCount();markStarButton();
+  }
+  starButton.addEventListener('click',async()=>{
+    if(!world||starButton.disabled||viewer.open||mapping||inFinale)return;
+    starButton.disabled=true;
+    const spot=world.freeSkySpot();let star={...spot,city:'',country:'',t:Date.now()};
+    try{
+      const response=await fetch('/api/stars/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(spot)});
+      if(response.ok){const data=await response.json();star=data.star;starCount=data.count;}
+      else if(response.status===429){markStarButton();return;}
+      else starCount+=1;
+    }catch{starCount+=1;}
+    myStar=star;try{localStorage.setItem('rb-star',JSON.stringify(star));}catch{}
+    sound.comet();await world.launchStar(star);showStarCount();markStarButton();
+  },{signal});
+  addEventListener('rb:langchange',()=>{showStarCount();markStarButton();},{signal});
   function revealShell(){
     root.classList.remove('is-intro');
     root.querySelectorAll<HTMLElement>('.obs-shell > *').forEach((element,i)=>{
@@ -401,6 +436,9 @@ export async function mountObservatory(root:HTMLElement){
     }
     if(event.pointerType==='touch'||world.isMoving())return;
     const hit=world.hit(event.clientX,event.clientY);stage.style.cursor=hit?'pointer':'grab';world.hovered=hit;
+    const star=hit?undefined:world.pickVisitorStar(event.clientX,event.clientY);
+    if(star){starTip.textContent=starLabel(star);starTip.style.transform=`translate(${Math.min(event.clientX+16,innerWidth-starTip.offsetWidth-12)}px,${event.clientY+16}px)`;}
+    starTip.classList.toggle('is-visible',Boolean(star));
     if(hit&&!hover){hoverTimer=setTimeout(()=>world?.previewFilm(),300);hover=true;}
     if(!hit&&hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
   },{signal});
@@ -445,7 +483,7 @@ export async function mountObservatory(root:HTMLElement){
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
-    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);world.onGate=room=>{showRoomCard(room);sound.gate();};
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);void loadStars();world.onGate=room=>{showRoomCard(room);sound.gate();};
     world.setPortalTexts(portalLines());addEventListener('rb:langchange',()=>world?.setPortalTexts(portalLines()),{signal});
     world.onFinaleDone=()=>{root.classList.add('is-contact');finale.setAttribute('aria-hidden','false');finale.querySelector<HTMLAnchorElement>('[data-obs-finale-cta]')!.href=de()?'/de/kontakt/':'/contact/';setTimeout(()=>finale.querySelector<HTMLElement>('a')?.focus({preventScroll:true}),700);};
     world.onFinaleBack=()=>{inFinale=false;root.classList.remove('is-finale');};world.onLand=()=>sound.land();

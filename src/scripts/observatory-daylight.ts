@@ -52,7 +52,7 @@ export function createHorizon(){
     uniforms:{uColor:{value:new THREE.Color()},uGlow:{value:0}},
     vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
     fragmentShader:`uniform vec3 uColor;uniform float uGlow;varying vec2 vUv;
-      void main(){float y=vUv.y,band=exp(-pow((y-.16)*6.,2.))+.35*exp(-y*3.5);
+      void main(){float y=vUv.y,band=exp(-((y-.16)*6.)*((y-.16)*6.))+.35*exp(-y*3.5);
         float sides=smoothstep(0.,.25,vUv.x)*smoothstep(1.,.75,vUv.x);
         gl_FragColor=vec4(uColor*band*sides*uGlow,1.);}`,
     transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,

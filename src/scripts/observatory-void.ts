@@ -9,6 +9,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createCurator } from './observatory-curator';
 import { archiveWorks } from '../data/observatory';
 import { shipModel, workModels } from '../data/observatory-models';
+export type VisitorStar={u:number;v:number;city:string;country:string;t:number};
 import type { HallState } from './observatory-sound';
 import { createHorizon, daylightAt, viennaHour, type Daylight } from './observatory-daylight';
 
@@ -72,7 +73,7 @@ void main(){
   float front=vUv.x*.7+n*.3,edge=uReveal*1.32-.16;
   float mask=smoothstep(front,front+.012,edge);
   float line=(1.-smoothstep(0.,.03,abs(edge-front-.006)))*(1.-step(.999,uReveal));
-  col+=uTint*line*2.6;
+  col+=uTint*line*1.5;
   gl_FragColor=vec4(col,max(mask,line));
   #include <colorspace_fragment>
 }`;
@@ -124,7 +125,7 @@ const floorShader={
       for(int i=0;i<12;i++)acc+=texture2D(tDiffuse,uv+taps[i]*vec2(.55,2.4)*blur).rgb;
       acc/=13.;
       vec3 view=normalize(cameraPosition-vWorld);
-      float fresnel=.28+.72*pow(1.-max(view.y,0.),3.);
+      float fresnel=.28+.72*pow(clamp(1.-view.y,0.,1.),3.);
       vec2 toTorch=vWorld.xz-uTorch.xz;float spot=exp(-dot(toTorch,toTorch)/3.2)*uTorch.w;
       float gloss=mix(1.25,.45,reach);
       vec3 col=vec3(.009,.010,.013)+acc*fresnel*gloss*(.8+wet*.35)*(1.+spot*3.);
@@ -249,6 +250,8 @@ export class ObservatoryWorld {
   portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
   onFinaleDone?:()=>void;onFinaleBack?:()=>void;
   exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();
+  visitorStars:VisitorStar[]=[];visitorGroup=new THREE.Group();visitorPoints!:THREE.Points<THREE.BufferGeometry,Shader>;
+  spark!:THREE.Sprite;sparkFlight?:{star:VisitorStar;from:THREE.Vector3;t:number;resolve:()=>void};
   followSpot=new THREE.Group();followFrom=new THREE.Vector3();
   torchPoint=new THREE.Vector3(0,0,2);torchGoal=new THREE.Vector3();torchPower=0;
   pointerInside=false;lastPointer=new THREE.Vector2(9,9);pointerMovedAt=-1e9;
@@ -316,7 +319,7 @@ export class ObservatoryWorld {
     this.scene.add(this.floor);
 
     this.stars=this.buildStars();this.scene.add(this.stars);
-    this.buildPuffs();this.buildGates();this.scene.add(this.horizon);this.buildComet();this.buildPortal();
+    this.buildPuffs();this.buildGates();this.scene.add(this.horizon);this.buildComet();this.buildPortal();this.buildVisitorStars();
     this.dust=this.buildDust();this.scene.add(this.dust);
     this.buildBays();
     this.scene.add(this.curator.root);
@@ -337,6 +340,12 @@ export class ObservatoryWorld {
     const target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:this.mobile?0:4});
     this.composer=new EffectComposer(this.renderer,target);
     this.composer.addPass(new RenderPass(this.scene,this.camera));
+    // A single NaN or Inf pixel is smeared by bloom into black blocks; clean the frame first.
+    this.composer.addPass(new ShaderPass({name:'ObservatorySanitize',uniforms:{tDiffuse:{value:null}},vertexShader:plainVertex,
+      fragmentShader:`uniform sampler2D tDiffuse;varying vec2 vUv;
+        // Exponent bits all set means NaN or Inf; tested on the bits so no compiler can fold it away.
+        bool bad(float x){return (floatBitsToUint(x)&0x7f800000u)==0x7f800000u;}
+        void main(){vec3 c=texture2D(tDiffuse,vUv).rgb;if(bad(c.r)||bad(c.g)||bad(c.b))c=vec3(0.);gl_FragColor=vec4(clamp(c,0.,48.),1.);}`}));
     this.bloom=new UnrealBloomPass(new THREE.Vector2(size.x,size.y),.62,.62,.93);
     this.composer.addPass(this.bloom);
     this.focusPass=new ShaderPass(focusShader);this.composer.addPass(this.focusPass);
@@ -563,13 +572,13 @@ export class ObservatoryWorld {
     this.column=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,4.2,48,1,true),new THREE.ShaderMaterial({
       uniforms:{uIntensity:{value:0},uTime:{value:0},uColor:{value:new THREE.Color('#8fd8ff')}},vertexShader:beamVertex,
       fragmentShader:`uniform float uIntensity,uTime;uniform vec3 uColor;varying vec2 vUv;varying vec3 vN;varying vec3 vV;
-        void main(){float rim=pow(1.-abs(dot(normalize(vN),normalize(vV))),1.4);float bands=.5+.5*sin(vUv.y*46.-uTime*16.);
+        void main(){float rim=pow(clamp(1.-abs(dot(normalize(vN),normalize(vV))),0.,1.),1.4);float bands=.5+.5*sin(vUv.y*46.-uTime*16.);
         float fade=smoothstep(0.,.08,vUv.y)*(1.-smoothstep(.5,1.,vUv.y));gl_FragColor=vec4(uColor*(rim*.9+.15)*(.55+.45*bands)*fade*uIntensity*.8,1.);}`,
       ...additive,side:THREE.DoubleSide}));
     this.ring=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.2),new THREE.ShaderMaterial({
       uniforms:{uIntensity:{value:0},uTime:{value:0},uColor:{value:new THREE.Color('#8fd8ff')}},vertexShader:plainVertex,
       fragmentShader:`uniform float uIntensity,uTime;uniform vec3 uColor;varying vec2 vUv;
-        void main(){float r=length(vUv-.5)*2.;float wave=exp(-pow((r-fract(uTime*1.3))*9.,2.))*(1.-r);float core=exp(-r*r*5.);
+        void main(){float r=length(vUv-.5)*2.;float wave=exp(-((r-fract(uTime*1.3))*9.)*((r-fract(uTime*1.3))*9.))*(1.-r);float core=exp(-r*r*5.);
         gl_FragColor=vec4(uColor*(wave*1.2+core*.5)*uIntensity*step(r,1.),1.);}`,...additive}));
     this.ring.rotation.x=-Math.PI/2;
     this.column.visible=this.ring.visible=false;this.scene.add(this.column,this.ring);
@@ -592,7 +601,7 @@ export class ObservatoryWorld {
             float dissolveNoise(){return fract(sin(dot(floor(vDissolveWorld*34.),vec3(12.9898,78.233,37.719)))*43758.5453);}`)
             .replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nif(uDissolve>0.&&dissolveNoise()<dissolveCut())discard;');
           if(shader.fragmentShader.includes('totalEmissiveRadiance'))shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>',
-            '#include <emissivemap_fragment>\nif(uDissolve>0.){float cut=dissolveCut();totalEmissiveRadiance+=uDissolveColor*(1.-smoothstep(cut,cut+.08,dissolveNoise()))*5.;}');
+            '#include <emissivemap_fragment>\nif(uDissolve>0.){float cut=dissolveCut();totalEmissiveRadiance+=uDissolveColor*(1.-smoothstep(cut,cut+.08,dissolveNoise()))*1.4;}');
         };
         material.customProgramCacheKey=()=>previousKey+'|dissolve';material.needsUpdate=true;
       }});
@@ -751,7 +760,7 @@ export class ObservatoryWorld {
         const gltf=await loader.loadAsync(spec.src);if(this.disposed)return;
         const pivot=new THREE.Group(),model=gltf.scene;fit(model,spec.height??2.6);pivot.add(model);
         // A lit plinth: a thin disc of light the piece turns on.
-        const plinth=new THREE.Mesh(new THREE.CircleGeometry(1.35,64),new THREE.ShaderMaterial({uniforms:{uTint:{value:this.bays[index].tint},uIntensity:{value:.5}},vertexShader:plainVertex,fragmentShader:`uniform vec3 uTint;uniform float uIntensity;varying vec2 vUv;void main(){float r=length(vUv-.5)*2.;float ring=exp(-pow((r-.92)*30.,2.));float fill=(1.-r)*.25;gl_FragColor=vec4(uTint*(ring+fill)*uIntensity,1.);}`,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+        const plinth=new THREE.Mesh(new THREE.CircleGeometry(1.35,64),new THREE.ShaderMaterial({uniforms:{uTint:{value:this.bays[index].tint},uIntensity:{value:.5}},vertexShader:plainVertex,fragmentShader:`uniform vec3 uTint;uniform float uIntensity;varying vec2 vUv;void main(){float r=length(vUv-.5)*2.;float ring=exp(-((r-.92)*30.)*((r-.92)*30.));float fill=(1.-r)*.25;gl_FragColor=vec4(uTint*(ring+fill)*uIntensity,1.);}`,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
         plinth.rotation.x=-Math.PI/2;plinth.position.y=.015;
         const holder=new THREE.Group();holder.position.set(0,0,1.6);holder.add(plinth,pivot);
         this.bays[index].group.add(holder);
@@ -844,6 +853,76 @@ export class ObservatoryWorld {
     u.uTextAlpha.value=smooth(0,.14,ph)*(1-smooth(.86,1,ph));
     u.uIntensity.value=smooth(.4,.8,this.intro)*(1-ov)*(this.calm?.8:1);
     this.portalPool.material.uniforms.uIntensity.value=.22*(1+this.finale*2)*u.uIntensity.value;
+  }
+
+  /* ---------- Stars left by visitors ---------- */
+  /** Sky position of a visitor star: u runs along the hall, v up the sky. */
+  // The sky drifts at 15% of the walk, so the band of sky you ever see is about 80 m wide.
+  private starPoint(u:number,v:number,out=new THREE.Vector3()){return out.set(-30+u*84,13+v*22,-88-(u*37%1)*14);}
+  setVisitorStars(list:VisitorStar[]){
+    this.visitorStars=list.slice(0,600);
+    const n=this.visitorStars.length,positions=new Float32Array(Math.max(1,n)*3),seeds=new Float32Array(Math.max(1,n));
+    const p=new THREE.Vector3();
+    this.visitorStars.forEach((star,i)=>{this.starPoint(star.u,star.v,p);positions.set([p.x,p.y,p.z],i*3);seeds[i]=(star.t%997)/997;});
+    const geometry=this.visitorPoints.geometry;
+    geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('aSeed',new THREE.BufferAttribute(seeds,1));
+    geometry.setDrawRange(0,n);geometry.computeBoundingSphere();
+  }
+  private buildVisitorStars(){
+    const material=new THREE.ShaderMaterial({
+      uniforms:{uTime:{value:0},uPixelRatio:{value:1},uLight:{value:1},uHover:{value:-1},uMine:{value:-1}},
+      vertexShader:`attribute float aSeed;uniform float uTime,uPixelRatio,uHover,uMine;varying float vA;varying float vWarm;
+        void main(){float id=float(gl_VertexID);float hot=(id==uHover||id==uMine)?1.:0.;
+          vA=.55+.45*sin(uTime*(.8+aSeed*1.6)+aSeed*40.);vA=mix(vA,1.,hot);vWarm=aSeed;
+          gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=(4.2+hot*5.)*uPixelRatio;}`,
+      fragmentShader:`uniform float uLight;varying float vA;varying float vWarm;
+        void main(){vec2 q=gl_PointCoord-.5;float d=length(q);
+          float core=1.-smoothstep(.02,.18,d),glow=(1.-smoothstep(.1,.5,d))*.35,rays=max(0.,1.-abs(q.x)*14.)*max(0.,1.-abs(q.y)*2.2)+max(0.,1.-abs(q.y)*14.)*max(0.,1.-abs(q.x)*2.2);
+          vec3 tint=mix(vec3(1.,.86,.62),vec3(.8,.9,1.),vWarm*.5);
+          gl_FragColor=vec4(tint*(core+glow+rays*.35)*vA*uLight,1.);}`,
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
+    });
+    this.visitorPoints=new THREE.Points(new THREE.BufferGeometry(),material);this.visitorPoints.frustumCulled=false;
+    this.visitorGroup.add(this.visitorPoints);this.scene.add(this.visitorGroup);this.setVisitorStars([]);
+    // The spark that carries a new star up from the astronaut's hands.
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+    const ctx=canvas.getContext('2d')!,g=ctx.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'#fff');g.addColorStop(.2,'#ffe6b0');g.addColorStop(1,'rgba(255,220,160,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,64,64);
+    this.spark=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    this.spark.visible=false;this.scene.add(this.spark);
+  }
+  /** Launch a new star from the astronaut to its place in the sky; resolves when it lights. */
+  launchStar(star:VisitorStar){
+    this.stopPreview();this.lastActivity=performance.now();
+    const from=new THREE.Vector3(this.astro.x,2.2,this.astro.y);
+    return new Promise<void>(resolve=>{this.sparkFlight={star,from,t:0,resolve};this.spark.visible=true;});
+  }
+  private updateVisitorStars(dt:number,ov:number){
+    this.visitorGroup.position.x=this.camera.position.x*.85;
+    const u=this.visitorPoints.material.uniforms;u.uTime.value=this.elapsed;u.uPixelRatio.value=this.renderer.getPixelRatio();
+    u.uLight.value=smooth(.2,.6,this.intro)*(1-ov*.7)*(.6+.4*this.daylight.stars);
+    const flight=this.sparkFlight;if(!flight)return;
+    flight.t=Math.min(1,flight.t+dt/1.8);
+    const end=this.starPoint(flight.star.u,flight.star.v,new THREE.Vector3()).add(this.visitorGroup.position);
+    const k=smooth(0,1,flight.t),arc=Math.sin(flight.t*Math.PI)*6;
+    this.spark.position.lerpVectors(flight.from,end,k).add(new THREE.Vector3(0,arc,0));
+    this.spark.scale.setScalar(mix(.5,1.1,Math.sin(flight.t*Math.PI)));
+    if(flight.t>=1){this.spark.visible=false;this.sparkFlight=undefined;this.setVisitorStars([flight.star,...this.visitorStars]);u.uMine.value=0;flight.resolve();}
+  }
+  /** The visitor star nearest the pointer, within a few pixels. */
+  pickVisitorStar(clientX:number,clientY:number){
+    const rect=this.host.getBoundingClientRect(),p=new THREE.Vector3();let best=-1,bestD=this.mobile?22:14;
+    this.visitorStars.forEach((star,i)=>{
+      this.starPoint(star.u,star.v,p).add(this.visitorGroup.position).project(this.camera);if(p.z>1)return;
+      const d=Math.hypot(rect.left+(p.x+1)/2*rect.width-clientX,rect.top+(1-p.y)/2*rect.height-clientY);if(d<bestD){bestD=d;best=i;}
+    });
+    this.visitorPoints.material.uniforms.uHover.value=best;
+    return best>=0?this.visitorStars[best]:undefined;
+  }
+  /** Sky coordinates for a new star, in the part of the sky you are looking at. */
+  freeSkySpot(){
+    const visible=this.camera.position.x*.15-1.3+30;
+    return {u:THREE.MathUtils.clamp((visible+(Math.random()-.5)*26)/84,0,1),v:.3+Math.random()*.55};
   }
 
   /* ---------- A comet you can catch ---------- */
@@ -1005,7 +1084,7 @@ export class ObservatoryWorld {
           float s=step(density,h)*pow(max(0.,1.-length(f)*2.4),5.);return vec3(.85,.9,1.)*s*(.55+.45*sin(uTime*(1.2+h*3.)+h*70.));}
         void main(){
           vec3 d=normalize(vDir);
-          float band=exp(-pow(d.y*.95-d.x*.35+d.z*.12,2.)*7.);
+          float band=exp(-(d.y*.95-d.x*.35+d.z*.12)*(d.y*.95-d.x*.35+d.z*.12)*7.);
           float n=fbm(d*2.4+vec3(0.,0.,uTime*.004));float wisps=fbm(d*6.+n*1.5);
           vec3 col=mix(vec3(.02,.03,.08),vec3(.3,.12,.36),smoothstep(.4,.85,n))*band*.9;
           col+=vec3(.08,.26,.42)*pow(max(0.,wisps-.42),2.)*6.*band;
@@ -1014,7 +1093,7 @@ export class ObservatoryWorld {
           // A shooting star every few seconds, drawn as a fading trail.
           float cycle=fract(uTime/7.3),head=cycle*1.8-.4;
           vec3 p0=normalize(vec3(mix(-.9,.9,head),.72-head*.18,-.55+head*.25)),p1=normalize(vec3(mix(-.9,.9,head-.16),.72-(head-.16)*.18,-.55+(head-.16)*.25));
-          vec3 ab=p1-p0;float s=clamp(dot(d-p0,ab)/dot(ab,ab),0.,1.);float trail=exp(-pow(length(d-(p0+ab*s))*320.,2.))*(1.-s);
+          vec3 ab=p1-p0;float s=clamp(dot(d-p0,ab)/dot(ab,ab),0.,1.);float trail=exp(-(length(d-(p0+ab*s))*320.)*(length(d-(p0+ab*s))*320.))*(1.-s);
           col+=vec3(1.,.95,.85)*trail*step(.05,cycle)*step(cycle,.7)*1.8;
           gl_FragColor=vec4(uBg+col*uFade,1.);
         }`,
@@ -1028,7 +1107,7 @@ export class ObservatoryWorld {
         void main(){vec3 n=normalize(vN);float light=max(dot(n,normalize(vec3(.8,.35,.45))),0.);
           float bands=fbm(vec3(vL.y*.18,vL.x*.03,vL.z*.03))*.6+.4*sin(vL.y*.35+fbm(vL*.08)*3.);
           vec3 surface=mix(vec3(.28,.2,.34),vec3(.78,.62,.52),bands);
-          float rim=pow(1.-max(dot(n,vV),0.),3.);
+          float rim=pow(clamp(1.-dot(n,vV),0.,1.),3.);
           vec3 col=surface*light*1.1+vec3(.35,.55,.9)*rim*(.35+light);
           gl_FragColor=vec4(col*uFade,1.);}`,fog:false}));
     this.planet.frustumCulled=false;this.scene.add(this.planet);
@@ -1328,7 +1407,8 @@ export class ObservatoryWorld {
       const isCurrent=i===this.index;
       bay.active=THREE.MathUtils.damp(bay.active,isCurrent?1:0,this.calm?100:3.2,dt);
       bay.hover=THREE.MathUtils.damp(bay.hover,isCurrent&&this.previewIndex===i&&!this.previewAuto?1:0,4,dt);
-      if(bay.texture&&bay.reveal<1&&revealGate>.99)bay.reveal=this.calm?1:Math.min(1,bay.reveal+dt/1.5);
+      // The drawing-in plays only for the work you stand at; passing works simply appear.
+      if(bay.texture&&bay.reveal<1&&revealGate>.99)bay.reveal=this.calm||!isCurrent||this.isMoving()?1:Math.min(1,bay.reveal+dt/1.5);
       const focusOthers=isCurrent?1:1-this.focus;
       const u=bay.screen.material.uniforms;
       u.uTime.value=this.elapsed;u.uReveal.value=bay.reveal;u.uShift.value=this.shift;u.uHover.value=bay.hover;
@@ -1369,7 +1449,7 @@ export class ObservatoryWorld {
       }
     });
     this.sampleFilm(time,dt);
-    this.updatePuffs(dt);this.updateGates(x,ov,time);this.updateComet(time,dt,ov);this.updateModels(dt);
+    this.updatePuffs(dt);this.updateGates(x,ov,time);this.updateComet(time,dt,ov);this.updateModels(dt);this.updateVisitorStars(dt,ov);
 
     // The cinema room plays its films as soon as you stop in front of one.
     const work=archiveWorks[this.index];

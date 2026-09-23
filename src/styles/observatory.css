@@ -309,3 +309,13 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 .obs-finale-mail:hover{border-color:#8fd8ff;background:#8fd8ff14}
 .is-finale .obs-room-card{display:none}
 @media(max-width:600px){.observatory.is-contact .obs-finale{background:radial-gradient(120% 70% at 50% 30%,#123049,#020306 70%)}.obs-finale-mail{flex:1 1 100%;justify-content:center}}
+
+/* Stars left by visitors. */
+.obs-star-toggle{display:flex;align-items:center;gap:9px;font-size:10px!important;padding:10px 12px!important;border:1px solid #ffd98a40!important;border-radius:3px;background:#0b0d105c!important;letter-spacing:.05em;min-height:40px;color:#ffe9bd;cursor:pointer}
+.obs-star-toggle:hover{border-color:#ffd98aa0!important;background:#ffd98a14!important}
+.obs-star-toggle[disabled]{opacity:.55;cursor:default}
+.obs-star-glyph{font-size:13px;line-height:1;color:#ffd98a}
+.obs-star-count{font-style:normal;margin-left:14px;color:#ffd98a;opacity:.85;visibility:visible}.obs-star-count:empty{display:none}
+.obs-star-tip{position:fixed;left:0;top:0;z-index:6;padding:8px 12px;font:10px var(--obs-mono);letter-spacing:.1em;text-transform:uppercase;color:#fff3d6;background:#0a0b0dcc;border:1px solid #ffd98a40;backdrop-filter:blur(8px);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
+.obs-star-tip.is-visible{opacity:1}
+@media(max-width:600px){.obs-star-toggle .obs-en,.obs-star-toggle .obs-de{display:none!important}.obs-star-toggle{min-height:44px;min-width:44px;justify-content:center}}
