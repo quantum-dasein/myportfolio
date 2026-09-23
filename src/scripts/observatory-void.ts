@@ -275,7 +275,7 @@ export class ObservatoryWorld {
   sky?:THREE.Mesh<THREE.SphereGeometry,Shader>;planet?:THREE.Mesh<THREE.SphereGeometry,Shader>;
   autoplayBlocked=new Set<number>();
   // Adaptive quality: phones and weak GPUs step down instead of stuttering.
-  quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;
+  quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;dprScale=1;dprCeiling=1;fastWindows=0;
   roomWeights=[1,0,0,0];wasMoving=false;
   // Map view: the hall seen from the ceiling, every work laid out as a card.
   overview=0;overviewMotion?:{from:number;to:number;start:number;duration:number;resolve:()=>void};
@@ -354,6 +354,7 @@ export class ObservatoryWorld {
     if(this.mobile){this.finish.uniforms.uGrain.value=.022;this.finish.uniforms.uVignette.value=.7;}
     this.composer.addPass(new OutputPass());
 
+    this.guessTier();
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(host);
     this.resize();
     this.renderer.domElement.addEventListener('webglcontextlost',this.contextLost);
@@ -366,7 +367,7 @@ export class ObservatoryWorld {
   private drawingSize(){
     const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight);
     // Phones render near their native density: a soft picture reads as a cheap one.
-    const ratio=Math.min(devicePixelRatio||1,this.mobile?2.6:1.6,Math.sqrt((this.mobile?2900000:2400000)/(w*h)))*(this.quality>=3?.75:1);
+    const ratio=Math.min(devicePixelRatio||1,this.mobile?2.6:1.6,Math.sqrt((this.mobile?2900000:2400000)/(w*h)))*this.dprScale;
     return new THREE.Vector2(Math.round(w*ratio),Math.round(h*ratio));
   }
   private maxX(){return (this.bays.length-1)*GAP;}
@@ -628,7 +629,7 @@ export class ObservatoryWorld {
       const home=this.anchor(this.astroIndex,this.anchorScratch);
       const drift=Math.hypot(home.x-this.astro.x,home.y-this.astro.y);
       if(!viewing&&ov>0&&this.index!==this.astroIndex){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');}
-      else if(!viewing&&ov===0&&(this.index!==this.astroIndex||drift>2.5)){
+      else if(this.astroReady&&!viewing&&ov===0&&(this.index!==this.astroIndex||drift>2.5)){
         const steps=Math.abs(this.index-this.astroIndex);
         if(steps>3){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');}
         else{
@@ -1149,7 +1150,7 @@ export class ObservatoryWorld {
   }
 
   /* ---------- Opening sequence ---------- */
-  armIntro(){this.intro=0;this.introStart=Infinity;this.introSpeed=1;this.introDone=new Promise(resolve=>{this.introResolve=resolve;});}
+  armIntro(from=0,speed=1){this.intro=from;this.introStart=Infinity;this.introSpeed=speed;this.introDone=new Promise(resolve=>{this.introResolve=resolve;});}
   beginIntro(){if(this.intro<1)this.introStart=this.lastActivity=performance.now();return this.introDone;}
   skipIntro(){if(this.intro<1)this.introSpeed=4;}
 
@@ -1490,23 +1491,47 @@ export class ObservatoryWorld {
     this.focusPass.enabled=this.focusAmount>.02;
   }
 
+  /*
+   * Dynamic resolution and quality. Every second the average frame time is checked
+   * against a target (50 fps on desktop, 28 on phones, which are capped at 30):
+   * too slow, and the drawing buffer shrinks by 15%; once it is at 70% the costliest
+   * effects step down (glow, depth of field, then the mirror floor). Fast again for
+   * a few seconds, and resolution climbs back.
+   */
   private watchQuality(time:number){
     const gap=time-this.lastRenderAt;this.lastRenderAt=time;
-    if(time<this.qualityFrom||gap>250||this.quality>=3)return;
-    this.frameTimes.push(gap);if(this.frameTimes.length<90)return;
+    if(time<this.qualityFrom||gap>250||document.hidden)return;
+    this.frameTimes.push(gap);if(this.frameTimes.length<(this.mobile?30:60))return;
     const average=this.frameTimes.reduce((a,b)=>a+b,0)/this.frameTimes.length;this.frameTimes.length=0;
-    if(average<(this.mobile?42:30))return;
-    this.quality++;this.qualityFrom=time+2500;
-    // Step down in the order you notice least: glow, then the mirror floor, then resolution.
-    if(this.quality===1)this.bloom.enabled=false;
-    if(this.quality===3)this.resize();
-    if(this.quality===2){
+    const slow=this.mobile?1000/27:1000/48,fast=this.mobile?1000/29.5:1000/57;
+    if(average>slow){
+      this.fastWindows=0;this.qualityFrom=time+1200;
+      if(this.dprScale>.72){this.dprScale=Math.max(.7,this.dprScale*.85);this.resize();return;}
+      if(this.quality<3){this.setQuality(this.quality+1);return;}
+      if(this.dprScale>.55){this.dprScale=Math.max(.55,this.dprScale*.88);this.resize();}
+    }else if(average<fast&&this.dprScale<this.dprCeiling){
+      if(++this.fastWindows>=3){this.fastWindows=0;this.dprScale=Math.min(this.dprCeiling,this.dprScale*1.08);this.resize();this.qualityFrom=time+1500;}
+    }else this.fastWindows=0;
+  }
+  private setQuality(level:number){
+    this.quality=level;
+    this.bloom.enabled=level<1;
+    if(level>=3&&!this.plainFloor){
       this.floor.visible=false;
       this.plainFloor=new THREE.Mesh(new THREE.PlaneGeometry(260,120),new THREE.MeshBasicMaterial({color:this.background}));
       this.plainFloor.rotation.x=-Math.PI/2;this.plainFloor.position.z=-20;this.scene.add(this.plainFloor);
     }
   }
-
+  /** A first guess from the GPU name, so weak machines never start at full cost. */
+  private guessTier(){
+    const gl=this.renderer.getContext(),info=gl.getExtension('WEBGL_debug_renderer_info');
+    const name=String(info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
+    const memory=(navigator as any).deviceMemory??8,cores=navigator.hardwareConcurrency??8;
+    if(/SwiftShader|llvmpipe|Software|Microsoft Basic/i.test(name)){this.dprScale=.6;this.setQuality(3);return;}
+    const integrated=/Intel|HD Graphics|UHD Graphics|Mali-[GT][0-7]\d\b|Adreno \(TM\) [3-5]\d\d|PowerVR|Vivante/i.test(name);
+    if(integrated&&!/Iris Xe|Arc/i.test(name)){this.dprScale=.8;this.setQuality(1);}
+    else if(integrated||memory<=4||cores<=4)this.dprScale=.88;
+  }
   private autoplayAllowed(){
     const connection=(navigator as any).connection;
     return !(connection?.saveData||/(^|-)2g$/.test(connection?.effectiveType??''));

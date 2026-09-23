@@ -196,6 +196,12 @@
     reset();running=true;
     document.documentElement.classList.add('rb-warp-arriving');
     root.classList.add('is-active');black.style.opacity='1';hud.style.opacity='1';
+    // Keep flying while the destination loads: the stars decelerate instead of a black wait.
+    if(!reduced){
+      dir=reverse?-1:1;initStars();state.alpha=1;state.speed=70;previousDraw=0;draw();
+      gsap.to(state,{speed:3.5,duration:1.6,ease:'power3.out'});
+      gsap.to(black,{opacity:0,duration:.45,delay:.08,ease:'power1.out'});
+    }
     const finish=()=>{
       reset();
       if(clearOrigin){

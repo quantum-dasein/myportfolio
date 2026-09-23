@@ -319,3 +319,12 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 .obs-star-tip{position:fixed;left:0;top:0;z-index:6;padding:8px 12px;font:10px var(--obs-mono);letter-spacing:.1em;text-transform:uppercase;color:#fff3d6;background:#0a0b0dcc;border:1px solid #ffd98a40;backdrop-filter:blur(8px);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
 .obs-star-tip.is-visible{opacity:1}
 @media(max-width:600px){.obs-star-toggle .obs-en,.obs-star-toggle .obs-de{display:none!important}.obs-star-toggle{min-height:44px;min-width:44px;justify-content:center}}
+
+/* Phone sweep fixes. */
+.obs-share{font-size:12px!important;color:#aab4b8!important;letter-spacing:0!important;text-transform:none!important;font-family:inherit}
+@media(max-height:500px) and (orientation:landscape){
+  .obs-topline{top:68px!important}
+  .obs-topline>span{display:none!important}
+  .obs-toolbar :is(.obs-star-toggle,.obs-eyes-toggle,.obs-index-toggle) :is(.obs-en,.obs-de){display:none!important}
+  .obs-toolbar button{min-height:40px!important;min-width:40px;justify-content:center}
+}

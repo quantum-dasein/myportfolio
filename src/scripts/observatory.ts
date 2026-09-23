@@ -489,7 +489,9 @@ export async function mountObservatory(root:HTMLElement){
     world.onFinaleBack=()=>{inFinale=false;root.classList.remove('is-finale');};world.onLand=()=>sound.land();
     if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;
     // First visit of the session opens in darkness; the interface arrives with the light.
-    if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}
+    // After the warp tunnel the hall should already be warming up, not sit in a second darkness.
+    const warped=document.documentElement.classList.contains('rb-warp-arriving');
+    if(intro&&!world.isCalm()){world.armIntro(warped?.5:0,warped?1.4:1);root.classList.add('is-intro');}
     await world.start(current);
     if(world.disposed||bootFailed)return;
     root.classList.add('is-ready');
