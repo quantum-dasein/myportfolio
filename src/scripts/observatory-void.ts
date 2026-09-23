@@ -32,7 +32,7 @@ type Bay={
   pool:THREE.Mesh<THREE.PlaneGeometry,Shader>;
   texture?:THREE.Texture;loading?:Promise<void>;
   projector?:THREE.Mesh<THREE.BufferGeometry,Shader>;
-  tint:THREE.Color;reveal:number;active:number;hover:number;room:number;lum:number;
+  tint:THREE.Color;reveal:number;active:number;hover:number;room:number;lum:number;edge:THREE.Color;
 };
 
 // Each room has its own weather. Values blend continuously as the camera travels.
@@ -113,15 +113,19 @@ const floorShader={
     void main(){
       vec2 uv=vProj.xy/vProj.w;
       float wet=noise(vWorld.xz*.35);float fine=noise(vWorld.xz*9.);
-      uv+=vec2(noise(vWorld.xz*1.7)-.5,fine-.5)*.006;
-      float blur=uBlur*(.55+wet*.9);
+      // Contact-hardening gloss: the floor next to the wall mirrors the base of a work
+      // crisply; further out the reflection softens, stretches and fades.
+      float reach=smoothstep(0.,7.5,abs(vWorld.z));
+      uv+=vec2(noise(vWorld.xz*1.7)-.5,fine-.5)*.006*(.25+reach);
+      float blur=uBlur*(.12+reach*1.5)*(.6+wet*.8);
       vec3 acc=texture2D(tDiffuse,uv).rgb;
       for(int i=0;i<12;i++)acc+=texture2D(tDiffuse,uv+taps[i]*vec2(.55,2.4)*blur).rgb;
       acc/=13.;
       vec3 view=normalize(cameraPosition-vWorld);
       float fresnel=.28+.72*pow(1.-max(view.y,0.),3.);
       vec2 toTorch=vWorld.xz-uTorch.xz;float spot=exp(-dot(toTorch,toTorch)/3.2)*uTorch.w;
-      vec3 col=vec3(.009,.010,.013)+acc*fresnel*(.8+wet*.35)*(1.+spot*3.);
+      float gloss=mix(1.25,.45,reach);
+      vec3 col=vec3(.009,.010,.013)+acc*fresnel*gloss*(.8+wet*.35)*(1.+spot*3.);
       col+=vec3(1.,.9,.78)*spot*(.12+wet*.12);
       col+=(fine-.5)*.006;
       float dist=length(cameraPosition.xz-vWorld.xz);
@@ -133,6 +137,29 @@ const floorShader={
       col=mix(col,uBackground,smoothstep(22.,70.,dist));
       gl_FragColor=vec4(col,1.);
       #include <colorspace_fragment>
+    }`,
+};
+
+// Cinematic depth of field without a depth pass: the lit work and the astronaut beside it
+// stay sharp, everything outside that frame melts into soft bokeh as you look closer.
+const focusShader={
+  name:'ObservatoryFocus',
+  uniforms:{tDiffuse:{value:null},uRect:{value:new THREE.Vector4(0,0,1,1)},uAmount:{value:0},uResolution:{value:new THREE.Vector2(1,1)},uAspect:{value:1}},
+  vertexShader:plainVertex,
+  fragmentShader:`uniform sampler2D tDiffuse;uniform vec4 uRect;uniform float uAmount,uAspect;uniform vec2 uResolution;varying vec2 vUv;
+    void main(){
+      vec2 outside=max(max(uRect.xy-vUv,vUv-uRect.zw),0.);
+      float d=length(outside*vec2(uAspect,1.));
+      float radius=smoothstep(0.,.22,d)*uAmount*11.;
+      vec3 base=texture2D(tDiffuse,vUv).rgb;
+      if(radius<.35){gl_FragColor=vec4(base,1.);return;}
+      vec3 acc=base;float weight=1.;
+      for(int i=0;i<16;i++){
+        float f=float(i)+.5;float r=sqrt(f/16.)*radius;float a=f*2.39996;
+        vec3 s=textureLod(tDiffuse,vUv+vec2(cos(a),sin(a))*r/uResolution,0.).rgb;
+        float w=1.+dot(s,vec3(.3,.5,.2))*2.;acc+=s*w;weight+=w;
+      }
+      gl_FragColor=vec4(acc/weight,1.);
     }`,
 };
 
@@ -160,7 +187,7 @@ export class ObservatoryWorld {
   renderer:THREE.WebGLRenderer;
   composer:EffectComposer;
   bloom:UnrealBloomPass;
-  finish:ShaderPass;
+  finish:ShaderPass;focusPass:ShaderPass;focusRect=new THREE.Vector4(.3,.2,.7,.8);focusAmount=0;
   scene=new THREE.Scene();
   camera=new THREE.PerspectiveCamera(40,1,.1,320);
   bays:Bay[]=[];
@@ -199,6 +226,8 @@ export class ObservatoryWorld {
   introDone:Promise<void>=Promise.resolve();
   // The visitor's hand is a torch: it lights the wet floor, the dust and the prints.
   torch=new THREE.PointLight('#fff1dc',0,7,1.6);
+  // Light spilling off the lit print onto whoever stands beside it.
+  spill=new THREE.PointLight('#ffffff',0,7.5,1.7);spillColor=new THREE.Color('#d9dee4');
   followSpot=new THREE.Group();followFrom=new THREE.Vector3();
   torchPoint=new THREE.Vector3(0,0,2);torchGoal=new THREE.Vector3();torchPower=0;
   pointerInside=false;lastPointer=new THREE.Vector2(9,9);pointerMovedAt=-1e9;
@@ -257,7 +286,7 @@ export class ObservatoryWorld {
 
     const size=this.drawingSize();
     this.floor=new Reflector(new THREE.PlaneGeometry(260,120),{
-      clipBias:.003,textureWidth:size.x*(this.mobile?.35:.5),textureHeight:size.y*(this.mobile?.35:.5),
+      clipBias:.003,textureWidth:size.x*(this.mobile?.45:.6),textureHeight:size.y*(this.mobile?.45:.6),
       shader:floorShader,multisample:0,
     });
     this.floor.rotation.x=-Math.PI/2;this.floor.position.z=-20;
@@ -269,7 +298,7 @@ export class ObservatoryWorld {
     this.dust=this.buildDust();this.scene.add(this.dust);
     this.buildBays();
     this.scene.add(this.curator.root);
-    this.scene.add(this.torch);
+    this.scene.add(this.torch,this.spill);
     this.buildTeleport();this.buildTablet();this.makeDissolvable(this.curator.root);
     // Unit cone, apex at the origin, opening along +z after the turn: scaled to reach the floor.
     const spotGeometry=new THREE.ConeGeometry(.9,1,48,1,true);spotGeometry.translate(0,-.5,0);
@@ -288,6 +317,7 @@ export class ObservatoryWorld {
     this.composer.addPass(new RenderPass(this.scene,this.camera));
     this.bloom=new UnrealBloomPass(new THREE.Vector2(size.x,size.y),.62,.62,.93);
     this.composer.addPass(this.bloom);
+    this.focusPass=new ShaderPass(focusShader);this.composer.addPass(this.focusPass);
     this.finish=new ShaderPass(finishShader);this.composer.addPass(this.finish);
     // Grain reads as blur on small, dense screens.
     if(this.mobile){this.finish.uniforms.uGrain.value=.022;this.finish.uniforms.uVignette.value=.7;}
@@ -376,7 +406,7 @@ export class ObservatoryWorld {
         vertexShader:screenVertex,fragmentShader:screenFragment,transparent:true,fog:false,
       }));
       screen.scale.set(w,h,1);screen.position.set(0,LIFT+h/2,0);screen.userData.index=i;group.add(screen);
-      const bay:Bay={group,screen,halo,beam,pool,tint,reveal:0,active:0,hover:0,room:work.roomIndex,lum:.4};
+      const bay:Bay={group,screen,halo,beam,pool,tint,reveal:0,active:0,hover:0,room:work.roomIndex,lum:.4,edge:new THREE.Color('#d9dee4')};
       // The cinema room: every film is thrown onto its frame by a projector overhead.
       if(ROOMS[work.roomIndex].projector){
         bay.projector=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.ShaderMaterial({uniforms:{uTint:{value:tint.clone()},uIntensity:{value:0},uTime:{value:0}},vertexShader:projectorVertex,fragmentShader:projectorFragment,...additive,side:THREE.DoubleSide}));
@@ -435,6 +465,10 @@ export class ObservatoryWorld {
       if(ctx){
         ctx.drawImage(image,0,0,6,6);const data=ctx.getImageData(0,0,6,6).data;let r=0,g=0,b=0;
         for(let p=0;p<data.length;p+=4){r+=data[p];g+=data[p+1];b+=data[p+2];}
+        // The left third faces the astronaut: its colour is the light he stands in.
+        let er=0,eg=0,eb=0;for(let y=0;y<6;y++)for(let x=0;x<2;x++){const p=(y*6+x)*4;er+=data[p];eg+=data[p+1];eb+=data[p+2];}
+        const hsl={h:0,s:0,l:0};bay.edge.setRGB(er/12/255,eg/12/255,eb/12/255,THREE.SRGBColorSpace).getHSL(hsl);
+        bay.edge.setHSL(hsl.h,Math.min(1,hsl.s*1.5+.08),.62);
         const peak=Math.max(r,g,b,1);bay.lum=(r*.2126+g*.7152+b*.0722)/(data.length/4)/255;bay.tint.setRGB(r/peak,g/peak,b/peak,THREE.SRGBColorSpace).lerp(new THREE.Color(1,1,1),.35);
         [bay.screen,bay.halo,bay.beam,bay.pool,bay.projector].forEach(mesh=>mesh&&(mesh.material.uniforms.uTint.value as THREE.Color).copy(bay.tint));
       }
@@ -853,7 +887,8 @@ export class ObservatoryWorld {
     if(ov>.3)pose={yaw:0,pitch:-.9*smooth(.3,.8,ov)};
     if(sit>.001)pose={...(pose??{}),sit,pitch:(pose?.pitch??0)*.7-.25*sit};
     if(this.tabletW>.01){const t=this.tabletW;pose={...(pose??{}),tablet:t,yaw:mix(pose?.yaw??0,-.28,t),pitch:mix(pose?.pitch??0,.5,t)};}
-    const visor=root.userData.visorUniforms;if(visor)(visor.uVisorTint.value as THREE.Color).copy(this.tint).lerp(new THREE.Color('#8fa9c9'),.5);
+    // The visor carries the colours of the work in front of him.
+    const visor=root.userData.visorUniforms;if(visor)(visor.uVisorTint.value as THREE.Color).copy(this.spillColor).lerp(new THREE.Color('#8fa9c9'),.2);
     this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention,pose);
     this.placeTablet(time);
     this.column.position.set(this.astro.x,2.1,this.astro.y);this.ring.position.set(this.astro.x,.03,this.astro.y);
@@ -920,6 +955,13 @@ export class ObservatoryWorld {
     (floorUniforms.uTorch.value as THREE.Vector4).set(tp.x,tp.y,tp.z,power*(tp.y<.6?1:.45));
 
     this.tint.lerp(bay.tint,1-Math.exp(-dt*2.5));
+    {
+      const home=this.bays[this.astroIndex>=0?this.astroIndex:this.index],s=home.screen;
+      this.spillColor.lerp(home.edge,1-Math.exp(-dt*2.5));
+      this.spill.color.copy(this.spillColor);
+      this.spill.position.set(this.astroIndex*GAP-s.scale.x/2+.3,Math.min(s.position.y-.6,1.9),1.1);
+      this.spill.intensity=(this.mobile?4.5:5.5)*home.reveal*mix(.55,1.1,home.active)*mix(1.3,.6,home.lum)*(1-this.focus*.8)*(1-this.fp)*(1-this.overview)*smooth(.3,.6,this.intro);
+    }
     this.key.color.copy(this.tint);this.key.position.set(this.astro.x+1.1,10,this.astro.y+3.6);this.key.target.position.set(this.astro.x,0,this.astro.y);
     const lamp=smooth(.08,.3,intro);
     this.key.intensity=38*(1-this.focus*.7)*lamp;
@@ -987,7 +1029,27 @@ export class ObservatoryWorld {
     const movingNow=this.isMoving();
     if(this.wasMoving&&!movingNow&&this.focus===0)this.onSettle?.(bay.room);
     this.wasMoving=movingNow;
+    this.updateFocus(dt,ov);
     this.composer.render(dt);
+  }
+  private projected=new THREE.Vector3();
+  private updateFocus(dt:number,ov:number){
+    const screen=this.bays[this.index].screen;screen.updateWorldMatrix(true,false);
+    let x0=1,y0=1,x1=0,y1=0;
+    const add=(p:THREE.Vector3)=>{p.project(this.camera);const u=(p.x+1)/2,v=(p.y+1)/2;x0=Math.min(x0,u);x1=Math.max(x1,u);y0=Math.min(y0,v);y1=Math.max(y1,v);};
+    for(const [cx,cy] of [[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]])add(this.projected.set(cx,cy,0).applyMatrix4(screen.matrixWorld));
+    // The astronaut shares the plane of focus when he stands at this work.
+    if(this.curator.root.visible&&this.fp<.5&&this.astroIndex===this.index){
+      const a=this.curator.root.position;add(this.projected.set(a.x-.5,a.y,a.z));add(this.projected.set(a.x+.5,a.y+2.5,a.z));
+    }
+    const pad=.03,k=1-Math.exp(-dt*6);
+    this.focusRect.x=mix(this.focusRect.x,Math.max(0,x0-pad),k);this.focusRect.y=mix(this.focusRect.y,Math.max(0,y0-pad),k);
+    this.focusRect.z=mix(this.focusRect.z,Math.min(1,x1+pad),k);this.focusRect.w=mix(this.focusRect.w,Math.min(1,y1+pad),k);
+    // A soft pull always, deeper when you point at the work or fly into it; none in the map.
+    const goal=this.calm?0:(.38+.4*this.approach+.5*this.focus+.25*this.fp)*(1-ov)*(1-Math.min(1,this.shift*1.5))*(this.quality>=2?0:1);
+    this.focusAmount=THREE.MathUtils.damp(this.focusAmount,goal,4,dt);
+    const u=this.focusPass.uniforms;u.uRect.value.copy(this.focusRect);u.uAmount.value=this.focusAmount;
+    this.focusPass.enabled=this.focusAmount>.02;
   }
 
   private watchQuality(time:number){
@@ -1089,8 +1151,9 @@ export class ObservatoryWorld {
     const size=this.drawingSize();const ratio=size.x/w;
     this.renderer.setPixelRatio(ratio);this.renderer.setSize(w,h);
     this.composer?.setPixelRatio(ratio);this.composer?.setSize(w,h);
-    this.floor?.getRenderTarget().setSize(Math.round(size.x*(this.mobile?.35:.5)),Math.round(size.y*(this.mobile?.35:.5)));
+    this.floor?.getRenderTarget().setSize(Math.round(size.x*(this.mobile?.45:.6)),Math.round(size.y*(this.mobile?.45:.6)));
     this.finish?.uniforms.uResolution.value.set(size.x,size.y);
+    this.focusPass?.uniforms.uResolution.value.set(size.x,size.y);if(this.focusPass)this.focusPass.uniforms.uAspect.value=w/h;
   }
   pause(){cancelAnimationFrame(this.frame);this.stopPreview();}
   resume(){if(!this.disposed){cancelAnimationFrame(this.frame);this.lastTime=this.lastActivity=performance.now();this.frame=requestAnimationFrame(this.tick);}}
