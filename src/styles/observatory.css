@@ -405,3 +405,35 @@ html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:non
 @media(max-height:650px) and (min-width:601px){.obs-filter{top:126px;bottom:auto}}
 @media(max-width:600px){.obs-filter{top:132px}.obs-intro{top:max(21%,196px)!important}}
 .observatory.is-reel .obs-shell,.observatory.is-reel .obs-map-hint,.observatory.is-reel .obs-visor-hud,.observatory.is-reel .obs-room-card span,.observatory.is-reel .obs-room-card i{visibility:hidden!important}.observatory.is-reel .obs-stage{cursor:none!important}html:has(.observatory.is-reel) :is(header,.site-header,.rb-cursor,[class*=cursor]){visibility:hidden!important}
+
+/* Round three: filter beside the toolbar, a quieter room title, a clean map. */
+.obs-filter{left:auto;right:5.5%;top:168px}
+@media(min-width:1700px){.obs-filter{top:190px}}
+@media(max-width:600px){.obs-filter{right:auto;left:50%;top:132px}}
+.obs-room-card{top:26%}
+.obs-room-card b{font-size:clamp(34px,5vw,72px)}
+.obs-room-card.is-on,.obs-room-card.is-on b{animation-duration:2s}
+.is-overview .obs-toolbar>:not(.obs-index-toggle),.is-overview .obs-topline>span{opacity:0;pointer-events:none;transition:opacity .3s}
+
+/* Guided tour. */
+.obs-filter .obs-tour-toggle{gap:7px;align-items:center;border-left:1px solid rgba(255,255,255,.12);border-radius:0 999px 999px 0;margin-left:2px;padding-left:14px;color:#dff4ff}
+.obs-filter .obs-tour-toggle span[aria-hidden]{font-size:9px}
+.obs-filter .obs-tour-toggle[aria-pressed="true"]{background:#8fd8ff;color:#04121c}
+.obs-tour-caption{position:fixed;left:50%;bottom:198px;z-index:3;width:min(560px,86vw);transform:translate(-50%,12px);text-align:center;pointer-events:none;opacity:0;transition:opacity .5s,transform .6s cubic-bezier(.2,.7,.2,1)}
+.is-touring .obs-tour-caption{opacity:1;transform:translate(-50%,0)}
+.obs-tour-caption span{font:500 10px var(--font-display);letter-spacing:.18em;text-transform:uppercase;color:#8fd8ff}
+.obs-tour-caption p{margin:10px 0 14px;font:400 clamp(17px,1.6vw,22px)/1.4 var(--font-display);letter-spacing:-.01em;color:#f2f5f6;text-shadow:0 2px 24px #000c}
+.obs-tour-progress{display:block;height:2px;background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden}
+.obs-tour-progress b{display:block;height:100%;background:#8fd8ff;transform-origin:left;transform:scaleX(0)}
+.is-touring .obs-instructions,.is-touring .obs-intro{opacity:0!important}
+@media(max-width:600px){.obs-tour-caption{bottom:auto;top:188px}.obs-tour-caption p{font-size:16px}}
+
+/* Study lens. */
+.obs-viewer-media{position:relative}
+.obs-lens{position:absolute;pointer-events:none;z-index:2}
+.obs-viewer-media.has-lens img{touch-action:none}
+.obs-lens-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:1160px;margin:14px auto 0}
+.obs-lens-bar span{font:500 10px var(--font-display);letter-spacing:.18em;text-transform:uppercase;color:#8fd8ff;margin-right:6px}
+.obs-lens-bar button{min-height:34px;padding:0 14px;border-radius:999px;font:500 12px/1 var(--font-display);color:#d6dcdf;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);cursor:pointer}
+.obs-lens-bar button[aria-pressed="true"]{background:#f3f5f6;color:#060708;border-color:transparent}
+.obs-lens-bar small{flex-basis:100%;font-size:12px;color:#8e989b;margin-top:2px}

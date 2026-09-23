@@ -104,8 +104,41 @@ export async function mountObservatory(root:HTMLElement){
       if(best>=0)navigate(best,false,Math.abs(best-aimed())>3?'teleport':'walk');
     }
   },{signal}));
+  // Guided tour: the astronaut leads through six works with a line of context each,
+  // then walks you to the portal. Any touch, key or wheel hands control back.
+  const TOUR=[0,1,7,9,12,14];const TOUR_HOLD=6200;
+  const tourButton=root.querySelector<HTMLButtonElement>('[data-obs-tour]')!,tourCaption=root.querySelector<HTMLElement>('[data-obs-tour-caption]')!;
+  let touring=0;
+  function stopTour(){
+    if(!touring)return;touring=0;tourButton.setAttribute('aria-pressed','false');root.classList.remove('is-touring');
+    tourCaption.querySelector<HTMLElement>('[data-obs-tour-bar]')!.getAnimations().forEach(a=>a.cancel());
+  }
+  async function runTour(){
+    if(touring){stopTour();return;}
+    if(!world||viewer.open||mapping)return;
+    if(firstPerson)setFirstPerson(false);if(inFinale)setFinale(false);
+    const token=++tourSeq;touring=token;tourButton.setAttribute('aria-pressed','true');root.classList.add('is-touring');
+    const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+    for(let step=0;step<TOUR.length;step++){
+      if(touring!==token)return;
+      const index=TOUR[step],work=archiveWorks[index],note=observatoryNotes[work.id],l=de()?1:0;
+      if(index!==aimed())navigate(index,false,Math.abs(index-aimed())>3?'teleport':'walk');
+      text('[data-obs-tour-step]',`${de()?'Führung':'Tour'} · ${step+1} / ${TOUR.length}`);
+      text('[data-obs-tour-text]',note?.focus[l]??work.detail?.[de()?'de':'en']??'');
+      const bar=tourCaption.querySelector<HTMLElement>('[data-obs-tour-bar]')!;bar.getAnimations().forEach(a=>a.cancel());
+      bar.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)'}],{duration:TOUR_HOLD,easing:'linear',fill:'forwards'});
+      await wait(TOUR_HOLD);
+    }
+    if(touring!==token)return;
+    stopTour();navigate(archiveWorks.length);
+  }
+  let tourSeq=0;
+  tourButton.addEventListener('click',event=>{event.stopPropagation();void runTour();},{signal});
+  for(const type of ['wheel','keydown'] as const)addEventListener(type,event=>{if(touring&&!(event.target as HTMLElement)?.closest?.('[data-obs-tour]'))stopTour();},{signal,passive:true});
+  stage.addEventListener('pointerdown',()=>stopTour(),{signal});
   // Crossing a gate: the name of the room you enter, large and brief, like a film title.
   const roomCard=root.querySelector<HTMLElement>('[data-obs-room-card]')!;
+  let pendingRoom=-1,announcedRoom=-1,announcedAt=-1e9;
   function showRoomCard(room:number){
     if(mapping||viewer.open||opening||root.classList.contains('is-intro'))return;
     const info=archiveRooms[room],lang=de()?'de':'en';
@@ -287,6 +320,62 @@ export async function mountObservatory(root:HTMLElement){
     }
     making.hidden=!makingGrid.children.length;
   }
+  // Study lens: over a still, a round lens shows the finished render's light (a brightness
+  // map) or its line (edges). An analysis of the final image, labelled as such.
+  const media=root.querySelector<HTMLElement>('.obs-viewer-media')!;
+  const lens=document.createElement('canvas');lens.className='obs-lens';lens.setAttribute('aria-hidden','true');media.append(lens);
+  const lensBar=document.createElement('div');lensBar.className='obs-lens-bar';lensBar.hidden=true;media.after(lensBar);
+  let lensMode:'off'|'light'|'line'='off',passes:{light:HTMLCanvasElement;line:HTMLCanvasElement}|null=null,lensAt:{x:number;y:number}|null=null;
+  function drawLensBar(){
+    const l=de();lensBar.textContent='';
+    const label=document.createElement('span');label.textContent=l?'Studienlinse':'Study lens';lensBar.append(label);
+    for(const [mode,en,deName] of [['off','Off','Aus'],['light','Light','Licht'],['line','Line','Linie']] as const){
+      const b=document.createElement('button');b.type='button';b.textContent=l?deName:en;b.setAttribute('aria-pressed',String(lensMode===mode));
+      b.addEventListener('click',()=>{lensMode=mode;drawLensBar();paintLens();});lensBar.append(b);
+    }
+    const note=document.createElement('small');note.textContent=l?'Analyse des fertigen Bildes: Helligkeit und Kanten.':'An analysis of the finished image: its brightness and its edges.';lensBar.append(note);
+  }
+  function buildPasses(){
+    const w=Math.min(1400,image.naturalWidth),h=Math.round(w*image.naturalHeight/image.naturalWidth);if(!w||!h)return null;
+    const src=document.createElement('canvas');src.width=w;src.height=h;const sctx=src.getContext('2d',{willReadFrequently:true})!;sctx.drawImage(image,0,0,w,h);
+    const data=sctx.getImageData(0,0,w,h).data,lum=new Float32Array(w*h);
+    for(let i=0;i<w*h;i++)lum[i]=(data[i*4]*.2126+data[i*4+1]*.7152+data[i*4+2]*.0722)/255;
+    const make=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+    const light=make(),line=make(),lightImg=light.getContext('2d')!.createImageData(w,h),lineImg=line.getContext('2d')!.createImageData(w,h);
+    // Brightness as a heat ramp: night blue, violet, ember, gold, white.
+    const ramp=[[6,8,24],[60,24,110],[190,60,70],[250,170,60],[255,250,225]];
+    for(let i=0;i<w*h;i++){const t=Math.min(.9999,Math.pow(lum[i],.8))*(ramp.length-1),k=Math.floor(t),f=t-k,a=ramp[k],b=ramp[k+1];
+      lightImg.data.set([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f,255],i*4);}
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const p=y*w+x;
+      const gx=lum[p-w+1]+2*lum[p+1]+lum[p+w+1]-lum[p-w-1]-2*lum[p-1]-lum[p+w-1];
+      const gy=lum[p+w-1]+2*lum[p+w]+lum[p+w+1]-lum[p-w-1]-2*lum[p-w]-lum[p-w+1];
+      const e=Math.min(1,Math.hypot(gx,gy)*2.2);lineImg.data.set([8+e*215,12+e*235,20+e*240,255],p*4);}
+    light.getContext('2d')!.putImageData(lightImg,0,0);line.getContext('2d')!.putImageData(lineImg,0,0);
+    return {light,line};
+  }
+  function paintLens(){
+    const r=image.getBoundingClientRect(),m=media.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);
+    lens.style.left=`${r.left-m.left}px`;lens.style.top=`${r.top-m.top+media.scrollTop}px`;lens.style.width=`${r.width}px`;lens.style.height=`${r.height}px`;
+    if(lens.width!==Math.round(r.width*dpr))lens.width=Math.round(r.width*dpr);if(lens.height!==Math.round(r.height*dpr))lens.height=Math.round(r.height*dpr);
+    const ctx=lens.getContext('2d')!;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,lens.width,lens.height);
+    if(lensMode==='off'||!lensAt)return;
+    if(!passes)passes=buildPasses();if(!passes)return;
+    ctx.scale(dpr,dpr);const R=Math.max(70,Math.min(150,r.width*.13));
+    ctx.save();ctx.beginPath();ctx.arc(lensAt.x,lensAt.y,R,0,Math.PI*2);ctx.clip();ctx.drawImage(passes[lensMode],0,0,r.width,r.height);ctx.restore();
+    ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.beginPath();ctx.arc(lensAt.x,lensAt.y,R,0,Math.PI*2);ctx.stroke();
+    ctx.lineWidth=6;ctx.strokeStyle='rgba(143,216,255,.18)';ctx.beginPath();ctx.arc(lensAt.x,lensAt.y,R+4,0,Math.PI*2);ctx.stroke();
+  }
+  const moveLens=(event:PointerEvent)=>{
+    if(lensMode==='off')return;const r=image.getBoundingClientRect();
+    const inside=event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom;
+    lensAt=inside?{x:event.clientX-r.left,y:event.clientY-r.top}:null;paintLens();
+  };
+  media.addEventListener('pointermove',moveLens,{signal});media.addEventListener('pointerdown',moveLens,{signal});
+  media.addEventListener('pointerleave',()=>{lensAt=null;paintLens();},{signal});
+  function resetLens(){
+    const work=archiveWorks[current];const still=!work.video&&work.type!=='case';
+    lensMode='off';passes=null;lensAt=null;lensBar.hidden=!still;media.classList.toggle('has-lens',still);drawLensBar();paintLens();
+  }
   // Fill the viewer with the current work: copy, media, process block, next link.
   function loadViewer(){
     fillViewer();root.querySelector<HTMLDetailsElement>('[data-obs-notes]')!.open=false;
@@ -299,7 +388,7 @@ export async function mountObservatory(root:HTMLElement){
     const next=archiveWorks[current+1];nextButton.hidden=!next;
     if(next){nextTitle.textContent=workTitle(next);nextMeta.textContent=`${String(current+2).padStart(2,'0')} / ${archiveRooms[next.roomIndex][de()?'de':'en']}`;}
     shareButton.classList.remove('is-copied');
-    fillMaking();
+    fillMaking();resetLens();
     return work.video?Promise.resolve():image.decode().catch(()=>{});
   }
   // Next work from inside the viewer: the hall moves behind the page, the page crossfades.
@@ -562,7 +651,8 @@ export async function mountObservatory(root:HTMLElement){
     const reel=new URLSearchParams(location.search).has('reel');if(reel)root.classList.add('is-reel');
     let intro=reel;try{intro=reel||!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
-    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);void loadStars();world.onGate=room=>{showRoomCard(room);sound.gate();};
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>{sound.arrive(room);if(room!==announcedRoom&&performance.now()-announcedAt>2500){announcedRoom=room;announcedAt=performance.now();showRoomCard(room);sound.gate();}pendingRoom=-1;};world.onTeleport=phase=>sound.teleport(phase);void loadStars();// The gate ripples on every crossing, but the room is only announced once you have settled in it.
+    world.onGate=room=>{pendingRoom=room;};announcedRoom=archiveWorks[current].roomIndex;
     world.setPortalTexts(portalLines());addEventListener('rb:langchange',()=>world?.setPortalTexts(portalLines()),{signal});
     world.onFinaleDone=()=>{root.classList.add('is-contact');finale.setAttribute('aria-hidden','false');finale.querySelector<HTMLAnchorElement>('[data-obs-finale-cta]')!.href=de()?'/de/kontakt/':'/contact/';setTimeout(()=>finale.querySelector<HTMLElement>('a')?.focus({preventScroll:true}),700);};
     world.onFinaleBack=()=>{inFinale=false;root.classList.remove('is-finale');};world.onLand=()=>sound.land();

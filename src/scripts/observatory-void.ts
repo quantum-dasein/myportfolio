@@ -802,6 +802,8 @@ export class ObservatoryWorld {
     }
     // The ship floats a hand's breadth above the floor in the faint gravity.
     if(this.ship.children.length&&!this.calm){this.ship.position.y=.25+Math.sin(this.elapsed*.7)*.08;this.ship.rotation.z=Math.sin(this.elapsed*.5)*.015;}
+    // The ship belongs to the hall, not to the map or the view from the helmet.
+    const shipOn=1-Math.max(this.overview,this.fp);this.ship.visible=shipOn>.02;this.ship.scale.setScalar(Math.max(.001,shipOn));
   }
   /** Is the pointer on the 3D piece in front of the current work? */
   hitModel(clientX:number,clientY:number){
@@ -1151,8 +1153,9 @@ export class ObservatoryWorld {
     const centre=new THREE.Vector3(this.position,.55,-6);
     this.mapSlots=this.bays.map((_,i)=>new THREE.Vector3(centre.x+(i%cols-(cols-1)/2)*cellX,centre.y,centre.z+(Math.floor(i/cols)-(rows-1)/2)*cellZ));
     const tanV=Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2)),tanH=tanV*this.camera.aspect;
-    const height=Math.max((cols*cellX/2+1.5)/tanH,(rows*cellZ/2+2.5)/tanV)*1.04;
-    this.overviewLook.set(centre.x,centre.y,centre.z+1);this.overviewCam.set(centre.x,centre.y+height,centre.z+height*.22);
+    // Leave room for the toolbar above and the hint below.
+    const height=Math.max((cols*cellX/2+1.5)/tanH,(rows*cellZ/2+2.5)/tanV)*1.2;
+    this.overviewLook.set(centre.x,centre.y,centre.z+.2);this.overviewCam.set(centre.x,centre.y+height,centre.z+height*.22);
   }
   enterOverview(){
     this.stopPreview();this.dragging=false;this.hovered=false;this.skipIntro();

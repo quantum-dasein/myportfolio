@@ -21,6 +21,7 @@ const { start } = Astro.props;
   <div class="obs-boot" role="status"><span class="obs-boot-orbit" aria-hidden="true"></span><span>THE OBSERVATORY</span><small class="obs-en">Entering the collection</small><small class="obs-de">Die Sammlung öffnet sich</small></div>
   <div class="obs-stage" data-obs-stage aria-hidden="true"></div>
   <span class="obs-star-tip" data-obs-star-tip aria-hidden="true"></span>
+  <div class="obs-tour-caption" data-obs-tour-caption aria-live="polite"><span data-obs-tour-step></span><p data-obs-tour-text></p><i class="obs-tour-progress"><b data-obs-tour-bar></b></i></div>
   <div class="obs-room-card" data-obs-room-card aria-hidden="true"><span data-obs-card-num>02</span><b data-obs-card-name>Objects</b><i data-obs-card-sub></i></div>
   <div class="obs-visor" aria-hidden="true"><div class="obs-visor-glass"></div><div class="obs-visor-hud"><span class="obs-hud-left">EVA / RB-01<b data-obs-hud-room>ATMOSPHERES</b><i>DRAG TO LOOK · UP FOR THE SKY</i></span><span class="obs-hud-right">O2 98%<b>SUIT NOMINAL</b><i data-obs-hud-work>01 / 15</i></span><span class="obs-hud-reticle"></span></div></div>
   <div class="obs-map" aria-hidden="true"><span class="obs-map-hint"><span class="obs-en">Choose a work · Esc returns to the hall</span><span class="obs-de">Werk wählen · Esc führt zurück in den Saal</span></span><span class="obs-map-label" data-obs-map-label></span></div>
@@ -50,6 +51,7 @@ const { start } = Astro.props;
         { id: 'film', en: 'Film', de: 'Film', count: archiveWorks.filter(w => w.video).length },
         { id: 'web', en: 'Web', de: 'Web', count: archiveWorks.filter(w => w.type === 'case').length },
       ].map(chip => <button type="button" data-obs-filter={chip.id} aria-pressed={chip.id === 'all' ? 'true' : 'false'}><span class="obs-en">{chip.en}</span><span class="obs-de">{chip.de}</span><small>{String(chip.count).padStart(2, '0')}</small></button>)}
+      <button type="button" class="obs-tour-toggle" data-obs-tour aria-pressed="false"><span aria-hidden="true">▶</span><span class="obs-en">Tour</span><span class="obs-de">Führung</span></button>
     </div>    <nav class="obs-journey" aria-label="Exhibition rooms">
       {archiveRooms.map((room, roomIndex) => <button data-obs-room={roomIndex} aria-current={roomIndex===0 ? 'step' : undefined}><span class="obs-room-track"><i data-obs-room-progress={roomIndex}></i></span><span class="obs-room-label"><b>0{roomIndex+1}</b><span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span><small>{String(room.ids.length).padStart(2,'0')}</small></span></button>)}
     </nav>
