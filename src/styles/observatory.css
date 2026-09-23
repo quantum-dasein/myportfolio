@@ -381,3 +381,9 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 .obs-making-block.is-wide p{padding:12px 0;border-top:1px solid rgba(255,255,255,.07);margin:0}
 @media(max-width:600px){.obs-making{margin-top:36px;padding-top:28px}.obs-making-grid{grid-template-columns:1fr;gap:24px}.obs-making-block p{font-size:14px}}
 .observatory .obs-open .obs-icon{width:20px!important;height:20px!important;padding:0!important;background:none!important;color:#060708!important;margin-right:12px}
+
+/* The hall is an app, not a page: pinch and double-tap must never zoom the browser. */
+html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:none}
+.observatory .obs-shell,.observatory .obs-stage,.observatory .obs-map,.observatory .obs-finale{touch-action:none}
+.observatory .obs-shell button,.observatory .obs-shell a{touch-action:manipulation}
+.obs-viewer,.obs-index,.obs-secret{touch-action:pan-y}

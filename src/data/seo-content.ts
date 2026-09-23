@@ -90,7 +90,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     title: c("A business website, live in about a week.", "Eine Unternehmens-Website, in etwa einer Woche live."),
     description: c(
       "Fast, well-built business websites in Vienna: fixed scope, fixed price, live in about a week. Static builds that load quickly, need no plugins and belong to you.",
-      "Schnelle, saubere Unternehmens-Websites in Wien: fester Umfang, fester Preis, in etwa einer Woche live. Statisch gebaut, schnell geladen, ohne Plugins — und sie gehört Ihnen.",
+      "Schnelle Unternehmens-Websites in Wien: fester Umfang, fester Preis, in etwa einer Woche live. Statisch gebaut, ohne Plugins, und sie gehört Ihnen.",
     ),
     // The eyebrow becomes the <title>, so it carries the phrase people search.
     eyebrow: c("Website Development / Vienna", "Website erstellen / Wien"),
@@ -213,7 +213,7 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
     title: c("Creative development that still loads fast.", "Creative Development, das trotzdem schnell lädt."),
     description: c(
       "Creative development in Vienna: bespoke WebGL, hand-written GLSL and motion built in Astro, Three.js and GSAP — and measured on a mid-range phone before it ships.",
-      "Creative Development in Wien: eigene WebGL-Szenen, handgeschriebenes GLSL und Motion in Astro, Three.js und GSAP — vor dem Launch auf einem Mittelklasse-Handy gemessen.",
+      "Creative Development in Wien: eigene WebGL-Szenen, handgeschriebenes GLSL und Motion mit Astro, Three.js und GSAP, auf einem Mittelklasse-Handy gemessen.",
     ),
     eyebrow: c("Creative Development / Vienna", "Creative Development / Wien"),
     lead: c(
@@ -388,8 +388,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       "Eine Praxis-Website, die beantwortet, weswegen Patienten gekommen sind.",
     ),
     description: c(
-      "Websites for medical practices in Vienna: opening hours, Kassenvertrag or Wahlarzt and how to book, readable on a phone in seconds. Built within the advertising limits of the Ärztegesetz.",
-      "Websites für Arztpraxen in Wien: Ordinationszeiten, Kassenvertrag oder Wahlarzt und wie man einen Termin bekommt — am Handy in Sekunden lesbar. Gebaut innerhalb der Werbeschranken des Ärztegesetzes.",
+      "Websites for medical practices in Vienna: hours, Kasse or Wahlarzt and booking, readable on a phone in seconds. Built within the limits of the Ärztegesetz.",
+      "Websites für Arztpraxen in Wien: Ordinationszeiten, Kasse oder Wahlarzt, Terminbuchung, am Handy in Sekunden lesbar. Innerhalb der Grenzen des Ärztegesetzes.",
     ),
     eyebrow: c("Website for a medical practice / Vienna", "Website Arztpraxis / Wien"),
     lead: c(
@@ -482,8 +482,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       "Eine Restaurant-Website für jemanden, der hungrig davor steht.",
     ),
     description: c(
-      "Websites for restaurants and cafés in Vienna: the menu as real text, hours, address and reservation on the first screen. Allergen information handled properly, and a menu search engines can actually read.",
-      "Websites für Restaurants und Cafés in Wien: die Karte als echter Text, Öffnungszeiten, Adresse und Reservierung auf dem ersten Bildschirm. Allergeninformation sauber gelöst, und eine Karte, die Suchmaschinen wirklich lesen können.",
+      "Websites for restaurants and cafés in Vienna: the menu as real text, hours and reservations on the first screen, allergens handled properly.",
+      "Websites für Restaurants und Cafés in Wien: Karte als echter Text, Öffnungszeiten und Reservierung auf dem ersten Bildschirm, Allergene sauber gelöst.",
     ),
     eyebrow: c("Website for a restaurant / Vienna", "Website Restaurant / Wien"),
     lead: c(
@@ -576,8 +576,8 @@ export const serviceContent: Record<ServiceKey, ServiceContent> = {
       "Eine Handwerker-Website für den Kunden, dessen Bad gerade unter Wasser steht.",
     ),
     description: c(
-      "Websites for tradespeople in Vienna: phone number that dials on one tap, the districts you cover, whether you do emergencies, and proof you are a real Meisterbetrieb. Built to be found from a phone.",
-      "Websites für Handwerksbetriebe in Wien: Telefonnummer, die mit einem Tipp wählt, die Bezirke, die Sie abdecken, ob Sie Notdienst machen — und der Nachweis, dass Sie ein echter Meisterbetrieb sind. Gebaut, um vom Handy aus gefunden zu werden.",
+      "Websites for tradespeople in Vienna: one-tap calls, the districts you cover, emergency service and proof you are a Meisterbetrieb. Built to be found on a phone.",
+      "Websites für Handwerker in Wien: Anruf mit einem Tipp, Ihre Bezirke, Notdienst und der Nachweis als Meisterbetrieb. Gebaut, um am Handy gefunden zu werden.",
     ),
     eyebrow: c("Website for tradespeople / Vienna", "Website Handwerker / Wien"),
     lead: c(

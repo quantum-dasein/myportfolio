@@ -485,6 +485,24 @@ export async function mountObservatory(root:HTMLElement){
     if(!hit&&hover){clearTimeout(hoverTimer);world.endHover();hover=false;}
   },{signal});
   stage.addEventListener('pointerleave',()=>{clearTimeout(hoverTimer);world?.endHover();hover=false;if(world){world.pointer.set(0,0);world.pointerInside=false;world.hovered=false;}},{signal});
+  // Two fingers: pinching in rises to the map of all works, spreading out flies back
+  // into the hall. The browser's own page zoom is blocked so the view never gets stuck.
+  let pinchStart=0,pinchFired=false;
+  const pinchDistance=(touches:TouchList)=>Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);
+  root.addEventListener('touchstart',event=>{
+    if(event.touches.length===2){pinchStart=pinchDistance(event.touches);pinchFired=false;world?.dragEnd();gesture=undefined;}
+  },{passive:true,signal});
+  root.addEventListener('touchmove',event=>{
+    if(event.touches.length<2||viewer.open||indexDialog.open)return;
+    event.preventDefault();
+    if(pinchFired||!pinchStart)return;
+    const ratio=pinchDistance(event.touches)/pinchStart;
+    if(ratio<.72&&!mapping&&!inFinale){pinchFired=true;void enterMap();}
+    else if(ratio>1.35&&mapping){pinchFired=true;void leaveMap();}
+  },{passive:false,signal});
+  root.addEventListener('touchend',event=>{if(event.touches.length<2)pinchStart=0;},{passive:true,signal});
+  // iOS Safari zooms on its own gesture events regardless of touch-action on some versions.
+  for(const type of ['gesturestart','gesturechange']as const)document.addEventListener(type,event=>{if(!viewer.open)event.preventDefault();},{passive:false,signal});
   // Phones: tilting the device shifts the view a little, like leaning in a room.
   addEventListener('deviceorientation',event=>{
     if(!world?.mobile||event.gamma===null||event.beta===null)return;

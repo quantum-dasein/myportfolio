@@ -117,7 +117,7 @@ const sections = order
               label are swapped by the client-side language controller, exactly
               like every other localized route in the footer. */}
           <a
-            href="/de/rodion-belousov-wien/"
+            href={lang === "de" ? "/de/rodion-belousov-wien/" : "/en/rodion-belousov-vienna/"}
             data-lang-href-en="/en/rodion-belousov-vienna/"
             data-lang-href-de="/de/rodion-belousov-wien/"
             data-i18n="footer.profile"

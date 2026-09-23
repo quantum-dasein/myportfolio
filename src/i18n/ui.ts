@@ -417,7 +417,7 @@ export const ui = {
     // are the original three, verbatim; 4-8 came out of later sessions.
     "nav.notes": "Notes",
     "notes.meta.title": "Engineering notes — what broke on this site and why | Rodion Belousov",
-    "notes.meta.description": "A running log of real failures on rodionbelousov.studio: a 12.75 MB video nobody asked for, a loading screen that could never end, a codec that lost, an optimisation that cost 42 KB.",
+    "notes.meta.description": "Real failures on rodionbelousov.studio: a 12.75 MB video nobody asked for, a loader that never ended, a codec that lost, an optimisation that cost 42 KB.",
     "notes.kicker": "Engineering log / rodionbelousov.studio",
     "notes.title": "What broke, and what it cost.",
     "notes.lead": "Anyone can show the finished surface, and by now anyone can generate one. This is the part that does not come out of a prompt: the things that were wrong first, how they were found, and the two entries where the right answer was to throw the work away.",

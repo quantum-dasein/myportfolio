@@ -45,6 +45,8 @@ interface Props {
    *  form, so on the enquiry form itself it is a loop back to the page the
    *  visitor is already reading. */
   hideFinale?: boolean;
+  /** Canonical path when this URL is a view of another page (e.g. a work opened in the archive). */
+  canonicalPath?: string;
   /** Disable the default Webgl component to provide a custom one */
   noWebgl?: boolean;
 }
@@ -65,6 +67,7 @@ const {
   lockLang = false,
   hideFinale = false,
   noWebgl = false,
+  canonicalPath,
 } = Astro.props;
 const t = useTranslations(lang);
 const title = providedTitle ?? t("meta.title");
@@ -77,7 +80,9 @@ const isDeck = mode === "deck";
 // the home, and the wordmark always returns to "/".
 const homePrefix = Astro.url.pathname === "/" ? "" : "/";
 const site = Astro.site ?? new URL("https://rodionbelousov.studio");
-const canonical = new URL(Astro.url.pathname, site).toString();
+const canonical = new URL(canonicalPath ?? Astro.url.pathname, site).toString();
+// Social previews describe this exact URL, even when search engines are pointed at the canonical.
+const pageUrl = new URL(Astro.url.pathname, site).toString();
 const socialImage = new URL(image, site).toString();
 const resolveAlternate = (value?: string) => value ? new URL(value, site).toString() : undefined;
 const localizedAlternates = alternateUrls ? {
@@ -312,7 +317,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 <html lang={lang === "de" ? "de-AT" : "en"}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content={isDeck ? "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" : "width=device-width, initial-scale=1"} />
     <meta name="description" content={description} />
     <meta name="author" content="Rodion Belousov" />
     <meta name="creator" content="Rodion Belousov" />
@@ -337,7 +342,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     <meta property="og:site_name" content="Rodion Belousov Studio" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
+    <meta property="og:url" content={pageUrl} />
     <meta property="og:image" content={socialImage} />
     {/* Stating the size and type lets a crawler lay the card out on the first
         pass instead of fetching and measuring it, which is the usual reason a

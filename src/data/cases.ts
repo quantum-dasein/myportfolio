@@ -189,9 +189,9 @@ export const cases: Record<CaseId, CaseConfig> = {
     screenIndex: "ACADEMY / 03",
     specimen: { name: "BRIDGE ACADEMY", moduleB: "EDITORIAL SERIF", moduleC: "DESERT LIGHT" },
     seo: {
-      title: "One-page course landing | Bridge Consult Academy by Rodion Belousov",
+      title: "Bridge Consult Academy course landing | Rodion Belousov",
       description:
-        "A single-page course landing in three languages with eighteen modules, built in Astro and shipped with no third-party JavaScript at all. The small end of the same practice.",
+        "A one-page course landing in three languages with eighteen modules, built in Astro with no third-party JavaScript. The small end of the same practice.",
       keywords: [
         "one page website case study",
         "landing page development Vienna",
