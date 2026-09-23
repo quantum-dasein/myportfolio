@@ -14,5 +14,23 @@ export const observatoryNotes:Record<string,{focus:[string,string];approach:[str
   'fidic-osh-first-meeting':{focus:['Document the first FIDIC OSH meeting.','Das erste FIDIC-OSH-Treffen dokumentieren.'],approach:['A short, captioned vertical edit in the client’s publishing format.','Ein kurzer, untertitelter Hochformat-Schnitt im Publikationsformat des Kunden.'],role:['On-location filming and editing.','Dreh vor Ort und Schnitt.']},
   'bridge':{focus:['A website for a construction consultancy.','Eine Website für eine Bauberatung.'],approach:['See the case study for the strategy, structure and implementation.','Die Fallstudie erläutert Strategie, Struktur und Umsetzung.']},
   'fidic':{focus:['A contract-knowledge platform.','Eine Plattform für Vertragswissen.'],approach:['See the case study for content structure and implementation.','Die Fallstudie erläutert Inhaltsstruktur und Umsetzung.']},
+  'tarjima-live-lecture-translation':{focus:['Live lecture translation, Russian to Uzbek.','Live-Übersetzung von Vorlesungen, Russisch → Usbekisch.'],approach:['Speech becomes short fragments, translated with the company’s own glossary and shown in Zoom or on any phone.','Sprache wird in kurze Fragmente geteilt, mit dem firmeneigenen Glossar übersetzt und in Zoom oder auf jedem Handy gezeigt.'],role:['Product design, engineering, terminology and launch.','Produktdesign, Entwicklung, Terminologie und Launch.']},
   'academy':{focus:['A multilingual course landing page.','Eine mehrsprachige Kurs-Landingpage.'],approach:['One page brings together the course information in three languages.','Eine Seite bündelt die Kursinformationen in drei Sprachen.']}
+};
+
+type Pair=[en:string,de:string];
+/** "How it was made" for works whose making is a system rather than a render. Figures are
+ *  the measured ones from the project's own case study. */
+export const observatoryMaking:Record<string,{label:Pair;lines:Pair[];wide?:boolean}[]>={
+  'tarjima-live-lecture-translation':[
+    {label:['The brief','Ausgangslage'],lines:[['The courses are taught in Russian to engineers, contract managers and lawyers who read Uzbek. Interpreters for every session are expensive, and generic machine translation invents a new word for each contract term.','Die Kurse werden auf Russisch für Ingenieure, Vertragsmanager und Juristen gehalten, die Usbekisch lesen. Dolmetscher für jede Sitzung sind teuer, und generische Maschinenübersetzung erfindet für jeden Vertragsbegriff ein neues Wort.']]},
+    {label:['Measured','Gemessen'],lines:[['1.9 s median model time per fragment · $0.0023 per fragment · about $2 per lecture hour · 67 automated checks without network or API spend.','1,9 s mittlere Modellzeit pro Fragment · 0,0023 $ pro Fragment · rund 2 $ pro Vorlesungsstunde · 67 automatische Tests ohne Netzwerk und API-Kosten.']]},
+    {label:['How a sentence travels','Der Weg eines Satzes'],wide:true,lines:[
+      ['01 — The lecturer’s Chrome recognises Russian speech and cuts it into fragments of 6–11 words, at conjunctions and prepositions.','01 — Chrome beim Dozenten erkennt die russische Sprache und teilt sie an Konjunktionen und Präpositionen in Fragmente von 6–11 Wörtern.'],
+      ['02 — An edge function finds the glossary terms in any grammatical case and sends the fragment, with the last four translations as context, to Claude.','02 — Eine Edge-Funktion erkennt Glossarbegriffe in jedem Kasus und schickt das Fragment mit den letzten vier Übersetzungen als Kontext an Claude.'],
+      ['03 — Numbered lines go into Redis; every attendee phone reads the same CDN-cached feed, whether 10 or 300 people are watching.','03 — Nummerierte Zeilen landen in Redis; alle Handys lesen denselben CDN-gecachten Feed, ob 10 oder 300 Personen zusehen.'],
+      ['04 — The same lines reach Zoom’s closed captions in speech order. No audio ever leaves the lecturer’s browser.','04 — Dieselben Zeilen erreichen Zooms Untertitel in Sprechreihenfolge. Kein Audio verlässt den Browser des Dozenten.'],
+    ]},
+    {label:['Known limits','Bekannte Grenzen'],lines:[['Roughly 3–4 s from words to subtitle: Uzbek puts the verb last. The glossary awaits sign-off by a native-speaking legal expert.','Rund 3–4 s vom Wort zum Untertitel: Im Usbekischen steht das Verb am Ende. Das Glossar wartet auf die Freigabe durch einen muttersprachlichen Juristen.']]},
+  ],
 };

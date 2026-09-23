@@ -13,6 +13,9 @@ export interface Work {
   id: string;
   img: string;
   video?: string; // optional .mp4 → becomes a VideoTexture
+  /** A separate 9:16 cut of the same film, played in the viewer on phones held upright. */
+  mobileVideo?: string;
+  mobileImg?: string;
   /** 16:9 unless stated. A reel shot on location is a phone file, and a 9:16
    *  card cannot share a row with landscape ones without towering over them —
    *  so the vertical ones get their own strip. */
@@ -242,6 +245,27 @@ export const works: Work[] = [
       tools: "ON LOCATION / PREMIERE PRO",
       en: "Bridge Consult's Summer School in Georgia, 2026 — a vertical event film connecting Borjomi's landscape with workshops, delay analysis, group discussions and the people behind the programme.",
       de: "Bridge Consults Summer School in Georgien, 2026 — ein vertikaler Eventfilm, der Bordschomis Landschaft mit Workshops, Verzögerungsanalysen, Gruppendiskussionen und den Menschen hinter dem Programm verbindet.",
+    },
+  },
+  {
+    id: "tarjima-live-lecture-translation",
+    img: "/portfolio/rodion-belousov-tarjima-live-lecture-translation-poster.webp",
+    video: "/portfolio/video/rodion-belousov-tarjima-live-lecture-translation.mp4",
+    mobileImg: "/portfolio/rodion-belousov-tarjima-live-lecture-translation-vertical-poster.webp",
+    mobileVideo: "/portfolio/video/rodion-belousov-tarjima-live-lecture-translation-vertical.mp4",
+    type: "reel",
+    title: "Tarjima — Live Lecture Translation",
+    kCat: "gallery.9.cat",
+    href: "/cases/rodion-belousov-tarjima-live-lecture-translation-case-study.pdf",
+    hrefLabel: "CASE STUDY",
+    musicCredit: {
+      title: "A Kind Of Hope", artist: "Scott Buckley", url: "https://www.scottbuckley.com.au/library/a-kind-of-hope/",
+      license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    },
+    detail: {
+      tools: "WEB SPEECH API / CLAUDE / VERCEL EDGE / UPSTASH REDIS / ZOOM CAPTIONS",
+      en: "A live translation system for BRIDGE Consult Academy's online courses. The lecturer speaks Russian; attendees read Uzbek subtitles within seconds — in the Zoom call or on their phone, with nothing to install. Speech is recognised in the lecturer's browser, cut into short fragments and translated against the company's own 92-term contract glossary. Designed and built in twelve days, in production since September 2026.",
+      de: "Ein Live-Übersetzungssystem für die Online-Kurse der BRIDGE Consult Academy. Der Dozent spricht Russisch; die Teilnehmenden lesen innerhalb von Sekunden usbekische Untertitel — im Zoom-Call oder auf dem Handy, ohne Installation. Die Sprache wird im Browser des Dozenten erkannt, in kurze Fragmente geteilt und mit dem firmeneigenen Glossar aus 92 Vertragsbegriffen übersetzt. In zwölf Tagen entworfen und gebaut, seit September 2026 im Einsatz.",
     },
   },
 ];

@@ -245,7 +245,7 @@ export class ObservatoryWorld {
   cometFrom=new THREE.Vector3();cometTo=new THREE.Vector3();cometT=0;cometNext=0;cometCaught=0;
   daylight:Daylight=daylightAt(viennaHour());daylightAt_=0;horizon=createHorizon();skyFog=new THREE.Color();
   // Finale: past the last work he sends a signal up into the sky.
-  finale=0;finaleGoal=false;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;finaleFrom=new THREE.Vector2();
+  finale=0;finaleGoal=false;finaleOut=0;finaleHold=0;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;finaleFrom=new THREE.Vector2();
   portal=new THREE.Group();portalMembrane!:THREE.Mesh<THREE.PlaneGeometry,Shader>;portalPool!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
   portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
   beamCore!:THREE.Mesh<THREE.CylinderGeometry,Shader>;beamRings:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>[]=[];
@@ -919,7 +919,15 @@ export class ObservatoryWorld {
     while(ctx.measureText(line).width>1860&&size>80){size-=6;ctx.font=`500 ${size}px ${family}`;}
     ctx.fillText(line,1024,256);this.portalText.needsUpdate=true;
   }
-  setFinale(on:boolean){this.finaleGoal=on;this.lastActivity=performance.now();if(on){this.hovered=false;this.stopPreview();this.finaleFrom.copy(this.astro);}}
+  setFinale(on:boolean){
+    if(on===this.finaleGoal)return;
+    this.finaleGoal=on;this.lastActivity=performance.now();
+    if(on){this.hovered=false;this.stopPreview();this.finaleFrom.copy(this.astro);this.finaleOut=0;return;}
+    // Called back before he is through: he beams out on the spot instead of
+    // walking the whole way back, and beams in again in front of the work.
+    this.finaleHold=this.finale;this.finaleOut=this.dissolve.uDissolve.value;
+    if(this.finale>0&&this.finaleOut<.9&&!this.calm){this.onTeleport?.('out');this.beamSparks(false);}
+  }
   private updatePortal(time:number,dt:number,ov:number){
     const was=this.finale;
     if(this.calm)this.finale=this.finaleGoal?1:0;
@@ -1332,7 +1340,7 @@ export class ObservatoryWorld {
     if(this.astroIndex<0||this.calm)this.astroIndex=this.index;
     this.updateTeleport(dt,ov,viewing);
     if(this.fp>.72)this.curator.root.visible=false;
-    if(this.finale>0){const d=this.finaleGoal?smooth(.53,.63,this.finale):1;this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
+    if(this.finale>0){if(!this.finaleGoal)this.finaleOut=Math.min(1,this.finaleOut+dt/.55);const d=this.finaleGoal?smooth(.53,.63,this.finale):smooth(0,1,this.finaleOut);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
     // He belongs to one work at a time and stands just off its left edge.
     const home=this.astroIndex;
     const spot=this.anchor(home,this.anchorScratch);let goalX=spot.x,goalZ=spot.y;
@@ -1350,11 +1358,14 @@ export class ObservatoryWorld {
       tuck=arc*.38+smooth(0,.08,hop.t)*(1-smooth(.1,.16,hop.t))*.22+smooth(.88,.93,hop.t)*(1-smooth(.95,1,hop.t))*.24;
     }
     let finaleWalk=0,diveW=0;
-    if(this.finale>0){
+    // Walking in: the finale's own time. Called back: frozen where he was until he has
+    // beamed out, then parked (unseen) at his work for the beam-in.
+    const finaleT=this.finale<=0?0:this.finaleGoal?this.finale:this.finaleOut<1?this.finaleHold:0;
+    if(finaleT>0){
       // He checks the tablet, walks to the portal, crouches and dives into the light.
-      const t=this.finale,px=this.portalX()-.25,go=smooth(.07,.44,t);
+      const t=finaleT,px=this.portalX()-.25,go=smooth(.07,.44,t);
       goalX=mix(this.finaleFrom.x,px,go);goalZ=mix(this.finaleFrom.y,2.2,go);
-      finaleWalk=smooth(.06,.1,t)*(1-smooth(.41,.45,t));
+      finaleWalk=this.finaleGoal?smooth(.06,.1,t)*(1-smooth(.41,.45,t)):0;
       // Crouch, spring, and fly feet-first-high through the frame: the body clears
       // the portal's lower edge instead of landing on the floor behind it.
       const dive=THREE.MathUtils.clamp((t-.46)/.14,0,1);
@@ -1393,7 +1404,7 @@ export class ObservatoryWorld {
     facing=turnTo(facing,toCamera,greet);facing=turnTo(facing,toCamera+.7,stargaze);
     if(this.walk>.3&&stride>.6)facing=Math.atan2(stepX,stepZ);
     if(hop&&Math.hypot(stepX,stepZ)>.1)facing=Math.atan2(stepX,stepZ);
-    if(this.finale>.02)facing=this.finale<.44?Math.atan2(this.portalX()-.25-this.astro.x,2.2-this.astro.y+.001):Math.PI;
+    if(finaleT>.02)facing=finaleT<.44?Math.atan2(this.portalX()-.25-this.astro.x,2.2-this.astro.y+.001):Math.PI;
     root.rotation.y=turnTo(root.rotation.y,facing,1-Math.exp(-dt*(intro<1?3:5)));
     // Diving, the whole body tips forward into the light.
     root.rotation.x=-.85*diveW;

@@ -1,5 +1,5 @@
 import { archiveRooms, archiveWorks } from '../data/observatory';
-import { observatoryNotes } from '../data/observatory-notes';
+import { observatoryMaking, observatoryNotes } from '../data/observatory-notes';
 import type { ObservatoryWorld } from './observatory-void';
 import { createHallSound } from './observatory-sound';
 import { daylightAt, viennaClock, viennaHour } from './observatory-daylight';
@@ -77,11 +77,14 @@ export async function mountObservatory(root:HTMLElement){
     try{sessionStorage.setItem('rb-observatory-index',String(current));}catch{}
     clearTimeout(hoverTimer);hover=false;
   }
+  let inFinale=false;
   function navigate(index:number,throttle=false,mode:'walk'|'teleport'='walk'){
     if(index===archiveWorks.length&&!world?.isMoving()&&aimed()===archiveWorks.length-1){setFinale(true);return;}
     if(index<0||index>=archiveWorks.length||viewer.open||indexDialog.open||opening)return;
     const now=performance.now();if(throttle&&now-lastNavigation<1250)return;lastNavigation=now;
     if(!world){setCurrent(index);return;}
+    // Any other way out of the portal (map, list, tour, arrows) closes it first.
+    if(inFinale)setFinale(false);
     if(index===aimed()&&!world.isMoving())return;
     const jump=Math.abs(index-current)>3;
     world.select(index,mode);if(world.isCalm())setCurrent(index);
@@ -214,8 +217,12 @@ export async function mountObservatory(root:HTMLElement){
     text('[data-obs-viewer-tools]',work.detail?.tools??'WEB / DESIGN / DEVELOPMENT');
     text('[data-obs-viewer-description]',work.detail?.[lang]??dict()[work.kText??'']??'');
     video.setAttribute('aria-label',workTitle(work));image.alt=workTitle(work);
-    link.hidden=Boolean(work.video);link.href=work.href;
-    if(work.href.startsWith('https:')){link.target='_blank';link.rel='noopener';}else{link.removeAttribute('target');link.removeAttribute('rel');}
+    // A film can still carry a document: its case study opens as a PDF.
+    const pdf=work.href.endsWith('.pdf');
+    link.hidden=Boolean(work.video)&&!pdf;link.href=work.href;
+    link.querySelector('.obs-en')!.textContent=pdf?'Read the case study (PDF)':'Open project';
+    link.querySelector('.obs-de')!.textContent=pdf?'Fallstudie lesen (PDF, Englisch)':'Projekt öffnen';
+    if(work.href.startsWith('https:')||pdf){link.target='_blank';link.rel='noopener';}else{link.removeAttribute('target');link.removeAttribute('rel');}
     root.querySelectorAll<HTMLElement>('[data-obs-credit]').forEach(el=>{el.hidden=el.dataset.obsCredit!==work.id;});
   }
   image.addEventListener('load',()=>{
@@ -299,7 +306,9 @@ export async function mountObservatory(root:HTMLElement){
       if(steps.length)block(l?'Vorgehen':'Process',steps.map((s,i)=>`0${i+1} — ${s}`),true);
       if(key('outcome.text'))block(l?'Ergebnis':'Outcome',key('outcome.text'));
     }else{
-      const tools=(work.detail?.tools??'').split('/').map(t=>t.trim()).filter(Boolean);
+      const custom=observatoryMaking[work.id];
+      custom?.forEach(item=>block(item.label[l],item.lines.map(line=>line[l]),item.wide));
+      const tools=custom?[]:(work.detail?.tools??'').split('/').map(t=>t.trim()).filter(Boolean);
       if(tools.length)block(l?'Werkzeugkette':'Pipeline',tools.map((t,i)=>`0${i+1} — ${TOOL_NAMES[t]??t}: ${TOOL_ROLES[t]?.[l]??''}`.replace(/: $/,'')),true);
       const format=block(l?'Format':'Format',work.video?(l?'Film':'Film'):(l?'Standbild':'Still image'));
       const describe=()=>{
@@ -374,7 +383,12 @@ export async function mountObservatory(root:HTMLElement){
     const work=archiveWorks[current];image.hidden=Boolean(work.video);video.hidden=!work.video;
     picture.hidden=Boolean(work.video);
     if(mobilePreviews[work.id])mobileSource.srcset=mobilePreviews[work.id];else mobileSource.removeAttribute('srcset');
-    if(work.video){image.removeAttribute('src');video.src=work.video;video.poster=work.img;video.muted=false;video.currentTime=0;video.style.aspectRatio=String(world?.aspect()??16/9);}
+    if(work.video){
+      // Phones held upright get the film's own vertical cut when there is one.
+      const upright=Boolean(work.mobileVideo)&&matchMedia('(max-width: 600px) and (orientation: portrait)').matches;
+      image.removeAttribute('src');video.src=upright?work.mobileVideo!:work.video;video.poster=upright?work.mobileImg??work.img:work.img;
+      video.muted=false;video.currentTime=0;video.style.aspectRatio=upright?String(9/16):String(world?.aspect()??16/9);
+    }
     else {video.pause();video.removeAttribute('src');video.load();image.style.maxWidth='100%';image.src=work.img;}
     root.querySelectorAll<HTMLElement>('[data-obs-process]').forEach(el=>{el.hidden=el.dataset.obsProcess!==work.id;});
     const next=archiveWorks[current+1];nextButton.hidden=!next;
@@ -410,7 +424,7 @@ export async function mountObservatory(root:HTMLElement){
     try{await navigator.clipboard.writeText(url);shareButton.classList.add('is-copied');setTimeout(()=>shareButton.classList.remove('is-copied'),2200);}catch{}
   },{signal});
   async function openViewer(){
-    if(viewer.open||indexDialog.open||opening||mapping)return;
+    if(viewer.open||indexDialog.open||opening||mapping||inFinale)return;
     opening=true;const token=++openToken;root.classList.add('is-focusing');
     viewerTrigger=document.activeElement as HTMLElement;
     world?.stopPreview();clearTimeout(hoverTimer);
@@ -443,10 +457,11 @@ export async function mountObservatory(root:HTMLElement){
   root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(stepFrom(aimed(),-1)),{signal});
   root.querySelector('[data-obs-next]')!.addEventListener('click',()=>{if(aimed()>=archiveWorks.length-1&&!world?.isMoving())setFinale(true);else navigate(stepFrom(aimed(),1));},{signal});
   // The end of the hall: a last gate, a signal sent from his tablet, and an invitation.
-  const finale=root.querySelector<HTMLElement>('[data-obs-finale]')!;let inFinale=false,overscroll=0;
+  const finale=root.querySelector<HTMLElement>('[data-obs-finale]')!;let overscroll=0;
   function setFinale(on:boolean){
-    if(!world||mapping||viewer.open)return;
+    if(!world)return;
     if(on){
+      if(mapping||viewer.open)return;
       if(inFinale)return;
       if(firstPerson)setFirstPerson(false);
       inFinale=true;root.classList.add('is-finale');world.setFinale(true);sound.gate();
@@ -469,7 +484,7 @@ export async function mountObservatory(root:HTMLElement){
   }
   async function enterMap(){
     if(!world||mapping||opening||viewer.open)return;
-    if(firstPerson)setFirstPerson(false);
+    if(firstPerson)setFirstPerson(false);if(inFinale)setFinale(false);
     mapping=true;labelIndexButton();root.classList.add('is-overview');
     clearTimeout(hoverTimer);world.endHover();hover=false;
     await world.enterOverview();
@@ -523,7 +538,7 @@ export async function mountObservatory(root:HTMLElement){
   const eyesButton=root.querySelector<HTMLButtonElement>('[data-obs-eyes]')!;
   function setFirstPerson(on:boolean){
     if(!world||on===firstPerson)return;
-    if(on&&mapping)void leaveMap();
+    if(on&&mapping)void leaveMap();if(on&&inFinale)setFinale(false);
     firstPerson=on;world.setFirstPerson(on);sound.firstPerson(on);
     root.classList.toggle('is-first-person',on);eyesButton.setAttribute('aria-pressed',String(on));
     eyesButton.setAttribute('aria-label',on?(de()?'Zurück zur Außenansicht':'Back to the outside view'):(de()?'Durch die Augen des Astronauten sehen':'See through the astronaut’s eyes'));

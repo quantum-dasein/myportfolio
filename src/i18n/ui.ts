@@ -364,6 +364,7 @@ export const ui = {
     "gallery.6.cat": "Motion",
     "gallery.7.cat": "Event Film",
     "gallery.8.cat": "3D Motion / Concept",
+    "gallery.9.cat": "AI Product / Live Translation",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
     // hrefs live in the dictionary too, so the language switcher points each
@@ -376,7 +377,7 @@ export const ui = {
     "studio.title": "The proof is the page you're on.",
     "studio.lead":
       "Every claim here is testable by scrolling it. No template, no page builder — a hand-built Astro site with five bespoke real-time scenes, two languages, and an ambience that stays off the wire until you ask for it.",
-    "studio.metric.1.v": "52",
+    "studio.metric.1.v": "53",
     "studio.metric.1.l": "production routes",
     "studio.metric.2.v": "02",
     "studio.metric.2.l": "languages, zero routing hacks",
@@ -965,6 +966,7 @@ export const ui = {
     "gallery.6.cat": "Motion",
     "gallery.7.cat": "Eventfilm",
     "gallery.8.cat": "3D-Motion / Konzept",
+    "gallery.9.cat": "KI-Produkt / Live-Übersetzung",
 
     // ── Services & Research hub (/services) ─────────────────────────────────
     "hero.trust.label": "Bewährt bei",
@@ -975,7 +977,7 @@ export const ui = {
     "studio.title": "Der Beweis ist die Seite, auf der du gerade bist.",
     "studio.lead":
       "Jede Behauptung hier lässt sich durch Scrollen überprüfen. Kein Template, kein Baukasten — eine handgebaute Astro-Website mit fünf eigenen Echtzeit-Szenen, zwei Sprachen und einer Klangkulisse, die erst über die Leitung geht, wenn du sie anforderst.",
-    "studio.metric.1.v": "52",
+    "studio.metric.1.v": "53",
     "studio.metric.1.l": "produktive Routen",
     "studio.metric.2.v": "02",
     "studio.metric.2.l": "Sprachen, null Routing-Hacks",
