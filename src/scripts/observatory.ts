@@ -93,16 +93,13 @@ export async function mountObservatory(root:HTMLElement){
   };
   let filterMask:boolean[]|null=null;
   const allowed=(i:number)=>!filterMask||filterMask[i];
-  const stepFrom=(from:number,dir:number)=>{let i=from+dir;while(i>=0&&i<archiveWorks.length&&!allowed(i))i+=dir;return i;};
+  // The filter only highlights; movement stays free.
+  const stepFrom=(from:number,dir:number)=>from+dir;
   root.querySelectorAll<HTMLButtonElement>('[data-obs-filter]').forEach(chip=>chip.addEventListener('click',()=>{
     const kind=chip.dataset.obsFilter??'all';
     root.querySelectorAll<HTMLButtonElement>('[data-obs-filter]').forEach(other=>other.setAttribute('aria-pressed',String(other===chip)));
     filterMask=kind==='all'?null:archiveWorks.map(KINDS[kind]);
     world?.setFilter(filterMask);root.classList.toggle('is-filtered',Boolean(filterMask));
-    if(filterMask&&!filterMask[aimed()]){
-      let best=-1;filterMask.forEach((ok,i)=>{if(ok&&(best<0||Math.abs(i-aimed())<Math.abs(best-aimed())))best=i;});
-      if(best>=0)navigate(best,false,Math.abs(best-aimed())>3?'teleport':'walk');
-    }
   },{signal}));
   // Guided tour: the astronaut leads through six works with a line of context each,
   // then walks you to the portal. Any touch, key or wheel hands control back.

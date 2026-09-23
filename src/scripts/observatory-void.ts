@@ -801,9 +801,12 @@ export class ObservatoryWorld {
       exhibit.pivot.rotation.y+=(this.calm?0:exhibit.spin*dt)+exhibit.drag;exhibit.drag*=Math.exp(-dt*3);
     }
     // The ship floats a hand's breadth above the floor in the faint gravity.
-    if(this.ship.children.length&&!this.calm){this.ship.position.y=.25+Math.sin(this.elapsed*.7)*.08;this.ship.rotation.z=Math.sin(this.elapsed*.5)*.015;}
+    if(this.ship.children.length){this.ship.position.y=.25+(this.calm?0:Math.sin(this.elapsed*.7)*.08);}
+    if(this.ship.children.length&&!this.calm){this.ship.rotation.z=Math.sin(this.elapsed*.5)*.015;}
     // The ship belongs to the hall, not to the map or the view from the helmet.
-    const shipOn=1-Math.max(this.overview,this.fp);this.ship.visible=shipOn>.02;this.ship.scale.setScalar(Math.max(.001,shipOn));
+    // Seen through his eyes, the ship hovers at eye level beside the work.
+    if(shipModel&&this.ship.children.length){const k=smooth(0,1,this.fp);const fpAt=this.narrow()?[3.2,2.4,2.2]:[6,.6,2.2];this.ship.position.x=mix(shipModel.x,fpAt[0],k);this.ship.position.z=mix(shipModel.z,fpAt[1],k);this.ship.position.y+=fpAt[2]*k;this.ship.rotation.y=mix(shipModel.rotation,-2.6,k);}
+    const shipOn=1-this.overview;this.ship.visible=shipOn>.02;this.ship.scale.setScalar(Math.max(.001,shipOn));
   }
   /** Is the pointer on the 3D piece in front of the current work? */
   hitModel(clientX:number,clientY:number){
@@ -1193,7 +1196,8 @@ export class ObservatoryWorld {
     this.frame=requestAnimationFrame(this.tick);
     if(document.hidden)return;
     if(this.mobile&&time-this.lastTime<1000/30-1)return;
-    const dt=Math.min((time-this.lastTime)/1000,.05);this.lastTime=time;
+    // rAF timestamps can trail performance.now() set on resume; a negative step would fling every damped value.
+    const dt=THREE.MathUtils.clamp((time-this.lastTime)/1000,0,.05);this.lastTime=Math.max(time,this.lastTime);
     this.watchQuality(time);
     this.calm=this.isCalm();
     if(!this.calm)this.elapsed+=dt;
@@ -1227,7 +1231,7 @@ export class ObservatoryWorld {
 
     if(this.departure&&time>=this.departure.at){this.depart(this.departure.to);this.departure=undefined;this.lastInput=-1e9;}
     // Snap once the hand is off the hall.
-    if(!this.dragging&&time-this.lastInput>150&&this.focus===0)this.target=this.snapIndex(this.target/GAP)*GAP;
+    if(!this.dragging&&time-this.lastInput>150&&this.focus===0)this.target=THREE.MathUtils.clamp(Math.round(this.target/GAP),0,this.bays.length-1)*GAP;
     const previous=this.position;
     this.position=this.calm?this.target:THREE.MathUtils.damp(this.position,this.target,this.dragging?11:4.2,dt);
     if(Math.abs(this.position-this.target)<.0005)this.position=this.target;
@@ -1450,7 +1454,7 @@ export class ObservatoryWorld {
       u.uBend.value=this.shift*.55*(1-this.focus);
       u.uDim.value=(1-bay.active)*(1-this.focus*(isCurrent?1:0))+(isCurrent?0:this.focus);
       // Filter: works outside the chosen kind sink into the dark; the rest keep their light.
-      bay.match=THREE.MathUtils.damp(bay.match,!this.filterMask||this.filterMask[i]?1:0,this.calm?100:5,dt);
+      bay.match=THREE.MathUtils.damp(bay.match,!this.filterMask||this.filterMask[i]||isCurrent?1:0,this.calm?100:5,dt);
       u.uDim.value=Math.max(u.uDim.value,(1-bay.match)*.9);
       u.uLight.value=focusOthers*(this.exhibits.has(i)?.5:1);
       (u.uGlare.value as THREE.Vector3).set((tp.x-i*GAP)/bay.screen.scale.x+.5,(tp.y-bay.screen.position.y)/bay.screen.scale.y+.5,power*(tp.y>.3?1:.35)*(1-this.focus));
