@@ -235,7 +235,9 @@ export class ObservatoryWorld {
   filmProbe?:CanvasRenderingContext2D;filmSampledAt=0;
   // Light gates between the rooms: you pass through them, the room changes around you.
   gates:{mesh:THREE.Mesh<THREE.PlaneGeometry,Shader>;x:number;side:number;passAt:number;room:number;back:number}[]=[];
-  onGate?:(room:number)=>void;
+  onGate?:(room:number)=>void;gateNear=0;
+  // Finale: past the last work he sends a signal up into the sky.
+  finale=0;finaleGoal=false;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;
   followSpot=new THREE.Group();followFrom=new THREE.Vector3();
   torchPoint=new THREE.Vector3(0,0,2);torchGoal=new THREE.Vector3();torchPower=0;
   pointerInside=false;lastPointer=new THREE.Vector2(9,9);pointerMovedAt=-1e9;
@@ -252,7 +254,7 @@ export class ObservatoryWorld {
   leftHand?:THREE.Object3D;headBone?:THREE.Object3D;rigTag='';
   onTeleport?:(phase:'out'|'in')=>void;departure?:{to:number;at:number};
   hop?:{fromX:number;fromZ:number;toX:number;toZ:number;t:number;dur:number;height:number;index:number};
-  landing=0;anchorScratch=new THREE.Vector2();onLand?:()=>void;
+  landing=0;anchorScratch=new THREE.Vector2();onLand?:()=>void;scratchVec=new THREE.Vector3();scratchVec2=new THREE.Vector3();
   // Through his eyes: the camera sits in the helmet, the sky opens up.
   fpGoal=false;fp=0;fpMotion?:{from:number;to:number;start:number;duration:number};
   lookYaw=0;lookPitch=0;lookGoal=new THREE.Vector2();fpEye=new THREE.Vector3();fpLook=new THREE.Vector3();
@@ -536,6 +538,16 @@ export class ObservatoryWorld {
   }
 
   /* ---------- Teleport ---------- */
+  setFinale(on:boolean){this.finaleGoal=on;this.lastActivity=performance.now();if(on){this.hovered=false;this.stopPreview();}}
+  /** Move to a work instantly (from inside the viewer), and settle the camera on it. */
+  jumpTo(index:number){
+    index=THREE.MathUtils.clamp(index,0,this.bays.length-1);
+    this.position=this.target=index*GAP;this.departure=undefined;this.hop=undefined;this.tele='here';
+    this.astroIndex=index;this.astroReady=false;this.dissolve.uDissolve.value=0;this.curator.root.visible=true;
+    void this.prepare(index);void this.prepare(index+1);
+    this.updateIndex();
+    this.lastTime=performance.now()-16;this.render(performance.now());cancelAnimationFrame(this.frame);
+  }
   private buildTeleport(){
     const additive={transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false} as const;
     this.column=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,4.2,48,1,true),new THREE.ShaderMaterial({
@@ -551,6 +563,8 @@ export class ObservatoryWorld {
         gl_FragColor=vec4(uColor*(wave*1.2+core*.5)*uIntensity*step(r,1.),1.);}`,...additive}));
     this.ring.rotation.x=-Math.PI/2;
     this.column.visible=this.ring.visible=false;this.scene.add(this.column,this.ring);
+    this.signal=new THREE.Mesh(new THREE.CylinderGeometry(.16,.55,60,32,1,true),this.column.material.clone());
+    (this.signal.material.uniforms.uColor.value as THREE.Color).set('#9fdcff');this.signal.visible=false;this.signal.frustumCulled=false;this.scene.add(this.signal);
   }
   /** Every material of the astronaut (and his tablet) can come apart in voxels. */
   private makeDissolvable(root:THREE.Object3D){
@@ -733,42 +747,49 @@ export class ObservatoryWorld {
   private buildGates(){
     const palette=['#e2c48f','#9cc3e6','#e59ab3','#7fe3d4'];
     archiveWorks.forEach((work,i)=>{
-      const next=archiveWorks[i+1];if(!next||next.roomIndex===work.roomIndex)return;
+      const next=archiveWorks[i+1];if(next&&next.roomIndex===work.roomIndex)return;
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(24,8.4),new THREE.ShaderMaterial({
-        uniforms:{uTint:{value:new THREE.Color(palette[next.roomIndex])},uIntensity:{value:0},uNear:{value:0},uTime:{value:0},uPass:{value:9},uHit:{value:new THREE.Vector2(.7,.3)}},
+        uniforms:{uTint:{value:new THREE.Color(next?palette[next.roomIndex]:'#8fd8ff')},uIntensity:{value:0},uNear:{value:0},uTime:{value:0},uPass:{value:9},uHit:{value:new THREE.Vector2(.7,.3)}},
         vertexShader:plainVertex,
+        // Drawn in metres with screen-space anti-aliasing: hairline rails, a measuring
+        // scale along the floor and a dotted lattice membrane that stay sharp at any distance.
         fragmentShader:`uniform vec3 uTint;uniform float uIntensity,uNear,uTime,uPass;uniform vec2 uHit;varying vec2 vUv;
           ${NOISE}
+          float hair(float d,float w){float aa=fwidth(d)*1.2;return 1.-smoothstep(w,w+aa,abs(d));}
           void main(){
-            vec2 p=vUv;
-            vec2 e=min(p,1.-p);float frame=min(e.x*24.,e.y*8.4);
-            float line=exp(-frame*frame*55.)+exp(-frame*6.)*.16;
-            float floorLine=exp(-p.y*p.y*900.)*.8;
-            float shimmer=noise(p*vec2(38.,16.)+vec2(0.,uTime*.35))*noise(p*vec2(7.,3.)-uTime*.08);
-            float membrane=shimmer*.12*uNear;
-            float ring=exp(-pow((length((p-uHit)*vec2(24.,8.4))-uPass*9.)*1.1,2.))*exp(-uPass*1.4)*step(0.,uPass);
-            float a=(line*(.35+.65*uNear)+floorLine*(.4+.6*uNear)+membrane+ring*.9)*uIntensity;
-            gl_FragColor=vec4(uTint*a,1.);
+            vec2 size=vec2(24.,8.4),p=vUv*size;
+            float fr=min(min(p.x,size.x-p.x),min(p.y,size.y-p.y));
+            float rails=hair(fr,.018)+hair(fr-.24,.008)*.55;
+            float glow=exp(-fr*2.4)*.16;
+            float tick=hair(fract(p.x*2.+.5)-.5,.012)*step(p.y,.22+step(.75,fract(p.x*.5+.125))*.2)*.8;
+            vec2 cell=fract(p*3.)-.5;float dots=1.-smoothstep(.035,.035+fwidth(p.x*3.)*1.4,length(cell));
+            float shimmer=.35+.65*noise(p*.7+vec2(0.,uTime*.25));
+            float membrane=dots*shimmer*.1*uNear*uNear;
+            float r=length((p-uHit*size))-uPass*9.;
+            float ring=hair(r,.03)*exp(-uPass*1.3)*step(0.,uPass);
+            float a=(rails*(.5+.5*uNear)+glow*(.4+.6*uNear)+tick*(.3+.7*uNear)+membrane+ring)*uIntensity;
+            gl_FragColor=vec4(uTint*min(a,.85),1.);
           }`,
         transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide,
       }));
       mesh.rotation.y=Math.PI/2;mesh.position.set((i+.5)*GAP,4.2,7.6);mesh.frustumCulled=false;this.scene.add(mesh);
-      this.gates.push({mesh,x:(i+.5)*GAP,side:0,passAt:-1e9,room:next.roomIndex,back:work.roomIndex});
+      this.gates.push({mesh,x:(i+.5)*GAP,side:0,passAt:-1e9,room:next?next.roomIndex:-1,back:work.roomIndex});
     });
   }
   private updateGates(x:number,ov:number,time:number){
-    const cam=this.camera.position;
+    const cam=this.camera.position;this.gateNear=0;
     for(const gate of this.gates){
       const d=cam.x-gate.x,side=Math.sign(d);
       if(gate.side!==0&&side!==gate.side&&ov===0){
         gate.passAt=time;
         (gate.mesh.material.uniforms.uHit.value as THREE.Vector2).set(THREE.MathUtils.clamp((cam.z-(gate.mesh.position.z-12))/24,0,1),THREE.MathUtils.clamp(cam.y/8.4,0,1));
-        this.onGate?.(side>0?gate.room:gate.back);
+        const entered=side>0?gate.room:gate.back;if(entered>=0)this.onGate?.(entered);
       }
       gate.side=side;
       const u=gate.mesh.material.uniforms,near=Math.exp(-d*d/60);
       u.uNear.value=near;u.uTime.value=this.elapsed;u.uPass.value=(time-gate.passAt)/1000;
       u.uIntensity.value=(this.calm?.5:1)*(1-ov)*(1-this.focus)*smooth(.4,.8,this.intro)*(Math.abs(gate.x-x)<GAP*3?1:0);
+      this.gateNear=Math.max(this.gateNear,near*u.uIntensity.value);
       gate.mesh.visible=u.uIntensity.value>.002;
     }
   }
@@ -893,6 +914,7 @@ export class ObservatoryWorld {
       if(t===1){this.overviewMotion=undefined;m.resolve();}
     }
     const ov=this.overview;
+    this.finale=this.calm?(this.finaleGoal?1:0):THREE.MathUtils.damp(this.finale,this.finaleGoal?1:0,this.finaleGoal?1.1:2.2,dt);
     if(this.fpMotion){
       const m=this.fpMotion,t=Math.min(1,(time-m.start)/m.duration);
       this.fp=THREE.MathUtils.lerp(m.from,m.to,t<.5?4*t**3:1-(-2*t+2)**3/2);if(t===1)this.fpMotion=undefined;
@@ -971,7 +993,7 @@ export class ObservatoryWorld {
     root.position.set(this.astro.x,(root.userData.soleOffset??0)+lift,this.astro.y);
     this.contact.position.set(this.astro.x,.02,this.astro.y);this.contact.scale.setScalar(1/(1+lift*.5));
     // Left alone he turns to greet you, then looks up at the stars.
-    const idle=this.calm||intro<1||viewing||ov>0||this.fp>0||hop?0:(time-this.lastActivity)/1000;
+    const idle=this.calm||intro<1||viewing||ov>0||this.fp>0||hop||this.finale>0?0:(time-this.lastActivity)/1000;
     // Moods ease in and out, so he gets up like a person, not like a switch.
     const ease=(v:number,goal:number,up:number,down:number)=>THREE.MathUtils.damp(v,goal,goal>v?up:down,dt);
     this.greetW=ease(this.greetW,smooth(9,9.8,idle)*(1-smooth(15,15.8,idle)),3,4);
@@ -981,7 +1003,7 @@ export class ObservatoryWorld {
     // Tablet: a glance at it early in a quiet moment, and in hand for every teleport.
     const checking=smooth(4.5,5.3,idle)*(1-smooth(8.2,9,idle));
     const beaming=this.tele==='leaving'?1-smooth(.75,.95,this.teleT):this.tele==='arriving'?1-smooth(.35,.7,this.teleT):0;
-    this.tabletW=ease(this.tabletW,Math.max(checking,beaming),this.tele==='leaving'?9:3,3);
+    this.tabletW=ease(this.tabletW,Math.max(checking,beaming,this.finaleGoal?smooth(.15,.4,this.finale):0),this.tele==='leaving'?9:3,3);
     this.tabletFlash=this.tele==='leaving'?smooth(.22,.3,this.teleT)*(1-smooth(.34,.6,this.teleT)):this.tabletFlash*.9;
     const greet=this.greetW,wave=this.waveW,stargaze=this.starW,sit=Math.max(this.sitW,tuck);
     const toCamera=Math.atan2(this.camera.position.x-this.astro.x,this.camera.position.z-this.astro.y);
@@ -1008,6 +1030,11 @@ export class ObservatoryWorld {
     const visor=root.userData.visorUniforms;if(visor)(visor.uVisorTint.value as THREE.Color).copy(this.spillColor).lerp(new THREE.Color('#8fa9c9'),.2);
     this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention,pose);
     this.placeTablet(time);
+    if(this.signal){
+      const s=smooth(.35,.9,this.finale);this.signal.visible=s>.002;
+      this.signal.position.set(this.astro.x+.15,30*s+1.5,this.astro.y);this.signal.scale.set(1,Math.max(.001,s),1);
+      this.signal.material.uniforms.uIntensity.value=s*(.7+.3*Math.sin(this.elapsed*3.1));this.signal.material.uniforms.uTime.value=this.elapsed;
+    }
     this.column.position.set(this.astro.x,2.1,this.astro.y);this.ring.position.set(this.astro.x,.03,this.astro.y);
     const beam=this.tele==='leaving'?smooth(.3,.55,this.teleT)*(1-smooth(.85,1,this.teleT)):this.tele==='arriving'?smooth(0,.12,this.teleT)*(1-smooth(.55,1,this.teleT)):0;
     this.column.material.uniforms.uIntensity.value=beam;this.column.material.uniforms.uTime.value=this.elapsed;this.column.visible=beam>.001;
@@ -1037,6 +1064,12 @@ export class ObservatoryWorld {
     }
     const fov=mix(this.narrow()?46:38,this.narrow()?68:58,this.fp);
     if(Math.abs(this.camera.fov-fov)>.01){this.camera.fov=fov;this.camera.updateProjectionMatrix();}
+    if(this.finale>0){
+      // Pull back and up: he stands on the right, the signal climbs into the stars.
+      const f=smooth(0,1,this.finale),ax=this.astro.x;
+      this.cameraGoal.lerp(this.scratchVec.set(ax-(narrow?1.2:3.4),narrow?3.4:2.6,narrow?15:13.5),f);
+      this.look.lerp(this.scratchVec2.set(ax-(narrow?1.2:5.6),narrow?5.4:4.6,0),f);
+    }
     const bay=this.bays[this.index],screen=bay.screen,centre=this.index*GAP;
     const halfFov=Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2));
     const distance=Math.max(screen.scale.y/(2*halfFov*.74),screen.scale.x/(2*halfFov*this.camera.aspect*.86));
@@ -1171,7 +1204,7 @@ export class ObservatoryWorld {
     this.focusRect.x=mix(this.focusRect.x,Math.max(0,x0-pad),k);this.focusRect.y=mix(this.focusRect.y,Math.max(0,y0-pad),k);
     this.focusRect.z=mix(this.focusRect.z,Math.min(1,x1+pad),k);this.focusRect.w=mix(this.focusRect.w,Math.min(1,y1+pad),k);
     // A soft pull always, deeper when you point at the work or fly into it; none in the map.
-    const goal=this.calm?0:(.38+.4*this.approach+.5*this.focus+.25*this.fp)*(1-ov)*(1-Math.min(1,this.shift*1.5))*(this.quality>=2?0:1);
+    const goal=this.calm?0:(.38+.4*this.approach+.5*this.focus+.25*this.fp)*(1-ov)*(1-Math.min(1,this.shift*1.5))*(this.quality>=2?0:1)*(1-this.gateNear*.85)*(1-this.finale);
     this.focusAmount=THREE.MathUtils.damp(this.focusAmount,goal,4,dt);
     const u=this.focusPass.uniforms;u.uRect.value.copy(this.focusRect);u.uAmount.value=this.focusAmount;
     this.focusPass.enabled=this.focusAmount>.02;

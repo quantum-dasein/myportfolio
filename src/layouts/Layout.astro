@@ -582,7 +582,7 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
   // idle. Background-prefetching its large document on every route competed
   // with the page the visitor was actually scrolling through.
   const saveData = (navigator as any).connection?.saveData;
-  if (location.pathname !== "/gallery" && location.pathname !== "/gallery/" && !saveData) {
+  if (!location.pathname.startsWith("/gallery") && !saveData) {
     let archivePrefetched = false;
     const prefetchArchive = (event: Event) => {
       if (archivePrefetched || !(event.target instanceof Element)) return;

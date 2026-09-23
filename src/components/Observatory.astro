@@ -5,6 +5,8 @@ import MusicCredit from './MusicCredit.astro';
 import ObservatoryIcon from './ObservatoryIcon.astro';
 import '../styles/observatory.css';
 const title = (work: typeof archiveWorks[number]) => work.title ?? work.hrefLabel;
+interface Props { start?: string }
+const { start } = Astro.props;
 ---
 <script is:inline>
   document.documentElement.classList.add('obs-booting');
@@ -15,7 +17,7 @@ const title = (work: typeof archiveWorks[number]) => work.title ?? work.hrefLabe
     window.dispatchEvent(new Event('rb:observatory-timeout'));
   }, 10000);
 </script>
-<section class="observatory" data-observatory aria-label="The Observatory — interactive portfolio">
+<section class="observatory" data-observatory data-obs-start={start} aria-label="The Observatory — interactive portfolio">
   <div class="obs-boot" role="status"><span class="obs-boot-orbit" aria-hidden="true"></span><span>THE OBSERVATORY</span><small class="obs-en">Entering the collection</small><small class="obs-de">Die Sammlung öffnet sich</small></div>
   <div class="obs-stage" data-obs-stage aria-hidden="true"></div>
   <div class="obs-room-card" data-obs-room-card aria-hidden="true"><span data-obs-card-num>02</span><b data-obs-card-name>Objects</b><i data-obs-card-sub></i></div>
@@ -55,7 +57,7 @@ const title = (work: typeof archiveWorks[number]) => work.title ?? work.hrefLabe
   <dialog class="obs-viewer" data-obs-viewer aria-labelledby="obs-viewer-title" data-lenis-prevent>
     <header><span class="obs-eyebrow" data-obs-viewer-meta tabindex="-1" autofocus></span><button data-obs-close-viewer aria-label="Back to the gallery"><span class="obs-en">Back to the gallery</span><span class="obs-de">Zurück zur Galerie</span> <ObservatoryIcon name="close" /></button></header>
     <div class="obs-viewer-media"><picture data-obs-viewer-picture><source data-obs-viewer-mobile media="(max-width: 600px)" /><img data-obs-viewer-image alt="" hidden /></picture><video data-obs-viewer-video controls playsinline preload="none" hidden></video></div>
-    <div class="obs-viewer-copy"><div><h2 id="obs-viewer-title" data-obs-viewer-title></h2><span class="obs-eyebrow" data-obs-viewer-tools></span></div><div><p data-obs-viewer-description></p><a data-obs-viewer-link href="/" hidden><span class="obs-en">Open project</span><span class="obs-de">Projekt öffnen</span> <ObservatoryIcon name="open" /></a>{archiveWorks.filter(work=>work.musicCredit).map(work=><div data-obs-credit={work.id} hidden><MusicCredit credit={work.musicCredit!}/></div>)}</div></div>
+    <div class="obs-viewer-copy"><div><h2 id="obs-viewer-title" data-obs-viewer-title></h2><span class="obs-eyebrow" data-obs-viewer-tools></span></div><div><p data-obs-viewer-description></p><a data-obs-viewer-link href="/" hidden><span class="obs-en">Open project</span><span class="obs-de">Projekt öffnen</span> <ObservatoryIcon name="open" /></a><button class="obs-share" data-obs-share type="button"><span class="obs-share-idle"><span class="obs-en">Copy link to this work</span><span class="obs-de">Link zu diesem Werk kopieren</span></span><span class="obs-share-done"><span class="obs-en">Link copied</span><span class="obs-de">Link kopiert</span></span></button>{archiveWorks.filter(work=>work.musicCredit).map(work=><div data-obs-credit={work.id} hidden><MusicCredit credit={work.musicCredit!}/></div>)}</div></div>
     {Object.entries(observatoryProcess).map(([id, process]) => (
       <section class="obs-process" data-obs-process={id} hidden>
         <div class="obs-process-head"><span class="obs-eyebrow"><span class="obs-en">Process</span><span class="obs-de">Prozess</span></span><h3><span class="obs-en">{process.heading[0]}</span><span class="obs-de">{process.heading[1]}</span></h3></div>
@@ -74,7 +76,15 @@ const title = (work: typeof archiveWorks[number]) => work.title ?? work.hrefLabe
       <summary><span class="obs-en">Studio notes</span><span class="obs-de">Notizen zum Projekt</span><ObservatoryIcon name="next" /></summary>
       <dl><div><dt><span class="obs-en">Focus</span><span class="obs-de">Fokus</span></dt><dd data-obs-note-focus></dd></div><div><dt><span class="obs-en">Approach</span><span class="obs-de">Ansatz</span></dt><dd data-obs-note-approach></dd></div><div data-obs-note-role-row hidden><dt><span class="obs-en">Contribution</span><span class="obs-de">Beitrag</span></dt><dd data-obs-note-role></dd></div></dl>
     </details>
+    <button class="obs-next-work" data-obs-next-work type="button"><span class="obs-eyebrow"><span class="obs-en">Next work</span><span class="obs-de">Nächstes Werk</span> · <span data-obs-next-meta></span></span><b data-obs-next-title></b><ObservatoryIcon name="next" /></button>
   </dialog>
+
+  <div class="obs-finale" data-obs-finale aria-hidden="true">
+    <span class="obs-eyebrow"><span class="obs-en">End of the collection · Signal sent</span><span class="obs-de">Ende der Sammlung · Signal gesendet</span></span>
+    <h2><span class="obs-en">Your project<br /><em>could be next.</em></span><span class="obs-de">Ihr Projekt<br /><em>könnte das nächste sein.</em></span></h2>
+    <p><span class="obs-en">3D, motion and websites from Vienna. Tell me what you are building.</span><span class="obs-de">3D, Motion und Websites aus Wien. Erzählen Sie mir, woran Sie arbeiten.</span></p>
+    <div class="obs-finale-actions"><a class="obs-finale-cta" href="/contact/" data-obs-finale-cta><span class="obs-en">Start a project</span><span class="obs-de">Projekt anfragen</span><ObservatoryIcon name="open" /></a><button type="button" data-obs-finale-back><ObservatoryIcon name="previous" /><span class="obs-en">Back to the hall</span><span class="obs-de">Zurück in den Saal</span></button></div>
+  </div>
 
   <div class="obs-fallback">
     <header><span class="obs-eyebrow">RB / THE OBSERVATORY</span><h2><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2><p><span class="obs-en">3D, motion and digital worlds by Rodion Belousov.</span><span class="obs-de">3D, Motion und digitale Welten von Rodion Belousov.</span></p></header>

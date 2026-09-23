@@ -1,0 +1,34 @@
+---
+// One address per work: the same Observatory, opened on that work, with its own
+// title and share image so a link sent to someone shows exactly what it points to.
+import Layout from "../../layouts/Layout.astro";
+import Observatory from "../../components/Observatory.astro";
+import { archiveRooms, archiveWorks } from "../../data/observatory";
+import { observatoryNotes } from "../../data/observatory-notes";
+
+export function getStaticPaths() {
+  return archiveWorks.map((work) => ({ params: { work: work.id } }));
+}
+
+const { work: id } = Astro.params;
+const work = archiveWorks.find((item) => item.id === id)!;
+const name = work.title ?? work.hrefLabel;
+const room = archiveRooms[work.roomIndex];
+const focus = observatoryNotes[work.id]?.focus[0];
+const description = `${name} — ${focus ?? work.detail?.en ?? room.subtitle.en} From the Observatory, the 3D, motion and web archive of Rodion Belousov, Vienna.`;
+---
+
+<Layout
+  mode="deck"
+  title={`${name} | The Observatory — Rodion Belousov`}
+  description={description}
+  image={`/og/works/${work.id}.jpg`}
+  imageAlt={`${name} in The Observatory, the portfolio archive of Rodion Belousov`}
+>
+  <section class="u-sr-only" aria-labelledby="work-title">
+    <h2 id="work-title">{name}</h2>
+    <p>{description}</p>
+    <p><a href="/gallery/">The Observatory — all works</a></p>
+  </section>
+  <Observatory start={work.id} />
+</Layout>

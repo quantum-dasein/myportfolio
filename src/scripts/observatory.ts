@@ -63,7 +63,7 @@ export async function mountObservatory(root:HTMLElement){
       (button.querySelector('[data-obs-room-progress]') as HTMLElement).style.transform=`scaleX(${progress})`;
     });
     root.querySelector<HTMLButtonElement>('[data-obs-prev]')!.disabled=current===0;
-    root.querySelector<HTMLButtonElement>('[data-obs-next]')!.disabled=current===archiveWorks.length-1;
+    root.querySelector<HTMLButtonElement>('[data-obs-next]')!.disabled=false;
     root.querySelector('[data-obs-prev]')!.setAttribute('aria-label',de()?'Vorheriges Werk':'Previous work');
     root.querySelector('[data-obs-next]')!.setAttribute('aria-label',de()?'Nächstes Werk':'Next work');
   }
@@ -71,6 +71,8 @@ export async function mountObservatory(root:HTMLElement){
   const aimed=()=>world&&!world.disposed?world.targetIndex():current;
   function setCurrent(index:number){
     if(index===current)return;current=index;update();
+    // The address follows the work in front of you, so a copied link lands right here.
+    if(root.classList.contains('is-ready'))try{history.replaceState(history.state,'',`/gallery/${archiveWorks[current].id}/`);}catch{}
     try{sessionStorage.setItem('rb-observatory-index',String(current));}catch{}
     clearTimeout(hoverTimer);hover=false;
   }
@@ -176,18 +178,53 @@ export async function mountObservatory(root:HTMLElement){
     await world?.restoreView();
     if(token===openToken&&!viewer.open&&!opening)root.classList.remove('is-focusing');
   }
+  // Fill the viewer with the current work: copy, media, process block, next link.
+  function loadViewer(){
+    fillViewer();root.querySelector<HTMLDetailsElement>('[data-obs-notes]')!.open=false;
+    const work=archiveWorks[current];image.hidden=Boolean(work.video);video.hidden=!work.video;
+    picture.hidden=Boolean(work.video);
+    if(mobilePreviews[work.id])mobileSource.srcset=mobilePreviews[work.id];else mobileSource.removeAttribute('srcset');
+    if(work.video){image.removeAttribute('src');video.src=work.video;video.poster=work.img;video.muted=false;video.currentTime=0;video.style.aspectRatio=String(world?.aspect()??16/9);}
+    else {video.pause();video.removeAttribute('src');video.load();image.style.maxWidth='100%';image.src=work.img;}
+    root.querySelectorAll<HTMLElement>('[data-obs-process]').forEach(el=>{el.hidden=el.dataset.obsProcess!==work.id;});
+    const next=archiveWorks[current+1];nextButton.hidden=!next;
+    if(next){nextTitle.textContent=workTitle(next);nextMeta.textContent=`${String(current+2).padStart(2,'0')} / ${archiveRooms[next.roomIndex][de()?'de':'en']}`;}
+    shareButton.classList.remove('is-copied');
+    return work.video?Promise.resolve():image.decode().catch(()=>{});
+  }
+  // Next work from inside the viewer: the hall moves behind the page, the page crossfades.
+  const nextButton=root.querySelector<HTMLButtonElement>('[data-obs-next-work]')!;
+  const nextTitle=root.querySelector<HTMLElement>('[data-obs-next-title]')!;
+  const nextMeta=root.querySelector<HTMLElement>('[data-obs-next-meta]')!;
+  let swapping=false;
+  nextButton.addEventListener('click',async()=>{
+    if(swapping||!viewer.open||current>=archiveWorks.length-1)return;swapping=true;
+    const content=[...viewer.children] as HTMLElement[];
+    await Promise.all(content.map(el=>el.animate([{opacity:1},{opacity:0,transform:'translateY(-12px)'}],{duration:260,easing:'ease-in',fill:'forwards'}).finished.catch(()=>{})));
+    const target=current+1;world?.jumpTo(target);setCurrent(target);
+    await loadViewer();viewer.scrollTop=0;
+    content.forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
+    content.forEach((el,i)=>el.animate([{opacity:0,transform:'translateY(18px)'},{opacity:1,transform:'none'}],{duration:560,delay:i*60,easing:'cubic-bezier(.2,.7,.2,1)',fill:'backwards'}));
+    const work=archiveWorks[current];
+    window.dispatchEvent(new CustomEvent('rb:exhibition-film',{detail:Boolean(work.video)}));
+    if(work.video)video.play().catch(()=>{});
+    swapping=false;
+  },{signal});
+  // Every work has its own address with its own preview; share it or copy it.
+  const shareButton=root.querySelector<HTMLButtonElement>('[data-obs-share]')!;
+  const workUrl=()=>new URL(`/gallery/${archiveWorks[current].id}/`,location.origin).toString();
+  shareButton.addEventListener('click',async()=>{
+    const url=workUrl(),title=workTitle(archiveWorks[current]);
+    if(navigator.share&&matchMedia('(pointer: coarse)').matches){try{await navigator.share({title,url});return;}catch{}}
+    try{await navigator.clipboard.writeText(url);shareButton.classList.add('is-copied');setTimeout(()=>shareButton.classList.remove('is-copied'),2200);}catch{}
+  },{signal});
   async function openViewer(){
     if(viewer.open||indexDialog.open||opening||mapping)return;
     opening=true;const token=++openToken;root.classList.add('is-focusing');
     viewerTrigger=document.activeElement as HTMLElement;
-    world?.stopPreview();clearTimeout(hoverTimer);fillViewer();root.querySelector<HTMLDetailsElement>('[data-obs-notes]')!.open=false;
-    const work=archiveWorks[current];image.hidden=Boolean(work.video);video.hidden=!work.video;
-    picture.hidden=Boolean(work.video);
-    if(mobilePreviews[work.id])mobileSource.srcset=mobilePreviews[work.id];else mobileSource.removeAttribute('srcset');
-    if(work.video){video.src=work.video;video.poster=work.img;video.muted=false;video.currentTime=0;video.style.aspectRatio=String(world?.aspect()??16/9);}
-    else {image.style.maxWidth='100%';image.src=work.img;}
-    root.querySelectorAll<HTMLElement>('[data-obs-process]').forEach(el=>{el.hidden=el.dataset.obsProcess!==work.id;});
-    const decoded=work.video?Promise.resolve():image.decode().catch(()=>{});
+    world?.stopPreview();clearTimeout(hoverTimer);
+    const work=archiveWorks[current];
+    const decoded=loadViewer();
     await Promise.all([world?.focusWork(),decoded]);
     if(token!==openToken||!root.isConnected||!root.classList.contains('is-ready')){return;}
     opening=false;
@@ -213,7 +250,17 @@ export async function mountObservatory(root:HTMLElement){
   labelCompare();
   root.querySelector('[data-obs-open]')!.addEventListener('click',openViewer,{signal});
   root.querySelector('[data-obs-prev]')!.addEventListener('click',()=>navigate(aimed()-1),{signal});
-  root.querySelector('[data-obs-next]')!.addEventListener('click',()=>navigate(aimed()+1),{signal});
+  root.querySelector('[data-obs-next]')!.addEventListener('click',()=>{if(aimed()>=archiveWorks.length-1&&!world?.isMoving())setFinale(true);else navigate(aimed()+1);},{signal});
+  // The end of the hall: a last gate, a signal sent from his tablet, and an invitation.
+  const finale=root.querySelector<HTMLElement>('[data-obs-finale]')!;let inFinale=false,overscroll=0;
+  function setFinale(on:boolean){
+    if(!world||on===inFinale||mapping||viewer.open)return;
+    if(on&&firstPerson)setFirstPerson(false);
+    finale.querySelector<HTMLAnchorElement>('[data-obs-finale-cta]')!.href=de()?'/de/kontakt/':'/contact/';
+    inFinale=on;world.setFinale(on);root.classList.toggle('is-finale',on);finale.setAttribute('aria-hidden',String(!on));
+    if(on){sound.gate();setTimeout(()=>finale.querySelector<HTMLElement>('a')?.focus({preventScroll:true}),900);}
+  }
+  root.querySelector('[data-obs-finale-back]')!.addEventListener('click',()=>setFinale(false),{signal});
   // All works: with a mouse or finger the camera rises and the hall becomes a map;
   // from the keyboard, or in Calm mode, the accessible list opens instead.
   const indexButton=root.querySelector<HTMLButtonElement>('[data-obs-index]')!;
@@ -266,6 +313,9 @@ export async function mountObservatory(root:HTMLElement){
       }
       return;
     }
+    if(inFinale){if(delta<-30)setFinale(false);return;}
+    if(world&&aimed()===archiveWorks.length-1&&delta>0&&!world.isMoving()){overscroll+=delta;if(overscroll>260){overscroll=0;setFinale(true);}return;}
+    overscroll=0;
     if(world&&!world.isCalm()){world.scrollBy(delta);return;}
     const now=performance.now();if(now-wheelTime>180)wheelDistance=0;wheelTime=now;
     wheelDistance+=delta;
@@ -286,6 +336,7 @@ export async function mountObservatory(root:HTMLElement){
   stage.addEventListener('pointerdown',event=>{
     if(event.button>0||viewer.open||indexDialog.open||opening)return;
     gesture={x:event.clientX,y:event.clientY,id:event.pointerId,axis:''};lookX=event.clientX;lookY=event.clientY;stage.setPointerCapture(event.pointerId);
+    if(inFinale)return;
     if(fluid()&&!firstPerson)world!.dragStart();
   },{signal});
   stage.addEventListener('pointerup',event=>{
@@ -338,6 +389,7 @@ export async function mountObservatory(root:HTMLElement){
     if(opening){if(event.key==='Escape'){openToken++;opening=false;void returnToHall();}return;}
     if(mapping){if(event.key==='Escape'){event.preventDefault();void leaveMap();}return;}
     if(firstPerson&&event.key==='Escape'&&!viewer.open&&!indexDialog.open){event.preventDefault();setFirstPerson(false);return;}
+    if(inFinale){if(['Escape','ArrowLeft','ArrowDown'].includes(event.key)){event.preventDefault();setFinale(false);}return;}
     if(viewer.open||indexDialog.open||!root.classList.contains('is-ready'))return;
     if(event.altKey||event.ctrlKey||event.metaKey)return;
     if((event.target as HTMLElement).closest('button,a,input,textarea,select'))return;
@@ -362,6 +414,7 @@ export async function mountObservatory(root:HTMLElement){
     if(!root.isConnected)return;
     let saved=0;try{saved=Number(sessionStorage.getItem('rb-observatory-index')??0);}catch{}
     current=Number.isInteger(saved)&&saved>=0&&saved<archiveWorks.length?saved:0;
+    const linked=archiveWorks.findIndex(work=>work.id===root.dataset.obsStart);if(linked>=0)current=linked;
     update();
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
