@@ -285,3 +285,27 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 @media(prefers-reduced-motion:reduce){.is-finale .obs-finale h2{animation:none}}
 .obs-finale{background:linear-gradient(90deg,#020306f5 0%,#020306d9 38%,#02030666 62%,transparent 80%)}
 @media(max-width:600px){.obs-finale{background:linear-gradient(transparent 15%,#020306d9 55%,#020306f5 80%)}}
+.obs-vienna{font-style:normal;margin-left:14px;opacity:.75;visibility:visible}.obs-vienna:empty{display:none}
+
+/* The comet's secret. */
+.obs-secret{width:min(760px,92vw);max-height:90dvh;margin:auto;padding:36px;border:1px solid #ffd98a40;background:radial-gradient(120% 80% at 50% 0%,#2a2010,#07080a 60%);color:#fff;overflow:auto;box-sizing:border-box}
+.obs-secret::backdrop{background:#020306cc;backdrop-filter:blur(10px)}
+.obs-secret[open]{animation:obs-secret-in .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes obs-secret-in{from{opacity:0;transform:scale(.94);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+.obs-secret .obs-eyebrow{color:#ffd98a}
+.obs-secret h2{font:400 clamp(30px,4vw,48px)/1.05 var(--font-display);letter-spacing:-.035em;margin:12px 0 20px}
+.obs-secret img{width:100%;height:auto;display:block;border:1px solid #ffffff1a}
+.obs-secret p{font-size:14px;line-height:1.65;color:#cfd4d6;margin:18px 0 12px}
+.obs-secret small{font:10px var(--obs-mono);letter-spacing:.14em;text-transform:uppercase;color:#ffd98ab0}
+.obs-secret-close{position:absolute;top:16px;right:16px;width:44px;height:44px;display:grid;place-items:center;border:1px solid #ffffff26;border-radius:50%;background:none;color:#fff;cursor:pointer}
+@media(max-width:600px){.obs-secret{padding:24px 18px}}
+
+/* The contact plate waits on the far side of the portal. */
+.is-finale .obs-finale{opacity:0;pointer-events:none;transition-delay:0s}
+.observatory.is-contact .obs-finale{opacity:1;pointer-events:auto;transition:opacity 1s ease .1s;background:radial-gradient(90% 80% at 70% 45%,#123049 0%,#06101c 45%,#020306 100%)}
+.observatory.is-contact .obs-finale h2{animation:obs-finale-in 1.2s .35s cubic-bezier(.2,.7,.2,1) both}
+.is-finale .obs-finale h2{animation:none}
+.obs-finale-mail{display:inline-flex;align-items:center;padding:18px 22px;border:1px solid #8fd8ff55;color:#dff4ff;font-size:14px}
+.obs-finale-mail:hover{border-color:#8fd8ff;background:#8fd8ff14}
+.is-finale .obs-room-card{display:none}
+@media(max-width:600px){.observatory.is-contact .obs-finale{background:radial-gradient(120% 70% at 50% 30%,#123049,#020306 70%)}.obs-finale-mail{flex:1 1 100%;justify-content:center}}

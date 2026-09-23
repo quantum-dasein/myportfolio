@@ -2,6 +2,7 @@ import { archiveRooms, archiveWorks } from '../data/observatory';
 import { observatoryNotes } from '../data/observatory-notes';
 import type { ObservatoryWorld } from './observatory-void';
 import { createHallSound } from './observatory-sound';
+import { daylightAt, viennaClock, viennaHour } from './observatory-daylight';
 
 // Real responsive captures, separate from the desktop exhibition textures.
 const mobilePreviews:Record<string,string>={
@@ -77,6 +78,7 @@ export async function mountObservatory(root:HTMLElement){
     clearTimeout(hoverTimer);hover=false;
   }
   function navigate(index:number,throttle=false,mode:'walk'|'teleport'='walk'){
+    if(index===archiveWorks.length&&!world?.isMoving()&&aimed()===archiveWorks.length-1){setFinale(true);return;}
     if(index<0||index>=archiveWorks.length||viewer.open||indexDialog.open||opening)return;
     const now=performance.now();if(throttle&&now-lastNavigation<1250)return;lastNavigation=now;
     if(!world){setCurrent(index);return;}
@@ -95,6 +97,20 @@ export async function mountObservatory(root:HTMLElement){
     roomCard.querySelector('[data-obs-card-sub]')!.textContent=info.subtitle[lang];
     roomCard.classList.remove('is-on');void roomCard.offsetWidth;roomCard.classList.add('is-on');
   }
+  // The hall keeps Vienna time; say so, quietly, in the corner.
+  const viennaLabel=()=>{const label=daylightAt(viennaHour()).label[de()?1:0];text('[data-obs-vienna]',`${de()?'WIEN':'VIENNA'} ${viennaClock()} · ${label.toUpperCase()}`);};
+  viennaLabel();const viennaTimer=setInterval(viennaLabel,30000);signal.addEventListener('abort',()=>clearInterval(viennaTimer));
+  addEventListener('rb:langchange',viennaLabel,{signal});
+  // The comet: whoever catches it gets a frame nobody else sees.
+  const secret=root.querySelector<HTMLDialogElement>('[data-obs-secret]')!;
+  function openSecret(){
+    if(viewer.open||indexDialog.open||secret.open)return;
+    let caught=1;try{caught=Number(localStorage.getItem('rb-comets')??0)+1;localStorage.setItem('rb-comets',String(caught));}catch{}
+    text('[data-obs-secret-count]',String(caught).padStart(2,'0'));
+    world?.pause();secret.showModal();
+  }
+  secret.addEventListener('close',()=>world?.resume(),{signal});
+  root.querySelector('[data-obs-close-secret]')!.addEventListener('click',()=>secret.close(),{signal});
   function revealShell(){
     root.classList.remove('is-intro');
     root.querySelectorAll<HTMLElement>('.obs-shell > *').forEach((element,i)=>{
@@ -254,12 +270,18 @@ export async function mountObservatory(root:HTMLElement){
   // The end of the hall: a last gate, a signal sent from his tablet, and an invitation.
   const finale=root.querySelector<HTMLElement>('[data-obs-finale]')!;let inFinale=false,overscroll=0;
   function setFinale(on:boolean){
-    if(!world||on===inFinale||mapping||viewer.open)return;
-    if(on&&firstPerson)setFirstPerson(false);
-    finale.querySelector<HTMLAnchorElement>('[data-obs-finale-cta]')!.href=de()?'/de/kontakt/':'/contact/';
-    inFinale=on;world.setFinale(on);root.classList.toggle('is-finale',on);finale.setAttribute('aria-hidden',String(!on));
-    if(on){sound.gate();setTimeout(()=>finale.querySelector<HTMLElement>('a')?.focus({preventScroll:true}),900);}
+    if(!world||mapping||viewer.open)return;
+    if(on){
+      if(inFinale)return;
+      if(firstPerson)setFirstPerson(false);
+      inFinale=true;root.classList.add('is-finale');world.setFinale(true);sound.gate();
+    }else{
+      root.classList.remove('is-contact');finale.setAttribute('aria-hidden','true');world.setFinale(false);
+    }
   }
+  const portalLines=()=>de()
+    ?['Was kommt nach dem letzten Werk?','Noch hat es niemand gebaut.','Vielleicht ist es Ihres.','Treten Sie hindurch.']
+    :['What comes after the last work?','Nobody has built it yet.','Maybe it is yours.','Step through.'];
   root.querySelector('[data-obs-finale-back]')!.addEventListener('click',()=>setFinale(false),{signal});
   // All works: with a mouse or finger the camera rises and the hall becomes a map;
   // from the keyboard, or in Calm mode, the accessible list opens instead.
@@ -336,11 +358,14 @@ export async function mountObservatory(root:HTMLElement){
   stage.addEventListener('pointerdown',event=>{
     if(event.button>0||viewer.open||indexDialog.open||opening)return;
     gesture={x:event.clientX,y:event.clientY,id:event.pointerId,axis:''};lookX=event.clientX;lookY=event.clientY;stage.setPointerCapture(event.pointerId);
+    // Grabbing the 3D piece turns it instead of moving the hall.
+    if(!firstPerson&&!mapping&&world?.hitModel(event.clientX,event.clientY)){gesture.axis='model';stage.style.cursor='grabbing';return;}
     if(inFinale)return;
     if(fluid()&&!firstPerson)world!.dragStart();
   },{signal});
   stage.addEventListener('pointerup',event=>{
     if(!gesture)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+    if(!gesture.axis&&!mapping&&world?.catchComet(event.clientX,event.clientY)){world.dragEnd();gesture=undefined;if(stage.hasPointerCapture(event.pointerId))stage.releasePointerCapture(event.pointerId);sound.comet();setTimeout(openSecret,650);return;}
     if(firstPerson){if(!gesture.axis&&world?.hit(event.clientX,event.clientY))openViewer();}
     else if(mapping){
       const picked=Math.max(Math.abs(dx),Math.abs(dy))<10?world!.pick(event.clientX,event.clientY):-1;
@@ -366,6 +391,7 @@ export async function mountObservatory(root:HTMLElement){
     if(gesture){
       const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
       if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>6)gesture.axis=Math.abs(dx)>=Math.abs(dy)?'x':'y';
+      if(gesture.axis==='model'){world.spinModel(event.clientX-lookX);lookX=event.clientX;return;}
       if(firstPerson&&gesture.axis){world.lookBy(event.clientX-lookX,event.clientY-lookY);lookX=event.clientX;lookY=event.clientY;stage.style.cursor='grabbing';return;}
       if(gesture.axis&&fluid()){
         world.dragMove(gesture.axis==='x'?dx:dy,gesture.axis==='x'?stage.clientWidth:stage.clientHeight);
@@ -419,7 +445,10 @@ export async function mountObservatory(root:HTMLElement){
     if(bootFailed){fallback();return;}
     let intro=false;try{intro=!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
-    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);world.onGate=room=>{showRoomCard(room);sound.gate();};world.onLand=()=>sound.land();
+    world.onFrame=state=>sound.frame(state);world.onSettle=room=>sound.arrive(room);world.onTeleport=phase=>sound.teleport(phase);world.onGate=room=>{showRoomCard(room);sound.gate();};
+    world.setPortalTexts(portalLines());addEventListener('rb:langchange',()=>world?.setPortalTexts(portalLines()),{signal});
+    world.onFinaleDone=()=>{root.classList.add('is-contact');finale.setAttribute('aria-hidden','false');finale.querySelector<HTMLAnchorElement>('[data-obs-finale-cta]')!.href=de()?'/de/kontakt/':'/contact/';setTimeout(()=>finale.querySelector<HTMLElement>('a')?.focus({preventScroll:true}),700);};
+    world.onFinaleBack=()=>{inFinale=false;root.classList.remove('is-finale');};world.onLand=()=>sound.land();
     if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;
     // First visit of the session opens in darkness; the interface arrives with the light.
     if(intro&&!world.isCalm()){world.armIntro();root.classList.add('is-intro');}

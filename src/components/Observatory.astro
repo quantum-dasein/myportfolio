@@ -24,7 +24,7 @@ const { start } = Astro.props;
   <div class="obs-visor" aria-hidden="true"><div class="obs-visor-glass"></div><div class="obs-visor-hud"><span class="obs-hud-left">EVA / RB-01<b data-obs-hud-room>ATMOSPHERES</b><i>DRAG TO LOOK · UP FOR THE SKY</i></span><span class="obs-hud-right">O2 98%<b>SUIT NOMINAL</b><i data-obs-hud-work>01 / 15</i></span><span class="obs-hud-reticle"></span></div></div>
   <div class="obs-map" aria-hidden="true"><span class="obs-map-hint"><span class="obs-en">Choose a work · Esc returns to the hall</span><span class="obs-de">Werk wählen · Esc führt zurück in den Saal</span></span><span class="obs-map-label" data-obs-map-label></span></div>
   <div class="obs-shell">
-    <div class="obs-topline"><span>RB / THE OBSERVATORY</span><div class="obs-toolbar"><button class="obs-eyes-toggle" data-obs-eyes aria-pressed="false"><ObservatoryIcon name="eye" /><span class="obs-en">His eyes</span><span class="obs-de">Seine Augen</span></button><button class="obs-details-toggle" data-obs-details aria-expanded="false" aria-controls="obs-current-meta obs-room-meta"><span class="obs-en">Details</span><span class="obs-de">Details</span></button><button class="obs-index-toggle" data-obs-index><span class="obs-en">All works</span><span class="obs-de">Alle Arbeiten</span><ObservatoryIcon name="grid" /></button></div></div>
+    <div class="obs-topline"><span>RB / THE OBSERVATORY <i class="obs-vienna" data-obs-vienna></i></span><div class="obs-toolbar"><button class="obs-eyes-toggle" data-obs-eyes aria-pressed="false"><ObservatoryIcon name="eye" /><span class="obs-en">His eyes</span><span class="obs-de">Seine Augen</span></button><button class="obs-details-toggle" data-obs-details aria-expanded="false" aria-controls="obs-current-meta obs-room-meta"><span class="obs-en">Details</span><span class="obs-de">Details</span></button><button class="obs-index-toggle" data-obs-index><span class="obs-en">All works</span><span class="obs-de">Alle Arbeiten</span><ObservatoryIcon name="grid" /></button></div></div>
     <div class="obs-intro">
       <span class="obs-eyebrow"><span class="obs-en">A collection outside of time</span><span class="obs-de">Eine Sammlung außerhalb der Zeit</span></span>
       <h1>The<br /><em>Observatory.</em></h1>
@@ -79,13 +79,20 @@ const { start } = Astro.props;
     <button class="obs-next-work" data-obs-next-work type="button"><span class="obs-eyebrow"><span class="obs-en">Next work</span><span class="obs-de">Nächstes Werk</span> · <span data-obs-next-meta></span></span><b data-obs-next-title></b><ObservatoryIcon name="next" /></button>
   </dialog>
 
+  <dialog class="obs-secret" data-obs-secret aria-labelledby="obs-secret-title">
+    <button class="obs-secret-close" data-obs-close-secret type="button" aria-label="Close"><ObservatoryIcon name="close" /></button>
+    <span class="obs-eyebrow"><span class="obs-en">Transmission · you caught the comet</span><span class="obs-de">Übertragung · Sie haben den Kometen gefangen</span></span>
+    <h2 id="obs-secret-title"><span class="obs-en">A secret frame.</span><span class="obs-de">Ein geheimes Bild.</span></h2>
+    <img src="/portfolio/process/refurbed-scene.webp" alt="The raw 3D scene of the Refurbed film before the screens and the brand" loading="lazy" width="1280" height="720" />
+    <p><span class="obs-en">The raw 3D scene behind the Refurbed film, before the phone screens and the brand went in. Only visitors who catch the comet see it.</span><span class="obs-de">Die rohe 3D-Szene hinter dem Refurbed-Film, bevor Screens und Marke hineinkamen. Nur wer den Kometen fängt, sieht sie.</span></p>
+    <small><span class="obs-en">Comets caught</span><span class="obs-de">Gefangene Kometen</span> · <b data-obs-secret-count>01</b></small>
+  </dialog>
   <div class="obs-finale" data-obs-finale aria-hidden="true">
-    <span class="obs-eyebrow"><span class="obs-en">End of the collection · Signal sent</span><span class="obs-de">Ende der Sammlung · Signal gesendet</span></span>
-    <h2><span class="obs-en">Your project<br /><em>could be next.</em></span><span class="obs-de">Ihr Projekt<br /><em>könnte das nächste sein.</em></span></h2>
-    <p><span class="obs-en">3D, motion and websites from Vienna. Tell me what you are building.</span><span class="obs-de">3D, Motion und Websites aus Wien. Erzählen Sie mir, woran Sie arbeiten.</span></p>
-    <div class="obs-finale-actions"><a class="obs-finale-cta" href="/contact/" data-obs-finale-cta><span class="obs-en">Start a project</span><span class="obs-de">Projekt anfragen</span><ObservatoryIcon name="open" /></a><button type="button" data-obs-finale-back><ObservatoryIcon name="previous" /><span class="obs-en">Back to the hall</span><span class="obs-de">Zurück in den Saal</span></button></div>
+    <span class="obs-eyebrow"><span class="obs-en">Beyond the collection · Signal received</span><span class="obs-de">Jenseits der Sammlung · Signal empfangen</span></span>
+    <h2><span class="obs-en">This is where<br /><em>your project begins.</em></span><span class="obs-de">Hier beginnt<br /><em>Ihr Projekt.</em></span></h2>
+    <p><span class="obs-en">3D, motion and websites from Vienna. Tell me what you are building, I reply within a day.</span><span class="obs-de">3D, Motion und Websites aus Wien. Erzählen Sie mir, woran Sie arbeiten, ich antworte innerhalb eines Tages.</span></p>
+    <div class="obs-finale-actions"><a class="obs-finale-cta" href="/contact/" data-obs-finale-cta><span class="obs-en">Start a project</span><span class="obs-de">Projekt anfragen</span><ObservatoryIcon name="open" /></a><a class="obs-finale-mail" href="mailto:rodionbelousov@protonmail.com">rodionbelousov@protonmail.com</a><button type="button" data-obs-finale-back><ObservatoryIcon name="previous" /><span class="obs-en">Back to the hall</span><span class="obs-de">Zurück in den Saal</span></button></div>
   </div>
-
   <div class="obs-fallback">
     <header><span class="obs-eyebrow">RB / THE OBSERVATORY</span><h2><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2><p><span class="obs-en">3D, motion and digital worlds by Rodion Belousov.</span><span class="obs-de">3D, Motion und digitale Welten von Rodion Belousov.</span></p></header>
     <div class="obs-fallback-grid">{archiveWorks.map(work=><a href={work.video ?? work.href}><img src={work.img} alt={title(work)} loading="lazy" width="640" height="400"/><span>{title(work)}</span></a>)}</div>

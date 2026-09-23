@@ -126,6 +126,8 @@ export function createHallSound(){
       breathe();breathTimer=setInterval(breathe,4600);
     },    // Through a gate: a soft rising air and two quiet notes.
     gate(){swell(260,1500,1.4,.18);swellUntil=(ctx?.currentTime??0)+1.4;chime(659.25,.02,.15);chime(987.77,.016,.32);},
+    // Caught comet: a bright rising sparkle.
+    comet(){[1318.5,1661.2,1975.5,2637].forEach((freq,i)=>chime(freq,.03,i*.06));},
     open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
     close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},
     dispose(){clearInterval(breathTimer);void ctx?.close();},

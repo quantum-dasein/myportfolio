@@ -8,7 +8,9 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createCurator } from './observatory-curator';
 import { archiveWorks } from '../data/observatory';
+import { shipModel, workModels } from '../data/observatory-models';
 import type { HallState } from './observatory-sound';
+import { createHorizon, daylightAt, viennaHour, type Daylight } from './observatory-daylight';
 
 /*
  * The Observatory, second edition: a black hall of light.
@@ -165,15 +167,16 @@ const focusShader={
 
 const finishShader={
   name:'ObservatoryFilm',
-  uniforms:{tDiffuse:{value:null},uTime:{value:0},uShift:{value:0},uGrain:{value:.045},uResolution:{value:new THREE.Vector2(1,1)},uVignette:{value:.62},uExposure:{value:1}},
+  uniforms:{tDiffuse:{value:null},uTime:{value:0},uShift:{value:0},uGrain:{value:.045},uResolution:{value:new THREE.Vector2(1,1)},uVignette:{value:.62},uExposure:{value:1},uFlash:{value:0},uFlashColor:{value:new THREE.Color('#bfe9ff')}},
   vertexShader:plainVertex,
-  fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime,uShift,uGrain,uVignette,uExposure;uniform vec2 uResolution;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime,uShift,uGrain,uVignette,uExposure,uFlash;uniform vec3 uFlashColor;uniform vec2 uResolution;varying vec2 vUv;
     float hash(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
     void main(){
       vec2 d=vUv-.5;float r2=dot(d,d);
       float ca=(.0035+uShift*.028)*r2;
       vec3 c=vec3(texture2D(tDiffuse,vUv-d*ca).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv+d*ca*1.4).b);
       c*=mix(1.,uVignette,smoothstep(.06,.5,r2))*uExposure;
+      c=mix(c,uFlashColor,uFlash);
       float luma=dot(c,vec3(.2126,.7152,.0722));
       c+=(hash(floor(vUv*uResolution)+fract(uTime*7.)*917.)-.5)*uGrain*(.35+.65*(1.-smoothstep(0.,.6,luma)));
       gl_FragColor=vec4(max(c,0.),1.);
@@ -236,8 +239,16 @@ export class ObservatoryWorld {
   // Light gates between the rooms: you pass through them, the room changes around you.
   gates:{mesh:THREE.Mesh<THREE.PlaneGeometry,Shader>;x:number;side:number;passAt:number;room:number;back:number}[]=[];
   onGate?:(room:number)=>void;gateNear=0;
+  // Vienna time of day, re-read every minute.
+  comet=new THREE.Group();cometHead!:THREE.Sprite;cometTail!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
+  cometFrom=new THREE.Vector3();cometTo=new THREE.Vector3();cometT=0;cometNext=0;cometCaught=0;
+  daylight:Daylight=daylightAt(viennaHour());daylightAt_=0;horizon=createHorizon();skyFog=new THREE.Color();
   // Finale: past the last work he sends a signal up into the sky.
-  finale=0;finaleGoal=false;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;
+  finale=0;finaleGoal=false;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;finaleFrom=new THREE.Vector2();
+  portal=new THREE.Group();portalMembrane!:THREE.Mesh<THREE.PlaneGeometry,Shader>;portalPool!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
+  portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
+  onFinaleDone?:()=>void;onFinaleBack?:()=>void;
+  exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();
   followSpot=new THREE.Group();followFrom=new THREE.Vector3();
   torchPoint=new THREE.Vector3(0,0,2);torchGoal=new THREE.Vector3();torchPower=0;
   pointerInside=false;lastPointer=new THREE.Vector2(9,9);pointerMovedAt=-1e9;
@@ -305,7 +316,7 @@ export class ObservatoryWorld {
     this.scene.add(this.floor);
 
     this.stars=this.buildStars();this.scene.add(this.stars);
-    this.buildPuffs();this.buildGates();
+    this.buildPuffs();this.buildGates();this.scene.add(this.horizon);this.buildComet();this.buildPortal();
     this.dust=this.buildDust();this.scene.add(this.dust);
     this.buildBays();
     this.scene.add(this.curator.root);
@@ -538,7 +549,6 @@ export class ObservatoryWorld {
   }
 
   /* ---------- Teleport ---------- */
-  setFinale(on:boolean){this.finaleGoal=on;this.lastActivity=performance.now();if(on){this.hovered=false;this.stopPreview();}}
   /** Move to a work instantly (from inside the viewer), and settle the camera on it. */
   jumpTo(index:number){
     index=THREE.MathUtils.clamp(index,0,this.bays.length-1);
@@ -599,6 +609,7 @@ export class ObservatoryWorld {
    * and the map send him by teleport. Far jumps from a fast drag also teleport.
    */
   private updateTeleport(dt:number,ov:number,viewing:boolean){
+    if(this.finale>0)return;
     if(this.calm){this.tele='here';this.hop=undefined;this.dissolve.uDissolve.value=0;this.curator.root.visible=true;return;}
     if(this.tele==='here'&&this.hop){
       this.hop.t=Math.min(1,this.hop.t+dt/this.hop.dur);
@@ -698,7 +709,7 @@ export class ObservatoryWorld {
             float drag=(1.-exp(-t*1.5))/1.5;
             vec3 p=uOrigin+vec3(v.x*drag,v.y*drag-.5*.22*t*t,v.z*drag);p.y=max(p.y,.03);
             vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
-            gl_PointSize=clamp((1.2+aSeed.w*2.8)*uPixelRatio*20./-mv.z,.7,11.);
+            gl_PointSize=clamp((1.2+aSeed.w*2.8)*uPixelRatio*20.*max(1.,uStrength*.5)/-mv.z,.7,11.);
             vA=smoothstep(0.,.05,t)*(1.-smoothstep(.6,2.8+aSeed.w*1.8,t))*(.35+.65*aSeed.y);}`,
         fragmentShader:`uniform vec3 uTint;varying float vA;void main(){float d=length(gl_PointCoord-.5);gl_FragColor=vec4(uTint*vA*(1.-smoothstep(.08,.5,d))*1.5,1.);}`,
         transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
@@ -707,12 +718,12 @@ export class ObservatoryWorld {
       this.puffs.push({points,age:99});
     }
   }
-  private puff(x:number,z:number,strength:number){
+  private puff(x:number,z:number,strength:number,y=.05,tint?:THREE.Color){
     if(this.calm||!this.puffs.length)return;
     const p=this.puffs[this.puffSlot++%this.puffs.length];
     p.age=0;p.points.visible=true;const u=p.points.material.uniforms;
-    (u.uOrigin.value as THREE.Vector3).set(x,.05,z);u.uStrength.value=strength;
-    (u.uTint.value as THREE.Color).copy(this.spillColor).lerp(new THREE.Color('#f4ead8'),.55);
+    (u.uOrigin.value as THREE.Vector3).set(x,y,z);u.uStrength.value=strength;
+    if(tint)(u.uTint.value as THREE.Color).copy(tint);else (u.uTint.value as THREE.Color).copy(this.spillColor).lerp(new THREE.Color('#f4ead8'),.55);
   }
   private updatePuffs(dt:number){
     const pr=this.renderer.getPixelRatio();
@@ -721,6 +732,175 @@ export class ObservatoryWorld {
       const u=p.points.material.uniforms;u.uAge.value=p.age;u.uPixelRatio.value=pr;
       if(p.age>5||this.fp>.9)p.points.visible=false;
     }
+  }
+
+  /* ---------- Real 3D pieces (optional, from observatory-models.ts) ---------- */
+  private async loadModels(){
+    const entries=Object.entries(workModels);if(!entries.length&&!shipModel)return;
+    const [{GLTFLoader},{DRACOLoader}]=await Promise.all([import('three/addons/loaders/GLTFLoader.js'),import('three/addons/loaders/DRACOLoader.js')]);
+    const loader=new GLTFLoader();const draco=new DRACOLoader();draco.setDecoderPath('/draco/');loader.setDRACOLoader(draco);
+    const fit=(object:THREE.Object3D,height:number)=>{
+      const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),centre=box.getCenter(new THREE.Vector3());
+      const scale=height/Math.max(size.y,.001);object.scale.multiplyScalar(scale);
+      object.position.sub(new THREE.Vector3(centre.x,box.min.y,centre.z).multiplyScalar(scale));
+      object.traverse(o=>{const mesh=o as THREE.Mesh;if(mesh.isMesh){mesh.castShadow=false;mesh.frustumCulled=true;}});
+    };
+    for(const [id,spec] of entries){
+      const index=archiveWorks.findIndex(work=>work.id===id);if(index<0)continue;
+      try{
+        const gltf=await loader.loadAsync(spec.src);if(this.disposed)return;
+        const pivot=new THREE.Group(),model=gltf.scene;fit(model,spec.height??2.6);pivot.add(model);
+        // A lit plinth: a thin disc of light the piece turns on.
+        const plinth=new THREE.Mesh(new THREE.CircleGeometry(1.35,64),new THREE.ShaderMaterial({uniforms:{uTint:{value:this.bays[index].tint},uIntensity:{value:.5}},vertexShader:plainVertex,fragmentShader:`uniform vec3 uTint;uniform float uIntensity;varying vec2 vUv;void main(){float r=length(vUv-.5)*2.;float ring=exp(-pow((r-.92)*30.,2.));float fill=(1.-r)*.25;gl_FragColor=vec4(uTint*(ring+fill)*uIntensity,1.);}`,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+        plinth.rotation.x=-Math.PI/2;plinth.position.y=.015;
+        const holder=new THREE.Group();holder.position.set(0,0,1.6);holder.add(plinth,pivot);
+        this.bays[index].group.add(holder);
+        this.exhibits.set(index,{pivot,spin:spec.spin??.25,drag:0});
+      }catch(error){console.warn('Observatory model failed',spec.src,error);}
+    }
+    if(shipModel)try{
+      const gltf=await loader.loadAsync(shipModel.src);if(this.disposed)return;
+      const ship=gltf.scene;fit(ship,shipModel.height);
+      this.ship.add(ship);this.ship.position.set(shipModel.x,0,shipModel.z);this.ship.rotation.y=shipModel.rotation;this.scene.add(this.ship);
+    }catch(error){console.warn('Observatory ship failed',error);}
+  }
+  private updateModels(dt:number){
+    for(const [index,exhibit] of this.exhibits){
+      const bay=this.bays[index];if(!bay.group.visible)continue;
+      exhibit.pivot.rotation.y+=(this.calm?0:exhibit.spin*dt)+exhibit.drag;exhibit.drag*=Math.exp(-dt*3);
+    }
+    // The ship floats a hand's breadth above the floor in the faint gravity.
+    if(this.ship.children.length&&!this.calm){this.ship.position.y=.25+Math.sin(this.elapsed*.7)*.08;this.ship.rotation.z=Math.sin(this.elapsed*.5)*.015;}
+  }
+  /** Is the pointer on the 3D piece in front of the current work? */
+  hitModel(clientX:number,clientY:number){
+    const exhibit=this.exhibits.get(this.index);if(!exhibit)return false;
+    const rect=this.host.getBoundingClientRect();
+    this.raycaster.setFromCamera(new THREE.Vector2((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1),this.camera);
+    return this.raycaster.intersectObject(exhibit.pivot,true).length>0;
+  }
+  spinModel(dx:number){const exhibit=this.exhibits.get(this.index);if(exhibit)exhibit.drag=dx*.008;}
+
+  /* ---------- The portal after the last work ---------- */
+  private buildPortal(){
+    const x=this.portalX(),w=5.4,h=4.3;
+    this.portalCanvas.width=1024;this.portalCanvas.height=256;
+    this.portalText=new THREE.CanvasTexture(this.portalCanvas);this.portalText.colorSpace=THREE.SRGBColorSpace;
+    const membrane=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.ShaderMaterial({
+      uniforms:{uTime:{value:0},uIntensity:{value:0},uOpen:{value:0},uText:{value:this.portalText},uTextAlpha:{value:0},uSize:{value:new THREE.Vector2(w,h)}},
+      vertexShader:plainVertex,
+      fragmentShader:`uniform float uTime,uIntensity,uOpen,uTextAlpha;uniform vec2 uSize;uniform sampler2D uText;varying vec2 vUv;
+        ${NOISE}
+        float hair(float d,float wdt){float aa=fwidth(d)*1.2;return 1.-smoothstep(wdt,wdt+aa,abs(d));}
+        void main(){
+          vec2 p=(vUv-.5)*uSize;float r=length(p/uSize*2.);float a=atan(p.y,p.x);
+          float speed=.35+uOpen*1.6;
+          float swirl=noise(vec2(a*2.5+uTime*speed-r*5.,r*3.-uTime*.9*speed))*.6+noise(vec2(a*6.-uTime*.5,r*9.))*.4;
+          float rings=.5+.5*sin(2.2/(r+.08)-uTime*(2.+uOpen*6.));
+          vec3 deep=mix(vec3(.02,.05,.12),vec3(.1,.35,.6),swirl);
+          vec3 col=deep*(.55+.45*rings)+vec3(.55,.85,1.)*pow(1.-min(r,1.),3.)*(.35+uOpen*1.4);
+          col*=1.-smoothstep(.72,1.,r)*.55;
+          vec2 e=(uSize*.5-abs(p));float edge=min(e.x,e.y);
+          col+=vec3(.7,.92,1.)*(hair(edge,.02)+hair(edge-.16,.006)*.5+exp(-edge*3.)*.18);
+          vec4 text=texture2D(uText,vec2(vUv.x,(vUv.y-.36)/.28));
+          float inText=step(.36,vUv.y)*step(vUv.y,.64);
+          col=mix(col,vec3(1.),text.a*uTextAlpha*inText*(1.-uOpen*.8));
+          gl_FragColor=vec4(col*uIntensity,1.);
+          #include <colorspace_fragment>
+        }`,
+      transparent:true,fog:false,depthWrite:false}));
+    membrane.position.set(x,LIFT+h/2,0);
+    const pool=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:{uTint:{value:new THREE.Color('#6fc6ff')},uIntensity:{value:0}},vertexShader:plainVertex,fragmentShader:poolFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    pool.rotation.x=-Math.PI/2;pool.scale.set(w*1.8,7,1);pool.position.set(x,.012,1.6);
+    this.portal.add(membrane,pool);this.portal.visible=false;this.scene.add(this.portal);
+    this.portalMembrane=membrane;this.portalPool=pool;
+  }
+  /** Just past the last work, close enough that its light already shows at the edge. */
+  portalX(){return (archiveWorks.length-1)*GAP+7.6;}
+  setPortalTexts(lines:string[]){this.portalLines=lines;this.portalLineAt=-1e9;}
+  private drawPortalLine(line:string){
+    const ctx=this.portalCanvas.getContext('2d');if(!ctx)return;
+    ctx.clearRect(0,0,1024,256);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+    const family=getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim()||'sans-serif';
+    let size=86;ctx.font=`400 ${size}px ${family}`;
+    while(ctx.measureText(line).width>940&&size>40){size-=4;ctx.font=`400 ${size}px ${family}`;}
+    ctx.fillText(line,512,128);this.portalText.needsUpdate=true;
+  }
+  setFinale(on:boolean){this.finaleGoal=on;this.lastActivity=performance.now();if(on){this.hovered=false;this.stopPreview();this.finaleFrom.copy(this.astro);}}
+  private updatePortal(time:number,dt:number,ov:number){
+    const was=this.finale;
+    if(this.calm)this.finale=this.finaleGoal?1:0;
+    else this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/3.8:-dt/1.6),0,1);
+    if(was<1&&this.finale>=1)this.onFinaleDone?.();
+    if(was>0&&this.finale<=0)this.onFinaleBack?.();
+    const px=this.portalX(),near=Math.abs(this.camera.position.x-px)<GAP*3.2;
+    this.portal.visible=(near||this.finale>0)&&ov<1;if(!this.portal.visible)return;
+    // Intriguing lines, one after another, until you step through.
+    const cycle=3400,phase=(time-this.portalLineAt)/cycle;
+    if(phase>=1){this.portalLineAt=time;this.portalLine=(this.portalLine+1)%Math.max(1,this.portalLines.length);this.drawPortalLine(this.portalLines[this.portalLine]??'');}
+    const ph=Math.min(1,Math.max(0,(time-this.portalLineAt)/cycle));
+    const u=this.portalMembrane.material.uniforms;
+    u.uTime.value=this.elapsed;u.uOpen.value=smooth(.3,.8,this.finale);
+    u.uTextAlpha.value=smooth(0,.14,ph)*(1-smooth(.86,1,ph));
+    u.uIntensity.value=smooth(.4,.8,this.intro)*(1-ov)*(this.calm?.8:1);
+    this.portalPool.material.uniforms.uIntensity.value=.22*(1+this.finale*2)*u.uIntensity.value;
+  }
+
+  /* ---------- A comet you can catch ---------- */
+  private buildComet(){
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+    const ctx=canvas.getContext('2d')!,glow=ctx.createRadialGradient(32,32,0,32,32,32);
+    glow.addColorStop(0,'#ffffff');glow.addColorStop(.15,'#fff4dc');glow.addColorStop(.4,'rgba(255,214,150,.35)');glow.addColorStop(1,'rgba(255,200,140,0)');
+    ctx.fillStyle=glow;ctx.fillRect(0,0,64,64);
+    const head=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    head.scale.setScalar(2.2);
+    const tail=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({
+      uniforms:{uOpacity:{value:1}},vertexShader:plainVertex,
+      fragmentShader:`uniform float uOpacity;varying vec2 vUv;
+        void main(){float along=vUv.x,width=mix(.08,.5,along);float d=abs(vUv.y-.5);
+          float core=1.-smoothstep(width*.25,width,d);float a=pow(along,2.2)*core*uOpacity;
+          gl_FragColor=vec4(mix(vec3(.55,.7,1.),vec3(1.,.93,.8),along)*a*1.3,1.);}`,
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide}));
+    tail.scale.set(14,.9,1);tail.position.x=-7;
+    this.comet.add(tail,head);this.comet.visible=false;this.comet.frustumCulled=false;this.scene.add(this.comet);
+    this.cometHead=head;this.cometTail=tail;
+  }
+  private updateComet(time:number,dt:number,ov:number){
+    const c=this.comet;
+    if(!c.visible){
+      if(this.calm||this.intro<1||ov>0||this.finaleGoal)return;
+      if(!this.cometNext)this.cometNext=time+18000+Math.random()*12000;
+      if(time<this.cometNext)return;
+      const cx=this.camera.position.x;
+      this.cometFrom.set(cx-58,22+Math.random()*6,-70);this.cometTo.set(cx+48,9+Math.random()*4,-70);
+      this.cometT=0;this.cometCaught=0;c.visible=true;
+      const d=this.cometTo.clone().sub(this.cometFrom);c.rotation.z=Math.atan2(d.y,d.x);
+    }
+    if(this.cometCaught>0){
+      // Caught: the head blooms and scatters into gold, the tail lets go.
+      this.cometCaught+=dt;const k=Math.min(1,this.cometCaught/1.1);
+      this.cometHead.scale.setScalar(2.2+k*9);(this.cometHead.material as THREE.SpriteMaterial).opacity=1-k;
+      this.cometTail.material.uniforms.uOpacity.value=Math.max(0,1-k*2);
+      if(k>=1){c.visible=false;this.cometNext=time+45000+Math.random()*30000;}
+      return;
+    }
+    this.cometT+=dt/6.5;
+    c.position.lerpVectors(this.cometFrom,this.cometTo,this.cometT);
+    const fade=Math.min(1,this.cometT*8,(1-this.cometT)*6)*(1-ov);
+    (this.cometHead.material as THREE.SpriteMaterial).opacity=fade;this.cometHead.scale.setScalar(2.2);
+    this.cometTail.material.uniforms.uOpacity.value=fade;
+    if(this.cometT>=1||ov>0){c.visible=false;this.cometNext=time+40000+Math.random()*30000;}
+  }
+  /** True when the click caught the comet's head. */
+  catchComet(clientX:number,clientY:number){
+    if(!this.comet.visible||this.cometCaught>0)return false;
+    const rect=this.host.getBoundingClientRect(),p=this.comet.getWorldPosition(new THREE.Vector3()).project(this.camera);
+    const sx=rect.left+(p.x+1)/2*rect.width,sy=rect.top+(1-p.y)/2*rect.height;
+    if(Math.hypot(sx-clientX,sy-clientY)>(this.mobile?80:56))return false;
+    this.cometCaught=.001;
+    const at=this.comet.getWorldPosition(new THREE.Vector3());
+    this.puff(at.x,at.z,9,at.y,new THREE.Color('#ffd98a'));
+    return true;
   }
 
   /* ---------- Living cinema ---------- */
@@ -747,7 +927,7 @@ export class ObservatoryWorld {
   private buildGates(){
     const palette=['#e2c48f','#9cc3e6','#e59ab3','#7fe3d4'];
     archiveWorks.forEach((work,i)=>{
-      const next=archiveWorks[i+1];if(next&&next.roomIndex===work.roomIndex)return;
+      const next=archiveWorks[i+1];if(!next||next.roomIndex===work.roomIndex)return;
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(24,8.4),new THREE.ShaderMaterial({
         uniforms:{uTint:{value:new THREE.Color(next?palette[next.roomIndex]:'#8fd8ff')},uIntensity:{value:0},uNear:{value:0},uTime:{value:0},uPass:{value:9},uHit:{value:new THREE.Vector2(.7,.3)}},
         vertexShader:plainVertex,
@@ -914,7 +1094,7 @@ export class ObservatoryWorld {
       if(t===1){this.overviewMotion=undefined;m.resolve();}
     }
     const ov=this.overview;
-    this.finale=this.calm?(this.finaleGoal?1:0):THREE.MathUtils.damp(this.finale,this.finaleGoal?1:0,this.finaleGoal?1.1:2.2,dt);
+    this.updatePortal(time,dt,ov);
     if(this.fpMotion){
       const m=this.fpMotion,t=Math.min(1,(time-m.start)/m.duration);
       this.fp=THREE.MathUtils.lerp(m.from,m.to,t<.5?4*t**3:1-(-2*t+2)**3/2);if(t===1)this.fpMotion=undefined;
@@ -953,10 +1133,16 @@ export class ObservatoryWorld {
     for(const key of ['density','beam','dust','grid','holo','bloom','projector'] as const)w[key]=mix(w[key],mix(a[key],b[key],t),k);
     w.fog.lerp(a.fog.clone().lerp(b.fog,t),k);
     this.roomWeights.fill(0);this.roomWeights[this.bays[i0].room]+=1-t;this.roomWeights[this.bays[i1].room]+=t;
-    (this.scene.background as THREE.Color).copy(w.fog);
-    const fog=this.scene.fog as THREE.FogExp2;fog.color.copy(w.fog);fog.density=w.density*(1-ov*.9);
+    if(time-this.daylightAt_>60000){this.daylightAt_=time;this.daylight=daylightAt(viennaHour());}
+    const day=this.daylight;
+    this.skyFog.copy(w.fog).lerp(day.fog,day.fogMix*.8);
+    (this.scene.background as THREE.Color).copy(this.skyFog);
+    const fog=this.scene.fog as THREE.FogExp2;fog.color.copy(this.skyFog);fog.density=w.density*(1-ov*.9);
     const floorUniforms=(this.floor.material as Shader).uniforms;
-    floorUniforms.uBackground.value.copy(w.fog);floorUniforms.uGrid.value=w.grid*smooth(.5,1,intro);floorUniforms.uTime.value=this.elapsed;
+    floorUniforms.uBackground.value.copy(this.skyFog);
+    this.horizon.position.x=this.camera.position.x;
+    (this.horizon.material.uniforms.uColor.value as THREE.Color).copy(day.horizon);
+    this.horizon.material.uniforms.uGlow.value=day.glow*.62*smooth(.2,.7,intro)*(1-this.fp*.6);floorUniforms.uGrid.value=w.grid*smooth(.5,1,intro);floorUniforms.uTime.value=this.elapsed;
 
     // Astronaut: a visitor standing in front of the work, seen from behind.
     const narrow=this.narrow();
@@ -966,6 +1152,7 @@ export class ObservatoryWorld {
     if(this.astroIndex<0||this.calm)this.astroIndex=this.index;
     this.updateTeleport(dt,ov,viewing);
     if(this.fp>.72)this.curator.root.visible=false;
+    if(this.finale>0){const d=smooth(.55,.68,this.finale);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
     // He belongs to one work at a time and stands just off its left edge.
     const home=this.astroIndex;
     const spot=this.anchor(home,this.anchorScratch);let goalX=spot.x,goalZ=spot.y;
@@ -982,8 +1169,14 @@ export class ObservatoryWorld {
       goalX=mix(hop.fromX,hop.toX,u);goalZ=mix(hop.fromZ,hop.toZ,u);lift=arc*hop.height;
       tuck=arc*.38+smooth(0,.08,hop.t)*(1-smooth(.1,.16,hop.t))*.22+smooth(.88,.93,hop.t)*(1-smooth(.95,1,hop.t))*.24;
     }
+    if(this.finale>0){
+      // A long leap to the portal, then one step into the light.
+      const t=this.finale,px=this.portalX()-.25,leap=smooth(.08,.48,t),arc=Math.sin(Math.PI*THREE.MathUtils.clamp((t-.08)/.4,0,1));
+      goalX=mix(this.finaleFrom.x,px,leap);goalZ=mix(mix(this.finaleFrom.y,2.1,leap),-.4,smooth(.5,.64,t));
+      lift=arc*2;tuck=arc*.38;
+    }
     this.landing=Math.max(0,this.landing-dt*2.2);
-    if(!this.astroReady||this.calm||glide||hop||this.tele!=='here'){this.astro.set(goalX,goalZ);this.astroReady=true;}
+    if(!this.astroReady||this.calm||glide||hop||this.finale>0||this.tele!=='here'){this.astro.set(goalX,goalZ);this.astroReady=true;}
     const px=this.astro.x,pz=this.astro.y;
     this.astro.x=THREE.MathUtils.damp(this.astro.x,goalX,7,dt);this.astro.y=THREE.MathUtils.damp(this.astro.y,goalZ,3.5,dt);
     const stepX=hop?hop.toX-hop.fromX:this.astro.x-px,stepZ=hop?hop.toZ-hop.fromZ:this.astro.y-pz,stride=hop?0:dt>0?Math.hypot(stepX,stepZ)/dt:0;
@@ -1003,7 +1196,7 @@ export class ObservatoryWorld {
     // Tablet: a glance at it early in a quiet moment, and in hand for every teleport.
     const checking=smooth(4.5,5.3,idle)*(1-smooth(8.2,9,idle));
     const beaming=this.tele==='leaving'?1-smooth(.75,.95,this.teleT):this.tele==='arriving'?1-smooth(.35,.7,this.teleT):0;
-    this.tabletW=ease(this.tabletW,Math.max(checking,beaming,this.finaleGoal?smooth(.15,.4,this.finale):0),this.tele==='leaving'?9:3,3);
+    this.tabletW=ease(this.tabletW,Math.max(checking,beaming,this.finaleGoal?smooth(0,.06,this.finale)*(1-smooth(.12,.2,this.finale)):0),this.tele==='leaving'?9:3,3);
     this.tabletFlash=this.tele==='leaving'?smooth(.22,.3,this.teleT)*(1-smooth(.34,.6,this.teleT)):this.tabletFlash*.9;
     const greet=this.greetW,wave=this.waveW,stargaze=this.starW,sit=Math.max(this.sitW,tuck);
     const toCamera=Math.atan2(this.camera.position.x-this.astro.x,this.camera.position.z-this.astro.y);
@@ -1013,6 +1206,7 @@ export class ObservatoryWorld {
     facing=turnTo(facing,toCamera,greet);facing=turnTo(facing,toCamera+.7,stargaze);
     if(this.walk>.3&&stride>.6)facing=Math.atan2(stepX,stepZ);
     if(hop&&Math.hypot(stepX,stepZ)>.1)facing=Math.atan2(stepX,stepZ);
+    if(this.finale>.02)facing=this.finale<.5?Math.PI/2:Math.PI;
     root.rotation.y=turnTo(root.rotation.y,facing,1-Math.exp(-dt*(intro<1?3:5)));
     const attention=this.calm?0:(.35+.25*Math.sin(this.phase*.3))*(1-this.walk);
     let pose:{yaw?:number;pitch?:number;wave?:number}|undefined;
@@ -1031,7 +1225,7 @@ export class ObservatoryWorld {
     this.curator.animate(this.phase,this.walk,this.smoothPointer.x*.6,this.calm?0:dt,attention,pose);
     this.placeTablet(time);
     if(this.signal){
-      const s=smooth(.35,.9,this.finale);this.signal.visible=s>.002;
+      const s=0;this.signal.visible=false;
       this.signal.position.set(this.astro.x+.15,30*s+1.5,this.astro.y);this.signal.scale.set(1,Math.max(.001,s),1);
       this.signal.material.uniforms.uIntensity.value=s*(.7+.3*Math.sin(this.elapsed*3.1));this.signal.material.uniforms.uTime.value=this.elapsed;
     }
@@ -1065,10 +1259,15 @@ export class ObservatoryWorld {
     const fov=mix(this.narrow()?46:38,this.narrow()?68:58,this.fp);
     if(Math.abs(this.camera.fov-fov)>.01){this.camera.fov=fov;this.camera.updateProjectionMatrix();}
     if(this.finale>0){
-      // Pull back and up: he stands on the right, the signal climbs into the stars.
-      const f=smooth(0,1,this.finale),ax=this.astro.x;
-      this.cameraGoal.lerp(this.scratchVec.set(ax-(narrow?1.2:3.4),narrow?3.4:2.6,narrow?15:13.5),f);
-      this.look.lerp(this.scratchVec2.set(ax-(narrow?1.2:5.6),narrow?5.4:4.6,0),f);
+      // Follow him to the portal, then fly through it after him.
+      const t=this.finale,px=this.portalX(),py=this.portalMembrane.position.y;
+      const xv=mix(x,px,smooth(0,.4,t));
+      if(narrow){this.scratchVec.set(xv,3.5,17.5);this.scratchVec2.set(xv,3.05,0);}
+      else{this.scratchVec.set(xv-4.6,1.75,12.6);this.scratchVec2.set(xv-1.3,2.45,0);}
+      const hall=smooth(0,.3,t);this.cameraGoal.lerp(this.scratchVec,hall);this.look.lerp(this.scratchVec2,hall);
+      const fly=smooth(.5,.9,t),dive=smooth(.8,1,t);
+      this.cameraGoal.lerp(this.scratchVec.set(px,py,mix(narrow?8:5.5,-3,dive)),fly);
+      this.look.lerp(this.scratchVec2.set(px,py,-30),smooth(.45,.75,t));
     }
     const bay=this.bays[this.index],screen=bay.screen,centre=this.index*GAP;
     const halfFov=Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2));
@@ -1135,7 +1334,7 @@ export class ObservatoryWorld {
       u.uTime.value=this.elapsed;u.uReveal.value=bay.reveal;u.uShift.value=this.shift;u.uHover.value=bay.hover;
       u.uBend.value=this.shift*.55*(1-this.focus);
       u.uDim.value=(1-bay.active)*(1-this.focus*(isCurrent?1:0))+(isCurrent?0:this.focus);
-      u.uLight.value=focusOthers;
+      u.uLight.value=focusOthers*(this.exhibits.has(i)?.5:1);
       (u.uGlare.value as THREE.Vector3).set((tp.x-i*GAP)/bay.screen.scale.x+.5,(tp.y-bay.screen.position.y)/bay.screen.scale.y+.5,power*(tp.y>.3?1:.35)*(1-this.focus));
       u.uHolo.value=ROOMS[bay.room].holo*(isCurrent?mix(.3,0,this.focus):1)*(this.calm?.4:1);
       const room=ROOMS[bay.room];
@@ -1170,18 +1369,19 @@ export class ObservatoryWorld {
       }
     });
     this.sampleFilm(time,dt);
-    this.updatePuffs(dt);this.updateGates(x,ov,time);
+    this.updatePuffs(dt);this.updateGates(x,ov,time);this.updateComet(time,dt,ov);this.updateModels(dt);
 
     // The cinema room plays its films as soon as you stop in front of one.
     const work=archiveWorks[this.index];
     if(settled&&!this.calm&&this.focus===0&&ov===0&&intro>=1&&bay.room===2&&work.video&&this.previewIndex!==this.index&&!this.autoplayBlocked.has(this.index)&&this.autoplayAllowed())this.previewFilm(true);
 
     const pr=this.renderer.getPixelRatio();
-    this.stars.position.x=x*.92;const stars=this.stars.material.uniforms;stars.uTime.value=this.elapsed;stars.uPixelRatio.value=pr;stars.uLight.value=smooth(0,.5,intro)*(1-w.grid*.5);
+    this.stars.position.x=x*.92;const stars=this.stars.material.uniforms;stars.uTime.value=this.elapsed;stars.uPixelRatio.value=pr;stars.uLight.value=smooth(0,.5,intro)*(1-w.grid*.5)*this.daylight.stars;
     const dust=this.dust.material.uniforms;(dust.uTorch.value as THREE.Vector4).set(tp.x,tp.y,tp.z,power);dust.uTime.value=this.elapsed;dust.uCamX.value=x;dust.uPixelRatio.value=pr;dust.uFocus.value=this.focus;dust.uAmount.value=w.dust*smooth(.1,.5,intro);
     this.floor.position.x=x;if(this.plainFloor)this.plainFloor.position.x=x;
     const film=this.finish.uniforms;film.uTime.value=this.calm?0:this.elapsed;film.uShift.value=this.shift;
     film.uExposure.value=smooth(0,.35,intro)*.85+.15*smooth(.02,.1,intro);
+    film.uFlash.value=smooth(.84,.97,this.finale);
     this.bloom.strength=w.bloom+this.shift*.25;
     this.onFrame?.({speed:Math.abs(this.velocity),rooms:this.roomWeights,focus:this.focus,lamp:intro<.12?0:intro>=.42?1:stutter});
     const movingNow=this.isMoving();
@@ -1244,6 +1444,7 @@ export class ObservatoryWorld {
     this.lastTime=this.lastActivity=performance.now();this.qualityFrom=this.lastTime+4000;
     this.frame=requestAnimationFrame(this.tick);
     this.curator.load(()=>!this.isMoving()).then(()=>{if(this.disposed)this.curator.dispose();else this.makeDissolvable(this.curator.root);});
+    void this.loadModels();
   }
 
   focusWork(){
