@@ -229,6 +229,47 @@ export async function mountObservatory(root:HTMLElement){
     await world?.restoreView();
     if(token===openToken&&!viewer.open&&!opening)root.classList.remove('is-focusing');
   }
+  // "How it was made": only facts the site already holds. Web projects use their case
+  // study (problem, process, outcome); 3D and film use the real tool chain and format.
+  const TOOL_ROLES:Record<string,[string,string]>={
+    'CINEMA 4D':['Modelling, scene and camera','Modellierung, Szene und Kamera'],
+    'REDSHIFT':['Materials, light and GPU rendering','Materialien, Licht und GPU-Rendering'],
+    'AFTER EFFECTS':['Compositing and motion','Compositing und Motion'],
+    'PREMIERE PRO':['Edit, sound and colour','Schnitt, Ton und Farbe'],
+    'PHOTOSHOP':['Retouch and art direction','Retusche und Art Direction'],
+    'ON LOCATION':['Filmed on location','Vor Ort gedreht'],
+  };
+  const TOOL_NAMES:Record<string,string>={'CINEMA 4D':'Cinema 4D','REDSHIFT':'Redshift','AFTER EFFECTS':'After Effects','PREMIERE PRO':'Premiere Pro','PHOTOSHOP':'Photoshop','ON LOCATION':'On location'};
+  const making=root.querySelector<HTMLElement>('[data-obs-making]')!,makingGrid=root.querySelector<HTMLElement>('[data-obs-making-grid]')!;
+  function fillMaking(){
+    const work=archiveWorks[current],l=de()?1:0,d=dict();makingGrid.textContent='';
+    const block=(label:string,body:string|string[],wide=false)=>{
+      const el=document.createElement('div');el.className='obs-making-block'+(wide?' is-wide':'');
+      const h=document.createElement('span');h.className='obs-making-label';h.textContent=label;el.append(h);
+      for(const line of Array.isArray(body)?body:[body]){const p=document.createElement('p');p.textContent=line;el.append(p);}
+      makingGrid.append(el);return el;
+    };
+    if(work.type==='case'){
+      const key=(k:string)=>d[`case.${work.id}.${k}`];
+      if(key('problem.text'))block(l?'Ausgangslage':'The brief',key('problem.text'));
+      if(key('solution.text'))block(l?'Lösung':'The answer',key('solution.text'));
+      const steps=[1,2,3].map(i=>key(`process.${i}`)).filter(Boolean);
+      if(steps.length)block(l?'Vorgehen':'Process',steps.map((s,i)=>`0${i+1} — ${s}`),true);
+      if(key('outcome.text'))block(l?'Ergebnis':'Outcome',key('outcome.text'));
+    }else{
+      const tools=(work.detail?.tools??'').split('/').map(t=>t.trim()).filter(Boolean);
+      if(tools.length)block(l?'Werkzeugkette':'Pipeline',tools.map((t,i)=>`0${i+1} — ${TOOL_NAMES[t]??t}: ${TOOL_ROLES[t]?.[l]??''}`.replace(/: $/,'')),true);
+      const format=block(l?'Format':'Format',work.video?(l?'Film':'Film'):(l?'Standbild':'Still image'));
+      const describe=()=>{
+        const p=format.querySelector('p')!;
+        if(work.video&&video.duration){const s=Math.round(video.duration);p.textContent=`${l?'Film':'Film'} · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} · ${video.videoWidth>video.videoHeight?'16:9':'9:16'}`;}
+        else if(!work.video&&image.naturalWidth)p.textContent=`${l?'Standbild':'Still image'} · ${image.naturalWidth} × ${image.naturalHeight} px`;
+      };
+      describe();video.addEventListener('loadedmetadata',describe,{once:true});image.addEventListener('load',describe,{once:true});
+      const room=archiveRooms[work.roomIndex];block(l?'Saal':'Room',`0${work.roomIndex+1} · ${room[l?'de':'en']} — ${room.subtitle[l?'de':'en']}`);
+    }
+    making.hidden=!makingGrid.children.length;
+  }
   // Fill the viewer with the current work: copy, media, process block, next link.
   function loadViewer(){
     fillViewer();root.querySelector<HTMLDetailsElement>('[data-obs-notes]')!.open=false;
@@ -241,6 +282,7 @@ export async function mountObservatory(root:HTMLElement){
     const next=archiveWorks[current+1];nextButton.hidden=!next;
     if(next){nextTitle.textContent=workTitle(next);nextMeta.textContent=`${String(current+2).padStart(2,'0')} / ${archiveRooms[next.roomIndex][de()?'de':'en']}`;}
     shareButton.classList.remove('is-copied');
+    fillMaking();
     return work.video?Promise.resolve():image.decode().catch(()=>{});
   }
   // Next work from inside the viewer: the hall moves behind the page, the page crossfades.
@@ -491,7 +533,7 @@ export async function mountObservatory(root:HTMLElement){
     // First visit of the session opens in darkness; the interface arrives with the light.
     // After the warp tunnel the hall should already be warming up, not sit in a second darkness.
     const warped=document.documentElement.classList.contains('rb-warp-arriving');
-    if(intro&&!world.isCalm()){world.armIntro(warped?.5:0,warped?1.4:1);root.classList.add('is-intro');}
+    if(intro&&!world.isCalm()){world.armIntro(warped?.14:0,1);root.classList.add('is-intro');}
     await world.start(current);
     if(world.disposed||bootFailed)return;
     root.classList.add('is-ready');
@@ -499,6 +541,8 @@ export async function mountObservatory(root:HTMLElement){
     await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
     finishBoot();window.dispatchEvent(new CustomEvent('rb:webgl-ready'));
     if(root.classList.contains('is-intro')){
+      // After the warp, let the tunnel lift first so the opening is seen, not hidden behind it.
+      if(warped)await new Promise(resolve=>setTimeout(resolve,700));
       await world.beginIntro();
       if(!world.disposed)revealShell();
       try{sessionStorage.setItem('rb-observatory-intro','1');}catch{}

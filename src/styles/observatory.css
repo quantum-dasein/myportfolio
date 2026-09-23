@@ -328,3 +328,56 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
   .obs-toolbar :is(.obs-star-toggle,.obs-eyes-toggle,.obs-index-toggle) :is(.obs-en,.obs-de){display:none!important}
   .obs-toolbar button{min-height:40px!important;min-width:40px;justify-content:center}
 }
+
+/* ------------------------------------------------------------------
+   Type and controls, second pass. One family everywhere: the studio's
+   display face, in sentence case for controls and tracked caps for
+   small labels, instead of the system monospace.
+   ------------------------------------------------------------------ */
+.observatory{--obs-mono:var(--font-display);--obs-glass:rgba(255,255,255,.055);--obs-glass-hi:rgba(255,255,255,.12);--obs-line:rgba(255,255,255,.14)}
+.observatory .obs-eyebrow,.observatory .obs-topline,.observatory .obs-room-label,.observatory .obs-stepper>span,.observatory .obs-signature,.observatory .obs-instructions{font-family:var(--font-display);font-weight:500;letter-spacing:.16em}
+
+/* Glass pills: toolbar, open, stepper, viewer close, finale actions. */
+.observatory :is(.obs-star-toggle,.obs-eyes-toggle,.obs-details-toggle,.obs-index-toggle){
+  font:500 13px/1 var(--font-display)!important;letter-spacing:-.005em!important;text-transform:none!important;
+  display:inline-flex;align-items:center;gap:9px;min-height:40px;padding:0 16px!important;border-radius:999px!important;
+  color:#eef2f3!important;background:var(--obs-glass)!important;border:1px solid var(--obs-line)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 24px -12px rgba(0,0,0,.6);
+  backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+  transition:background .3s,border-color .3s,transform .3s cubic-bezier(.2,.7,.2,1),color .3s;
+}
+.observatory :is(.obs-star-toggle,.obs-eyes-toggle,.obs-details-toggle,.obs-index-toggle):hover{background:var(--obs-glass-hi)!important;border-color:rgba(255,255,255,.3)!important;transform:translateY(-1px)}
+.observatory :is(.obs-star-toggle,.obs-eyes-toggle,.obs-details-toggle,.obs-index-toggle):focus-visible{outline:2px solid #fff;outline-offset:3px}
+.observatory .obs-star-toggle{color:#ffe9bd!important;border-color:rgba(255,217,138,.3)!important}
+.observatory .obs-eyes-toggle[aria-pressed="true"],.observatory .obs-details-toggle[aria-expanded="true"]{background:rgba(143,216,255,.16)!important;border-color:rgba(143,216,255,.55)!important;color:#e7f7ff!important}
+.observatory .obs-index-toggle .obs-icon,.observatory .obs-eyes-toggle .obs-icon{width:16px;height:16px;opacity:.85}
+.observatory .obs-open{font:500 15px/1 var(--font-display)!important;letter-spacing:-.01em!important;display:inline-flex;align-items:center;gap:22px;min-height:52px;padding:0 10px 0 24px!important;border-radius:999px!important;background:#f3f5f6!important;color:#060708!important;border:0!important;transition:background .3s,transform .3s cubic-bezier(.2,.7,.2,1)}
+.observatory .obs-open .obs-icon{width:34px;height:34px;padding:9px;border-radius:50%;background:#060708;color:#fff;box-sizing:border-box;transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.observatory .obs-open:hover{background:#fff!important;transform:translateY(-1px)}
+.observatory .obs-open:hover .obs-icon{transform:rotate(45deg)}
+.observatory .obs-stepper button{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--obs-glass);border:1px solid var(--obs-line);transition:background .3s,border-color .3s}
+.observatory .obs-stepper button:hover:not(:disabled){background:var(--obs-glass-hi);border-color:rgba(255,255,255,.3)}
+.observatory .obs-stepper button:disabled{opacity:.3}
+.observatory .obs-stepper button .obs-icon{width:18px;height:18px}
+.obs-viewer [data-obs-close-viewer]{font:500 13px/1 var(--font-display);letter-spacing:0;min-height:44px;padding:0 8px 0 18px;border-radius:999px;background:var(--obs-glass);border:1px solid var(--obs-line);color:#fff;gap:12px!important}
+.obs-viewer [data-obs-close-viewer] .obs-icon{width:28px;height:28px;padding:6px;border-radius:50%;background:rgba(255,255,255,.1);box-sizing:border-box}
+.obs-finale-cta,.obs-finale-mail,.obs-finale button{border-radius:999px!important;font-family:var(--font-display)!important;font-weight:500}
+.obs-map-label,.obs-star-tip{font-family:var(--font-display);font-weight:500;border-radius:999px;padding:9px 16px}
+@media(max-width:600px){
+  .observatory :is(.obs-star-toggle,.obs-eyes-toggle,.obs-details-toggle,.obs-index-toggle){min-height:44px;padding:0 14px!important;font-size:12px!important}
+  .observatory :is(.obs-star-toggle,.obs-eyes-toggle){padding:0!important;width:44px;justify-content:center}
+  .observatory .obs-open{min-height:48px;font-size:14px!important}
+  .obs-viewer [data-obs-close-viewer]{padding:0;width:44px;justify-content:center}
+  .obs-viewer [data-obs-close-viewer] .obs-icon{background:none}
+}
+
+/* How it was made. */
+.obs-making{max-width:1160px;margin:52px auto 0;padding-top:40px;border-top:1px solid rgba(255,255,255,.1)}
+.obs-making-head{margin-bottom:26px}
+.obs-making-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 48px}
+.obs-making-block.is-wide{grid-column:1/-1}
+.obs-making-label{display:block;font:500 10px var(--font-display);letter-spacing:.18em;text-transform:uppercase;color:#8fd8ff;margin-bottom:12px}
+.obs-making-block p{margin:0 0 10px;font-size:15px;line-height:1.65;color:#d2d8da;max-width:62ch}
+.obs-making-block.is-wide p{padding:12px 0;border-top:1px solid rgba(255,255,255,.07);margin:0}
+@media(max-width:600px){.obs-making{margin-top:36px;padding-top:28px}.obs-making-grid{grid-template-columns:1fr;gap:24px}.obs-making-block p{font-size:14px}}
+.observatory .obs-open .obs-icon{width:20px!important;height:20px!important;padding:0!important;background:none!important;color:#060708!important;margin-right:12px}

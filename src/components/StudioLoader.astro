@@ -10,6 +10,7 @@ const isDe = lang === "de";
 ---
 
 <rb-studio-loader aria-hidden="true" data-lang={lang}>
+  <div class="loader-dim" aria-hidden="true"></div>
   <div class="loader-topline">
     <span>RB / DIGITAL STUDIO</span>
     <span>VIENNA / 2026</span>
@@ -91,6 +92,9 @@ const isDe = lang === "de";
   }
 
   rb-studio-loader.is-hidden { pointer-events: none; }
+  /* On exit the glow sinks to the page's own black before the curtain lifts, so the
+     reveal never flashes a grey haze over the home page. */
+  .loader-dim { position: absolute; inset: 0; z-index: 5; background: #030304; opacity: 0; pointer-events: none; }
 
   .loader-topline,
   .loader-meta,
@@ -625,6 +629,11 @@ const isDe = lang === "de";
           duration: 0.38,
           ease: "power2.in",
         }, "-=0.45")
+        .to(this.querySelector(".loader-dim"), {
+          opacity: 1,
+          duration: 0.55,
+          ease: "power2.inOut",
+        }, 0.12)
         .to(this, {
           clipPath: "inset(0 0 100% 0)",
           duration: 1.05,
