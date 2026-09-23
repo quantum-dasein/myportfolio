@@ -736,25 +736,25 @@ export class ObservatoryWorld {
     const palette=['#e2c48f','#9cc3e6','#e59ab3','#7fe3d4'];
     archiveWorks.forEach((work,i)=>{
       const next=archiveWorks[i+1];if(!next||next.roomIndex===work.roomIndex)return;
-      const mesh=new THREE.Mesh(new THREE.PlaneGeometry(19,8.4),new THREE.ShaderMaterial({
+      const mesh=new THREE.Mesh(new THREE.PlaneGeometry(24,8.4),new THREE.ShaderMaterial({
         uniforms:{uTint:{value:new THREE.Color(palette[next.roomIndex])},uIntensity:{value:0},uNear:{value:0},uTime:{value:0},uPass:{value:9},uHit:{value:new THREE.Vector2(.7,.3)}},
         vertexShader:plainVertex,
         fragmentShader:`uniform vec3 uTint;uniform float uIntensity,uNear,uTime,uPass;uniform vec2 uHit;varying vec2 vUv;
           ${NOISE}
           void main(){
             vec2 p=vUv;
-            vec2 e=min(p,1.-p);float frame=min(e.x*19.,e.y*8.4);
+            vec2 e=min(p,1.-p);float frame=min(e.x*24.,e.y*8.4);
             float line=exp(-frame*frame*55.)+exp(-frame*6.)*.16;
             float floorLine=exp(-p.y*p.y*900.)*.8;
             float shimmer=noise(p*vec2(38.,16.)+vec2(0.,uTime*.35))*noise(p*vec2(7.,3.)-uTime*.08);
             float membrane=shimmer*.12*uNear;
-            float ring=exp(-pow((length((p-uHit)*vec2(19.,8.4))-uPass*9.)*1.1,2.))*exp(-uPass*1.4)*step(0.,uPass);
+            float ring=exp(-pow((length((p-uHit)*vec2(24.,8.4))-uPass*9.)*1.1,2.))*exp(-uPass*1.4)*step(0.,uPass);
             float a=(line*(.35+.65*uNear)+floorLine*(.4+.6*uNear)+membrane+ring*.9)*uIntensity;
             gl_FragColor=vec4(uTint*a,1.);
           }`,
         transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide,
       }));
-      mesh.rotation.y=Math.PI/2;mesh.position.set((i+.5)*GAP,4.2,6.2);mesh.frustumCulled=false;this.scene.add(mesh);
+      mesh.rotation.y=Math.PI/2;mesh.position.set((i+.5)*GAP,4.2,7.6);mesh.frustumCulled=false;this.scene.add(mesh);
       this.gates.push({mesh,x:(i+.5)*GAP,side:0,passAt:-1e9,room:next.roomIndex,back:work.roomIndex});
     });
   }
@@ -764,7 +764,7 @@ export class ObservatoryWorld {
       const d=cam.x-gate.x,side=Math.sign(d);
       if(gate.side!==0&&side!==gate.side&&ov===0){
         gate.passAt=time;
-        (gate.mesh.material.uniforms.uHit.value as THREE.Vector2).set(THREE.MathUtils.clamp((cam.z-(gate.mesh.position.z-9.5))/19,0,1),THREE.MathUtils.clamp(cam.y/8.4,0,1));
+        (gate.mesh.material.uniforms.uHit.value as THREE.Vector2).set(THREE.MathUtils.clamp((cam.z-(gate.mesh.position.z-12))/24,0,1),THREE.MathUtils.clamp(cam.y/8.4,0,1));
         this.onGate?.(side>0?gate.room:gate.back);
       }
       gate.side=side;
