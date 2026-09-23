@@ -248,8 +248,8 @@ export class ObservatoryWorld {
   finale=0;finaleGoal=false;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;finaleFrom=new THREE.Vector2();
   portal=new THREE.Group();portalMembrane!:THREE.Mesh<THREE.PlaneGeometry,Shader>;portalPool!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
   portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
-  onFinaleDone?:()=>void;onFinaleBack?:()=>void;
-  exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();
+  onFinaleDone?:()=>void;onFinaleBack?:()=>void;portalAura!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
+  exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();shipPlaced=false;
   visitorStars:VisitorStar[]=[];visitorGroup=new THREE.Group();visitorPoints!:THREE.Points<THREE.BufferGeometry,Shader>;
   spark!:THREE.Sprite;sparkFlight?:{star:VisitorStar;from:THREE.Vector3;t:number;resolve:()=>void};
   followSpot=new THREE.Group();followFrom=new THREE.Vector3();
@@ -805,7 +805,15 @@ export class ObservatoryWorld {
     if(this.ship.children.length&&!this.calm){this.ship.rotation.z=Math.sin(this.elapsed*.5)*.015;}
     // The ship belongs to the hall, not to the map or the view from the helmet.
     // Seen through his eyes, the ship hovers at eye level beside the work.
-    if(shipModel&&this.ship.children.length){const k=smooth(0,1,this.fp);const fpAt=this.narrow()?[3.2,2.4,2.2]:[6,.6,2.2];this.ship.position.x=mix(shipModel.x,fpAt[0],k);this.ship.position.z=mix(shipModel.z,fpAt[1],k);this.ship.position.y+=fpAt[2]*k;this.ship.rotation.y=mix(shipModel.rotation,-2.6,k);}
+    // The ship travels with him: parked beside his current work in the hall, and seen
+    // through his eyes it hangs in the sky past the edge of the print, never over it.
+    if(shipModel&&this.ship.children.length){
+      const home=Math.max(0,this.astroIndex),side=home===this.bays.length-1?-1:1,k=smooth(0,1,this.fp);
+      const tx=home*GAP+side*mix(shipModel.x,this.narrow()?6.2:8.8,k),ty=this.ship.position.y+mix(0,this.narrow()?3.6:4.4,k),tz=mix(shipModel.z,-7.5,k);
+      if(!this.shipPlaced||this.calm){this.ship.position.x=tx;this.ship.position.z=tz;this.shipPlaced=true;}
+      this.ship.position.x=THREE.MathUtils.damp(this.ship.position.x,tx,1.6,dt);this.ship.position.z=THREE.MathUtils.damp(this.ship.position.z,tz,2.5,dt);this.ship.position.y=ty;
+      this.ship.rotation.y=mix(shipModel.rotation*side,-2.9*side,k);
+    }
     const shipOn=1-this.overview;this.ship.visible=shipOn>.02;this.ship.scale.setScalar(Math.max(.001,shipOn));
   }
   /** Is the pointer on the 3D piece in front of the current work? */
@@ -820,8 +828,8 @@ export class ObservatoryWorld {
   /* ---------- The portal after the last work ---------- */
   private buildPortal(){
     const x=this.portalX(),w=5.4,h=4.3;
-    this.portalCanvas.width=1024;this.portalCanvas.height=256;
-    this.portalText=new THREE.CanvasTexture(this.portalCanvas);this.portalText.colorSpace=THREE.SRGBColorSpace;
+    this.portalCanvas.width=2048;this.portalCanvas.height=512;
+    this.portalText=new THREE.CanvasTexture(this.portalCanvas);this.portalText.colorSpace=THREE.SRGBColorSpace;this.portalText.anisotropy=8;
     const membrane=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.ShaderMaterial({
       uniforms:{uTime:{value:0},uIntensity:{value:0},uOpen:{value:0},uText:{value:this.portalText},uTextAlpha:{value:0},uSize:{value:new THREE.Vector2(w,h)}},
       vertexShader:plainVertex,
@@ -840,12 +848,20 @@ export class ObservatoryWorld {
           col+=vec3(.7,.92,1.)*(hair(edge,.02)+hair(edge-.16,.006)*.5+exp(-edge*3.)*.18);
           vec4 text=texture2D(uText,vec2(vUv.x,(vUv.y-.36)/.28));
           float inText=step(.36,vUv.y)*step(vUv.y,.64);
-          col=mix(col,vec3(1.),text.a*uTextAlpha*inText*(1.-uOpen*.8));
+          // Always the brightest thing in the hall, but the words stay under the glow
+          // threshold so they read sharp instead of blooming into haze.
+          col*=1.45+.15*sin(uTime*1.7);
+          float ink=text.a*uTextAlpha*inText*(1.-uOpen*.8);
+          col=mix(col*(1.-ink*.55),vec3(.9,.97,1.),ink);
           gl_FragColor=vec4(col*uIntensity,1.);
           #include <colorspace_fragment>
         }`,
-      transparent:true,fog:false,depthWrite:false}));
+      transparent:true,fog:false,depthWrite:false,toneMapped:false}));
     membrane.position.set(x,LIFT+h/2,0);
+    const aura=new THREE.Mesh(new THREE.PlaneGeometry(w+6,h+6),new THREE.ShaderMaterial({
+      uniforms:{uTint:{value:new THREE.Color('#7fd0ff')},uIntensity:{value:0},uSize:{value:new THREE.Vector2(w+6,h+6)}},
+      vertexShader:plainVertex,fragmentShader:haloFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    aura.position.set(x,LIFT+h/2,-.3);this.portal.add(aura);this.portalAura=aura;
     const pool=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:{uTint:{value:new THREE.Color('#6fc6ff')},uIntensity:{value:0}},vertexShader:plainVertex,fragmentShader:poolFragment,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
     pool.rotation.x=-Math.PI/2;pool.scale.set(w*1.8,7,1);pool.position.set(x,.012,1.6);
     this.portal.add(membrane,pool);this.portal.visible=false;this.scene.add(this.portal);
@@ -856,17 +872,17 @@ export class ObservatoryWorld {
   setPortalTexts(lines:string[]){this.portalLines=lines;this.portalLineAt=-1e9;}
   private drawPortalLine(line:string){
     const ctx=this.portalCanvas.getContext('2d');if(!ctx)return;
-    ctx.clearRect(0,0,1024,256);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.clearRect(0,0,2048,512);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
     const family=getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim()||'sans-serif';
-    let size=86;ctx.font=`400 ${size}px ${family}`;
-    while(ctx.measureText(line).width>940&&size>40){size-=4;ctx.font=`400 ${size}px ${family}`;}
-    ctx.fillText(line,512,128);this.portalText.needsUpdate=true;
+    let size=190;ctx.font=`500 ${size}px ${family}`;
+    while(ctx.measureText(line).width>1860&&size>80){size-=6;ctx.font=`500 ${size}px ${family}`;}
+    ctx.fillText(line,1024,256);this.portalText.needsUpdate=true;
   }
   setFinale(on:boolean){this.finaleGoal=on;this.lastActivity=performance.now();if(on){this.hovered=false;this.stopPreview();this.finaleFrom.copy(this.astro);}}
   private updatePortal(time:number,dt:number,ov:number){
     const was=this.finale;
     if(this.calm)this.finale=this.finaleGoal?1:0;
-    else this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/3.8:-dt/1.6),0,1);
+    else this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/5.2:-dt/1.6),0,1);
     if(was<1&&this.finale>=1)this.onFinaleDone?.();
     if(was>0&&this.finale<=0)this.onFinaleBack?.();
     const px=this.portalX(),near=Math.abs(this.camera.position.x-px)<GAP*3.2;
@@ -879,7 +895,8 @@ export class ObservatoryWorld {
     u.uTime.value=this.elapsed;u.uOpen.value=smooth(.3,.8,this.finale);
     u.uTextAlpha.value=smooth(0,.14,ph)*(1-smooth(.86,1,ph));
     u.uIntensity.value=smooth(.4,.8,this.intro)*(1-ov)*(this.calm?.8:1);
-    this.portalPool.material.uniforms.uIntensity.value=.22*(1+this.finale*2)*u.uIntensity.value;
+    this.portalPool.material.uniforms.uIntensity.value=.34*(1+this.finale*2)*u.uIntensity.value;
+    this.portalAura.material.uniforms.uIntensity.value=(.22+.06*Math.sin(this.elapsed*1.7)+this.finale*.6)*u.uIntensity.value;
   }
 
   /* ---------- Stars left by visitors ---------- */
@@ -1270,7 +1287,7 @@ export class ObservatoryWorld {
     if(this.astroIndex<0||this.calm)this.astroIndex=this.index;
     this.updateTeleport(dt,ov,viewing);
     if(this.fp>.72)this.curator.root.visible=false;
-    if(this.finale>0){const d=smooth(.55,.68,this.finale);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
+    if(this.finale>0){const d=smooth(.52,.62,this.finale);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
     // He belongs to one work at a time and stands just off its left edge.
     const home=this.astroIndex;
     const spot=this.anchor(home,this.anchorScratch);let goalX=spot.x,goalZ=spot.y;
@@ -1287,18 +1304,22 @@ export class ObservatoryWorld {
       goalX=mix(hop.fromX,hop.toX,u);goalZ=mix(hop.fromZ,hop.toZ,u);lift=arc*hop.height;
       tuck=arc*.38+smooth(0,.08,hop.t)*(1-smooth(.1,.16,hop.t))*.22+smooth(.88,.93,hop.t)*(1-smooth(.95,1,hop.t))*.24;
     }
+    let finaleWalk=0;
     if(this.finale>0){
-      // A long leap to the portal, then one step into the light.
-      const t=this.finale,px=this.portalX()-.25,leap=smooth(.08,.48,t),arc=Math.sin(Math.PI*THREE.MathUtils.clamp((t-.08)/.4,0,1));
-      goalX=mix(this.finaleFrom.x,px,leap);goalZ=mix(mix(this.finaleFrom.y,2.1,leap),-.4,smooth(.5,.64,t));
-      lift=arc*2;tuck=arc*.38;
+      // He checks the tablet, walks to the portal, crouches and dives into the light.
+      const t=this.finale,px=this.portalX()-.25,go=smooth(.07,.44,t);
+      goalX=mix(this.finaleFrom.x,px,go);goalZ=mix(this.finaleFrom.y,2.2,go);
+      finaleWalk=smooth(.06,.1,t)*(1-smooth(.41,.45,t));
+      const dive=THREE.MathUtils.clamp((t-.46)/.12,0,1),arc=Math.sin(Math.PI*dive);
+      goalZ=mix(goalZ,-.6,smooth(0,1,dive));lift=arc*1.1;
+      tuck=smooth(.43,.46,t)*(1-smooth(.46,.48,t))*.34+arc*.3;
     }
     this.landing=Math.max(0,this.landing-dt*2.2);
     if(!this.astroReady||this.calm||glide||hop||this.finale>0||this.tele!=='here'){this.astro.set(goalX,goalZ);this.astroReady=true;}
     const px=this.astro.x,pz=this.astro.y;
     this.astro.x=THREE.MathUtils.damp(this.astro.x,goalX,7,dt);this.astro.y=THREE.MathUtils.damp(this.astro.y,goalZ,3.5,dt);
     const stepX=hop?hop.toX-hop.fromX:this.astro.x-px,stepZ=hop?hop.toZ-hop.fromZ:this.astro.y-pz,stride=hop?0:dt>0?Math.hypot(stepX,stepZ)/dt:0;
-    this.walk=THREE.MathUtils.damp(this.walk,this.calm?0:Math.min(1,stride/2),6,dt);
+    this.walk=THREE.MathUtils.damp(this.walk,this.calm?0:Math.max(finaleWalk,Math.min(1,stride/2)),6,dt);
     this.phase+=dt*mix(1.1,10.5,this.walk);
     const root=this.curator.root;
     root.position.set(this.astro.x,(root.userData.soleOffset??0)+lift,this.astro.y);
@@ -1324,7 +1345,7 @@ export class ObservatoryWorld {
     facing=turnTo(facing,toCamera,greet);facing=turnTo(facing,toCamera+.7,stargaze);
     if(this.walk>.3&&stride>.6)facing=Math.atan2(stepX,stepZ);
     if(hop&&Math.hypot(stepX,stepZ)>.1)facing=Math.atan2(stepX,stepZ);
-    if(this.finale>.02)facing=this.finale<.5?Math.PI/2:Math.PI;
+    if(this.finale>.02)facing=this.finale<.44?Math.atan2(this.portalX()-.25-this.astro.x,2.2-this.astro.y+.001):Math.PI;
     root.rotation.y=turnTo(root.rotation.y,facing,1-Math.exp(-dt*(intro<1?3:5)));
     const attention=this.calm?0:(.35+.25*Math.sin(this.phase*.3))*(1-this.walk);
     let pose:{yaw?:number;pitch?:number;wave?:number}|undefined;
@@ -1524,6 +1545,8 @@ export class ObservatoryWorld {
     }
     // The parked ship shares the focus when it is in the shot.
     if(this.ship.children.length&&Math.abs(this.ship.position.x-this.position)<GAP*.8){const s=this.ship.position;add(this.projected.set(s.x-2.2,s.y,s.z));add(this.projected.set(s.x+2.2,s.y+1.6,s.z));}
+    // The portal is never out of focus: it is the invitation.
+    if(this.portal.visible&&this.portalMembrane){const m=this.portalMembrane;m.updateWorldMatrix(true,false);for(const [cx,cy] of [[-.5,-.5],[.5,.5]])add(this.projected.set(cx*5.4,cy*4.3,0).applyMatrix4(m.matrixWorld));}
     const pad=.03,k=1-Math.exp(-dt*6);
     this.focusRect.x=mix(this.focusRect.x,Math.max(0,x0-pad),k);this.focusRect.y=mix(this.focusRect.y,Math.max(0,y0-pad),k);
     this.focusRect.z=mix(this.focusRect.z,Math.min(1,x1+pad),k);this.focusRect.w=mix(this.focusRect.w,Math.min(1,y1+pad),k);
