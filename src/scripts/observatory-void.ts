@@ -601,8 +601,6 @@ export class ObservatoryWorld {
           const to=this.anchor(this.index,new THREE.Vector2()),span=Math.max(1,steps);
           this.hop={fromX:this.astro.x,fromZ:this.astro.y,toX:to.x,toZ:to.y,t:0,dur:.8+.16*span,height:1.3+.45*span,index:this.index};
           this.puff(this.astro.x,this.astro.y,.45);
-          // Through his eyes the leap faces the next work, wherever you were looking.
-          if(this.fpGoal)this.lookGoal.set(0,0);
         }
       }
     }else if(this.tele==='leaving'){
@@ -776,6 +774,8 @@ export class ObservatoryWorld {
   }
 
   /* ---------- Through his eyes ---------- */
+  /** Which way you are looking along the hall: 1 right, -1 left, 0 straight at the work. */
+  lookSide(){const d=this.camera.getWorldDirection(new THREE.Vector3());return d.x>.3?1:d.x<-.3?-1:0;}
   setFirstPerson(on:boolean){
     if(on===this.fpGoal)return;
     this.fpGoal=on;this.lookGoal.set(0,0);this.hovered=false;this.lastActivity=performance.now();

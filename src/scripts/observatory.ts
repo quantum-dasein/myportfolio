@@ -254,7 +254,18 @@ export async function mountObservatory(root:HTMLElement){
     if(!root.classList.contains('is-ready')||viewer.open||indexDialog.open||opening)return;
     event.preventDefault();if(mapping)return;
     const unit=event.deltaMode===1?16:event.deltaMode===2?innerHeight:1;
-    const delta=(Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:event.deltaY)*unit;
+    // Wheel forward (away from you) travels right, to the next work; back travels left.
+    const delta=(Math.abs(event.deltaX)>Math.abs(event.deltaY)?event.deltaX:-event.deltaY)*unit;
+    if(firstPerson&&world){
+      // Through his eyes the wheel walks: forward goes where you look, back goes the other way.
+      const now=performance.now();if(now-wheelTime>220)wheelDistance=0;wheelTime=now;wheelDistance+=delta;
+      if(Math.abs(wheelDistance)>40){
+        const side=world.lookSide(),forward=wheelDistance>0;wheelDistance=0;
+        const step=forward?(side||1):(side?-side:-1);
+        if(now-lastNavigation>900){lastNavigation=now;navigate(aimed()+step);}
+      }
+      return;
+    }
     if(world&&!world.isCalm()){world.scrollBy(delta);return;}
     const now=performance.now();if(now-wheelTime>180)wheelDistance=0;wheelTime=now;
     wheelDistance+=delta;
@@ -331,8 +342,13 @@ export async function mountObservatory(root:HTMLElement){
     if(event.altKey||event.ctrlKey||event.metaKey)return;
     if((event.target as HTMLElement).closest('button,a,input,textarea,select'))return;
     if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp','Home','End','Enter',' '].includes(event.key))event.preventDefault();
-    if(event.key==='ArrowRight'||event.key==='ArrowDown')navigate(aimed()+1,Boolean(world?.isCalm()));
-    if(event.key==='ArrowLeft'||event.key==='ArrowUp')navigate(aimed()-1,Boolean(world?.isCalm()));
+    if(firstPerson&&world&&(event.key==='ArrowUp'||event.key==='ArrowDown')){
+      // Up walks towards your gaze, down walks away from it.
+      const side=world.lookSide(),step=event.key==='ArrowUp'?(side||1):(side?-side:-1);navigate(aimed()+step,true);
+    }else{
+      if(event.key==='ArrowRight'||event.key==='ArrowUp')navigate(aimed()+1,Boolean(world?.isCalm()));
+      if(event.key==='ArrowLeft'||event.key==='ArrowDown')navigate(aimed()-1,Boolean(world?.isCalm()));
+    }
     if(event.key==='Home')navigate(0);if(event.key==='End')navigate(archiveWorks.length-1);
     if(event.key==='Enter'||event.key===' ')openViewer();
   },{signal});
