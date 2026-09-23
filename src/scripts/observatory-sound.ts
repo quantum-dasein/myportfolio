@@ -87,7 +87,7 @@ export function createHallSound(){
     air.gain.gain.cancelScheduledValues(now);air.gain.gain.setValueAtTime(air.gain.gain.value,now);
     air.gain.gain.linearRampToValueAtTime(level,now+duration*.5);air.gain.gain.linearRampToValueAtTime(0,now+duration);
   }
-  let swellUntil=0;let breathTimer:ReturnType<typeof setInterval>|undefined;
+  let swellUntil=0,teleportUntil=0;let breathTimer:ReturnType<typeof setInterval>|undefined;
 
   return {
     frame(state:HallState){
@@ -107,6 +107,8 @@ export function createHallSound(){
     },
     // Teleport: a quick glassy arpeggio, falling as he leaves and rising as he lands.
     teleport(phase:'out'|'in'){
+      // Fast scrolling can fire these back to back; one arpeggio at a time.
+      if(!ctx||ctx.currentTime<teleportUntil)return;teleportUntil=ctx.currentTime+.6;
       const notes=[1760,1318.5,1108.7,880];(phase==='out'?notes:[...notes].reverse()).forEach((freq,i)=>chime(freq,.022,.3+i*.07));
       swell(phase==='out'?1800:300,phase==='out'?300:1800,.8,.12);swellUntil=(ctx?.currentTime??0)+.8;
     },

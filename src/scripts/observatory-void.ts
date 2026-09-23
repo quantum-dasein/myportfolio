@@ -376,6 +376,7 @@ export class ObservatoryWorld {
   /** Index the hall is heading to, so repeated key presses queue up naturally. */
   targetIndex(){return THREE.MathUtils.clamp(Math.round(this.target/GAP),0,this.bays.length-1);}
   isMoving(){return this.dragging||Math.abs(this.target-this.position)>.04;}
+  private astronautSettled(){return this.tele==='here'&&!this.hop&&this.astroIndex===this.index&&this.astroReady&&!this.isMoving();}
 
   private buildStars(){
     let seed=41027;const random=()=>((seed=seed*16807%2147483647)-1)/2147483646;
@@ -931,7 +932,15 @@ export class ObservatoryWorld {
   private updatePortal(time:number,dt:number,ov:number){
     const was=this.finale;
     if(this.calm)this.finale=this.finaleGoal?1:0;
-    else this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/5.2:-dt/1.6),0,1);
+    else{
+      // Scrolled to the end in one go: he may still be mid-leap or mid-teleport. The
+      // portal waits for him to land at the last work, then he walks in from there.
+      const hold=this.finaleGoal&&this.finale<=0&&!this.astronautSettled();
+      if(!hold){
+        if(this.finaleGoal&&this.finale<=0)this.finaleFrom.copy(this.astro);
+        this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/5.2:-dt/1.6),0,1);
+      }
+    }
     if(was<1&&this.finale>=1)this.onFinaleDone?.();
     if(was>0&&this.finale<=0){
       // Coming back out of the contact page: he beams in again in front of the last work.

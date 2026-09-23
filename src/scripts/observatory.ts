@@ -359,6 +359,7 @@ export async function mountObservatory(root:HTMLElement){
     lens.style.left=`${r.left-m.left}px`;lens.style.top=`${r.top-m.top+media.scrollTop}px`;lens.style.width=`${r.width}px`;lens.style.height=`${r.height}px`;
     if(lens.width!==Math.round(r.width*dpr))lens.width=Math.round(r.width*dpr);if(lens.height!==Math.round(r.height*dpr))lens.height=Math.round(r.height*dpr);
     const ctx=lens.getContext('2d')!;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,lens.width,lens.height);
+    media.classList.toggle('is-lens-on',lensMode!=='off');
     if(lensMode==='off'||!lensAt)return;
     if(!passes)passes=buildPasses();if(!passes)return;
     ctx.scale(dpr,dpr);const R=Math.max(70,Math.min(150,r.width*.13));
