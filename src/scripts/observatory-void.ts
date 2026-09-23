@@ -1295,7 +1295,7 @@ export class ObservatoryWorld {
     if(this.astroIndex<0||this.calm)this.astroIndex=this.index;
     this.updateTeleport(dt,ov,viewing);
     if(this.fp>.72)this.curator.root.visible=false;
-    if(this.finale>0){const d=smooth(.52,.62,this.finale);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
+    if(this.finale>0){const d=smooth(.53,.63,this.finale);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
     // He belongs to one work at a time and stands just off its left edge.
     const home=this.astroIndex;
     const spot=this.anchor(home,this.anchorScratch);let goalX=spot.x,goalZ=spot.y;
@@ -1312,15 +1312,18 @@ export class ObservatoryWorld {
       goalX=mix(hop.fromX,hop.toX,u);goalZ=mix(hop.fromZ,hop.toZ,u);lift=arc*hop.height;
       tuck=arc*.38+smooth(0,.08,hop.t)*(1-smooth(.1,.16,hop.t))*.22+smooth(.88,.93,hop.t)*(1-smooth(.95,1,hop.t))*.24;
     }
-    let finaleWalk=0;
+    let finaleWalk=0,diveW=0;
     if(this.finale>0){
       // He checks the tablet, walks to the portal, crouches and dives into the light.
       const t=this.finale,px=this.portalX()-.25,go=smooth(.07,.44,t);
       goalX=mix(this.finaleFrom.x,px,go);goalZ=mix(this.finaleFrom.y,2.2,go);
       finaleWalk=smooth(.06,.1,t)*(1-smooth(.41,.45,t));
-      const dive=THREE.MathUtils.clamp((t-.46)/.12,0,1),arc=Math.sin(Math.PI*dive);
-      goalZ=mix(goalZ,-.6,smooth(0,1,dive));lift=arc*1.1;
-      tuck=smooth(.43,.46,t)*(1-smooth(.46,.48,t))*.34+arc*.3;
+      // Crouch, spring, and fly feet-first-high through the frame: the body clears
+      // the portal's lower edge instead of landing on the floor behind it.
+      const dive=THREE.MathUtils.clamp((t-.46)/.14,0,1);
+      goalZ=mix(goalZ,-1,smooth(0,1,dive));lift=1.8*smooth(0,.55,dive)-.2*smooth(.55,1,dive);
+      tuck=smooth(.41,.45,t)*(1-smooth(.46,.49,t))*.42;
+      diveW=smooth(.46,.5,t);
     }
     this.landing=Math.max(0,this.landing-dt*2.2);
     if(!this.astroReady||this.calm||glide||hop||this.finale>0||this.tele!=='here'){this.astro.set(goalX,goalZ);this.astroReady=true;}
@@ -1355,8 +1358,10 @@ export class ObservatoryWorld {
     if(hop&&Math.hypot(stepX,stepZ)>.1)facing=Math.atan2(stepX,stepZ);
     if(this.finale>.02)facing=this.finale<.44?Math.atan2(this.portalX()-.25-this.astro.x,2.2-this.astro.y+.001):Math.PI;
     root.rotation.y=turnTo(root.rotation.y,facing,1-Math.exp(-dt*(intro<1?3:5)));
+    // Diving, the whole body tips forward into the light.
+    root.rotation.x=-.85*diveW;
     const attention=this.calm?0:(.35+.25*Math.sin(this.phase*.3))*(1-this.walk);
-    let pose:{yaw?:number;pitch?:number;wave?:number}|undefined;
+    let pose:{yaw?:number;pitch?:number;wave?:number;sit?:number;tablet?:number;dive?:number}|undefined;
     if(this.torchPower>.05&&!viewing){
       const dx=this.torchPoint.x-this.astro.x,dy=this.torchPoint.y-1.75,dz=this.torchPoint.z-this.astro.y;
       const yaw=Math.atan2(Math.sin(Math.atan2(dx,dz)-root.rotation.y),Math.cos(Math.atan2(dx,dz)-root.rotation.y));
@@ -1366,6 +1371,7 @@ export class ObservatoryWorld {
     if(stargaze>.01)pose={yaw:.25*stargaze,pitch:-.8*stargaze};
     if(ov>.3)pose={yaw:0,pitch:-.9*smooth(.3,.8,ov)};
     if(sit>.001)pose={...(pose??{}),sit,pitch:(pose?.pitch??0)*.7-.25*sit};
+    if(diveW>.001)pose={...(pose??{}),dive:diveW,pitch:.35*diveW};
     if(this.tabletW>.01){const t=this.tabletW;pose={...(pose??{}),tablet:t,yaw:mix(pose?.yaw??0,-.28,t),pitch:mix(pose?.pitch??0,.5,t)};}
     // The visor carries the colours of the work in front of him.
     const visor=root.userData.visorUniforms;if(visor)(visor.uVisorTint.value as THREE.Color).copy(this.spillColor).lerp(new THREE.Color('#8fa9c9'),.2);

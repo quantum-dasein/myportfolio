@@ -66,6 +66,11 @@ const SIT_POSE={drop:1.26,bones:[
 // Held in the right hand, the side the camera sees; mirrored axes of the left arm.
 const TABLET_POSE:[string,[number,number,number],number][]=[['RightArm',[0,1,0],.42],['RightForeArm',[0,1,0],1.45]];
 
+const DIVE_POSE:[string,[number,number,number],number][]=[
+  ['Spine1',[1,0,0],.5],['LeftUpLeg',[1,0,0],-1.25],['RightUpLeg',[1,0,0],-1.25],['LeftLeg',[1,0,0],1.9],['RightLeg',[1,0,0],1.9],
+  ['RightArm',[0,1,0],1.55],['LeftArm',[0,1,0],-1.55],['RightForeArm',[0,1,0],.2],['LeftForeArm',[0,1,0],-.2],
+];
+
 export function createAstronaut(){
   const root=new THREE.Group();root.name='RB Observatory astronaut';
   const cloth=textile();
@@ -242,7 +247,7 @@ export function createAstronaut(){
       activeBones=rig;gazeApplied=false;root.userData.astronautRig='mixamo';
     }catch{if(model)root.remove(model);root.userData.astronautRig='procedural';}
   };
-  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number;tablet?:number}){
+  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number;tablet?:number;dive?:number}){
     for(let i=touched.length-1;i>=0;i--)touched[i][0].quaternion.copy(touched[i][1]);touched.length=0;
     if(hipsMoved){activeBones.Hips.position.copy(hipsBase);hipsMoved=false;}
     // Undo our additive pose before the mixer writes the next animation sample.
@@ -283,6 +288,8 @@ export function createAstronaut(){
     // Holding the tablet up in front of the chest, forearm across the body.
     const hold=(pose?.tablet??0)*(1-sit);
     if(hold>.001)bend(TABLET_POSE,hold);
+    // In the air: knees tucked high, body leaning in, both arms reaching ahead.
+    const dive=pose?.dive??0;if(dive>.001)bend(DIVE_POSE,dive);
     gazeApplied=true;
     light.emissiveIntensity=dt>0?.7+Math.sin(phase*.45)*.08:.7;
     if(dt>0)visorUniforms.uVisorTime.value+=dt;

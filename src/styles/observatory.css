@@ -468,3 +468,14 @@ html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:non
 @media(max-width:600px){.obs-tour-caption{top:auto;bottom:112px;width:calc(100% - 24px)}.obs-tour-title{font-size:19px}.obs-tour-caption p{font-size:13px}.observatory .obs-tour-toggle{padding:0!important;width:44px;min-height:44px;justify-content:center}.observatory .obs-tour-toggle :is(.obs-en,.obs-de){display:none!important}.is-touring .obs-current,.is-touring .obs-actions,.is-touring .obs-journey{opacity:0;pointer-events:none}}
 .obs-tour-controls [data-obs-tour-open],.obs-tour-controls [data-obs-tour-open] *{color:#060708!important}
 @media(min-width:601px){.obs-tour-caption{left:5.5%;transform:translate(0,12px)}.is-touring .obs-tour-caption{transform:none}}
+
+/* Phones: the tour card is a slim bar at the very bottom, clear of the work. */
+@media(max-width:600px){
+  .obs-tour-caption{bottom:max(14px,env(safe-area-inset-bottom));padding:12px 14px 0;border-radius:16px}
+  .obs-tour-caption>span{font-size:9px}
+  .obs-tour-title{margin-top:4px;font-size:17px}
+  .obs-tour-caption p,.obs-tour-dots{display:none}
+  .obs-tour-controls{margin:10px 0 12px;gap:6px}
+  .obs-tour-controls button{min-width:34px;height:34px;padding:0 10px;font-size:11px}
+  .obs-tour-progress{margin:0 -14px}
+}
