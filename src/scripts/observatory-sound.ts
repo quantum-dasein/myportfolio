@@ -22,13 +22,16 @@ const LEVEL=.55;
 export function createHallSound(){
   let ctx:AudioContext|undefined,master:GainNode|undefined,air:{gain:GainNode;filter:BiquadFilterNode}|undefined;
   const pads:GainNode[]=[];
-  let filmOpen=false,lastLamp=0,lastPing=0,lastRooms='';
+  let own=true,filmOpen=false,lastLamp=0,lastPing=0,lastRooms='';
   const html=document.documentElement;
   const wanted=()=>html.classList.contains('rb-sound')&&!html.classList.contains('rb-calm')&&!document.hidden&&!filmOpen;
 
   function build(){
     const Ctor=window.AudioContext||(window as any).webkitAudioContext;if(!Ctor)return;
-    ctx=new Ctor({latencyHint:'playback'});
+    // Share the studio's context when it exists: two output streams side by side
+    // are what makes audio break up under load, on iOS in particular.
+    const shared=(window as any).__rbAudioContext?.() as AudioContext|null|undefined;
+    own=!shared;ctx=shared??new Ctor({latencyHint:'playback'});
     master=ctx.createGain();master.gain.value=0;
     const soften=ctx.createBiquadFilter();soften.type='lowpass';soften.frequency.value=2400;
     const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-20;limiter.ratio.value=6;
@@ -130,6 +133,6 @@ export function createHallSound(){
     comet(){[1318.5,1661.2,1975.5,2637].forEach((freq,i)=>chime(freq,.03,i*.06));},
     open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
     close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},
-    dispose(){clearInterval(breathTimer);void ctx?.close();},
+    dispose(){clearInterval(breathTimer);if(own)void ctx?.close();else master?.disconnect();},
   };
 }

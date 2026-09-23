@@ -75,7 +75,10 @@
     if (ctx) return ctx;
     const Ctor = window.AudioContext || (window as any).webkitAudioContext;
     if (!Ctor) return null;
-    ctx = new Ctor();
+    // A roomy output buffer: an ambient loop does not need 10 ms latency, and a
+    // small buffer is the first thing to stutter (a looping fragment) when a
+    // heavy WebGL page keeps the machine busy.
+    ctx = new Ctor({ latencyHint: "playback" });
     master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
@@ -85,6 +88,9 @@
     return ctx;
   }
 
+  // One context for the whole page: the gallery's synthesised hall plays through
+  // this one too, instead of opening a second output stream next to it.
+  (window as any).__rbAudioContext = () => ensureContext();
   async function load(key: keyof typeof SRC) {
     if (buffers.has(key) || !ctx) return;
     const res = await fetch(SRC[key]);

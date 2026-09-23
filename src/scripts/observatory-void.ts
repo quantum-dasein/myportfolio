@@ -276,7 +276,7 @@ export class ObservatoryWorld {
   sky?:THREE.Mesh<THREE.SphereGeometry,Shader>;planet?:THREE.Mesh<THREE.SphereGeometry,Shader>;
   autoplayBlocked=new Set<number>();
   // Adaptive quality: phones and weak GPUs step down instead of stuttering.
-  quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;dprScale=1;dprCeiling=1;fastWindows=0;
+  quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;dprScale=1;dprCeiling=1;fastWindows=0;lastUpAt=-1e9;
   roomWeights=[1,0,0,0];wasMoving=false;
   // Map view: the hall seen from the ceiling, every work laid out as a card.
   overview=0;overviewMotion?:{from:number;to:number;start:number;duration:number;resolve:()=>void};
@@ -1630,17 +1630,22 @@ export class ObservatoryWorld {
    */
   private watchQuality(time:number){
     const gap=time-this.lastRenderAt;this.lastRenderAt=time;
+    // Never reallocate the render targets in the middle of the dive through the portal.
+    if(this.finale>0&&this.finale<1){this.frameTimes.length=0;return;}
     if(time<this.qualityFrom||gap>250||document.hidden)return;
     this.frameTimes.push(gap);if(this.frameTimes.length<(this.mobile?30:60))return;
     const average=this.frameTimes.reduce((a,b)=>a+b,0)/this.frameTimes.length;this.frameTimes.length=0;
     const slow=this.mobile?1000/27:1000/48,fast=this.mobile?1000/29.5:1000/57;
     if(average>slow){
       this.fastWindows=0;this.qualityFrom=time+1200;
+      // Too slow right after climbing: that step was one too many. Stay below it
+      // for good instead of resizing up and down every few seconds.
+      if(time-this.lastUpAt<8000)this.dprCeiling=Math.max(.55,this.dprScale/1.08);
       if(this.dprScale>.72){this.dprScale=Math.max(.7,this.dprScale*.85);this.resize();return;}
       if(this.quality<3){this.setQuality(this.quality+1);return;}
       if(this.dprScale>.55){this.dprScale=Math.max(.55,this.dprScale*.88);this.resize();}
     }else if(average<fast&&this.dprScale<this.dprCeiling){
-      if(++this.fastWindows>=3){this.fastWindows=0;this.dprScale=Math.min(this.dprCeiling,this.dprScale*1.08);this.resize();this.qualityFrom=time+1500;}
+      if(++this.fastWindows>=3){this.fastWindows=0;this.dprScale=Math.min(this.dprCeiling,this.dprScale*1.08);this.resize();this.qualityFrom=time+1500;this.lastUpAt=time;}
     }else this.fastWindows=0;
   }
   private setQuality(level:number){
