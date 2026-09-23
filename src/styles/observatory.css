@@ -233,3 +233,12 @@ body:has(.observatory dialog[open]) rb-cursor-field{visibility:hidden!important}
 .is-first-person .obs-intro{opacity:0!important;pointer-events:none}
 @media(max-width:600px){.obs-eyes-toggle span{display:none}.obs-eyes-toggle{min-height:44px;min-width:44px;justify-content:center}.obs-hud-left,.obs-hud-right{top:30%;font-size:8px}.obs-hud-left i{display:none}}
 @media(prefers-reduced-motion:reduce){.obs-visor{transition:none}}
+
+/* iPhone review, round two. */
+.obs-viewer.is-web-case[open]{grid-auto-rows:max-content;align-content:start}
+.obs-viewer .obs-viewer-media{flex-shrink:0}
+.obs-viewer .obs-notes{width:100%;max-width:1160px;box-sizing:border-box}
+@media(max-width:600px){
+  .obs-toolbar .obs-eyes-toggle .obs-en,.obs-toolbar .obs-eyes-toggle .obs-de{display:none!important}
+  .obs-intro{top:max(17%,150px)}
+}

@@ -289,6 +289,8 @@ export class ObservatoryWorld {
     this.bloom=new UnrealBloomPass(new THREE.Vector2(size.x,size.y),.62,.62,.93);
     this.composer.addPass(this.bloom);
     this.finish=new ShaderPass(finishShader);this.composer.addPass(this.finish);
+    // Grain reads as blur on small, dense screens.
+    if(this.mobile){this.finish.uniforms.uGrain.value=.022;this.finish.uniforms.uVignette.value=.7;}
     this.composer.addPass(new OutputPass());
 
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(host);
@@ -302,7 +304,8 @@ export class ObservatoryWorld {
   private narrow(){return this.host.clientWidth<650;}
   private drawingSize(){
     const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight);
-    const ratio=Math.min(devicePixelRatio||1,this.mobile?2:1.6,Math.sqrt(2400000/(w*h)))*(this.quality>=1?.72:1);
+    // Phones render near their native density: a soft picture reads as a cheap one.
+    const ratio=Math.min(devicePixelRatio||1,this.mobile?2.6:1.6,Math.sqrt((this.mobile?2900000:2400000)/(w*h)))*(this.quality>=3?.75:1);
     return new THREE.Vector2(Math.round(w*ratio),Math.round(h*ratio));
   }
   private maxX(){return (this.bays.length-1)*GAP;}
@@ -414,8 +417,8 @@ export class ObservatoryWorld {
       texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());
       // Phones keep prints at 1024px: fifteen full-size textures can exhaust iOS memory.
       const source=texture.image as HTMLImageElement;
-      if(this.mobile&&source.width>1024){
-        const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=Math.round(1024*source.height/source.width);
+      if(this.mobile&&source.width>1600){
+        const canvas=document.createElement('canvas');canvas.width=1600;canvas.height=Math.round(1600*source.height/source.width);
         canvas.getContext('2d')!.drawImage(source,0,0,canvas.width,canvas.height);
         const small=new THREE.CanvasTexture(canvas);small.colorSpace=THREE.SRGBColorSpace;small.anisotropy=texture.anisotropy;
         texture.dispose();texture=small;
@@ -630,7 +633,8 @@ export class ObservatoryWorld {
   }
   /** Drag to look around inside the helmet; up tilts the view to the open sky. */
   lookBy(dx:number,dy:number){
-    this.lookGoal.x=THREE.MathUtils.clamp(this.lookGoal.x-dx*.0042,-1.35,1.35);
+    // Like a photo sphere on a phone: you take hold of the view and pull it.
+    this.lookGoal.x=THREE.MathUtils.clamp(this.lookGoal.x+dx*.0042,-1.35,1.35);
     this.lookGoal.y=THREE.MathUtils.clamp(this.lookGoal.y+dy*.0034,-.35,1.1);
     this.lastActivity=performance.now();
   }
@@ -993,9 +997,10 @@ export class ObservatoryWorld {
     const average=this.frameTimes.reduce((a,b)=>a+b,0)/this.frameTimes.length;this.frameTimes.length=0;
     if(average<(this.mobile?42:30))return;
     this.quality++;this.qualityFrom=time+2500;
-    if(this.quality===1)this.resize();
-    if(this.quality===2)this.bloom.enabled=false;
-    if(this.quality===3){
+    // Step down in the order you notice least: glow, then the mirror floor, then resolution.
+    if(this.quality===1)this.bloom.enabled=false;
+    if(this.quality===3)this.resize();
+    if(this.quality===2){
       this.floor.visible=false;
       this.plainFloor=new THREE.Mesh(new THREE.PlaneGeometry(260,120),new THREE.MeshBasicMaterial({color:this.background}));
       this.plainFloor.rotation.x=-Math.PI/2;this.plainFloor.position.z=-20;this.scene.add(this.plainFloor);
