@@ -248,6 +248,7 @@ export class ObservatoryWorld {
   finale=0;finaleGoal=false;signal?:THREE.Mesh<THREE.CylinderGeometry,Shader>;finaleFrom=new THREE.Vector2();
   portal=new THREE.Group();portalMembrane!:THREE.Mesh<THREE.PlaneGeometry,Shader>;portalPool!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
   portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
+  beamCore!:THREE.Mesh<THREE.CylinderGeometry,Shader>;beamRings:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>[]=[];
   onFinaleDone?:()=>void;onFinaleBack?:()=>void;portalAura!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
   exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();shipPlaced=false;
   visitorStars:VisitorStar[]=[];visitorGroup=new THREE.Group();visitorPoints!:THREE.Points<THREE.BufferGeometry,Shader>;
@@ -517,7 +518,7 @@ export class ObservatoryWorld {
     this.lastInput=-1e9;this.dragging=false;this.skipIntro();this.lastActivity=performance.now();
     // Cinematic departure: he lifts the tablet and taps before the hall moves.
     const visible=mode==='teleport'&&this.tele==='here'&&!this.hop&&this.intro>=1&&this.focus===0&&this.overview===0&&!this.isMoving()&&to!==this.astroIndex*GAP;
-    if(visible){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');this.departure={to,at:performance.now()+650};}
+    if(visible){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');this.beamSparks(false);this.departure={to,at:performance.now()+650};}
     else{this.departure=undefined;this.depart(to);}
     void this.prepare(index);
   }
@@ -559,6 +560,10 @@ export class ObservatoryWorld {
   }
 
   /* ---------- Teleport ---------- */
+  private beamSparks(arriving:boolean){
+    const at=arriving?this.anchor(this.astroIndex,new THREE.Vector2()):this.astro;
+    this.puff(at.x,at.y,1.6,.1,new THREE.Color('#9fdcff'));
+  }
   /** Move to a work instantly (from inside the viewer), and settle the camera on it. */
   jumpTo(index:number){
     index=THREE.MathUtils.clamp(index,0,this.bays.length-1);
@@ -570,18 +575,46 @@ export class ObservatoryWorld {
   }
   private buildTeleport(){
     const additive={transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false} as const;
-    this.column=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,4.2,48,1,true),new THREE.ShaderMaterial({
+    // The beam has relief: twin helix strands winding up a glassy shell, scan bands
+    // rising through it, a hot inner core, and rings of light that climb and fade.
+    this.column=new THREE.Mesh(new THREE.CylinderGeometry(.66,.66,4.2,64,1,true),new THREE.ShaderMaterial({
       uniforms:{uIntensity:{value:0},uTime:{value:0},uColor:{value:new THREE.Color('#8fd8ff')}},vertexShader:beamVertex,
       fragmentShader:`uniform float uIntensity,uTime;uniform vec3 uColor;varying vec2 vUv;varying vec3 vN;varying vec3 vV;
-        void main(){float rim=pow(clamp(1.-abs(dot(normalize(vN),normalize(vV))),0.,1.),1.4);float bands=.5+.5*sin(vUv.y*46.-uTime*16.);
-        float fade=smoothstep(0.,.08,vUv.y)*(1.-smoothstep(.5,1.,vUv.y));gl_FragColor=vec4(uColor*(rim*.9+.15)*(.55+.45*bands)*fade*uIntensity*.8,1.);}`,
+        float line(float v,float w){return smoothstep(1.-w,1.,v);}
+        void main(){
+          float rim=pow(clamp(1.-abs(dot(normalize(vN),normalize(vV))),0.,1.),1.6);
+          float a=vUv.x*6.28318,y=vUv.y;
+          float helix=line(sin(a*2.+y*18.-uTime*7.),.06)+line(sin(-a*2.+y*18.-uTime*7.+3.14),.06);
+          float scan=line(fract(y*4.-uTime*1.6),.05)*.9;
+          float grain=.6+.4*sin(y*140.-uTime*22.);
+          float fade=smoothstep(0.,.06,y)*(1.-smoothstep(.55,1.,y));
+          vec3 col=uColor*(rim*.7+.08)*grain+vec3(.85,.97,1.)*(helix*.9+scan*.6);
+          gl_FragColor=vec4(col*fade*uIntensity,1.);}`,
       ...additive,side:THREE.DoubleSide}));
-    this.ring=new THREE.Mesh(new THREE.PlaneGeometry(3.2,3.2),new THREE.ShaderMaterial({
+    const core=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,4.2,24,1,true),new THREE.ShaderMaterial({
+      uniforms:{uIntensity:{value:0},uTime:{value:0}},vertexShader:beamVertex,
+      fragmentShader:`uniform float uIntensity,uTime;varying vec2 vUv;varying vec3 vN;varying vec3 vV;
+        void main(){float f=abs(dot(normalize(vN),normalize(vV)));float y=vUv.y;
+          float fade=smoothstep(0.,.05,y)*(1.-smoothstep(.5,1.,y));float flicker=.8+.2*sin(uTime*31.+y*20.);
+          gl_FragColor=vec4(vec3(.8,.95,1.)*pow(f,2.)*fade*flicker*uIntensity*1.4,1.);}`,
+      ...additive}));
+    this.column.add(core);this.beamCore=core;
+    for(let i=0;i<4;i++){
+      const halo=new THREE.Mesh(new THREE.RingGeometry(.72,.8,64),new THREE.MeshBasicMaterial({color:'#bfeaff',transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,side:THREE.DoubleSide}));
+      halo.rotation.x=-Math.PI/2;halo.frustumCulled=false;this.beamRings.push(halo);this.scene.add(halo);
+    }
+    this.ring=new THREE.Mesh(new THREE.PlaneGeometry(3.4,3.4),new THREE.ShaderMaterial({
       uniforms:{uIntensity:{value:0},uTime:{value:0},uColor:{value:new THREE.Color('#8fd8ff')}},vertexShader:plainVertex,
       fragmentShader:`uniform float uIntensity,uTime;uniform vec3 uColor;varying vec2 vUv;
-        void main(){float r=length(vUv-.5)*2.;float wave=exp(-((r-fract(uTime*1.3))*9.)*((r-fract(uTime*1.3))*9.))*(1.-r);float core=exp(-r*r*5.);
-        gl_FragColor=vec4(uColor*(wave*1.2+core*.5)*uIntensity*step(r,1.),1.);}`,...additive}));
-    this.ring.rotation.x=-Math.PI/2;
+        float hair(float d,float w){float aa=fwidth(d)*1.2;return 1.-smoothstep(w,w+aa,abs(d));}
+        void main(){vec2 p=vUv-.5;float r=length(p)*2.;float a=atan(p.y,p.x);
+          float wave=exp(-((r-fract(uTime*1.3))*9.)*((r-fract(uTime*1.3))*9.))*(1.-r);float core=exp(-r*r*6.);
+          // A runic dial: two rings, ticks turning one way and a dashed arc the other.
+          float rings=hair(r-.62,.006)+hair(r-.78,.004)*.7;
+          float ticks=step(.9,fract((a+uTime*.5)*6.3662))*step(.64,r)*step(r,.74);
+          float dash=step(.5,fract((a-uTime*.8)*3.183))*hair(r-.9,.008);
+          float g=wave*1.1+core*.55+(rings+ticks*.8+dash*.6)*1.3;
+          gl_FragColor=vec4(uColor*g*uIntensity*step(r,1.),1.);}`,...additive}));    this.ring.rotation.x=-Math.PI/2;
     this.column.visible=this.ring.visible=false;this.scene.add(this.column,this.ring);
     this.signal=new THREE.Mesh(new THREE.CylinderGeometry(.16,.55,60,32,1,true),this.column.material.clone());
     (this.signal.material.uniforms.uColor.value as THREE.Color).set('#9fdcff');this.signal.visible=false;this.signal.frustumCulled=false;this.scene.add(this.signal);
@@ -628,10 +661,10 @@ export class ObservatoryWorld {
     if(this.tele==='here'&&!this.hop){
       const home=this.anchor(this.astroIndex,this.anchorScratch);
       const drift=Math.hypot(home.x-this.astro.x,home.y-this.astro.y);
-      if(!viewing&&ov>0&&this.index!==this.astroIndex){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');}
+      if(!viewing&&ov>0&&this.index!==this.astroIndex){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');this.beamSparks(false);}
       else if(this.astroReady&&!viewing&&ov===0&&(this.index!==this.astroIndex||drift>2.5)){
         const steps=Math.abs(this.index-this.astroIndex);
-        if(steps>3){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');}
+        if(steps>3){this.tele='leaving';this.teleT=0;this.onTeleport?.('out');this.beamSparks(false);}
         else{
           const to=this.anchor(this.index,new THREE.Vector2()),span=Math.max(1,steps);
           this.hop={fromX:this.astro.x,fromZ:this.astro.y,toX:to.x,toZ:to.y,t:0,dur:.8+.16*span,height:1.3+.45*span,index:this.index};
@@ -641,7 +674,7 @@ export class ObservatoryWorld {
     }else if(this.tele==='leaving'){
       this.teleT=Math.min(1,this.teleT+dt/.85);if(this.teleT>=1){this.tele='gone';this.teleT=0;}
     }else if(this.tele==='gone'){
-      if(ov===0&&!this.isMoving()&&!viewing){this.astroIndex=this.index;this.tele='arriving';this.teleT=0;this.approach=0;this.onTeleport?.('in');}
+      if(ov===0&&!this.isMoving()&&!viewing){this.astroIndex=this.index;this.tele='arriving';this.teleT=0;this.approach=0;this.onTeleport?.('in');this.beamSparks(true);}
     }else{
       this.teleT=Math.min(1,this.teleT+dt/1.15);if(this.teleT>=1)this.tele='here';
     }
@@ -892,7 +925,11 @@ export class ObservatoryWorld {
     if(this.calm)this.finale=this.finaleGoal?1:0;
     else this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/5.2:-dt/1.6),0,1);
     if(was<1&&this.finale>=1)this.onFinaleDone?.();
-    if(was>0&&this.finale<=0)this.onFinaleBack?.();
+    if(was>0&&this.finale<=0){
+      // Coming back out of the contact page: he beams in again in front of the last work.
+      if(!this.calm){this.astroIndex=this.index;this.astroReady=false;this.hop=undefined;this.tele='arriving';this.teleT=0;this.approach=0;this.onTeleport?.('in');this.beamSparks(true);}
+      this.onFinaleBack?.();
+    }
     const px=this.portalX(),near=Math.abs(this.camera.position.x-px)<GAP*3.2;
     this.portal.visible=(near||this.finale>0)&&ov<1;if(!this.portal.visible)return;
     // Intriguing lines, one after another, until you step through.
@@ -1295,7 +1332,7 @@ export class ObservatoryWorld {
     if(this.astroIndex<0||this.calm)this.astroIndex=this.index;
     this.updateTeleport(dt,ov,viewing);
     if(this.fp>.72)this.curator.root.visible=false;
-    if(this.finale>0){const d=smooth(.53,.63,this.finale);this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
+    if(this.finale>0){const d=this.finaleGoal?smooth(.53,.63,this.finale):1;this.dissolve.uDissolve.value=Math.max(this.dissolve.uDissolve.value,d);this.curator.root.visible=d<.999;}
     // He belongs to one work at a time and stands just off its left edge.
     const home=this.astroIndex;
     const spot=this.anchor(home,this.anchorScratch);let goalX=spot.x,goalZ=spot.y;
@@ -1385,6 +1422,8 @@ export class ObservatoryWorld {
     this.column.position.set(this.astro.x,2.1,this.astro.y);this.ring.position.set(this.astro.x,.03,this.astro.y);
     const beam=this.tele==='leaving'?smooth(.3,.55,this.teleT)*(1-smooth(.85,1,this.teleT)):this.tele==='arriving'?smooth(0,.12,this.teleT)*(1-smooth(.55,1,this.teleT)):0;
     this.column.material.uniforms.uIntensity.value=beam;this.column.material.uniforms.uTime.value=this.elapsed;this.column.visible=beam>.001;
+    this.beamCore.material.uniforms.uIntensity.value=beam;this.beamCore.material.uniforms.uTime.value=this.elapsed;
+    this.beamRings.forEach((halo,i)=>{const k=(this.elapsed*.55+i/this.beamRings.length)%1;halo.visible=beam>.001;halo.position.set(this.astro.x,.1+k*3.6,this.astro.y);halo.scale.setScalar(1+Math.sin(k*Math.PI)*.35);halo.material.opacity=beam*Math.sin(k*Math.PI)*.8;});
     const puff=Math.max(beam,this.landing*.5*(1-this.fp));
     this.ring.material.uniforms.uIntensity.value=puff;this.ring.material.uniforms.uTime.value=this.elapsed;this.ring.visible=puff>.001;
     (this.contact.material as THREE.MeshBasicMaterial).opacity=(1-this.dissolve.uDissolve.value)*(1-this.fp);

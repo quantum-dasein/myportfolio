@@ -479,3 +479,8 @@ html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:non
   .obs-tour-controls button{min-width:34px;height:34px;padding:0 10px;font-size:11px}
   .obs-tour-progress{margin:0 -14px}
 }
+/* A lighter tour card: frosted glass that reads over the dark hall. */
+.obs-tour-caption{background:linear-gradient(160deg,rgba(64,84,104,.62),rgba(22,30,40,.72));border-color:rgba(170,222,255,.32);box-shadow:0 18px 50px -18px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.12)}
+.obs-tour-caption>span{color:#bfeaff}
+.obs-tour-controls button:not([data-obs-tour-open]){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+.obs-tour-caption{z-index:5}
