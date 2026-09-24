@@ -134,6 +134,8 @@ export async function mountObservatory(root:HTMLElement){
   stage.addEventListener('pointerdown',()=>stopTour(),{signal});  // Crossing a gate: the name of the room you enter, large and brief, like a film title.
   const roomCard=root.querySelector<HTMLElement>('[data-obs-room-card]')!;
   let pendingRoom=-1,announcedRoom=-1,announcedAt=-1e9;
+  // Once it has played it is done: leaving the map (display:none → block) must not replay a stale card.
+  roomCard.addEventListener('animationend',event=>{if(event.target===roomCard)roomCard.classList.remove('is-on');},{signal});
   function showRoomCard(room:number){
     if(mapping||viewer.open||opening||root.classList.contains('is-intro'))return;
     const info=archiveRooms[room],lang=de()?'de':'en';
@@ -656,7 +658,8 @@ export async function mountObservatory(root:HTMLElement){
     if(new URLSearchParams(location.search).has('reel'))current=0;
     update();
     if(bootFailed){fallback();return;}
-    const reel=new URLSearchParams(location.search).has('reel');if(reel)root.classList.add('is-reel');
+    const reelMode=new URLSearchParams(location.search).get('reel'),reel=reelMode!==null;
+    if(reel)root.classList.add(reelMode==='ui'?'is-reel-ui':'is-reel');
     let intro=reel;try{intro=reel||!sessionStorage.getItem('rb-observatory-intro');}catch{}
     world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
     world.onFrame=state=>sound.frame(state);world.onSettle=room=>{sound.arrive(room);if(room!==announcedRoom&&performance.now()-announcedAt>2500){announcedRoom=room;announcedAt=performance.now();showRoomCard(room);sound.gate();}pendingRoom=-1;};world.onTeleport=phase=>sound.teleport(phase);void loadStars();// The gate ripples on every crossing, but the room is only announced once you have settled in it.
@@ -683,19 +686,24 @@ export async function mountObservatory(root:HTMLElement){
       try{sessionStorage.setItem('rb-observatory-intro','1');}catch{}
     }
     if(reel){
-      // Showreel: a scripted tour for screen capture, with the interface hidden.
+      // Showreel: a scripted tour for screen capture (?reel hides the interface,
+      // ?reel=ui keeps it so the film reads as a website).
       const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+      const glide=async(el:HTMLElement,to:number,ms:number)=>{const from=el.scrollTop,n=Math.round(ms/16);for(let k=1;k<=n;k++){const t=k/n,e=t<.5?4*t**3:1-(-2*t+2)**3/2;el.scrollTop=from+(to-from)*e;await wait(16);}};
       (window as any).__reelDone=false;
-      await wait(1800);
-      for(const i of [1,2,3])(navigate(i),await wait(2300));
-      navigate(6,false,'teleport');await wait(3600);
-      navigate(7);await wait(2600);navigate(8);await wait(2600);
-      await enterMap();await wait(2600);await leaveMap(9);await wait(3200);
-      setFirstPerson(true);await wait(2600);world.lookBy(-260,-160);await wait(2200);world.lookBy(260,160);await wait(1200);
-      navigate(10);await wait(2600);navigate(11);await wait(2400);
-      setFirstPerson(false);await wait(2200);
-      navigate(12,false,'teleport');await wait(3400);navigate(13);await wait(2300);navigate(14);await wait(2600);
-      setFinale(true);await wait(3500);
+      await wait(1400);
+      navigate(1);await wait(2300);navigate(2);await wait(2600);
+      await openViewer();await wait(2000);
+      const makingTop=viewer.scrollTop+making.getBoundingClientRect().top-viewer.getBoundingClientRect().top;
+      await glide(viewer,Math.max(0,makingTop-110),1600);await wait(1700);
+      await glide(viewer,0,900);await wait(300);await closeViewer();await wait(2300);
+      navigate(7,false,'teleport');await wait(3900);navigate(8);await wait(2400);
+      navigate(9);await wait(3800);
+      await enterMap();await wait(3000);await leaveMap(12);await wait(3400);
+      setFirstPerson(true);await wait(2300);world.lookBy(-220,-120);await wait(1900);world.lookBy(220,120);await wait(1100);
+      setFirstPerson(false);await wait(2100);
+      navigate(13);await wait(2200);navigate(14);await wait(2200);navigate(15);await wait(2600);
+      setFinale(true);await wait(7600);
       (window as any).__reelDone=true;
     }
   }catch(error){console.warn('The Observatory: showing the accessible collection.',error);world?.dispose();fallback();}

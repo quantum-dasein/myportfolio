@@ -506,3 +506,6 @@ html:has(.observatory.is-ready){touch-action:pan-x pan-y;overscroll-behavior:non
   .obs-intro p,.obs-intro-rule{display:none!important}
   .obs-room-sign{display:none}
 }
+
+/* Showreel with the interface: only the pointer is hidden. */
+.observatory.is-reel-ui .obs-stage{cursor:none!important}html:has(.observatory.is-reel-ui) :is(.rb-cursor,[class*=cursor]){visibility:hidden!important}
