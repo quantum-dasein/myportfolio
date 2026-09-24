@@ -11,7 +11,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 interface Props {
   video: string;
-  sequence?: string;
+  /** Short-GOP encode used for scrubbing on desktop (keyframe every few frames,
+   *  so a seek decodes a handful of frames instead of seconds of them). */
+  scrubVideo?: string;
   frames?: number;
   poster: string;
   eyebrowKey?: string;
@@ -22,10 +24,10 @@ interface Props {
   text?: string;
 }
 
-const { video, poster, sequence, frames = 360, eyebrowKey, titleKey, textKey, eyebrow, title, text } = Astro.props;
+const { video, scrubVideo, poster, frames = 900, eyebrowKey, titleKey, textKey, eyebrow, title, text } = Astro.props;
 ---
 
-<section class="scrub" data-scrub data-sequence={sequence} data-frames={frames}>
+<section class="scrub" data-scrub data-scrub-film={scrubVideo} data-frames={frames}>
   <div class="scrub-sticky">
     <video
       class="scrub-vid"
@@ -37,7 +39,6 @@ const { video, poster, sequence, frames = 360, eyebrowKey, titleKey, textKey, ey
       aria-hidden="true"
       data-scrub-video></video>
 
-    <canvas class="scrub-vid scrub-sequence" data-scrub-canvas width="1280" height="720" hidden aria-hidden="true"></canvas>
     <div class="scrub-veil" aria-hidden="true"></div>
 
     <div class="scrub-copy">
@@ -79,19 +80,17 @@ const { video, poster, sequence, frames = 360, eyebrowKey, titleKey, textKey, ey
     /* Graded, not buried: the first pass crushed it to near-black and the work
        stopped being visible. Keep contrast and pull the colour back, but let
        the render actually read. */
-    filter: contrast(1.12) brightness(0.92) saturate(0.62);
+    filter: contrast(1.06) brightness(1.04) saturate(0.82);
   }
-
-  .scrub-sequence[hidden] { display: none; }
 
   .scrub-veil {
     position: absolute;
     inset: 0;
     /* Only enough scrim to keep the copy legible on the left. */
     background:
-      radial-gradient(120% 90% at 68% 46%, transparent 0%, transparent 42%, rgba(0, 0, 0, 0.55) 100%),
-      linear-gradient(90deg, rgba(4, 4, 5, 0.88), rgba(4, 4, 5, 0.34) 42%, transparent 66%),
-      linear-gradient(0deg, rgba(4, 4, 5, 0.72), transparent 40%);
+      radial-gradient(120% 90% at 68% 46%, transparent 0%, transparent 50%, rgba(0, 0, 0, 0.38) 100%),
+      linear-gradient(90deg, rgba(4, 4, 5, 0.74), rgba(4, 4, 5, 0.22) 40%, transparent 60%),
+      linear-gradient(0deg, rgba(4, 4, 5, 0.6), transparent 34%);
   }
 
   /* faint scan of the film gate */
