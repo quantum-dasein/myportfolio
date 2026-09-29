@@ -71,6 +71,17 @@ const DIVE_POSE:[string,[number,number,number],number][]=[
   ['RightArm',[0,1,0],1.55],['LeftArm',[0,1,0],-1.55],['RightForeArm',[0,1,0],.2],['LeftForeArm',[0,1,0],-.2],
 ];
 
+// Weightless: the neutral body posture of people in orbit — hips and knees half
+// bent, arms drifting up and forward, the spine curled a little.
+const FLOAT_POSE:[string,[number,number,number],number][]=[
+  ['Spine1',[1,0,0],.14],['LeftUpLeg',[1,0,0],-.8],['RightUpLeg',[1,0,0],-.62],['LeftUpLeg',[0,0,1],.13],['RightUpLeg',[0,0,1],-.13],
+  ['LeftLeg',[1,0,0],.95],['RightLeg',[1,0,0],1.2],
+  ['RightArm',[0,1,0],.5],['LeftArm',[0,1,0],-.5],['RightArm',[0,0,1],-.72],['LeftArm',[0,0,1],.72],
+  ['RightForeArm',[0,1,0],.65],['LeftForeArm',[0,1,0],-.65],
+];
+// The left arm stretched out towards something he has noticed.
+const REACH_POSE:[string,[number,number,number],number][]=[['LeftArm',[0,1,0],-1.25],['LeftArm',[0,0,1],.35],['LeftForeArm',[0,1,0],-.15]];
+
 export function createAstronaut(){
   const root=new THREE.Group();root.name='RB Observatory astronaut';
   const cloth=textile();
@@ -247,7 +258,7 @@ export function createAstronaut(){
       activeBones=rig;gazeApplied=false;root.userData.astronautRig='mixamo';
     }catch{if(model)root.remove(model);root.userData.astronautRig='procedural';}
   };
-  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number;tablet?:number;dive?:number}){
+  return {root,load,dispose(){disposed=true;mixer?.stopAllAction();if(mixer)mixer.uncacheRoot(mixer.getRoot());},animate(phase:number,walking:number,look:number,dt=.016,attention=0,pose?:{yaw?:number;pitch?:number;wave?:number;sit?:number;tablet?:number;dive?:number;float?:number;flail?:number;reach?:number;time?:number}){
     for(let i=touched.length-1;i>=0;i--)touched[i][0].quaternion.copy(touched[i][1]);touched.length=0;
     if(hipsMoved){activeBones.Hips.position.copy(hipsBase);hipsMoved=false;}
     // Undo our additive pose before the mixer writes the next animation sample.
@@ -290,6 +301,18 @@ export function createAstronaut(){
     if(hold>.001)bend(TABLET_POSE,hold);
     // In the air: knees tucked high, body leaning in, both arms reaching ahead.
     const dive=pose?.dive??0;if(dive>.001)bend(DIVE_POSE,dive);
+    // Weightless drift, flailing when grabbed, reaching out: used by the 404.
+    // The arm holding the tablet stays at the chest instead of drifting up with the rest.
+    const drift=pose?.float??0;
+    if(drift>.001){bend(FLOAT_POSE.filter(([name])=>!/^Right(Fore)?Arm$/.test(name)),drift);bend(FLOAT_POSE.filter(([name])=>/^Right(Fore)?Arm$/.test(name)),drift*(1-hold));}
+    const reach=pose?.reach??0;if(reach>.001)bend(REACH_POSE,reach);
+    const flail=pose?.flail??0;
+    if(flail>.001){const t=pose?.time??0;bend([
+      ['RightArm',[0,0,1],Math.sin(t*7.3)*.7],['LeftArm',[0,0,1],Math.sin(t*6.1+1.3)*.7],
+      ['RightForeArm',[0,1,0],.5+Math.sin(t*8.2)*.5],['LeftForeArm',[0,1,0],-.5-Math.sin(t*7.7+.6)*.5],
+      ['LeftUpLeg',[1,0,0],Math.sin(t*5.2)*.6],['RightUpLeg',[1,0,0],Math.sin(t*5.2+2.4)*.6],
+      ['LeftLeg',[1,0,0],.6+Math.sin(t*6.4)*.4],['RightLeg',[1,0,0],.6+Math.sin(t*6.4+1.9)*.4],
+    ],flail);}
     gazeApplied=true;
     light.emissiveIntensity=dt>0?.7+Math.sin(phase*.45)*.08:.7;
     if(dt>0)visorUniforms.uVisorTime.value+=dt;
