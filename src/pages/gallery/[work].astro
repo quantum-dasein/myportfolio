@@ -22,7 +22,7 @@ const description = `${name} — ${focus ?? work.detail?.en ?? room.subtitle.en}
   mode="deck"
   title={`${name} | The Observatory — Rodion Belousov`}
   description={description}
-  image={`/og/works/${work.id}.jpg`}
+  image={work.portalHref ? work.img : `/og/works/${work.id}.jpg`}
   canonicalPath="/gallery/"
   imageAlt={`${name} in The Observatory, the portfolio archive of Rodion Belousov`}
 >

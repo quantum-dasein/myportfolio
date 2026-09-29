@@ -7,7 +7,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createCurator } from './observatory-curator';
-import { archiveWorks } from '../data/observatory';
+import { archiveWorks, archiveRooms } from '../data/observatory';
 import { shipModel, workModels } from '../data/observatory-models';
 export type VisitorStar={u:number;v:number;city:string;country:string;t:number};
 import type { HallState } from './observatory-sound';
@@ -39,12 +39,14 @@ type Bay={
 };
 
 // Each room has its own weather. Values blend continuously as the camera travels.
-const ROOMS=[
-  {fog:'#0a0806',density:.022,beam:1,dust:1,grid:0,holo:0,bloom:.62,projector:0},
-  {fog:'#05080c',density:.018,beam:1.45,dust:.45,grid:0,holo:0,bloom:.55,projector:0},
-  {fog:'#0b0607',density:.019,beam:.45,dust:1.2,grid:0,holo:0,bloom:.62,projector:1},
-  {fog:'#03090b',density:.016,beam:.3,dust:.35,grid:1,holo:1,bloom:.78,projector:0},
-];
+const WEATHER={
+  atmospheres:{fog:'#0a0806',density:.022,beam:1,dust:1,grid:0,holo:0,bloom:.62,projector:0},
+  objects:{fog:'#05080c',density:.018,beam:1.45,dust:.45,grid:0,holo:0,bloom:.55,projector:0},
+  motion:{fog:'#0b0607',density:.019,beam:.45,dust:1.2,grid:0,holo:0,bloom:.62,projector:1},
+  systems:{fog:'#03090b',density:.016,beam:.3,dust:.35,grid:1,holo:1,bloom:.78,projector:0},
+  models:{fog:'#060b0a',density:.016,beam:.8,dust:.35,grid:0,holo:0,bloom:.55,projector:0},
+};
+const ROOMS=archiveRooms.map(room=>WEATHER[room.id]);
 type Atmosphere=Omit<typeof ROOMS[number],'fog'>&{fog:THREE.Color};
 
 const screenVertex=`uniform float uBend;uniform float uHover;varying vec2 vUv;
@@ -250,6 +252,7 @@ export class ObservatoryWorld {
   portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
   beamCore!:THREE.Mesh<THREE.CylinderGeometry,Shader>;beamRings:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>[]=[];
   onFinaleDone?:()=>void;onFinaleBack?:()=>void;portalAura!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
+  modelEntryIndex=-1;modelEntryResolve?: (completed:boolean)=>void;
   exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();shipPlaced=false;
   visitorStars:VisitorStar[]=[];visitorGroup=new THREE.Group();visitorPoints!:THREE.Points<THREE.BufferGeometry,Shader>;
   spark!:THREE.Sprite;sparkFlight?:{star:VisitorStar;from:THREE.Vector3;t:number;resolve:()=>void};
@@ -277,7 +280,7 @@ export class ObservatoryWorld {
   autoplayBlocked=new Set<number>();
   // Adaptive quality: phones and weak GPUs step down instead of stuttering.
   quality=0;frameTimes:number[]=[];lastRenderAt=0;qualityFrom=0;plainFloor?:THREE.Mesh;dprScale=1;dprCeiling=1;fastWindows=0;lastUpAt=-1e9;
-  roomWeights=[1,0,0,0];wasMoving=false;
+  roomWeights:number[]=ROOMS.map((_,i)=>i===0?1:0);wasMoving=false;
   // Map view: the hall seen from the ceiling, every work laid out as a card.
   overview=0;overviewMotion?:{from:number;to:number;start:number;duration:number;resolve:()=>void};
   overviewCam=new THREE.Vector3();overviewLook=new THREE.Vector3();mapSlots:THREE.Vector3[]=[];mapHover=-1;
@@ -910,7 +913,28 @@ export class ObservatoryWorld {
     this.portalMembrane=membrane;this.portalPool=pool;
   }
   /** Just past the last work, close enough that its light already shows at the edge. */
-  portalX(){return (archiveWorks.length-1)*GAP+7.6;}
+  portalX(){return this.modelEntryIndex>=0?this.modelEntryIndex*GAP:(archiveWorks.length-1)*GAP+7.6;}
+  /** Reuse the contact portal's walk, crouch, dive and camera flight at this frame. */
+  enterModelPortal(){
+    this.cancelModelPortal();this.skipIntro();this.stopPreview();this.dragging=false;
+    this.focus=0;this.focusMotion?.resolve();this.focusMotion=undefined;
+    this.modelEntryIndex=this.index;
+    this.target=this.index*GAP;
+    this.portal.position.x=this.index*GAP-((archiveWorks.length-1)*GAP+7.6);
+    this.portal.position.z=.15;
+    this.bays[this.index].screen.visible=false;
+    this.setFinale(true);
+    return new Promise<boolean>(resolve=>{this.modelEntryResolve=resolve;});
+  }
+  cancelModelPortal(){
+    if(this.modelEntryIndex<0)return;
+    this.bays[this.modelEntryIndex].screen.visible=true;
+    this.modelEntryIndex=-1;this.finale=0;this.finaleGoal=false;this.finaleOut=0;
+    this.portal.position.set(0,0,0);this.dissolve.uDissolve.value=0;
+    this.curator.root.visible=true;this.curator.root.rotation.x=0;
+    this.astroReady=false;this.tele='here';this.hop=undefined;
+    this.modelEntryResolve?.(false);this.modelEntryResolve=undefined;
+  }
   setPortalTexts(lines:string[]){this.portalLines=lines;this.portalLineAt=-1e9;}
   private drawPortalLine(line:string){
     const ctx=this.portalCanvas.getContext('2d');if(!ctx)return;
@@ -941,7 +965,10 @@ export class ObservatoryWorld {
         this.finale=THREE.MathUtils.clamp(this.finale+(this.finaleGoal?dt/5.2:-dt/1.6),0,1);
       }
     }
-    if(was<1&&this.finale>=1)this.onFinaleDone?.();
+    if(was<1&&this.finale>=1){
+      if(this.modelEntryIndex>=0){this.modelEntryResolve?.(true);this.modelEntryResolve=undefined;}
+      else this.onFinaleDone?.();
+    }
     if(was>0&&this.finale<=0){
       // Coming back out of the contact page: he beams in again in front of the last work.
       if(!this.calm){this.astroIndex=this.index;this.astroReady=false;this.hop=undefined;this.tele='arriving';this.teleT=0;this.approach=0;this.onTeleport?.('in');this.beamSparks(true);}
@@ -955,7 +982,7 @@ export class ObservatoryWorld {
     const ph=Math.min(1,Math.max(0,(time-this.portalLineAt)/cycle));
     const u=this.portalMembrane.material.uniforms;
     u.uTime.value=this.elapsed;u.uOpen.value=smooth(.3,.8,this.finale);
-    u.uTextAlpha.value=smooth(0,.14,ph)*(1-smooth(.86,1,ph));
+    u.uTextAlpha.value=this.modelEntryIndex>=0?0:smooth(0,.14,ph)*(1-smooth(.86,1,ph));
     u.uIntensity.value=smooth(.4,.8,this.intro)*(1-ov)*(this.calm?.8:1);
     this.portalPool.material.uniforms.uIntensity.value=.34*(1+this.finale*2)*u.uIntensity.value;
     this.portalAura.material.uniforms.uIntensity.value=(.42+.1*Math.sin(this.elapsed*1.3)+this.finale*.8)*u.uIntensity.value;this.portalAura.material.uniforms.uTime.value=this.elapsed;
@@ -1090,7 +1117,7 @@ export class ObservatoryWorld {
 
   /* ---------- Living cinema ---------- */
   private sampleFilm(time:number,dt:number){
-    const playing=Boolean(this.preview&&this.previewTexture&&this.previewIndex>=0&&this.bays[this.previewIndex].room===2);
+    const playing=Boolean(this.preview&&this.previewTexture&&this.previewIndex>=0&&archiveRooms[this.bays[this.previewIndex].room].id==='motion');
     this.cinemaMix=THREE.MathUtils.damp(this.cinemaMix,playing?1:0,playing?2.5:4,dt);
     if(playing&&time-this.filmSampledAt>130){
       this.filmSampledAt=time;
@@ -1110,7 +1137,7 @@ export class ObservatoryWorld {
 
   /* ---------- Gates between rooms ---------- */
   private buildGates(){
-    const palette=['#e2c48f','#9cc3e6','#e59ab3','#7fe3d4'];
+    const palette=archiveRooms.map(room=>({atmospheres:'#e2c48f',objects:'#9cc3e6',motion:'#e59ab3',systems:'#7fe3d4',models:'#a6d8cb'})[room.id]);
     archiveWorks.forEach((work,i)=>{
       const next=archiveWorks[i+1];if(!next||next.roomIndex===work.roomIndex)return;
       const mesh=new THREE.Mesh(new THREE.PlaneGeometry(24,8.4),new THREE.ShaderMaterial({
@@ -1589,7 +1616,7 @@ export class ObservatoryWorld {
 
     // The cinema room plays its films as soon as you stop in front of one.
     const work=archiveWorks[this.index];
-    if(settled&&!this.calm&&this.focus===0&&ov===0&&intro>=1&&bay.room===2&&work.video&&this.previewIndex!==this.index&&!this.autoplayBlocked.has(this.index)&&this.autoplayAllowed())this.previewFilm(true);
+    if(settled&&!this.calm&&this.focus===0&&ov===0&&intro>=1&&archiveRooms[bay.room].id==='motion'&&work.video&&this.previewIndex!==this.index&&!this.autoplayBlocked.has(this.index)&&this.autoplayAllowed())this.previewFilm(true);
 
     const pr=this.renderer.getPixelRatio();
     this.stars.position.x=x*.92;const stars=this.stars.material.uniforms;stars.uTime.value=this.elapsed;stars.uPixelRatio.value=pr;stars.uLight.value=smooth(0,.5,intro)*(1-w.grid*.5)*this.daylight.stars;
@@ -1766,6 +1793,7 @@ export class ObservatoryWorld {
   pause(){cancelAnimationFrame(this.frame);this.stopPreview();}
   resume(){if(!this.disposed){cancelAnimationFrame(this.frame);this.lastTime=this.lastActivity=performance.now();this.frame=requestAnimationFrame(this.tick);}}
   dispose(){
+    this.cancelModelPortal();
     if(this.disposed)return;this.disposed=true;this.focusMotion?.resolve();this.focusMotion=undefined;this.introResolve?.();this.pause();this.resizeObserver.disconnect();
     this.renderer.domElement.removeEventListener('webglcontextlost',this.contextLost);
     const geometries=new Set<THREE.BufferGeometry>();const materials=new Set<THREE.Material>();const textures=new Set<THREE.Texture>();

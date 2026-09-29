@@ -33,7 +33,7 @@ const { start } = Astro.props;
       <p><span class="obs-en">Spaces. Objects. Moving images.<br />A walk through the work of Rodion Belousov.</span><span class="obs-de">Räume. Objekte. Bewegte Bilder.<br />Ein Rundgang durch Rodion Belousovs Arbeiten.</span></p>
       <span class="obs-intro-rule"></span>
     </div>
-    <div class="obs-room-sign" id="obs-room-meta"><span data-obs-room-number>01 / 04</span><span data-obs-room-name>Atmospheres</span><i></i></div>
+    <div class="obs-room-sign" id="obs-room-meta"><span data-obs-room-number>01 / {String(archiveRooms.length).padStart(2,'0')}</span><span data-obs-room-name>Atmospheres</span><i></i></div>
     <div class="obs-instructions"><span class="obs-scroll-symbol" aria-hidden="true"></span><span class="obs-en">Scroll or drag to explore · Click the artwork to enter</span><span class="obs-de">Scrollen oder ziehen · Zum Öffnen auf das Werk klicken</span></div>
     <div class="obs-current" aria-live="polite" aria-atomic="true">
       <span class="obs-eyebrow" id="obs-current-meta"><span data-obs-number>01</span><span class="obs-divider">/</span><span data-obs-category>3D Interior</span></span>
@@ -44,7 +44,7 @@ const { start } = Astro.props;
       <button class="obs-open" data-obs-open><span class="obs-en">View work</span><span class="obs-de">Werk ansehen</span><ObservatoryIcon name="open" /></button>
       <div class="obs-stepper"><button data-obs-prev aria-label="Previous work"><ObservatoryIcon name="previous" /></button><span><b data-obs-position>01</b> / {String(archiveWorks.length).padStart(2,'0')}</span><button data-obs-next aria-label="Next work"><ObservatoryIcon name="next" /></button></div>
     </div>
-   <nav class="obs-journey" aria-label="Exhibition rooms">
+   <nav class="obs-journey" aria-label="Exhibition rooms" style={`--obs-room-count:${archiveRooms.length}`}>
       {archiveRooms.map((room, roomIndex) => <button data-obs-room={roomIndex} aria-current={roomIndex===0 ? 'step' : undefined}><span class="obs-room-track"><i data-obs-room-progress={roomIndex}></i></span><span class="obs-room-label"><b>0{roomIndex+1}</b><span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span><small>{String(room.ids.length).padStart(2,'0')}</small></span></button>)}
     </nav>
     <span class="obs-signature">CURATED BY RODION BELOUSOV · VIENNA</span>
@@ -52,7 +52,7 @@ const { start } = Astro.props;
 
   <dialog class="obs-index" data-obs-index-dialog aria-labelledby="obs-index-title" data-lenis-prevent>
     <header><div><span class="obs-eyebrow">THE OBSERVATORY / INDEX</span><h2 id="obs-index-title"><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2></div><button data-obs-close-index aria-label="Close index"><ObservatoryIcon name="close" /></button></header>
-    {archiveRooms.map((room, roomIndex) => <section><h3>0{roomIndex+1} / <span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span></h3><div class="obs-index-works">{archiveWorks.filter(work => work.roomIndex===roomIndex).map(work => <button data-obs-select={archiveWorks.indexOf(work)}><img src={work.img} alt="" loading="lazy" width="160" height="100" /><span><b>{title(work)}</b><small>{work.video ? 'FILM' : work.type==='case' ? 'WEB / CASE STUDY' : '3D / STILL'}</small></span><ObservatoryIcon name="open" /></button>)}</div></section>)}
+    {archiveRooms.map((room, roomIndex) => <section><h3>0{roomIndex+1} / <span class="obs-en">{room.en}</span><span class="obs-de">{room.de}</span></h3><div class="obs-index-works">{archiveWorks.filter(work => work.roomIndex===roomIndex).map(work => <button data-obs-select={archiveWorks.indexOf(work)}><img src={work.img} alt="" loading="lazy" width="160" height="100" /><span><b>{title(work)}</b><small>{work.portalHref ? '3D / INTERACTIVE' : work.video ? 'FILM' : work.type==='case' ? 'WEB / CASE STUDY' : '3D / STILL'}</small></span><ObservatoryIcon name="open" /></button>)}</div></section>)}
     <footer class="obs-credits"><span class="obs-en">Custom procedural spacesuit, woven textile textures and equipment. Rig &amp; animation:</span><span class="obs-de">Prozeduraler Raumanzug mit gewebten Texturen und Ausrüstung. Rig &amp; Animation:</span> <a href="https://www.mixamo.com/" target="_blank" rel="noopener">Mixamo / Xbot</a>, via <a href="https://threejs.org/examples/webgl_animation_skinning_additive_blending.html" target="_blank" rel="noopener">Three.js</a>.</footer>
   </dialog>
 

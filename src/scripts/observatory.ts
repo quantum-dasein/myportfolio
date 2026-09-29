@@ -54,8 +54,10 @@ export async function mountObservatory(root:HTMLElement){
     text('[data-obs-number]',String(current+1).padStart(2,'0'));
     text('[data-obs-position]',String(current+1).padStart(2,'0'));
     text('[data-obs-title]',workTitle(work));
-    text('[data-obs-category]',dict()[work.kCat]??(work.video?'Motion':'3D'));
-    text('[data-obs-room-number]',`0${work.roomIndex+1} / 04`);
+    text('[data-obs-category]',work.portalHref?(de()?'Interaktiver Raum':'Interactive space'):dict()[work.kCat]??(work.video?'Motion':'3D'));
+    text('[data-obs-open] .obs-en',work.portalHref?'Enter the room':'View work');
+    text('[data-obs-open] .obs-de',work.portalHref?'Raum betreten':'Werk ansehen');
+    text('[data-obs-room-number]',`0${work.roomIndex+1} / ${String(archiveRooms.length).padStart(2,'0')}`);
     text('[data-obs-room-name]',room[lang]);text('[data-obs-hud-room]',room[lang]);text('[data-obs-hud-work]',`${String(current+1).padStart(2,'0')} / ${String(archiveWorks.length).padStart(2,'0')}`);text('[data-obs-room-description]',room.subtitle[lang]);
     root.querySelectorAll<HTMLButtonElement>('[data-obs-room]').forEach(button=>{
       const ri=Number(button.dataset.obsRoom);if(ri===work.roomIndex)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
@@ -94,7 +96,8 @@ export async function mountObservatory(root:HTMLElement){
   // Guided tour: the astronaut leads through six works, each with its title and a line
   // of context. Step back or forward, open the work, or end it; wheel, keys and drags
   // on the hall hand control back.
-  const TOUR=[0,1,7,9,12,14];const TOUR_HOLD=7000;
+  const workIndex=(id:string)=>archiveWorks.findIndex(work=>work.id===id);
+  const TOUR=['obsidian-residence','lake-como-interior-film','alpine-equipment-product-film','refurbed-product-ecosystem-concept','tarjima-live-lecture-translation','academy'].map(workIndex);const TOUR_HOLD=7000;
   const tourButton=root.querySelector<HTMLButtonElement>('[data-obs-tour]')!,tourCaption=root.querySelector<HTMLElement>('[data-obs-tour-caption]')!;
   const tourBar=tourCaption.querySelector<HTMLElement>('[data-obs-tour-bar]')!,tourDots=tourCaption.querySelector<HTMLElement>('[data-obs-tour-dots]')!;
   let touring=false,tourStep=0,tourTimer:ReturnType<typeof setTimeout>|undefined;
@@ -139,7 +142,7 @@ export async function mountObservatory(root:HTMLElement){
   function showRoomCard(room:number){
     if(mapping||viewer.open||opening||root.classList.contains('is-intro'))return;
     const info=archiveRooms[room],lang=de()?'de':'en';
-    roomCard.querySelector('[data-obs-card-num]')!.textContent=`0${room+1} / 04`;
+    roomCard.querySelector('[data-obs-card-num]')!.textContent=`0${room+1} / ${String(archiveRooms.length).padStart(2,'0')}`;
     roomCard.querySelector('[data-obs-card-name]')!.textContent=info[lang];
     roomCard.querySelector('[data-obs-card-sub]')!.textContent=info.subtitle[lang];
     roomCard.classList.remove('is-on');void roomCard.offsetWidth;roomCard.classList.add('is-on');
@@ -407,6 +410,9 @@ export async function mountObservatory(root:HTMLElement){
   let swapping=false;
   nextButton.addEventListener('click',async()=>{
     if(swapping||!viewer.open||current>=archiveWorks.length-1)return;swapping=true;
+    if(archiveWorks[current+1].portalHref){
+      const target=current+1;await closeViewer();world?.jumpTo(target);setCurrent(target);swapping=false;return;
+    }
     const content=[...viewer.children] as HTMLElement[];
     await Promise.all(content.map(el=>el.animate([{opacity:1},{opacity:0,transform:'translateY(-12px)'}],{duration:260,easing:'ease-in',fill:'forwards'}).finished.catch(()=>{})));
     const target=current+1;world?.jumpTo(target);setCurrent(target);
@@ -432,6 +438,24 @@ export async function mountObservatory(root:HTMLElement){
     viewerTrigger=document.activeElement as HTMLElement;
     world?.stopPreview();clearTimeout(hoverTimer);
     const work=archiveWorks[current];
+    if(work.portalHref){
+      // While he walks into the frame, the room and its exhibit are already on their way.
+      for(const [href,as] of [[work.portalHref,'document'],['/models/exhibits/kitchen-modern-25.glb','fetch']] as const){
+        const link=document.createElement('link');link.rel='prefetch';link.href=href;link.as=as;if(as==='fetch')link.crossOrigin='anonymous';document.head.append(link);
+      }
+      stopTour();sound.open();
+      if(firstPerson)setFirstPerson(false);
+      const crossed=await world?.enterModelPortal();
+      if(token!==openToken||!crossed)return;
+      const veil=document.createElement('div');veil.className='obs-model-crossing';
+      veil.setAttribute('aria-hidden','true');document.body.append(veil);
+      const calm=world?.isCalm()||matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const animation=veil.animate([{opacity:0},{opacity:1}],{duration:calm?0:240,easing:'ease-out',fill:'forwards'});
+      await animation.finished.catch(()=>{});
+      if(token!==openToken){veil.remove();return;}
+      addEventListener('pageshow',()=>veil.remove(),{once:true});
+      location.assign(work.portalHref);return;
+    }
     const decoded=loadViewer();
     await Promise.all([world?.focusWork(),decoded]);
     if(token!==openToken||!root.isConnected||!root.classList.contains('is-ready')){return;}
@@ -626,7 +650,7 @@ export async function mountObservatory(root:HTMLElement){
     (world.tilt??=new (world.pointer.constructor as any)()).set(x,y);
   },{signal});
   document.addEventListener('keydown',event=>{
-    if(opening){if(event.key==='Escape'){openToken++;opening=false;void returnToHall();}return;}
+    if(opening){if(event.key==='Escape'){openToken++;opening=false;world?.cancelModelPortal();void returnToHall();}return;}
     if(mapping){if(event.key==='Escape'){event.preventDefault();void leaveMap();}return;}
     if(firstPerson&&event.key==='Escape'&&!viewer.open&&!indexDialog.open){event.preventDefault();setFirstPerson(false);return;}
     if(inFinale){if(['Escape','ArrowLeft','ArrowDown'].includes(event.key)){event.preventDefault();setFinale(false);}return;}
@@ -646,7 +670,7 @@ export async function mountObservatory(root:HTMLElement){
   },{signal});
   addEventListener('rb:langchange',()=>{update();labelCompare();if(viewer.open)fillViewer();},{signal});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){world?.pause();video.pause();}else if(!viewer.open&&!indexDialog.open)world?.resume();},{signal});
-  addEventListener('pagehide',event=>{openToken++;opening=false;root.classList.remove('is-focusing');world?.restoreView();world?.pause();video.pause();if(!(event as PageTransitionEvent).persisted){world?.dispose();sound.dispose();events.abort();}},{signal});
+  addEventListener('pagehide',event=>{openToken++;opening=false;root.classList.remove('is-focusing');world?.cancelModelPortal();world?.restoreView();world?.pause();video.pause();if(!(event as PageTransitionEvent).persisted){world?.dispose();sound.dispose();events.abort();}},{signal});
   addEventListener('pageshow',event=>{if((event as PageTransitionEvent).persisted)world?.resume();},{signal});
   update();
   try {
@@ -698,11 +722,11 @@ export async function mountObservatory(root:HTMLElement){
       await glide(viewer,Math.max(0,makingTop-110),1600);await wait(1700);
       await glide(viewer,0,900);await wait(300);await closeViewer();await wait(2300);
       navigate(7,false,'teleport');await wait(3900);navigate(8);await wait(2400);
-      navigate(9);await wait(3800);
-      await enterMap();await wait(3000);await leaveMap(12);await wait(3400);
+      navigate(workIndex('refurbed-product-ecosystem-concept'));await wait(3800);
+      await enterMap();await wait(3000);await leaveMap(workIndex('tarjima-live-lecture-translation'));await wait(3400);
       setFirstPerson(true);await wait(2300);world.lookBy(-220,-120);await wait(1900);world.lookBy(220,120);await wait(1100);
       setFirstPerson(false);await wait(2100);
-      navigate(13);await wait(2200);navigate(14);await wait(2200);navigate(15);await wait(2600);
+      navigate(workIndex('bridge'));await wait(2200);navigate(workIndex('fidic'));await wait(2200);navigate(workIndex('academy'));await wait(2600);
       setFinale(true);await wait(7600);
       (window as any).__reelDone=true;
     }

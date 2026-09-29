@@ -39,6 +39,7 @@ ${localizedUrl("/contact/", "/de/kontakt/", "en", "0.9")}
 ${localizedUrl("/de/kontakt/", "/contact/", "de", "0.9")}
 ${url("/notes/", "0.8", "weekly")}
 ${url("/gallery/", "0.8", "monthly", galleryMedia)}
+${url("/gallery/models/", "0.7", "monthly")}
 </urlset>`;
 
   return new Response(xml, {

@@ -1,0 +1,49 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { archiveRooms } from '../../data/observatory';
+import '../../styles/model-room.css';
+---
+<Layout mode="deck" title="The Model Room | Interactive 3D Gallery — Rodion Belousov" description="Enter the Model Room: walk through an intimate 3D exhibition, orbit the first kitchen installation and inspect its individual objects and geometry." image="/portfolio/model-portal.webp">
+  <section class="model-room" data-model-room aria-label="The Model Room">
+    <div class="mr-stage" data-mr-stage></div>
+    <header class="mr-header">
+      <a href="/gallery/model-room/" class="mr-back"><span aria-hidden="true">↗</span><span class="mr-en">Back to the archive</span><span class="mr-de">Zurück ins Archiv</span></a>
+      <span class="mr-edition">THE OBSERVATORY / ROOM {String(archiveRooms.findIndex(room=>room.id==='models')+1).padStart(2,'0')}</span>
+    </header>
+    <div class="mr-title"><p class="mr-eyebrow"><span class="mr-en">A collection in three dimensions</span><span class="mr-de">Eine Sammlung in drei Dimensionen</span></p><h1>The Model Room<span>.</span></h1></div>
+    <div class="mr-loading" data-mr-loading role="status" aria-live="polite">
+      <img src="/portfolio/model-portal.webp" width="1440" height="840" alt="A softly lit frame opening into the Model Room" />
+      <p data-mr-status><span class="mr-en">Opening the room…</span><span class="mr-de">Der Raum öffnet sich…</span></p>
+      <a href="/gallery/models/" data-mr-retry hidden><span class="mr-en">Try again</span><span class="mr-de">Erneut versuchen</span></a>
+    </div>
+    <div class="mr-controls" data-mr-controls hidden>
+      <div class="mr-mode" role="group" aria-label="Camera mode">
+        <button type="button" data-mr-walk aria-pressed="true"><span class="mr-en">Walk</span><span class="mr-de">Gehen</span></button>
+        <button type="button" data-mr-inspect aria-pressed="false"><span class="mr-en">Inspect</span><span class="mr-de">Untersuchen</span></button>
+      </div>
+      <button type="button" data-mr-reset><span class="mr-en">Reset view</span><span class="mr-de">Ansicht zurücksetzen</span></button>
+      <button type="button" data-mr-wire aria-pressed="false"><span class="mr-en">Wireframe</span><span class="mr-de">Drahtgitter</span></button>
+      <button type="button" data-mr-light aria-pressed="false"><span class="mr-en">Studio light</span><span class="mr-de">Studiolicht</span></button>
+      <div class="mr-zoom" data-mr-zoom hidden><button type="button" data-mr-closer aria-label="Zoom in">+</button><button type="button" data-mr-farther aria-label="Zoom out">−</button></div>
+    </div>
+    <aside class="mr-caption">
+      <div><span class="mr-eyebrow">EXHIBIT 001 / <span class="mr-en">MATERIAL STUDY</span><span class="mr-de">MATERIALSTUDIE</span></span><h2>White &amp; Wood<span>Kitchen Modern 25</span></h2></div>
+      <div class="mr-caption-detail"><p><span class="mr-en">Oak, stone and brushed metal.<br />A study in light, proportion and construction.</span><span class="mr-de">Eiche, Stein und gebürstetes Metall.<br />Eine Studie über Licht, Proportion und Konstruktion.</span></p><p class="mr-selection" data-mr-selection aria-live="polite"></p></div>
+    </aside>
+    <p class="mr-hint" data-mr-hint><span class="mr-en">WASD / arrows to move · Drag to look · Click an object to inspect</span><span class="mr-de">WASD / Pfeile zum Gehen · Ziehen zum Umsehen · Objekt anklicken zum Untersuchen</span></p>
+    <div class="mr-touch" data-mr-touch hidden role="group" aria-label="Move around the room">
+      <button type="button" data-mr-move="forward" aria-label="Move forward">↑</button><button type="button" data-mr-move="left" aria-label="Move left">←</button><button type="button" data-mr-move="back" aria-label="Move back">↓</button><button type="button" data-mr-move="right" aria-label="Move right">→</button>
+    </div>
+    <noscript><p class="mr-nojs">JavaScript is needed to explore the room. <a href="/gallery/">Return to the archive</a>.</p></noscript>
+  </section>
+</Layout>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-model-room]');
+  if (root) {
+    import('../../scripts/model-room').then(({ mountModelRoom }) => mountModelRoom(root)).catch(() => {
+      const status = root.querySelector<HTMLElement>('[data-mr-status]')!;
+      status.textContent = document.documentElement.lang.startsWith('de') ? 'Der Raum konnte nicht geöffnet werden.' : 'The room could not be opened.';
+      root.querySelector<HTMLElement>('[data-mr-retry]')!.hidden = false;
+    });
+  }
+</script>

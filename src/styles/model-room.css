@@ -1,0 +1,53 @@
+.model-room{--mr-ink:#e8eee9;--mr-muted:#a1afa8;--mr-accent:#b5d5c4;position:relative;height:100svh;color:var(--mr-ink);font-family:var(--font-display);background:#080f10}
+.model-room [hidden]{display:none!important}.mr-de{display:none}html[lang^="de"] .mr-en{display:none}html[lang^="de"] .mr-de{display:inline}
+body:has(.model-room) .site-fx,body:has(.model-room) rb-cursor-field{display:none}
+html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.model-room) :is(a,button){cursor:pointer}.mr-stage canvas{cursor:grab}.mr-stage canvas:active{cursor:grabbing}
+.mr-stage{position:fixed;inset:0;touch-action:none}.mr-stage canvas{display:block;width:100%;height:100%;outline:none}.mr-stage canvas:focus-visible{outline:1px solid var(--mr-accent);outline-offset:-5px}
+.mr-header{position:absolute;top:112px;left:5.5%;right:5.5%;display:flex;align-items:center;justify-content:space-between;gap:20px;z-index:2}
+.mr-back{display:flex;align-items:center;gap:13px;font-size:13px;color:var(--mr-ink);text-decoration:none}.mr-back>span:first-child{transform:rotate(-135deg);font-size:24px}.mr-back:hover{color:var(--mr-accent)}
+.mr-edition,.mr-eyebrow{font:10px/1.6 ui-monospace,monospace;letter-spacing:.16em;color:var(--mr-muted)}
+.mr-title{position:absolute;top:175px;left:5.5%;pointer-events:none}.mr-title h1{font-size:clamp(26px,3.3vw,52px);font-weight:400;letter-spacing:-.045em;margin:8px 0}.mr-title h1>span{color:var(--mr-accent)}
+.mr-controls{position:absolute;top:174px;right:5.5%;display:flex;gap:8px;flex-wrap:wrap;justify-content:end;max-width:520px;z-index:2}
+.model-room button{font:500 12px/1.2 var(--font-display);color:var(--mr-ink);border:1px solid #d4ead226;border-radius:999px;background:#0b151be0;backdrop-filter:blur(12px);padding:12px 17px;min-height:44px;cursor:pointer}
+.model-room button:hover{background:#294039}.model-room button[aria-pressed="true"]{color:#12251c;background:#d6e5d9;border-color:#d6e5d9}
+.model-room a:focus-visible,.model-room button:focus-visible{outline:2px solid var(--mr-accent);outline-offset:4px}.mr-mode{display:flex;gap:4px}.mr-zoom{display:flex;gap:4px}.mr-zoom button{min-width:44px}
+.mr-caption{position:absolute;left:5.5%;right:5.5%;bottom:70px;display:flex;justify-content:space-between;align-items:end;gap:36px;pointer-events:none}
+.mr-caption h2{font-size:clamp(24px,3.1vw,44px);font-weight:400;letter-spacing:-.035em;margin-top:9px}.mr-caption h2>span{display:block;font-size:12px;letter-spacing:.01em;color:var(--mr-muted);margin-top:9px}.mr-caption-detail{max-width:340px;font-size:12px;line-height:1.65;color:#bdc9c3}.mr-selection{color:#e9e2c2;min-height:20px;margin-top:9px}
+.mr-hint{position:absolute;left:5.5%;bottom:25px;font-size:11px;color:var(--mr-muted);pointer-events:none}
+.model-room:before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,#070d1099,transparent 35%,transparent 64%,#070d10ed);pointer-events:none}.mr-title,.mr-caption,.mr-hint{z-index:1}
+.mr-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#080f10;z-index:1}.mr-loading img{width:min(420px,65vw);height:auto;opacity:.85}.mr-loading p{font-size:13px;color:var(--mr-accent)}.mr-loading a{font-size:13px;color:var(--mr-ink);text-decoration:underline}
+.mr-nojs{position:absolute;top:52%;left:20%;right:20%;text-align:center;z-index:3;background:#080f10;padding:24px}
+.mr-touch{position:absolute;left:5.5%;bottom:180px;z-index:2;display:grid;grid-template-columns:repeat(3,44px);gap:5px;touch-action:none}.mr-touch button{border-radius:50%;padding:0;width:44px;font-size:22px;user-select:none;-webkit-user-select:none;touch-action:none}.mr-touch button:first-child{grid-column:2}.mr-touch button:nth-child(2){grid-row:2;grid-column:1}.mr-touch button:nth-child(3){grid-row:2;grid-column:2}.mr-touch button:nth-child(4){grid-row:2;grid-column:3}
+@media(max-width:850px){.mr-controls{top:250px;left:5.5%;right:auto;justify-content:start}.mr-title{top:165px}.mr-edition{font-size:8px}.mr-caption-detail{max-width:270px}.mr-title h1{font-size:35px}}
+@media(max-width:600px){.mr-header{top:87px}.mr-back{font-size:11px}.mr-edition{display:none}.mr-title{top:135px}.mr-eyebrow{font-size:8px}.mr-title h1{font-size:30px}.mr-controls{top:213px;gap:5px;right:5.5%;max-width:none}.model-room button{font-size:11px;padding:10px 12px}.mr-caption{bottom:73px;gap:12px}.mr-caption h2{font-size:25px}.mr-caption-detail{max-width:43%;font-size:10px;line-height:1.4}.mr-caption-detail>p:first-child{display:none}.mr-caption h2>span{font-size:10px}.mr-hint{right:5.5%;font-size:10px;line-height:1.5;bottom:22px}.mr-touch{bottom:178px}.mr-loading img{width:80vw}.mr-loading p{max-width:80%;text-align:center}.mr-zoom button{min-width:44px}}
+@media(max-height:600px){.mr-title{top:125px}.mr-title .mr-eyebrow{display:none}.mr-title h1{font-size:25px}.mr-controls{top:180px}.mr-caption{bottom:50px}.mr-caption h2{font-size:21px}.mr-caption-detail>p:first-child{display:none}.mr-touch{bottom:140px}.mr-hint{bottom:12px}}
+@media(prefers-reduced-motion:reduce){.model-room *{animation:none!important;transition:none!important}}
+
+/* The room opens out of the luminous frame into a quiet exhibition. */
+.model-room[data-state="ready"] .mr-stage{animation:mr-arrive 1.4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes mr-arrive{from{opacity:0;filter:blur(9px)}to{opacity:1;filter:blur(0)}}
+.mr-caption{padding-top:23px;border-top:1px solid #d8e5d021}
+.mr-title .mr-eyebrow{color:#b5c6bc}.mr-title h1{font-size:clamp(26px,2.8vw,43px)}
+.mr-mode{padding:3px;border:1px solid #d4ead226;border-radius:999px;background:#111c1de0}
+.mr-mode button{border:0;min-height:38px;padding-top:10px;padding-bottom:10px}
+.mr-controls{align-items:center}.mr-loading:after{content:'';width:120px;height:1px;background:linear-gradient(90deg,transparent,#c8e7d3,transparent);animation:mr-loading 1.4s ease-in-out infinite}
+@keyframes mr-loading{50%{opacity:.3;transform:scaleX(.5)}}
+.model-room[data-state="error"] .mr-loading:after{display:none}
+@media(min-width:851px) and (max-width:1200px){.mr-controls{top:250px}.mr-title{top:160px}}
+@media(max-width:600px){.mr-controls{top:206px;max-width:360px}.mr-mode{padding:2px}.mr-mode button{min-height:36px}.mr-title h1{font-size:29px}.mr-caption{padding-top:17px}}
+
+/* Arriving through the portal: the loading screen is the portal's own light, continuing the crossing
+   from the archive, and it clears as the camera steps out of the rear frame. */
+.mr-loading{background:radial-gradient(ellipse 60% 55% at 50% 48%,#3f8f86 0%,#1d4a45 32%,#0a1718 70%,#080f10 100%)}
+.mr-loading:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 48%,#dffcf6cc 0,#9fe8dc55 9%,transparent 28%);animation:mr-portal-breathe 2.6s ease-in-out infinite;pointer-events:none}
+.mr-loading img{display:none}
+.mr-loading p{position:relative;font:500 11px/1.6 var(--font-display);letter-spacing:.2em;text-transform:uppercase;color:#e6fffa;text-shadow:0 1px 12px #0009}
+@keyframes mr-portal-breathe{50%{opacity:.55;transform:scale(1.06)}}
+.model-room[data-state="ready"] .mr-stage{animation:mr-arrive 2.2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes mr-arrive{from{opacity:0;filter:brightness(3) saturate(.4) blur(6px)}to{opacity:1;filter:none}}
+.mr-exit-veil{position:fixed;inset:0;z-index:50;pointer-events:none;background:radial-gradient(ellipse at center,#e8fffb 0%,#7fd8cc 30%,#10302d 80%);opacity:0}
+/* Crosshair while the pointer is captured. */
+.mr-cross{position:fixed;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border:1.5px solid #ffffffcc;border-radius:50%;box-shadow:0 0 6px #000a;opacity:0;pointer-events:none;z-index:3;transition:opacity .2s}
+.mr-cross.is-on{opacity:.85}
+.model-room.is-locked .mr-stage canvas{cursor:none}
+.model-room.is-locked .mr-controls{opacity:.35;transition:opacity .3s}

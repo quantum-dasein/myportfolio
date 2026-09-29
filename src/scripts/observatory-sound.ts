@@ -9,14 +9,16 @@
  * noise beds and no fast modulation, which read as hiss and engine rattle.
  */
 export type HallState={speed:number;rooms:number[];focus:number;lamp:number};
+import { archiveRooms } from '../data/observatory';
 
 // One chord per room, all in A so crossing rooms never clashes.
-const CHORDS=[
-  [110,164.81,220,277.18],   // Atmospheres: A major, warm and low
-  [146.83,220,293.66,329.63],// Objects: D add9, open and still
-  [110,130.81,164.81,196],   // Moving images: A minor 7, a cinema dusk
-  [220,329.63,440,493.88],   // Digital worlds: high, airy fifths
-];
+const CHORDS=archiveRooms.map(room=>({
+  atmospheres:[110,164.81,220,277.18],
+  objects:[146.83,220,293.66,329.63],
+  motion:[110,130.81,164.81,196],
+  systems:[220,329.63,440,493.88],
+  models:[110,164.81,246.94,329.63],
+})[room.id]);
 const LEVEL=.55;
 
 export function createHallSound(){
@@ -45,8 +47,9 @@ export function createHallSound(){
     // Pads: detuned triangle pairs, a slow breathing filter per room.
     CHORDS.forEach((chord,room)=>{
       const pad=ctx!.createGain();pad.gain.value=0;
-      const tone=ctx!.createBiquadFilter();tone.type='lowpass';tone.frequency.value=room===3?1600:700;tone.Q.value=.4;
-      const sway=ctx!.createOscillator();sway.frequency.value=.05+room*.013;const swayDepth=ctx!.createGain();swayDepth.gain.value=room===3?500:220;
+      const digital=archiveRooms[room].id==='systems';
+      const tone=ctx!.createBiquadFilter();tone.type='lowpass';tone.frequency.value=digital?1600:700;tone.Q.value=.4;
+      const sway=ctx!.createOscillator();sway.frequency.value=.05+room*.013;const swayDepth=ctx!.createGain();swayDepth.gain.value=digital?500:220;
       sway.connect(swayDepth).connect(tone.frequency);sway.start();
       chord.forEach((freq,n)=>{for(const detune of [-6,6]){
         const osc=ctx!.createOscillator();osc.type=n===0?'sine':'triangle';osc.frequency.value=freq;osc.detune.value=detune;
@@ -103,7 +106,7 @@ export function createHallSound(){
     },
     arrive(room:number){
       if(!ctx)return;const now=ctx.currentTime;if(now-lastPing<.4)return;lastPing=now;
-      chime([880,587.33,659.25,987.77][room]??880,.045);
+      chime(({atmospheres:880,objects:587.33,motion:659.25,systems:987.77,models:880})[archiveRooms[room]?.id]??880,.045);
     },
     // Teleport: a quick glassy arpeggio, falling as he leaves and rising as he lands.
     teleport(phase:'out'|'in'){
