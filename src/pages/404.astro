@@ -12,7 +12,7 @@ const beacons = [
   { id: "06", key: "meta", path: "/work/studio/", type: "ENGINE ROOM" },
 ] as const;
 ---
-<Layout title="404 — Signal Lost" description="You've drifted off course. Somewhere beyond the map, a signal is still reaching you." noindex={true} noWebgl={true} hideFinale={true}>
+<Layout title="404 — Fundbüro" description="This page doesn't exist. The lost-and-found office at rodionbelousov.studio found what you were probably looking for." noindex={true} noWebgl={true} hideFinale={true}>
   <div class="lost-world">
     <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
       <defs><filter id="evac-glass-lens" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -21,25 +21,25 @@ const beacons = [
         <feGaussianBlur stdDeviation="0.35" />
       </filter></defs>
     </svg>
-    <div class="void-gl" data-drift data-routes={JSON.stringify(driftRoutes)} aria-hidden="true"></div>
-    <div class="distress-ripple" data-ripple aria-hidden="true"></div>
+    <div class="office" data-office data-routes={JSON.stringify(driftRoutes)} aria-hidden="true"></div>
     <section class="void" aria-labelledby="void-title">
       <div class="void-ui">
         <p class="void-eyebrow"><i></i><span data-i18n="404.eyebrow">{t("404.eyebrow")}</span></p>
         <h1 id="void-title" class="void-title" data-i18n="404.title">{t("404.title")}</h1>
-        <p class="void-lead"><span data-i18n="404.lead.a">{t("404.lead.a")}</span> <code data-drift-path>/unknown</code> <span data-i18n="404.lead.b">{t("404.lead.b")}</span></p>
+        <p class="void-lead"><span data-i18n="404.lead.a">{t("404.lead.a")}</span> <code data-path>/unknown</code><span data-lead-b> <span data-i18n="404.lead.b">{t("404.lead.b")}</span></span><span data-lead-none hidden> <span data-i18n="404.lead.none">{t("404.lead.none")}</span></span></p>
+      </div>
+      <div class="counter-ui" data-counter-ui>
         <div class="void-actions">
           <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><span class="evac-label" data-evac-label>{t("404.cta")}</span><span class="evac-arrow" aria-hidden="true">↗</span></a>
           <a href="/" class="void-home" data-home hidden><span data-i18n="404.home">{t("404.home")}</span></a>
         </div>
+        <p class="filed" data-filed role="status" aria-live="polite"></p>
       </div>
-      <div class="signal-cards" data-cards></div>
-      <p class="grab-hint" data-grab aria-hidden="true"><span data-i18n="404.grab">{t("404.grab")}</span></p>
       <div class="void-bottom">
         <a href="#recovery" class="void-scroll"><span class="scroll-mark" aria-hidden="true">↓</span><span data-i18n="404.scroll">{t("404.scroll")}</span></a>
-        <button class="distress" type="button" data-distress><span class="distress-icon" aria-hidden="true">◎</span><span data-i18n="404.pulse">{t("404.pulse")}</span></button>
+        <p class="grab-hint" data-grab><span data-i18n="404.grab">{t("404.grab")}</span></p>
+        <button class="bell-button" type="button" data-bell><span class="bell-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 18h16M6 18a6 6 0 0 1 12 0M12 12V9m-1.5 0h3"/></svg></span><span data-i18n="404.bell">{t("404.bell")}</span></button>
       </div>
-      <p class="pulse-status" data-pulse-status role="status" aria-live="polite"></p>
     </section>
     <section class="recover" id="recovery" aria-labelledby="recover-title">
       <div class="recovery-axis" aria-hidden="true"><span></span><b>+</b><span></span></div>
@@ -59,234 +59,177 @@ const beacons = [
       </div>
       <div class="diag"><span><i></i><span data-i18n="404.diag.system">{t("404.diag.system")}</span></span><span>HTTP 404 / NO_ROUTE</span><span data-i18n="404.diag.recovery">{t("404.diag.recovery")}</span></div>
     </section>
-    <div class="void-flash" data-drift-flash aria-hidden="true"></div>
+    <div class="void-flash" data-flash aria-hidden="true"></div>
   </div>
 </Layout>
 <script>
-  import gsap from "gsap";
   import { prefersCalm } from "../utils/decode";
   import { rankSignals } from "../data/drift-signals";
   import type { DriftRoute } from "../data/drift-routes";
   import { mountLiquidGlass } from "../scripts/liquid-glass";
-  mountLiquidGlass(document.querySelector<HTMLElement>("[data-evac]")!, document.querySelector<SVGImageElement>("[data-glass-map]")!);
-  const host = document.querySelector<HTMLElement>("[data-drift]")!;
+  const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  mountLiquidGlass($("[data-evac]"), $<SVGImageElement>("[data-glass-map]"));
+  const host = $("[data-office]");
   const requested = (() => { try { return decodeURI(location.pathname) || "/"; } catch { return location.pathname; } })();
   const lang = (): "en" | "de" => document.documentElement.lang.startsWith("de") ? "de" : "en";
   const routes = JSON.parse(host.dataset.routes || "[]") as DriftRoute[];
-  const evac = document.querySelector<HTMLAnchorElement>("[data-evac]")!;
-  const evacLabel = document.querySelector<HTMLElement>("[data-evac-label]")!;
-  const home = document.querySelector<HTMLAnchorElement>("[data-home]")!;
-  const cardsHost = document.querySelector<HTMLElement>("[data-cards]")!;
-  const grab = document.querySelector<HTMLElement>("[data-grab]")!;
-  const flash = document.querySelector<HTMLElement>("[data-drift-flash]")!;
-  const status = document.querySelector<HTMLElement>("[data-pulse-status]")!;
-  const ripple = document.querySelector<HTMLElement>("[data-ripple]")!;
+  const evac = $<HTMLAnchorElement>("[data-evac]"), evacLabel = $("[data-evac-label]"), home = $<HTMLAnchorElement>("[data-home]");
+  const counterUi = $("[data-counter-ui]"), filed = $("[data-filed]"), grab = $("[data-grab]"), flash = $("[data-flash]");
   const copy = {
-    en: { take: "Take me to", back: "Return to base", closest: "Closest signal", signal: "Signal", received: "Signal received. You're not alone." },
-    de: { take: "Bring mich zu", back: "Zurück zur Basis", closest: "Nächstes Signal", signal: "Signal", received: "Signal empfangen. Du bist nicht allein." },
+    en: { take: "Take me to", back: "Back to the start", filed: "Filed on the shelf as found item no.", filedNone: "Filed on the shelf." },
+    de: { take: "Bring mich zu", back: "Zurück zum Start", filed: "Im Regal abgelegt als Fundstück Nr.", filedNone: "Im Regal abgelegt." },
   };
-  let drift: ReturnType<typeof import("../scripts/drift404").mountDrift> | undefined;
-  let pulseSent = false;
-  document.querySelector<HTMLElement>("[data-drift-path]")!.textContent = requested;
+  $("[data-path]").textContent = requested;
+  const signal = rankSignals(requested, routes, lang(), 1)[0];
+  const best = signal && signal.score > 0 ? signal.route : undefined;
+  $("[data-lead-b]").hidden = !best; $("[data-lead-none]").hidden = !!best;
+  let number: number | null = null;
   const title = (route: DriftRoute) => route[lang()].split(" — ")[0];
-
-  // The page answers the question first: this address is gone, this is probably where you meant to go.
-  function renderSignals() {
+  function paint() {
     const l = copy[lang()];
-    const signals = rankSignals(requested, routes, lang(), 2);
-    const best = signals[0]?.score > 0 ? signals[0].route : undefined;
-    evac.href = best?.path ?? "/";
-    evacLabel.textContent = best ? `${l.take} ${title(best)}` : l.back;
-    home.hidden = !best;
-    cardsHost.textContent = "";
-    const cards = signals.map((signal, i) => {
-      const card = document.createElement("a");
-      card.className = "signal-card"; card.href = signal.route.path;
-      if (i === 0 && signal.score > 0) card.dataset.best = "1";
-      card.innerHTML = `<span class="card-media"><img alt="" decoding="async"></span><span class="card-meta"><span class="card-kicker"></span><span class="card-title"></span><span class="card-path"></span></span><span class="card-go" aria-hidden="true">↗</span>`;
-      card.querySelector("img")!.src = signal.route.image;
-      card.querySelector(".card-kicker")!.textContent = card.dataset.best ? l.closest : l.signal;
-      card.querySelector(".card-title")!.textContent = title(signal.route);
-      card.querySelector(".card-path")!.textContent = signal.route.path;
-      cardsHost.append(card);
-      return card;
-    });
-    if (pulseSent) status.textContent = l.received;
-    return cards;
+    evac.href = best?.path ?? "/"; evacLabel.textContent = best ? `${l.take} ${title(best)}` : l.back; home.hidden = !best;
+    if (filed.dataset.shown) filed.textContent = number ? `${l.filed} ${number}.` : l.filedNone;
   }
-  let cards = renderSignals();
+  paint();
 
-  const go = (path: string) => {
-    if (prefersCalm()) { location.href = path; return; }
-    flash.classList.add("is-on");
-    setTimeout(() => location.href = path, 380);
-  };
+  // Tags already on the shelves: plausible slips of the site's own addresses, never visitor text.
+  function slip(path: string, seed: number) {
+    const core = path.replace(/^\/|\/$/g, ""); if (core.length < 4) return null;
+    const i = 1 + (seed % (core.length - 2)), kind = seed % 4;
+    const out = kind === 0 ? core.slice(0, i) + core.slice(i + 1) : kind === 1 ? core.slice(0, i) + core[i] + core.slice(i) : kind === 2 ? core.slice(0, i) + core[i + 1] + core[i] + core.slice(i + 2) : core.slice(0, i) + (/[aeiou]/.test(core[i]) ? "eaiou"["aeiou".indexOf(core[i])] : "k") + core.slice(i + 1);
+    return `/${out}/`;
+  }
+  const shelfPaths = routes.filter(r => r.path.length < 26).map((r, i) => slip(r.path, i * 7 + 3)).filter((p): p is string => !!p);
+
+  // The counter only stores a number; one per visitor per day.
+  const numberPromise = fetch("/api/lost/", { method: "POST" }).then(r => r.ok ? r.json() : null).then(d => (d && typeof d.number === "number" ? d.number : null)).catch(() => null);
+  numberPromise.then(n => { number = n; paint(); });
+
+  const go = (path: string) => { if (prefersCalm()) { location.href = path; return; } flash.classList.add("is-on"); setTimeout(() => location.href = path, 380); };
   addEventListener("pageshow", () => flash.classList.remove("is-on"));
-  const progress = () => Math.min(1, scrollY / Math.max(1, host.clientHeight * .8));
-  const scrollScene = () => {
-    const p = progress();
-    host.style.setProperty("--scroll", String(p));
-    drift?.scroll(p);
-  };
-  addEventListener("scroll", scrollScene, { passive: true });
+  [evac, home].forEach(link => link.addEventListener("click", event => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault(); go(link.pathname);
+  }));
 
-  // A small hint next to him, once, a few seconds in; gone the moment he is grabbed.
-  let hinted = false, grabbedOnce = false;
-  setTimeout(() => { if (!grabbedOnce && !prefersCalm()) { grab.classList.add("is-on"); hinted = true; setTimeout(() => grab.classList.remove("is-on"), 7000); } }, 4200);
-
-  import("../scripts/drift404").then(({ mountDrift }) => {
-    drift = mountDrift({ host, routes, requested, lang, reduced: prefersCalm(), onNavigate: go, cards,
-      onAstro: (x, y, visible, grabbed) => {
-        if (grabbed && !grabbedOnce) { grabbedOnce = true; grab.classList.remove("is-on"); }
-        if (!hinted) return;
-        grab.style.transform = `translate(${Math.round(x + 46)}px, ${Math.round(y - 64)}px)`;
-        grab.style.visibility = visible ? "visible" : "hidden";
-      },
-    });
-    scrollScene();
-  }).catch((error) => { console.warn("404: static scene", error); host.classList.add("is-static"); });
-  addEventListener("rb:langchange", () => { cards = renderSignals(); drift?.cards(cards); drift?.relabel(); });
-  document.fonts.ready.then(() => drift?.relabel());
-  [evac, home].forEach(link => {
-    link.addEventListener("click", event => {
-      if (!drift || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-      event.preventDefault(); event.stopPropagation(); drift.beam(link.pathname);
-    });
-  });
-  document.querySelector<HTMLButtonElement>("[data-distress]")!.addEventListener("click", () => {
-    pulseSent = true; status.textContent = copy[lang()].received; drift?.pulse();
-    if (!prefersCalm()) { ripple.classList.remove("is-pulsing"); void ripple.offsetWidth; ripple.classList.add("is-pulsing"); }
-  });
-  if (!prefersCalm()) {
-    // The hole comes up out of the dark first; the words follow it.
-    gsap.fromTo(".void-ui > *", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.3, delay: .5, stagger: .12, ease: "power3.out", clearProps: "all" });
-    gsap.fromTo(".signal-card", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 1.2, delay: 1.3, stagger: .14, ease: "power3.out", clearProps: "opacity,transform" });
-  }
+  let office: ReturnType<typeof import("../scripts/fundbuero").mountFundbuero> | undefined;
+  const placeUi = () => { if (!office) return; const at = office.anchor(); counterUi.style.setProperty("--ax", `${at.x}px`); counterUi.style.setProperty("--ay", `${at.y}px`); };
+  const webgl = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
+  if (webgl) {
+    import("../scripts/fundbuero").then(({ mountFundbuero }) => {
+      office = mountFundbuero({
+        host, requested, target: best?.path ?? null, lang, reduced: prefersCalm(), number: numberPromise, shelfPaths,
+        onRepaired: () => { placeUi(); counterUi.classList.add("is-on"); setTimeout(() => grab.classList.add("is-on"), 2400); },
+        onFiled: () => { filed.dataset.shown = "1"; paint(); filed.classList.add("is-on"); },
+      });
+      addEventListener("resize", placeUi);
+    }).catch(error => { console.warn("404: static office", error); host.classList.add("is-static"); counterUi.classList.add("is-on", "is-static"); });
+  } else { host.classList.add("is-static"); counterUi.classList.add("is-on", "is-static"); }
+  $<HTMLButtonElement>("[data-bell]").addEventListener("click", () => office?.ring());
+  addEventListener("scroll", () => office?.scroll(Math.min(1, scrollY / Math.max(1, innerHeight * .8))), { passive: true });
+  addEventListener("rb:langchange", () => { paint(); office?.relabel(); });
 </script>
 <style>
-  :global(body:has(.lost-world)) { background: #020304; }
+  :global(body:has(.lost-world)) { background: #0a0807; }
   :global(body:has(.lost-world) .site-fx), :global(body:has(.lost-world) rb-cursor-field) { display: none; }
   :global(html.has-custom-cursor:has(.lost-world)), :global(html.has-custom-cursor:has(.lost-world) a), :global(html.has-custom-cursor:has(.lost-world) button) { cursor: auto; }
   :global(body:has(.lost-world) sy-footer footer) { background: transparent; }
-  :global(body:has(.lost-world) sy-footer) { --footer-deep: 2, 3, 4; }
-  /* Labels are set in the site's own sans, spaced capitals, not a terminal face. */
-  .lost-world { --ember: #d9a27e; --label: var(--font-inter), system-ui, sans-serif; color: #e6e4df; }
-  .void-gl { position: fixed; inset: 0; z-index: 0; background: #020304; }
-  .void-gl :global(canvas) { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 2.2s ease; }
-  .void-gl:global(.is-live) :global(canvas) { opacity: 1; }
-  .void-gl:global(.is-static) { background: radial-gradient(ellipse at 70% 50%, #100b08, #020304 60%); }
-  .void { position: relative; min-height: max(820px, 100svh); pointer-events: none; }
-  .void-ui { position: relative; z-index: 2; padding: clamp(170px, 24vh, 250px) 0 140px; margin-left: 6.5%; width: 40%; max-width: 620px; }
-  .void-eyebrow, .recover-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0 0 30px; font: 500 11px var(--label); text-transform: uppercase; letter-spacing: .22em; color: #c3b3a3; }
-  .void-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 14px #d98d5c99; }
-  .void-title { max-width: 6ch; margin: 0 0 30px; font: 400 clamp(80px, 8.7vw, 156px)/.89 var(--font-display), sans-serif; letter-spacing: -.065em; text-wrap: balance; }
-  .void-lead { max-width: 440px; margin: 0 0 38px; font: 400 17px/1.65 var(--font-inter), sans-serif; color: #b3b3b0; }
-  .void-lead code { display: inline-block; padding: 1px 10px 2px; border-radius: 999px; background: #d9a27e17; border: 1px solid #d9a27e3a; font: 500 15px/1.5 var(--font-display), sans-serif; letter-spacing: -.01em; color: #f0c9ab; overflow-wrap: anywhere; }
-  .void-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 22px 28px; }
-  .void-home { pointer-events: auto; font: 400 14px var(--font-inter), sans-serif; color: #a6a7a4; text-decoration: underline; text-decoration-color: #a6a7a455; text-underline-offset: 5px; transition: color .3s, text-decoration-color .3s; }
-  .void-home:hover { color: #efe8e1; text-decoration-color: #efe8e1; }
-  .void-home[hidden] { display: none; }
+  :global(body:has(.lost-world) sy-footer) { --footer-deep: 10, 8, 7; }
+  .lost-world { --ember: #dcaa7c; --label: var(--font-inter), system-ui, sans-serif; color: #e8e3dc; }
+  .office { position: fixed; inset: 0; z-index: 0; background: #0a0807; }
+  .office :global(canvas) { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 1.8s ease; }
+  .office:global(.is-live) :global(canvas) { opacity: 1; }
+  .office:global(.is-static) { background: radial-gradient(ellipse 40% 55% at 50% 38%, #3a2716, #0a0807 70%); }
+  .void { position: relative; min-height: max(760px, 100svh); pointer-events: none; }
+  .void-ui { position: relative; z-index: 2; padding: clamp(150px, 20vh, 220px) 0 0; margin-left: 6.5%; width: 34%; max-width: 560px; }
+  .void-eyebrow, .recover-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0 0 26px; font: 500 11px var(--label); text-transform: uppercase; letter-spacing: .22em; color: #c9b39c; }
+  .void-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 14px #e0955c99; }
+  .void-title { margin: 0 0 26px; font: 400 clamp(64px, 7vw, 124px)/.9 var(--font-display), sans-serif; letter-spacing: -.06em; text-wrap: balance; }
+  .void-lead { max-width: 420px; margin: 0; font: 400 17px/1.65 var(--font-inter), sans-serif; color: #b7b0a8; }
+  .void-lead code { display: inline-block; padding: 1px 10px 2px; border-radius: 999px; background: #dcaa7c17; border: 1px solid #dcaa7c3d; font: 500 15px/1.5 var(--font-display), sans-serif; color: #f1cba9; overflow-wrap: anywhere; }
+  [hidden] { display: none !important; }
+
+  /* The answer sits under the corrected word, on the front of the counter. */
+  .counter-ui { position: absolute; z-index: 2; left: var(--ax, 50%); top: calc(var(--ay, 70%) + 26px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 16px; opacity: 0; translate: 0 12px; transition: opacity 1s ease, translate 1s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+  .counter-ui:global(.is-on) { opacity: 1; translate: 0 0; }
+  .counter-ui:global(.is-on) .void-actions { pointer-events: auto; }
+  .counter-ui:global(.is-static) { position: relative; left: auto; top: auto; transform: none; align-items: flex-start; margin: 40px 0 0 6.5%; }
+  .void-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px 26px; }
+  .void-home { font: 400 14px var(--font-inter), sans-serif; color: #a9a39c; text-decoration: underline; text-decoration-color: #a9a39c55; text-underline-offset: 5px; transition: color .3s; }
+  .void-home:hover { color: #efe8e1; }
+  .filed { margin: 0; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; color: #bfa98f; opacity: 0; transition: opacity 1s; }
+  .filed:global(.is-on) { opacity: 1; }
   .glass-defs { position: absolute; pointer-events: none; }
-  .evac { --glass-x: 24%; --glass-y: 0%; position: relative; display: inline-flex; justify-content: space-between; align-items: center; gap: 30px; min-height: 64px; padding: 9px 10px 9px 27px; border: 0; border-radius: 999px; background: transparent; font: 500 15px var(--font-inter), sans-serif; color: #f4f2ee; text-decoration: none; pointer-events: auto; isolation: isolate; box-shadow: 0 8px 24px #0005, 0 0 24px #c7d6e508; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .4s; }
-  .evac-glass { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; background: linear-gradient(155deg, #e6f0fc26, #c6d5e509 45%, #d6a1751a); box-shadow: inset 0 3px 9px #eef6ff0c, inset 0 -3px 8px #0005; backdrop-filter: blur(10px) saturate(1.35); -webkit-backdrop-filter: blur(10px) saturate(1.35); }
+  .evac { --glass-x: 24%; --glass-y: 0%; position: relative; display: inline-flex; justify-content: space-between; align-items: center; gap: 30px; min-height: 62px; padding: 9px 10px 9px 27px; border-radius: 999px; font: 500 15px var(--font-inter), sans-serif; color: #f6f2ec; text-decoration: none; isolation: isolate; box-shadow: 0 10px 30px #0008, 0 0 30px #e0a06a10; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .4s; }
+  .evac-glass { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; background: linear-gradient(155deg, #f5ece226, #d8c6b20a 45%, #d6a1751f); box-shadow: inset 0 3px 9px #fff4e80d, inset 0 -3px 8px #0006; backdrop-filter: blur(12px) saturate(1.35); -webkit-backdrop-filter: blur(12px) saturate(1.35); }
   @supports (backdrop-filter: url("#evac-glass-lens")) { .evac:global(.has-lens) .evac-glass { backdrop-filter: url("#evac-glass-lens") saturate(1.35); } }
-  .evac::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at var(--glass-x) var(--glass-y), #edf5ff42, transparent 65%); opacity: .65; transition: opacity .35s; }
-  .evac::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 1px solid #d8e4f12e; border-top-color: #edf5ff80; border-bottom-color: #d3ad8550; box-shadow: inset 0 1px 2px #f2f7ff35, inset 1px 0 1px #d8e8ff20, inset 0 -1px 2px #d3b59424; }
+  .evac::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at var(--glass-x) var(--glass-y), #fff2e442, transparent 65%); opacity: .6; transition: opacity .35s; }
+  .evac::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 1px solid #f1e3d42e; border-top-color: #fff1e285; border-bottom-color: #d3ad8555; }
   .evac-label { position: relative; text-shadow: 0 1px 5px #0007; }
-  .evac-arrow { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; background: linear-gradient(145deg,#edf5ff1a,#e1efff06); border: 1px solid #ebf4ff24; box-shadow: inset 0 1px 1px #fff3, 0 2px 5px #0002; transition: transform .4s, background .4s; }
-  .evac:hover { transform: translateY(-2px); box-shadow: 0 12px 28px #0005, 0 0 32px #c7d6e512; }
+  .evac-arrow { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 21px; background: linear-gradient(145deg,#fff4e81c,#ffffff05); border: 1px solid #fff1e226; transition: transform .4s; }
+  .evac:hover { transform: translateY(-2px); box-shadow: 0 14px 34px #0009, 0 0 38px #e0a06a1f; }
   .evac:hover::before { opacity: 1; }
-  .evac:hover .evac-arrow { transform: rotate(45deg); background: linear-gradient(145deg,#edf5ff2a,#e1efff12); }
-  .evac:active { transform: translateY(0) scale(.98); }
+  .evac:hover .evac-arrow { transform: rotate(45deg); }
 
-  /* Signal cards: real images and real type, in the same glass as the button. */
-  .signal-cards { position: absolute; z-index: 2; right: 4.5%; bottom: 118px; display: flex; flex-direction: column; gap: 14px; width: min(360px, 30vw); pointer-events: none; }
-  .signal-cards :global(.signal-card) { pointer-events: auto; position: relative; display: grid; grid-template-columns: 132px 1fr auto; align-items: center; gap: 18px; padding: 10px 18px 10px 10px; border-radius: 20px; color: #ecebe7; text-decoration: none; background: linear-gradient(150deg, #eef4fb14, #c5d3e206 55%, #d6a17510); border: 1px solid #dfe8f224; box-shadow: inset 0 1px 1px #f2f7ff26, 0 18px 40px #0007; backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .4s, box-shadow .4s, background .4s; }
-  .signal-cards :global(.signal-card[data-best]) { border-color: #e2b18c55; }
-  .signal-cards :global(.signal-card:hover), .signal-cards :global(.signal-card.is-locked) { transform: translateX(-6px); border-color: #efc7a699; background: linear-gradient(150deg, #f6ede41f, #c5d3e20a 55%, #d6a1751c); box-shadow: inset 0 1px 1px #fff3, 0 22px 48px #000a, 0 0 40px #d98d5c26; }
-  .signal-cards :global(.signal-card.is-beaming) { border-color: #cfe7ff; box-shadow: 0 0 60px #9fd4ff66; }
-  .signal-cards :global(.card-media) { display: block; overflow: hidden; aspect-ratio: 1200 / 630; border-radius: 12px; background: #0b0c0e; box-shadow: 0 0 0 1px #ffffff14; }
-  .signal-cards :global(.card-media img) { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
-  .signal-cards :global(.signal-card:hover .card-media img) { transform: scale(1.06); }
-  .signal-cards :global(.card-meta) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-  .signal-cards :global(.card-kicker) { font: 500 10px var(--label); letter-spacing: .2em; text-transform: uppercase; color: #9fa6aa; }
-  .signal-cards :global(.signal-card[data-best] .card-kicker) { color: var(--ember); }
-  .signal-cards :global(.card-title) { font: 400 20px/1.15 var(--font-display), sans-serif; letter-spacing: -.03em; color: #f1efeb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .signal-cards :global(.card-path) { font: 400 12px var(--font-inter), sans-serif; color: #8e9599; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .signal-cards :global(.card-go) { font-size: 18px; color: #b8b2aa; transition: transform .4s, color .4s; }
-  .signal-cards :global(.signal-card:hover .card-go) { transform: translate(3px, -3px); color: #f0c9ab; }
-
-  .grab-hint { position: fixed; left: 0; top: 0; z-index: 3; margin: 0; padding: 7px 13px; border-radius: 999px; background: #0c0f13b3; border: 1px solid #ffffff1c; font: 500 12px var(--font-inter), sans-serif; color: #d9d6d0; pointer-events: none; opacity: 0; transition: opacity .6s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); white-space: nowrap; }
+  .void-bottom { position: absolute; z-index: 2; bottom: 30px; left: 6.5%; right: 6.5%; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid #c9b39c1f; padding-top: 20px; }
+  .void-scroll, .bell-button { pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; color: #bdb5ac; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; }
+  .scroll-mark { font-size: 16px; color: var(--ember); }
+  .bell-button { border: 0; padding: 0; background: none; min-height: 44px; cursor: pointer; }
+  .bell-icon { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #c79a6e55; border-radius: 50%; color: var(--ember); transition: box-shadow .3s, transform .3s; }
+  .bell-button:hover .bell-icon { box-shadow: 0 0 24px #d08a5040; transform: rotate(-12deg); }
+  .grab-hint { margin: 0; font: 400 13px var(--font-inter), sans-serif; color: #a39b92; opacity: 0; transition: opacity 1s; }
   .grab-hint:global(.is-on) { opacity: 1; }
 
-  .void-bottom { position: absolute; z-index: 2; bottom: 32px; left: 6.5%; right: 6.5%; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid #b5b4ad20; padding-top: 22px; }
-  .void-scroll, .distress { pointer-events: auto; display: inline-flex; align-items: center; gap: 13px; color: #b9b9b5; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; }
-  .scroll-mark { font-size: 16px; color: var(--ember); }
-  .distress { border: 0; padding: 0; background: none; min-height: 44px; cursor: pointer; }
-  .distress-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #bd90784f; border-radius: 50%; font-size: 20px; color: var(--ember); transition: box-shadow .3s; }
-  .distress:hover .distress-icon { box-shadow: 0 0 25px #b4764933; }
-  .pulse-status { position: absolute; right: 6.5%; bottom: 96px; max-width: 260px; font: 400 13px/1.6 var(--font-inter); color: var(--ember); text-align: right; }
-  .distress-ripple { position: fixed; pointer-events: none; z-index: 1; left: 71%; top: 47%; width: 8vw; aspect-ratio: 1; border: 1px solid #d59972; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; }
-  .distress-ripple:global(.is-pulsing) { animation: distress-wave 3s ease-out forwards; }
-  @keyframes distress-wave { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.5); } 12% { opacity: .65; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(16); } }
   .recover { position: relative; z-index: 2; max-width: 1440px; margin: 0 auto; padding: 0 6.5% 70px; scroll-margin-top: 100px; }
-  .recovery-axis { display: flex; flex-direction: column; align-items: center; gap: 14px; height: 210px; margin-bottom: 30px; opacity: .45; }
+  .recovery-axis { display: flex; flex-direction: column; align-items: center; gap: 14px; height: 190px; margin-bottom: 30px; opacity: .45; }
   .recovery-axis span { width: 1px; flex: 1; background: linear-gradient(transparent, #b89a78); }
   .recovery-axis span:last-child { background: linear-gradient(#b89a78, transparent); }
   .recovery-axis b { font: 14px var(--label); color: var(--ember); }
   .recover-head { max-width: 730px; margin-bottom: 70px; }
   .recover-eyebrow { justify-content: space-between; margin-bottom: 24px; }
-  .recover-eyebrow span:last-child { color: #7c8285; }
+  .recover-eyebrow span:last-child { color: #847a70; }
   .recover-head h2 { max-width: 650px; margin: 0 0 22px; font: 400 clamp(42px, 5.1vw, 76px)/1.02 var(--font-display); letter-spacing: -.05em; text-wrap: balance; }
-  .recover-sub { max-width: 430px; margin: 0; font: 15px/1.8 var(--font-inter); color: #a3a7a9; }
+  .recover-sub { max-width: 430px; margin: 0; font: 15px/1.8 var(--font-inter); color: #a8a19a; }
   .beacons { display: grid; grid-template-columns: 1fr 1fr; column-gap: 64px; }
-  .beacon { position: relative; display: flex; align-items: flex-start; gap: 25px; min-height: 160px; border-top: 1px solid #b5b4ad33; padding: 30px 0; text-decoration: none; transition: border-color .3s; }
-  .beacon-id { padding-top: 2px; font: 500 11px var(--label); letter-spacing: .08em; color: #93806f; }
+  .beacon { position: relative; display: flex; align-items: flex-start; gap: 25px; min-height: 160px; border-top: 1px solid #c9b39c2e; padding: 30px 0; text-decoration: none; transition: border-color .3s; }
+  .beacon-id { padding-top: 2px; font: 500 11px var(--label); letter-spacing: .08em; color: #9a8570; }
   .beacon-copy { display: flex; flex-direction: column; gap: 10px; flex: 1; }
-  .beacon-type { display: flex; align-items: center; gap: 10px; font: 500 10px var(--label); letter-spacing: .2em; color: #9c9a95; }
-  .beacon-type i, .diag i { width: 3px; height: 3px; border-radius: 50%; background: #a2b5a4; }
-  .beacon-name { font: 400 clamp(20px, 2vw, 30px)/1.25 var(--font-display); letter-spacing: -.035em; color: #d8d9d5; transition: color .3s; }
-  .beacon-desc { max-width: 310px; font: 13px/1.65 var(--font-inter); color: #93999c; }
-  .beacon-go { font-size: 20px; color: #a49c91; transition: transform .3s, color .3s; }
-  .beacon:hover { border-color: #cda286a6; }
-  .beacon:hover .beacon-name, .beacon:hover .beacon-go { color: #ecc3a6; }
+  .beacon-type { display: flex; align-items: center; gap: 10px; font: 500 10px var(--label); letter-spacing: .2em; color: #a39b92; }
+  .beacon-type i, .diag i { width: 3px; height: 3px; border-radius: 50%; background: #b3a48c; }
+  .beacon-name { font: 400 clamp(20px, 2vw, 30px)/1.25 var(--font-display); letter-spacing: -.035em; color: #ddd7cf; transition: color .3s; }
+  .beacon-desc { max-width: 310px; font: 13px/1.65 var(--font-inter); color: #9a938b; }
+  .beacon-go { font-size: 20px; color: #a89c8c; transition: transform .3s, color .3s; }
+  .beacon:hover { border-color: #dcaa7ca6; }
+  .beacon:hover .beacon-name, .beacon:hover .beacon-go { color: #f0c8a6; }
   .beacon:hover .beacon-go { transform: translate(3px, -3px); }
-  .diag { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; margin-top: 45px; padding-top: 22px; border-top: 1px solid #b5b4ad20; font: 500 10px var(--label); letter-spacing: .16em; color: #8b9397; text-transform: uppercase; }
+  .diag { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; margin-top: 45px; padding-top: 22px; border-top: 1px solid #c9b39c1f; font: 500 10px var(--label); letter-spacing: .16em; color: #8f877e; text-transform: uppercase; }
   .diag > span:first-child { display: flex; align-items: center; gap: 9px; }
-  .void-flash { position: fixed; inset: 0; z-index: 250; pointer-events: none; opacity: 0; background: #020304; transition: opacity .38s; }
+  .void-flash { position: fixed; inset: 0; z-index: 250; pointer-events: none; opacity: 0; background: #0a0807; transition: opacity .38s; }
   .void-flash:global(.is-on) { opacity: 1; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--ember); outline-offset: 6px; }
-  @media (max-width: 1100px) and (min-width: 701px) { .void-ui { width: 46%; } .void-title { font-size: 88px; } .signal-cards { width: 300px; } .signal-cards :global(.signal-card) { grid-template-columns: 104px 1fr auto; } }
+  @media (max-width: 1100px) and (min-width: 701px) { .void-ui { width: 44%; } }
   @media (max-width: 700px), (orientation: portrait) {
-    .void { min-height: max(1000px, 100svh); }
-    .void-gl { height: max(1000px, 100svh); }
-    .void-ui { padding: 118px 0 0; margin-left: 7%; width: 86%; max-width: none; }
-    .void-eyebrow { font-size: 10px; gap: 10px; margin-bottom: 18px; }
-    .void-title { max-width: none; font-size: clamp(54px, 13.5vw, 92px); line-height: 1; margin-bottom: 16px; text-wrap: initial; }
-    .void-lead { font-size: 15px; margin-bottom: 22px; }
+    .void { min-height: max(860px, 100svh); }
+    .office { height: max(860px, 100svh); }
+    .void-ui { padding: 112px 0 0; margin-left: 7%; width: 86%; max-width: none; }
+    .void-eyebrow { font-size: 10px; margin-bottom: 16px; }
+    .void-title { font-size: clamp(50px, 13vw, 84px); margin-bottom: 14px; }
+    .void-lead { font-size: 15px; }
     .void-lead code { font-size: 13px; }
-    .void-actions { gap: 14px 20px; }
-    .evac { gap: 20px; padding: 7px 8px 7px 21px; font-size: 14px; min-height: 56px; }
-    .evac-arrow { width: 40px; height: 40px; font-size: 20px; }
-    .signal-cards { left: 7%; right: 7%; width: auto; bottom: 96px; }
-    .signal-cards :global(.signal-card) { grid-template-columns: 96px 1fr auto; gap: 14px; padding: 8px 14px 8px 8px; border-radius: 16px; }
-    .signal-cards :global(.signal-card:not([data-best]):nth-child(2)) { display: none; }
-    .signal-cards :global(.card-title) { font-size: 17px; }
-    .distress-ripple { left: 57%; top: max(560px, 55svh); }
-    .void-bottom { left: 7%; right: 7%; gap: 15px; bottom: 24px; }
-    .void-scroll, .distress { font-size: 10px; gap: 9px; letter-spacing: .12em; }
-    .pulse-status { bottom: 80px; font-size: 12px; }
+    .counter-ui { width: 88%; }
+    .evac { gap: 18px; padding: 7px 8px 7px 20px; font-size: 14px; min-height: 54px; }
+    .evac-arrow { width: 40px; height: 40px; }
+    .void-bottom { left: 7%; right: 7%; bottom: 22px; gap: 12px; }
+    .grab-hint { display: none; }
+    .void-scroll, .bell-button { font-size: 10px; letter-spacing: .12em; gap: 9px; }
     .recover { padding: 0 7% 45px; }
-    .recovery-axis { height: 135px; }
+    .recovery-axis { height: 120px; }
     .recover-head { margin-bottom: 42px; }
-    .recover-eyebrow { font-size: 10px; letter-spacing: .14em; }
     .recover-head h2 { font-size: 43px; }
-    .recover-sub { font-size: 14px; }
     .beacons { grid-template-columns: 1fr; }
     .beacon { min-height: 140px; gap: 20px; padding: 25px 0; }
     .beacon-name { font-size: 25px; }
     .diag { font-size: 9px; }
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
-  :global(html.rb-calm) .distress-ripple { animation: none; }
 </style>
