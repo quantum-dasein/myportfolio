@@ -135,10 +135,13 @@ const beacons = [
   // Boullée drew both effects: by day the lamp lights the vault; by night the vault is the sky.
   const time = stage.dataset.time === "day" ? "day" : "night";
   const file = (name: string, ext: string) => `/cenotaph/${name}-${time}${portrait ? "-portrait" : ""}.${ext}`;
-  const reduced = prefersCalm();
+  // Reduced motion (the system setting) or data saver: one still frame. The site's Calm mode only
+  // skips the flight: the vault and its slow loop stay alive.
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const saveData = !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
   const still = reduced || saveData;
-  video.poster = file(still ? "end" : "start", "jpg");
+  const calm = !still && prefersCalm();
+  video.poster = file(still || calm ? "end" : "start", "jpg");
   const at = (x: number, y: number, width: number) => ({ x: frame[0] * x, y: frame[1] * y, width: frame[0] * width });
   // Where the address is written: the open vault right of the sunbeam, or high and centred on a phone.
   const anchor = () => portrait ? at(.52, time === "day" ? .525 : .41, .65) : at(.724, .306, .365);
@@ -172,6 +175,7 @@ const beacons = [
     });
     if (starNumber) cenotaph.visitor(starNumber);
     if (still) { cenotaph.still(); reveal(); return; }
+    if (calm) { cenotaph.still(); reveal(); startLoop(); return; }
     video.src = file("film", "mp4");
     const fallback = setTimeout(() => { if (video.paused && video.currentTime === 0) { video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); } }, 3500);
     video.play().then(() => clearTimeout(fallback)).catch(() => { clearTimeout(fallback); video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); });
@@ -191,8 +195,18 @@ const beacons = [
   loop.addEventListener("playing", () => stage.classList.add("is-looping"));
   video.addEventListener("timeupdate", () => { if (video.currentTime > 5) armLoop(); });
   video.addEventListener("ended", startLoop);
+  // Coming back with the back button restores the page with its videos paused: start them again.
+  addEventListener("pageshow", e => {
+    if (!e.persisted) return;
+    if (stage.classList.contains("is-looping") || video.ended || calm) loop.play().catch(() => {});
+    else if (video.getAttribute("src")) video.play().catch(() => {});
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    if (stage.classList.contains("is-looping") && loop.paused) loop.play().catch(() => {});
+  });
   skip.addEventListener("click", () => { cenotaph?.skip(); reveal(); startLoop(); });
-  replay.addEventListener("click", () => { stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
+  replay.addEventListener("click", () => { if (!video.getAttribute("src")) { video.src = file("film", "mp4"); video.poster = file("start", "jpg"); } stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
 
   // Look around the vault: the mouse, or the tilt of a phone, turns the view a little.
   if (!reduced) {
@@ -226,6 +240,9 @@ const beacons = [
   .stage { --dim: 0; position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #07080b url("/cenotaph/start-night.jpg") center / cover no-repeat; }
   .stage[data-time="day"] { background-image: url("/cenotaph/start-day.jpg"); }
   @media (orientation: portrait) { .stage { background-image: url("/cenotaph/start-night-portrait.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/start-day-portrait.jpg"); } }
+  :global(html.rb-calm) .stage { background-image: url("/cenotaph/end-night.jpg"); }
+  :global(html.rb-calm) .stage[data-time="day"] { background-image: url("/cenotaph/end-day.jpg"); }
+  @media (orientation: portrait) { :global(html.rb-calm) .stage { background-image: url("/cenotaph/end-night-portrait.jpg"); } :global(html.rb-calm) .stage[data-time="day"] { background-image: url("/cenotaph/end-day-portrait.jpg"); } }
   @media (prefers-reduced-motion: reduce) { .stage { background-image: url("/cenotaph/end-night.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/end-day.jpg"); } }
   @media (prefers-reduced-motion: reduce) and (orientation: portrait) { .stage { background-image: url("/cenotaph/end-night-portrait.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/end-day-portrait.jpg"); } }
   .view { position: absolute; inset: 0; will-change: transform; }
