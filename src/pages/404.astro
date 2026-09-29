@@ -22,9 +22,11 @@ const beacons = [
       </filter></defs>
     </svg>
     <div class="stage" data-stage data-routes={JSON.stringify(driftRoutes)} aria-hidden="true">
-      <video data-film muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
-      <video data-loop muted playsinline loop preload="none" disablepictureinpicture disableremoteplayback></video>
-      <canvas data-sky></canvas>
+      <div class="view" data-view>
+        <video data-film muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+        <video data-loop muted playsinline loop preload="none" disablepictureinpicture disableremoteplayback></video>
+        <canvas data-sky></canvas>
+      </div>
       <div class="scrim"></div>
     </div>
     <script is:inline>(function(){var s=document.querySelector('[data-stage]'),q=new URLSearchParams(location.search).get('t'),h=new Date().getHours();s.dataset.time=(q?q==='day':h>=7&&h<19)?'day':'night';})();</script>
@@ -35,11 +37,14 @@ const beacons = [
           <h1 id="void-title" class="void-title" data-i18n="404.title">{t("404.title")}</h1>
         </div>
         <div class="void-foot">
-        <p class="void-lead"><span data-i18n="404.lead.a">{t("404.lead.a")}</span> <code data-path>/unknown</code><span data-lead-b> <span data-i18n="404.lead.b">{t("404.lead.b")}</span></span><span data-lead-none hidden> <span data-i18n="404.lead.none">{t("404.lead.none")}</span></span></p>
+        <p class="void-lead"><span data-i18n="404.lead.a">{t("404.lead.a")}</span> <code data-path>/unknown</code> <span data-i18n="404.gone">{t("404.gone")}</span> <span class="reason" data-reason></span></p>
+        <p class="guess-kicker" data-kicker><span data-i18n="404.guess">{t("404.guess")}</span></p>
         <div class="void-actions">
-          <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><span class="evac-label" data-evac-label>{t("404.cta")}</span><span class="evac-arrow" aria-hidden="true">↗</span></a>
+          <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><img class="evac-thumb" data-thumb alt="" width="84" height="44" hidden /><span class="evac-copy"><span class="evac-label" data-evac-label>{t("404.cta")}</span><span class="evac-path" data-evac-path></span></span><span class="evac-arrow" aria-hidden="true">↗</span></a>
           <a href="/" class="void-home" data-home hidden><span data-i18n="404.home">{t("404.home")}</span></a>
         </div>
+        <p class="guess-alt" data-alt hidden><span data-i18n="404.also">{t("404.also")}</span></p>
+        <p class="star-note" data-star-note hidden></p>
         </div>
       </div>
       <div class="void-bottom">
@@ -72,36 +77,57 @@ const beacons = [
 </Layout>
 <script>
   import { prefersCalm } from "../utils/decode";
-  import { rankSignals } from "../data/drift-signals";
   import type { DriftRoute } from "../data/drift-routes";
+  import { guess, special, REASONS, type Guess } from "../data/lost-guess";
   import { mountLiquidGlass } from "../scripts/liquid-glass";
   import { mountCenotaph, type CenotaphMeta } from "../scripts/cenotaph";
+  import { mountCenotaphSound } from "../scripts/cenotaph-sound";
   const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
   mountLiquidGlass($("[data-evac]"), $<SVGImageElement>("[data-glass-map]"));
-  const stage = $("[data-stage]"), video = $<HTMLVideoElement>("[data-film]"), canvas = $<HTMLCanvasElement>("[data-sky]");
-  const requested = (() => { try { return decodeURI(location.pathname) || "/"; } catch { return location.pathname; } })();
+  const stage = $("[data-stage]"), view = $("[data-view]"), video = $<HTMLVideoElement>("[data-film]"), canvas = $<HTMLCanvasElement>("[data-sky]");
+  const path = (() => { try { return decodeURI(location.pathname) || "/"; } catch { return location.pathname; } })();
   const lang = (): "en" | "de" => document.documentElement.lang.startsWith("de") ? "de" : "en";
   const routes = JSON.parse(stage.dataset.routes || "[]") as DriftRoute[];
-  const evac = $<HTMLAnchorElement>("[data-evac]"), evacLabel = $("[data-evac-label]"), home = $<HTMLAnchorElement>("[data-home]");
+  const evac = $<HTMLAnchorElement>("[data-evac]"), evacLabel = $("[data-evac-label]"), evacPath = $("[data-evac-path]"), thumb = $<HTMLImageElement>("[data-thumb]");
+  const home = $<HTMLAnchorElement>("[data-home]"), kicker = $("[data-kicker]"), alt = $("[data-alt]"), reasonEl = $("[data-reason]"), starNote = $("[data-star-note]");
   const skip = $<HTMLButtonElement>("[data-skip]"), replay = $<HTMLButtonElement>("[data-replay]"), flash = $("[data-flash]");
-  const copy = { en: { take: "Take me to", back: "Back to the start" }, de: { take: "Bring mich zu", back: "Zurück zum Start" } };
-  $("[data-path]").textContent = requested;
-  const signal = rankSignals(requested, routes, lang(), 1)[0];
-  const best = signal && signal.score > 0 ? signal.route : undefined;
-  $("[data-lead-b]").hidden = !best; $("[data-lead-none]").hidden = !!best;
+  const copy = {
+    en: { back: "Back to the start", star: "Your star on the vault: №", gallery: "ARCHIVE", services: "SERVICES", contact: "CONTACT" },
+    de: { back: "Zurück zum Start", star: "Dein Stern im Gewölbe: №", gallery: "ARCHIV", services: "LEISTUNGEN", contact: "KONTAKT" },
+  };
+  $("[data-path]").textContent = path + (location.search.length > 1 && location.search.length < 40 ? location.search : "");
+  const egg = special(path);
+
+  // Did you mean: the best reading of the address, and up to two other close ones.
+  let guesses: Guess[] = [];
   const title = (route: DriftRoute) => route[lang()].split(" — ")[0];
   function paint() {
     const l = copy[lang()];
-    evac.href = best?.path ?? "/"; evacLabel.textContent = best ? `${l.take} ${title(best)}` : l.back; home.hidden = !best;
+    guesses = guess(path + location.search, routes, lang(), 3);
+    const top = guesses[0], found = top.score > 0 && !["admin", "meta", "newton"].includes(top.reason);
+    reasonEl.textContent = REASONS[lang()][top.reason];
+    kicker.hidden = !found;
+    evac.href = found ? top.route.path : "/";
+    evacLabel.textContent = found ? title(top.route) : l.back;
+    evacPath.textContent = found ? top.route.path : "";
+    thumb.hidden = !found; if (found) thumb.src = top.route.image;
+    home.hidden = !found;
+    alt.querySelectorAll("a").forEach(a => a.remove());
+    const rest = found ? guesses.slice(1).filter(g => g.score > .6) : [];
+    alt.hidden = !rest.length;
+    rest.forEach(g => { const a = document.createElement("a"); a.href = g.route.path; a.textContent = g.route[lang()].replace(/ \((German|Englisch)\)$/, "").replace(" — ", ": "); a.addEventListener("click", follow); alt.append(a); });
+    if (starNumber) starNote.textContent = `${l.star} ${starNumber.toLocaleString("de-AT")}`;
   }
-  paint();
+  let starNumber: number | null = null;
 
-  const go = (path: string) => { if (prefersCalm()) { location.href = path; return; } flash.classList.add("is-on"); setTimeout(() => location.href = path, 380); };
-  addEventListener("pageshow", () => flash.classList.remove("is-on"));
-  [evac, home].forEach(link => link.addEventListener("click", event => {
+  const go = (to: string) => { if (prefersCalm()) { location.href = to; return; } flash.classList.add("is-on"); setTimeout(() => location.href = to, 380); };
+  function follow(this: HTMLAnchorElement, event: MouseEvent) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-    event.preventDefault(); go(link.pathname);
-  }));
+    event.preventDefault(); go(this.pathname);
+  }
+  addEventListener("pageshow", () => flash.classList.remove("is-on"));
+  [evac, home].forEach(link => link.addEventListener("click", follow));
+  paint();
 
   // One film per orientation, both flown along the same camera path.
   const portrait = innerHeight > innerWidth;
@@ -113,23 +139,50 @@ const beacons = [
   const saveData = !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
   const still = reduced || saveData;
   video.poster = file(still ? "end" : "start", "jpg");
+  const at = (x: number, y: number, width: number) => ({ x: frame[0] * x, y: frame[1] * y, width: frame[0] * width });
   // Where the address is written: the open vault right of the sunbeam, or high and centred on a phone.
-  const anchor = () => {
-    const [W, H] = frame;
-    return portrait ? { x: W * .52, y: H * (time === "day" ? .525 : .41), width: W * .65 } : { x: W * .724, y: H * .306, width: W * .365 };
+  const anchor = () => portrait ? at(.52, time === "day" ? .525 : .41, .65) : at(.724, .306, .365);
+  // Faint constellations of other pages, in the open stretches of the vault.
+  const sections = () => {
+    const l = copy[lang()], de = lang() === "de";
+    const list = [
+      { text: de ? "archiv" : "gallery", href: "/gallery/", label: `${l.gallery} ↗` },
+      { text: de ? "leistungen" : "services", href: de ? "/de/leistungen/" : "/services/", label: `${l.services} ↗` },
+      { text: de ? "kontakt" : "contact", href: de ? "/de/kontakt/" : "/contact/", label: `${l.contact} ↗` },
+    ].filter(sec => sec.href !== guesses[0]?.route.path);
+    // A phone has no open vault to spare: the pages are listed below the fold instead.
+    const spots = portrait ? [] : [at(.2, .215, .2), at(.79, .55, .19), at(.79, .68, .19)];
+    return list.slice(0, spots.length).map((sec, i) => ({ ...sec, anchor: spots[i] }));
   };
+  const visitorAnchor = () => portrait ? at(.24, .585, 0) : at(.44, .585, 0);
+
   let cenotaph: ReturnType<typeof mountCenotaph> | undefined;
+  const sound = mountCenotaphSound(video, 12);
   const reveal = () => { stage.classList.add("is-vault"); skip.hidden = true; replay.hidden = false; };
   fetch("/cenotaph/camera.json").then(r => r.json() as Promise<CenotaphMeta>).then(meta => {
+    const top = guesses[0];
+    const target = egg === "newton" ? path : top.score > 0 && top.reason !== "admin" && top.reason !== "meta" ? top.route.path : "rodionbelousov.studio";
     cenotaph = mountCenotaph({
-      stage, video, canvas, meta, frameSize: () => frame, requested, target: best?.path ?? "rodionbelousov.studio", reduced, anchor, theme: time,
-      onReveal: reveal, onRepaired: () => evac.classList.add("is-found"),
+      stage, video, canvas, meta, frameSize: () => frame, requested: path, target, reduced, anchor, theme: time,
+      sections, visitorAnchor, still: egg === "newton",
+      onReveal: reveal,
+      onRepaired: () => { evac.classList.add("is-found"); if (egg === "newton") setTimeout(() => cenotaph?.dropApple(), 900); },
+      onEvent: (e, d) => sound.event(e, d),
+      onOpen: to => go(to),
     });
+    if (starNumber) cenotaph.visitor(starNumber);
     if (still) { cenotaph.still(); reveal(); return; }
     video.src = file("film", "mp4");
     const fallback = setTimeout(() => { if (video.paused && video.currentTime === 0) { video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); } }, 3500);
     video.play().then(() => clearTimeout(fallback)).catch(() => { clearTimeout(fallback); video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); });
   }).catch(error => { console.warn("404: no cenotaph", error); video.poster = file("end", "jpg"); reveal(); });
+
+  // Every lost visitor adds a star to the vault. Only the number is kept, never the address.
+  fetch("/api/lost/", { method: "POST" }).then(r => r.ok ? r.json() : null).then(d => {
+    if (!d || typeof d.number !== "number") return;
+    starNumber = d.number; paint(); starNote.hidden = false; cenotaph?.visitor(d.number);
+  }).catch(() => {});
+
   // After the flight the film hands over to a living loop shot from the same place: its first frame
   // is the film's last, so the switch cannot be seen.
   const loop = $<HTMLVideoElement>("[data-loop]");
@@ -140,14 +193,33 @@ const beacons = [
   video.addEventListener("ended", startLoop);
   skip.addEventListener("click", () => { cenotaph?.skip(); reveal(); startLoop(); });
   replay.addEventListener("click", () => { stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
+
+  // Look around the vault: the mouse, or the tilt of a phone, turns the view a little.
+  if (!reduced) {
+    let tx = 0, ty = 0, x = 0, y = 0;
+    addEventListener("pointermove", e => { if (e.pointerType === "mouse") { tx = e.clientX / innerWidth * 2 - 1; ty = e.clientY / innerHeight * 2 - 1; } }, { passive: true });
+    const tilt = (e: DeviceOrientationEvent) => { if (e.gamma == null || e.beta == null) return; tx = Math.max(-1, Math.min(1, e.gamma / 25)); ty = Math.max(-1, Math.min(1, (e.beta - 50) / 25)); };
+    const D = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+    if (typeof D?.requestPermission === "function") {
+      addEventListener("touchend", () => { D.requestPermission!().then(p => { if (p === "granted") addEventListener("deviceorientation", tilt); }).catch(() => {}); }, { once: true });
+    } else addEventListener("deviceorientation", tilt);
+    const look = () => {
+      x += (tx - x) * .045; y += (ty - y) * .045;
+      view.style.transform = `scale(1.07) translate3d(${(-x * 2.4).toFixed(3)}%, ${(-y * 1.8).toFixed(3)}%, 0)`;
+      requestAnimationFrame(look);
+    };
+    look();
+  }
   addEventListener("scroll", () => stage.style.setProperty("--dim", String(Math.min(1, scrollY / Math.max(1, innerHeight * .8)))), { passive: true });
-  addEventListener("rb:langchange", paint);
+  addEventListener("rb:langchange", () => { paint(); cenotaph?.resize(); });
 </script>
 <style>
   :global(body:has(.lost-world)) { background: #07080b; }
   :global(body:has(.lost-world) .site-fx), :global(body:has(.lost-world) rb-cursor-field) { display: none; }
   :global(html.has-custom-cursor:has(.lost-world)), :global(html.has-custom-cursor:has(.lost-world) a), :global(html.has-custom-cursor:has(.lost-world) button) { cursor: auto; }
   :global(body:has(.lost-world) sy-footer footer) { background: transparent; }
+  /* The nav sits over a bright vault by day: give its words a little night to stand on. */
+  :global(body:has(.lost-world) header a), :global(body:has(.lost-world) header button) { text-shadow: 0 1px 2px #0009, 0 0 16px #000a; }
   :global(body:has(.lost-world) sy-footer) { --footer-deep: 7, 8, 11; }
   .lost-world { --ember: #e3b183; --label: var(--font-inter), system-ui, sans-serif; color: #ece6de; }
 
@@ -156,14 +228,16 @@ const beacons = [
   @media (orientation: portrait) { .stage { background-image: url("/cenotaph/start-night-portrait.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/start-day-portrait.jpg"); } }
   @media (prefers-reduced-motion: reduce) { .stage { background-image: url("/cenotaph/end-night.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/end-day.jpg"); } }
   @media (prefers-reduced-motion: reduce) and (orientation: portrait) { .stage { background-image: url("/cenotaph/end-night-portrait.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/end-day-portrait.jpg"); } }
+  .view { position: absolute; inset: 0; will-change: transform; }
   .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stage canvas { pointer-events: auto; }
   .stage video { object-fit: cover; filter: brightness(calc(1 - var(--dim) * .72)); }
   .stage video[data-loop] { opacity: 0; }
   .stage:global(.is-looping) video[data-loop] { opacity: 1; }
   .stage canvas { opacity: calc(1 - var(--dim) * .8); }
   /* Ink under the words: the floor of the frame darkens a little more where the copy sits. */
   .scrim { position: absolute; inset: 0; pointer-events: none; background:
-    linear-gradient(180deg, #07080b8c 0%, transparent 16%),
+    linear-gradient(180deg, #07080bb8 0%, #07080b59 9%, transparent 18%),
     radial-gradient(ellipse 62% 58% at 14% 96%, #07080bd9 0%, #07080b8a 45%, transparent 75%),
     radial-gradient(ellipse 140% 90% at 50% 45%, transparent 55%, #07080b99 100%); }
 
@@ -187,7 +261,19 @@ const beacons = [
   .evac::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at var(--glass-x) var(--glass-y), #fff2e442, transparent 65%); opacity: .6; transition: opacity .35s; }
   .evac::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 1px solid #f1e3d42e; border-top-color: #fff1e285; border-bottom-color: #d3ad8555; }
   .evac:global(.is-found) { box-shadow: 0 10px 30px #0008, 0 0 44px #a9d2ff33, 0 0 0 1px #bcdcff40; }
-  .evac-label { position: relative; text-shadow: 0 1px 5px #0007; }
+  .evac-label { position: relative; display: block; font-weight: 500; text-shadow: 0 1px 5px #0007; }
+  .evac-copy { position: relative; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .evac-path { font: 400 12px var(--font-inter), sans-serif; color: #d9c7b3; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .evac-path:empty { display: none; }
+  .evac-thumb { position: relative; flex: none; width: 84px; height: 44px; border-radius: 12px; object-fit: cover; box-shadow: 0 0 0 1px #ffffff1f, 0 6px 16px #0006; }
+  .evac:has(.evac-thumb:not([hidden])) { padding-left: 9px; gap: 16px; }
+  .guess-kicker { display: flex; align-items: center; gap: 10px; margin: -10px 0 12px; font: 500 11px var(--label); letter-spacing: .2em; text-transform: uppercase; color: #e3b183; text-shadow: 0 1px 8px #000c; }
+  .guess-kicker::before { content: ""; width: 18px; height: 1px; background: currentColor; opacity: .7; }
+  .guess-alt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 16px 0 0; font: 400 13px var(--font-inter), sans-serif; color: #a9a199; pointer-events: auto; text-shadow: 0 1px 8px #000c; }
+  .guess-alt :global(a) { color: #e6dcd0; text-decoration: underline; text-decoration-color: #e3b18366; text-underline-offset: 4px; transition: color .3s; }
+  .guess-alt :global(a:hover) { color: #f4d0ae; }
+  .star-note { margin: 12px 0 0; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; color: #c4d6ea; text-shadow: 0 1px 8px #000c; }
+  .reason { color: #ddd3c7; }
   .evac-arrow { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 21px; background: linear-gradient(145deg,#fff4e81c,#ffffff05); border: 1px solid #fff1e226; transition: transform .4s; }
   .evac:hover { transform: translateY(-2px); box-shadow: 0 14px 34px #0009, 0 0 38px #e0a06a1f; }
   .evac:hover::before { opacity: 1; }
@@ -238,6 +324,10 @@ const beacons = [
     .void-title { font-size: clamp(38px, 10.5vw, 72px); margin-bottom: 0; }
     .void-lead { font-size: 14px; margin-bottom: 20px; max-width: 72%; }
     .void-lead code { font-size: 12px; }
+    .guess-kicker { margin: -6px 0 10px; font-size: 10px; }
+    .guess-alt, .star-note { display: none; }
+    .evac-thumb { width: 64px; height: 36px; border-radius: 10px; }
+    .evac-path { max-width: 170px; font-size: 11px; }
     .evac { gap: 18px; padding: 7px 8px 7px 20px; font-size: 14px; min-height: 54px; }
     .evac-arrow { width: 40px; height: 40px; }
     .void-bottom { left: 7%; right: 7%; bottom: 20px; gap: 12px; justify-content: space-between; }
