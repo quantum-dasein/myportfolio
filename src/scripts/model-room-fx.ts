@@ -34,12 +34,6 @@ const floorShader = {
     }`,
 };
 
-const coneVertex = /* glsl */`varying vec3 vN; varying vec3 vV; varying float vY;
-void main(){ vec4 w = modelMatrix * vec4(position, 1.); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); vY = uv.y; gl_Position = projectionMatrix * viewMatrix * w; }`;
-const coneFragment = /* glsl */`uniform float uGain, uTime; varying vec3 vN; varying vec3 vV; varying float vY;
-void main(){ float edge = pow(abs(dot(normalize(vN), vV)), 2.5); float a = edge * mix(.15, 1., vY) * (.92 + .08 * sin(uTime * .7));
-  gl_FragColor = vec4(vec3(1., .86, .66) * a * uGain, 1.); }`;
-
 const portalFragment = /* glsl */`uniform float uTime, uOpen, uNear; varying vec2 vUv;
 float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
@@ -68,14 +62,19 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
     scene.add(floor); disposables.push(floor);
   }
 
-  // Shafts of warm light from the suspended ring onto the exhibit, with dust drifting through them.
-  const cones: THREE.ShaderMaterial[] = [];
-  for (const [x, z] of [[-2.4, -3.6], [0, -3.1], [2.4, -3.6]]) {
-    const h = 5.8, geo = new THREE.CylinderGeometry(.22, 1.35, h, 40, 1, true); geo.translate(0, -h / 2, 0);
-    const m = new THREE.ShaderMaterial({ uniforms: { uGain: { value: mobile ? .16 : .12 }, uTime: { value: 0 } }, vertexShader: coneVertex, fragmentShader: coneFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-    const cone = new THREE.Mesh(geo, m); cone.position.set(x, 5.8, z); scene.add(cone); cones.push(m); disposables.push(geo, m);
-  }
-  const N = mobile ? 180 : 420, P = new Float32Array(N * 3), S = new Float32Array(N);
+  // Three hanging downlights over the exhibit: a real fixture, a glowing lens and a soft spot pool,
+  // instead of painted-on shafts that fogged over the kitchen.
+  const bronze = new THREE.MeshStandardMaterial({ color: '#6b5238', metalness: .85, roughness: .32 });
+  const lens = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 2.1, 1.7), toneMapped: false });
+  const can = new THREE.CylinderGeometry(.11, .085, .26, 28), stem = new THREE.CylinderGeometry(.008, .008, 1, 6), disc = new THREE.CircleGeometry(.075, 28);
+  disposables.push(bronze, lens, can, stem, disc);
+  for (const [x, z] of [[-2.4, -3.3], [0, -3.3], [2.4, -3.3]]) {
+    const body = new THREE.Mesh(can, bronze); body.position.set(x, 5.72, z); scene.add(body);
+    const rod = new THREE.Mesh(stem, bronze); rod.scale.y = .55; rod.position.set(x, 6.12, z); scene.add(rod);
+    const glass = new THREE.Mesh(disc, lens); glass.rotation.x = Math.PI / 2; glass.position.set(x, 5.585, z); scene.add(glass);
+    const spot = new THREE.SpotLight('#ffe1bd', mobile ? 26 : 32, 12, .5, .85, 2); spot.position.set(x, 5.55, z);
+    spot.target.position.set(x * .85, .9, z - .2); scene.add(spot, spot.target);
+  }  const N = mobile ? 180 : 420, P = new Float32Array(N * 3), S = new Float32Array(N);
   for (let i = 0; i < N; i++) { P.set([(Math.random() - .5) * 8, Math.random() * 5.6, -3.4 + (Math.random() - .5) * 4.4], i * 3); S[i] = Math.random(); }
   const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(P, 3)); dg.setAttribute('aSeed', new THREE.BufferAttribute(S, 1));
   const dm = new THREE.ShaderMaterial({
@@ -98,7 +97,6 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
   const portalLight = new THREE.PointLight('#8fe6e0', 5, 9, 1.8); portalLight.position.set(0, 2.2, 10.6); scene.add(portalLight);
 
   updates.push((t) => {
-    for (const m of cones) m.uniforms.uTime.value = t;
     dm.uniforms.uTime.value = t; dm.uniforms.uPx.value = renderer.getPixelRatio();
     const near = THREE.MathUtils.clamp(1 - (11.2 - camera.position.z) / 4, 0, 1) * (Math.abs(camera.position.x) < 2 ? 1 : 0);
     pm.uniforms.uTime.value = t; pm.uniforms.uNear.value += (near - pm.uniforms.uNear.value) * .08;

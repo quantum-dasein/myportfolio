@@ -689,6 +689,11 @@ export async function mountObservatory(root:HTMLElement){
     world.onFrame=state=>sound.frame(state);world.onSettle=room=>{sound.arrive(room);if(room!==announcedRoom&&performance.now()-announcedAt>2500){announcedRoom=room;announcedAt=performance.now();showRoomCard(room);sound.gate();}pendingRoom=-1;};world.onTeleport=phase=>sound.teleport(phase);void loadStars();// The gate ripples on every crossing, but the room is only announced once you have settled in it.
     world.onGate=room=>{pendingRoom=room;};announcedRoom=archiveWorks[current].roomIndex;
     world.setPortalTexts(portalLines());addEventListener('rb:langchange',()=>world?.setPortalTexts(portalLines()),{signal});
+    const paintingTexts=()=>de()
+      ?['Der Modellraum · 3D','Von Hand gebaut, Polygon für Polygon.','Treten Sie in das Bild.','Gehen Sie um jedes Objekt herum.','Kommen Sie näher. Jede Kante ist echt.']
+      :['The Model Room · 3D','Built by hand, polygon by polygon.','Step into the painting.','Walk around every object.','Come closer. Every edge is real.'];
+    const setPaintingTexts=()=>{const [kicker,...lines]=paintingTexts();world?.setModelPaintingTexts(kicker,lines);};
+    setPaintingTexts();addEventListener('rb:langchange',setPaintingTexts,{signal});
     world.onFinaleDone=()=>{root.classList.add('is-contact');finale.setAttribute('aria-hidden','false');finale.querySelector<HTMLAnchorElement>('[data-obs-finale-cta]')!.href=de()?'/de/kontakt/':'/contact/';setTimeout(()=>finale.querySelector<HTMLElement>('a')?.focus({preventScroll:true}),700);};
     world.onFinaleBack=()=>{inFinale=false;root.classList.remove('is-finale');};world.onLand=()=>sound.land();
     if(location.search.includes('obsdebug'))(window as any).__obsWorld=world;

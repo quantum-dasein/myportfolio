@@ -10,6 +10,7 @@ import { createModelRoomDesign } from './model-room-design';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createRoomFx } from './model-room-fx';
 import { createAstronaut } from './observatory-astronaut';
+import { createRoomSound } from './model-room-sound';
 
 /** A separate scene: it is only downloaded after entering the archive's portal. */
 export async function mountModelRoom(root: HTMLElement) {
@@ -33,7 +34,7 @@ export async function mountModelRoom(root: HTMLElement) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   /** Walk into the rear frame: the light takes you back to the painting in the archive. */
   function leave() {
-    leaving = true; if (document.pointerLockElement) document.exitPointerLock();
+    leaving = true; sound.leave(); if (document.pointerLockElement) document.exitPointerLock();
     const veil = document.createElement('div'); veil.className = 'mr-exit-veil'; root.append(veil);
     const go = () => location.assign('/gallery/model-room/');
     if (reduced) { go(); return; }
@@ -41,6 +42,7 @@ export async function mountModelRoom(root: HTMLElement) {
   }
   addEventListener('pageshow', event => { if (event.persisted) { leaving = false; root.querySelectorAll('.mr-exit-veil').forEach(v => v.remove()); if (ready) home(); } });
   const astro = createAstronaut(); let astroPhase = 0, astroWalk = 0;
+  const sound = createRoomSound(); let stepping = 0;
   const astroFrom = new THREE.Vector3(1.1, 0, 10.9), astroTo = new THREE.Vector3(2.3, 0, .3), astroVia = new THREE.Vector3(3.2, 0, 6);
   let composer: EffectComposer | undefined, bloom: UnrealBloomPass | undefined;
   let studioLight = false;
@@ -72,7 +74,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;keys.clear();touchKeys.clear();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -127,7 +129,7 @@ export async function mountModelRoom(root: HTMLElement) {
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObjects(meshes, false)[0];
     if (!hit) { selected = '';selection.visible = false;labelSelection();return; }
-    selected = hit.object.name;mode(true);
+    selected = hit.object.name;mode(true);sound.select();
     selection.box.setFromObject(hit.object);selection.visible = true;labelSelection();
   }
   function blocked(x: number, z: number) {
@@ -149,7 +151,8 @@ export async function mountModelRoom(root: HTMLElement) {
       const dz = (-Math.cos(yaw) * forward - Math.sin(yaw) * right) * speed;
       if (!blocked(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
       if (!blocked(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
-    }
+      stepping = forward || right ? 1 : 0;
+    } else stepping = 0;
     if (inspecting) orbit?.update();
     const t = time / 1000;
     // Arrival from the portal: a slow glide out of the rear frame to the first view.
@@ -171,6 +174,7 @@ export async function mountModelRoom(root: HTMLElement) {
       astro.animate(astroPhase, astroWalk, 0, dt, 0, { yaw: .25 * Math.sin(t * .23), pitch: -.08 });
     }
     fx?.update(t, dt);
+    sound.frame(stepping, THREE.MathUtils.clamp(1 - (11.3 - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4));
     // The way back only opens once you have stepped clear of it (you arrive standing in it).
     if (arriveAt < 0 && camera.position.z < 10.2) portalArmed = true;
     if (ready && portalArmed && !leaving && !inspecting && fx?.inPortal(camera.position)) leave();
@@ -283,7 +287,7 @@ export async function mountModelRoom(root: HTMLElement) {
     { const hb = new THREE.Box3().setFromObject(astro.root), h = hb.max.y - hb.min.y; if (h > .5) astro.root.scale.multiplyScalar(1.8 / h); }
     astro.root.position.copy(astroFrom); astro.root.rotation.y = Math.PI; astro.root.visible = !reduced;
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
-    if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; }
+    if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     resume();
   } catch (error) {
     if (!disposed) { console.warn('Model Room could not open', error);fail(); }

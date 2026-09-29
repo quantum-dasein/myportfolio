@@ -66,10 +66,10 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
   function lettering(text: string, subtitle: string, x: number, y: number, z: number, width: number, rotation = 0) {
     const c = document.createElement('canvas');c.width = 1024;c.height = 256;
     const context = c.getContext('2d')!;context.clearRect(0, 0, 1024, 256);
-    context.textAlign = 'center';context.fillStyle = '#d6ddd2';context.font = '500 74px sans-serif';context.fillText(text, 512, 112);
-    context.fillStyle = '#a5b6ac';context.font = '24px monospace';context.fillText(subtitle, 512, 178);
+    context.textAlign = 'center';context.fillStyle = '#f4f7f1';context.font = '500 74px sans-serif';context.fillText(text, 512, 112);
+    context.fillStyle = '#d2e6da';context.font = '500 28px monospace';context.fillText(subtitle, 512, 178);
     const texture = new THREE.CanvasTexture(c);texture.colorSpace = THREE.SRGBColorSpace;
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 4), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false }));
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 4), new THREE.MeshBasicMaterial({ map: texture, color: new THREE.Color(2.1, 2.15, 2), transparent: true, depthWrite: false, toneMapped: false }));
     mesh.position.set(x, y, z);mesh.rotation.y = rotation;scene.add(mesh);return mesh;
   }
   lettering('WHITE / WOOD', '01     FORM, MATERIAL & LIGHT', 0, 4.24, -7.08, 5.3);
@@ -95,7 +95,7 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
   box(3.5, 4.35, .13, 0, 2.18, 11.74, bronze, .09);
   box(3.25, 4.13, .15, 0, 2.18, 11.61, jade, .08);
   box(3.09, 4, .17, 0, 2.16, 11.49, graphite, .07);
-  lettering('THE ARCHIVE', 'RETURN THROUGH THE FRAME', 0, 2.75, 11.38, 2.65, Math.PI);
+  lettering('THE ARCHIVE', 'RETURN THROUGH THE FRAME', 0, 4.95, 11.8, 2.9, Math.PI);
   const exit = new THREE.PointLight('#95d6c2', 18, 9, 2);exit.position.set(0, 2.5, 10.5);scene.add(exit);
 
   const key = new THREE.DirectionalLight('#ffe7c5', 2.5);key.position.set(-3.5, 7, 3);
@@ -104,8 +104,9 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
   key.shadow.normalBias = .022;key.shadow.bias = -.00015;key.shadow.radius = 3;
   key.target.position.set(0, 1.4, -3.5);scene.add(key, key.target);
   const fill = new THREE.DirectionalLight('#bfdae0', 1.05);fill.position.set(5, 3.5, 2);scene.add(fill);
-  const top = new THREE.PointLight('#ffdab0', 38, 13, 2);top.position.set(0, 5.5, -2);scene.add(top);
-  const wallWash = new THREE.PointLight('#bdd8c5', 11, 11, 2);wallWash.position.set(0, 4.6, -6.5);scene.add(wallWash);
+  // Kept low: the downlights (model-room-fx.ts) carry the exhibit, so the niche no longer burns white.
+  const top = new THREE.PointLight('#ffdab0', 16, 13, 2);top.position.set(0, 5.5, -2);scene.add(top);
+  const wallWash = new THREE.PointLight('#bdd8c5', 3.5, 11, 2);wallWash.position.set(0, 4.6, -5.2);scene.add(wallWash);
   scene.add(new THREE.HemisphereLight('#c5d1d0', '#26261e', .65));
 
   async function dressModel(model: THREE.Group) {

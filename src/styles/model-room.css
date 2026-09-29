@@ -38,8 +38,8 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 
 /* Arriving through the portal: the loading screen is the portal's own light, continuing the crossing
    from the archive, and it clears as the camera steps out of the rear frame. */
-.mr-loading{background:radial-gradient(ellipse 60% 55% at 50% 48%,#3f8f86 0%,#1d4a45 32%,#0a1718 70%,#080f10 100%)}
-.mr-loading:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 48%,#dffcf6cc 0,#9fe8dc55 9%,transparent 28%);animation:mr-portal-breathe 2.6s ease-in-out infinite;pointer-events:none}
+.mr-loading{background:radial-gradient(ellipse 60% 55% at 50% 48%,#4fdc9c 0%,#12513a 36%,#07140f 72%,#050d0a 100%)}
+.mr-loading:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 48%,#e4fff0dd 0,#9ff0c455 9%,transparent 28%);animation:mr-portal-breathe 2.6s ease-in-out infinite;pointer-events:none}
 .mr-loading img{display:none}
 .mr-loading p{position:relative;font:500 11px/1.6 var(--font-display);letter-spacing:.2em;text-transform:uppercase;color:#e6fffa;text-shadow:0 1px 12px #0009}
 @keyframes mr-portal-breathe{50%{opacity:.55;transform:scale(1.06)}}

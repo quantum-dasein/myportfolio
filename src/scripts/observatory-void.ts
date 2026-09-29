@@ -7,6 +7,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createCurator } from './observatory-curator';
+import { LivingPainting, livingFragment } from './model-portal-painting';
 import { archiveWorks, archiveRooms } from '../data/observatory';
 import { shipModel, workModels } from '../data/observatory-models';
 export type VisitorStar={u:number;v:number;city:string;country:string;t:number};
@@ -36,6 +37,7 @@ type Bay={
   texture?:THREE.Texture;loading?:Promise<void>;
   projector?:THREE.Mesh<THREE.BufferGeometry,Shader>;
   tint:THREE.Color;reveal:number;active:number;hover:number;room:number;lum:number;edge:THREE.Color;match:number;
+  living?:LivingPainting;
 };
 
 // Each room has its own weather. Values blend continuously as the camera travels.
@@ -252,7 +254,7 @@ export class ObservatoryWorld {
   portalCanvas=document.createElement('canvas');portalText!:THREE.CanvasTexture;portalLines:string[]=[];portalLine=-1;portalLineAt=-1e9;
   beamCore!:THREE.Mesh<THREE.CylinderGeometry,Shader>;beamRings:THREE.Mesh<THREE.RingGeometry,THREE.MeshBasicMaterial>[]=[];
   onFinaleDone?:()=>void;onFinaleBack?:()=>void;portalAura!:THREE.Mesh<THREE.PlaneGeometry,Shader>;
-  modelEntryIndex=-1;modelEntryResolve?: (completed:boolean)=>void;
+  modelEntryIndex=-1;modelEntryResolve?: (completed:boolean)=>void;livingPainting?:LivingPainting;
   exhibits=new Map<number,{pivot:THREE.Group;spin:number;drag:number}>();ship=new THREE.Group();shipPlaced=false;
   visitorStars:VisitorStar[]=[];visitorGroup=new THREE.Group();visitorPoints!:THREE.Points<THREE.BufferGeometry,Shader>;
   spark!:THREE.Sprite;sparkFlight?:{star:VisitorStar;from:THREE.Vector3;t:number;resolve:()=>void};
@@ -438,12 +440,14 @@ export class ObservatoryWorld {
       halo.scale.set(w+3.2,h+3.2,1);halo.position.set(0,LIFT+h/2,-.35);group.add(halo);
       const pool=new THREE.Mesh(flat,new THREE.ShaderMaterial({uniforms:{uTint:{value:tint.clone()},uIntensity:{value:0}},vertexShader:plainVertex,fragmentShader:poolFragment,...additive}));
       pool.rotation.x=-Math.PI/2;pool.scale.set(w*1.7,7,1);pool.position.set(0,.012,1.4);group.add(pool);
+      // The Model Room's entrance is a living painting; every other work is a print.
+      const living=work.portalHref?new LivingPainting():undefined;if(living)this.livingPainting=living;
       const screen=new THREE.Mesh(screenGeo,new THREE.ShaderMaterial({
-        uniforms:{uMap:{value:this.placeholder},uTime:{value:0},uShift:{value:0},uReveal:{value:0},uDim:{value:1},uHover:{value:0},uLight:{value:1},uBend:{value:0},uHolo:{value:0},uTint:{value:tint.clone()},uGlare:{value:new THREE.Vector3()}},
-        vertexShader:screenVertex,fragmentShader:screenFragment,transparent:true,fog:false,
+        uniforms:{uMap:{value:this.placeholder},uTime:{value:0},uShift:{value:0},uReveal:{value:0},uDim:{value:1},uHover:{value:0},uLight:{value:1},uBend:{value:0},uHolo:{value:0},uTint:{value:tint.clone()},uGlare:{value:new THREE.Vector3()},...living?.uniforms()},
+        vertexShader:screenVertex,fragmentShader:living?livingFragment:screenFragment,transparent:true,fog:false,
       }));
       screen.scale.set(w,h,1);screen.position.set(0,LIFT+h/2,0);screen.userData.index=i;group.add(screen);
-      const bay:Bay={group,screen,halo,beam,pool,tint,reveal:0,active:0,hover:0,match:1,room:work.roomIndex,lum:.4,edge:new THREE.Color('#d9dee4')};
+      const bay:Bay={group,screen,halo,beam,pool,tint,reveal:0,active:0,hover:0,match:1,room:work.roomIndex,lum:.4,edge:new THREE.Color('#d9dee4'),living};
       // The cinema room: every film is thrown onto its frame by a projector overhead.
       if(ROOMS[work.roomIndex].projector){
         bay.projector=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.ShaderMaterial({uniforms:{uTint:{value:tint.clone()},uIntensity:{value:0},uTime:{value:0}},vertexShader:projectorVertex,fragmentShader:projectorFragment,...additive,side:THREE.DoubleSide}));
@@ -922,13 +926,18 @@ export class ObservatoryWorld {
     this.target=this.index*GAP;
     this.portal.position.x=this.index*GAP-((archiveWorks.length-1)*GAP+7.6);
     this.portal.position.z=.15;
-    this.bays[this.index].screen.visible=false;
+    // The painting itself opens: the contact portal only lends its choreography and a green corona.
+    this.portalMembrane.visible=false;
+    (this.portalAura.material.uniforms.uTint.value as THREE.Color).set('#2bcf84');
+    (this.portalPool.material.uniforms.uTint.value as THREE.Color).set('#27b877');
     this.setFinale(true);
     return new Promise<boolean>(resolve=>{this.modelEntryResolve=resolve;});
   }
   cancelModelPortal(){
     if(this.modelEntryIndex<0)return;
-    this.bays[this.modelEntryIndex].screen.visible=true;
+    this.portalMembrane.visible=true;
+    (this.portalAura.material.uniforms.uTint.value as THREE.Color).set('#7fd0ff');
+    (this.portalPool.material.uniforms.uTint.value as THREE.Color).set('#6fc6ff');
     this.modelEntryIndex=-1;this.finale=0;this.finaleGoal=false;this.finaleOut=0;
     this.portal.position.set(0,0,0);this.dissolve.uDissolve.value=0;
     this.curator.root.visible=true;this.curator.root.rotation.x=0;
@@ -936,6 +945,7 @@ export class ObservatoryWorld {
     this.modelEntryResolve?.(false);this.modelEntryResolve=undefined;
   }
   setPortalTexts(lines:string[]){this.portalLines=lines;this.portalLineAt=-1e9;}
+  setModelPaintingTexts(kicker:string,lines:string[]){this.livingPainting?.setTexts(kicker,lines);}
   private drawPortalLine(line:string){
     const ctx=this.portalCanvas.getContext('2d');if(!ctx)return;
     ctx.clearRect(0,0,2048,512);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
@@ -1499,13 +1509,14 @@ export class ObservatoryWorld {
     if(Math.abs(this.camera.fov-fov)>.01){this.camera.fov=fov;this.camera.updateProjectionMatrix();}
     if(this.finale>0){
       // Follow him to the portal, then fly through it after him.
-      const t=this.finale,px=this.portalX(),py=this.portalMembrane.position.y;
+      const t=this.finale,px=this.portalX(),py=this.modelEntryIndex>=0?this.bays[this.modelEntryIndex].screen.position.y:this.portalMembrane.position.y;
       const xv=mix(x,px,smooth(0,.4,t));
       if(narrow){this.scratchVec.set(xv,3.5,17.5);this.scratchVec2.set(xv,3.05,0);}
       else{this.scratchVec.set(xv-4.6,1.75,12.6);this.scratchVec2.set(xv-1.3,2.45,0);}
       const hall=smooth(0,.3,t);this.cameraGoal.lerp(this.scratchVec,hall);this.look.lerp(this.scratchVec2,hall);
       const fly=smooth(.5,.9,t),dive=smooth(.8,1,t);
-      this.cameraGoal.lerp(this.scratchVec.set(px,py,mix(narrow?8:5.5,-3,dive)),fly);
+      // Into a painting the flight ends inside its light, never behind the canvas.
+      this.cameraGoal.lerp(this.scratchVec.set(px,py,mix(narrow?8:5.5,this.modelEntryIndex>=0?.35:-3,dive)),fly);
       this.look.lerp(this.scratchVec2.set(px,py,-30),smooth(.45,.75,t));
     }
     const bay=this.bays[this.index],screen=bay.screen,centre=this.index*GAP;
@@ -1580,6 +1591,12 @@ export class ObservatoryWorld {
       u.uLight.value=focusOthers*(this.exhibits.has(i)?.5:1);
       (u.uGlare.value as THREE.Vector3).set((tp.x-i*GAP)/bay.screen.scale.x+.5,(tp.y-bay.screen.position.y)/bay.screen.scale.y+.5,power*(tp.y>.3?1:.35)*(1-this.focus));
       u.uHolo.value=ROOMS[bay.room].holo*(isCurrent?mix(.3,0,this.focus):1)*(this.calm?.4:1);
+      if(bay.living){
+        // Alive while you stand at it; opening in green light as he steps in.
+        u.uOpen.value=this.modelEntryIndex===i?smooth(.42,.8,this.finale):0;
+        u.uAspect.value=bay.screen.scale.x/Math.max(.01,bay.screen.scale.y);
+        u.uTextAlpha.value=bay.living.update(time)*(1-ov);u.uWake.value=bay.active;
+      }
       const room=ROOMS[bay.room];
       let light=(.22+.78*bay.active)*bay.reveal*focusOthers*mix(.08,1,bay.match)+(this.filterMask&&this.filterMask[i]&&!isCurrent?.18*bay.match:0);
       if(ov>0){
@@ -1587,7 +1604,7 @@ export class ObservatoryWorld {
         u.uDim.value=mix(u.uDim.value,this.mapHover===i?0:.28,ov);u.uHolo.value*=1-ov;u.uBend.value*=1-ov;
       }
       const soften=mix(1.15,.35,bay.lum);
-      bay.halo.material.uniforms.uIntensity.value=light*.24*(1-this.focus*.6)*soften;
+      bay.halo.material.uniforms.uIntensity.value=light*.24*(1-this.focus*.6)*soften*(bay.living?1+bay.screen.material.uniforms.uOpen.value*4:1);
       bay.beam.material.uniforms.uIntensity.value=light*(this.mobile?.12:.15)*(1-this.focus)*room.beam*(isCurrent?stutter:lamp)*(1-ov);
       bay.beam.material.uniforms.uTime.value=this.elapsed;
       bay.pool.material.uniforms.uIntensity.value=light*.13*soften*(1-ov);

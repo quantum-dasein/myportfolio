@@ -37,11 +37,19 @@ jump. Source OBJ, MAX files and the RAR are not public assets.
 
 ## Atmosphere, arrival and return
 
+The archive entrance is a living painting (`src/scripts/model-portal-painting.ts`):
+
+- a drifting tunnel of frames and a turning wireframe gem;
+- invitation lines that cycle, with the text set in `observatory.ts`;
+- on entry the painting burns open from the gem into a green vortex, and the
+  camera flies into it. The contact portal only lends its walk-and-dive
+  choreography and a green corona.
+
 `src/scripts/model-room-fx.ts` adds the room's atmosphere on top of the
 architecture in `model-room-design.ts`:
 
 - a mirrored terrazzo floor (desktop only);
-- light shafts with drifting dust;
+- three hanging downlights with soft spot pools, and drifting dust;
 - a portal membrane in the rear frame;
 - ambient occlusion and a vignette/grain finish;
 - a quality guard that drops the AO pass, then lowers the mirror resolution, on
@@ -51,6 +59,15 @@ Visitors arrive by gliding out of the rear portal while the astronaut walks
 past to the exhibit. Walking back into the light, after first stepping clear
 of it, fades out and returns to the entrance painting. On desktop, a click
 captures the mouse for game-style looking.
+
+`src/scripts/model-room-sound.ts` gives the room its own synthesised score. It
+follows the site's sound switch and mutes the studio drone while the room plays:
+
+- a slow pad in A with occasional bells;
+- a portal hum that grows as you approach.
+
+Footsteps, the arrival and exit shimmers, and selection sounds play whenever
+the visitor acts.
 
 `src/data/observatory.ts` owns the entrance. `src/pages/gallery/models.astro`,
 `src/scripts/model-room.ts` and `src/styles/model-room.css` own the new room.

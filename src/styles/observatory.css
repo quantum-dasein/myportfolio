@@ -1,5 +1,5 @@
 .observatory{--obs-ink:var(--color-text);--obs-muted:rgba(var(--rgb-text),.6);--obs-accent:var(--color-accent);--obs-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;position:relative;color:var(--obs-ink);font-family:var(--font-inter)}
-.obs-model-crossing{position:fixed;inset:0;z-index:1000;background:radial-gradient(ellipse at center,#23493f,#080f10 65%);pointer-events:none}
+.obs-model-crossing{position:fixed;inset:0;z-index:1000;background:radial-gradient(ellipse at center,#c9ffe4 0%,#4fdc9c 20%,#12513a 52%,#050d0a 88%);pointer-events:none}
 .observatory.is-ready{height:100svh}
 .observatory button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0;-webkit-tap-highlight-color:transparent}
 .observatory button:focus-visible,.observatory a:focus-visible{outline:2px solid var(--obs-accent);outline-offset:6px}
