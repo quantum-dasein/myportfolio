@@ -12,7 +12,7 @@ const beacons = [
   { id: "06", key: "meta", path: "/work/studio/", type: "ENGINE ROOM" },
 ] as const;
 ---
-<Layout title="404 — Fundbüro" description="This page doesn't exist. The lost-and-found office at rodionbelousov.studio found what you were probably looking for." noindex={true} noWebgl={true} hideFinale={true}>
+<Layout title="404 — Lost among the stars" description="This page doesn't exist. Inside Boullée's Cenotaph for Newton, the address you typed is written in the stars — and repairs itself." noindex={true} noWebgl={true} hideFinale={true}>
   <div class="lost-world">
     <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
       <defs><filter id="evac-glass-lens" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
@@ -21,24 +21,30 @@ const beacons = [
         <feGaussianBlur stdDeviation="0.35" />
       </filter></defs>
     </svg>
-    <div class="office" data-office data-routes={JSON.stringify(driftRoutes)} aria-hidden="true"></div>
+    <div class="stage" data-stage data-routes={JSON.stringify(driftRoutes)} aria-hidden="true">
+      <video data-film muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+      <canvas data-sky></canvas>
+      <div class="scrim"></div>
+    </div>
     <section class="void" aria-labelledby="void-title">
-      <div class="void-ui">
-        <p class="void-eyebrow"><i></i><span data-i18n="404.eyebrow">{t("404.eyebrow")}</span></p>
-        <h1 id="void-title" class="void-title" data-i18n="404.title">{t("404.title")}</h1>
+      <div class="void-ui" data-ui>
+        <div class="void-head">
+          <p class="void-eyebrow"><i></i><span data-i18n="404.eyebrow">{t("404.eyebrow")}</span></p>
+          <h1 id="void-title" class="void-title" data-i18n="404.title">{t("404.title")}</h1>
+        </div>
+        <div class="void-foot">
         <p class="void-lead"><span data-i18n="404.lead.a">{t("404.lead.a")}</span> <code data-path>/unknown</code><span data-lead-b> <span data-i18n="404.lead.b">{t("404.lead.b")}</span></span><span data-lead-none hidden> <span data-i18n="404.lead.none">{t("404.lead.none")}</span></span></p>
-      </div>
-      <div class="counter-ui" data-counter-ui>
         <div class="void-actions">
           <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><span class="evac-label" data-evac-label>{t("404.cta")}</span><span class="evac-arrow" aria-hidden="true">↗</span></a>
           <a href="/" class="void-home" data-home hidden><span data-i18n="404.home">{t("404.home")}</span></a>
         </div>
-        <p class="filed" data-filed role="status" aria-live="polite"></p>
+        </div>
       </div>
       <div class="void-bottom">
         <a href="#recovery" class="void-scroll"><span class="scroll-mark" aria-hidden="true">↓</span><span data-i18n="404.scroll">{t("404.scroll")}</span></a>
-        <p class="grab-hint" data-grab><span data-i18n="404.grab">{t("404.grab")}</span></p>
-        <button class="bell-button" type="button" data-bell><span class="bell-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 18h16M6 18a6 6 0 0 1 12 0M12 12V9m-1.5 0h3"/></svg></span><span data-i18n="404.bell">{t("404.bell")}</span></button>
+        <p class="credit" data-i18n="404.credit">{t("404.credit")}</p>
+        <button class="film-button" type="button" data-skip><span data-i18n="404.skip">{t("404.skip")}</span><span aria-hidden="true">→</span></button>
+        <button class="film-button" type="button" data-replay hidden><span aria-hidden="true">↺</span><span data-i18n="404.replay">{t("404.replay")}</span></button>
       </div>
     </section>
     <section class="recover" id="recovery" aria-labelledby="recover-title">
@@ -67,43 +73,26 @@ const beacons = [
   import { rankSignals } from "../data/drift-signals";
   import type { DriftRoute } from "../data/drift-routes";
   import { mountLiquidGlass } from "../scripts/liquid-glass";
+  import { mountCenotaph, type CenotaphMeta } from "../scripts/cenotaph";
   const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
   mountLiquidGlass($("[data-evac]"), $<SVGImageElement>("[data-glass-map]"));
-  const host = $("[data-office]");
+  const stage = $("[data-stage]"), video = $<HTMLVideoElement>("[data-film]"), canvas = $<HTMLCanvasElement>("[data-sky]");
   const requested = (() => { try { return decodeURI(location.pathname) || "/"; } catch { return location.pathname; } })();
   const lang = (): "en" | "de" => document.documentElement.lang.startsWith("de") ? "de" : "en";
-  const routes = JSON.parse(host.dataset.routes || "[]") as DriftRoute[];
+  const routes = JSON.parse(stage.dataset.routes || "[]") as DriftRoute[];
   const evac = $<HTMLAnchorElement>("[data-evac]"), evacLabel = $("[data-evac-label]"), home = $<HTMLAnchorElement>("[data-home]");
-  const counterUi = $("[data-counter-ui]"), filed = $("[data-filed]"), grab = $("[data-grab]"), flash = $("[data-flash]");
-  const copy = {
-    en: { take: "Take me to", back: "Back to the start", filed: "Filed on the shelf as found item no.", filedNone: "Filed on the shelf." },
-    de: { take: "Bring mich zu", back: "Zurück zum Start", filed: "Im Regal abgelegt als Fundstück Nr.", filedNone: "Im Regal abgelegt." },
-  };
+  const skip = $<HTMLButtonElement>("[data-skip]"), replay = $<HTMLButtonElement>("[data-replay]"), flash = $("[data-flash]");
+  const copy = { en: { take: "Take me to", back: "Back to the start" }, de: { take: "Bring mich zu", back: "Zurück zum Start" } };
   $("[data-path]").textContent = requested;
   const signal = rankSignals(requested, routes, lang(), 1)[0];
   const best = signal && signal.score > 0 ? signal.route : undefined;
   $("[data-lead-b]").hidden = !best; $("[data-lead-none]").hidden = !!best;
-  let number: number | null = null;
   const title = (route: DriftRoute) => route[lang()].split(" — ")[0];
   function paint() {
     const l = copy[lang()];
     evac.href = best?.path ?? "/"; evacLabel.textContent = best ? `${l.take} ${title(best)}` : l.back; home.hidden = !best;
-    if (filed.dataset.shown) filed.textContent = number ? `${l.filed} ${number}.` : l.filedNone;
   }
   paint();
-
-  // Tags already on the shelves: plausible slips of the site's own addresses, never visitor text.
-  function slip(path: string, seed: number) {
-    const core = path.replace(/^\/|\/$/g, ""); if (core.length < 4) return null;
-    const i = 1 + (seed % (core.length - 2)), kind = seed % 4;
-    const out = kind === 0 ? core.slice(0, i) + core.slice(i + 1) : kind === 1 ? core.slice(0, i) + core[i] + core.slice(i) : kind === 2 ? core.slice(0, i) + core[i + 1] + core[i] + core.slice(i + 2) : core.slice(0, i) + (/[aeiou]/.test(core[i]) ? "eaiou"["aeiou".indexOf(core[i])] : "k") + core.slice(i + 1);
-    return `/${out}/`;
-  }
-  const shelfPaths = routes.filter(r => r.path.length < 26).map((r, i) => slip(r.path, i * 7 + 3)).filter((p): p is string => !!p);
-
-  // The counter only stores a number; one per visitor per day.
-  const numberPromise = fetch("/api/lost/", { method: "POST" }).then(r => r.ok ? r.json() : null).then(d => (d && typeof d.number === "number" ? d.number : null)).catch(() => null);
-  numberPromise.then(n => { number = n; paint(); });
 
   const go = (path: string) => { if (prefersCalm()) { location.href = path; return; } flash.classList.add("is-on"); setTimeout(() => location.href = path, 380); };
   addEventListener("pageshow", () => flash.classList.remove("is-on"));
@@ -112,73 +101,86 @@ const beacons = [
     event.preventDefault(); go(link.pathname);
   }));
 
-  let office: ReturnType<typeof import("../scripts/fundbuero").mountFundbuero> | undefined;
-  const placeUi = () => { if (!office) return; const at = office.anchor(); counterUi.style.setProperty("--ax", `${at.x}px`); counterUi.style.setProperty("--ay", `${at.y}px`); };
-  const webgl = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
-  if (webgl) {
-    import("../scripts/fundbuero").then(({ mountFundbuero }) => {
-      office = mountFundbuero({
-        host, requested, target: best?.path ?? null, lang, reduced: prefersCalm(), number: numberPromise, shelfPaths,
-        onRepaired: () => { placeUi(); counterUi.classList.add("is-on"); setTimeout(() => grab.classList.add("is-on"), 2400); },
-        onFiled: () => { filed.dataset.shown = "1"; paint(); filed.classList.add("is-on"); },
-      });
-      addEventListener("resize", placeUi);
-    }).catch(error => { console.warn("404: static office", error); host.classList.add("is-static"); counterUi.classList.add("is-on", "is-static"); });
-  } else { host.classList.add("is-static"); counterUi.classList.add("is-on", "is-static"); }
-  $<HTMLButtonElement>("[data-bell]").addEventListener("click", () => office?.ring());
-  addEventListener("scroll", () => office?.scroll(Math.min(1, scrollY / Math.max(1, innerHeight * .8))), { passive: true });
-  addEventListener("rb:langchange", () => { paint(); office?.relabel(); });
+  // One film per orientation, both flown along the same camera path.
+  const portrait = innerHeight > innerWidth;
+  const frame: [number, number] = portrait ? [1080, 1920] : [1920, 1080];
+  const file = (name: string, ext: string) => `/cenotaph/${name}${portrait ? "-portrait" : ""}.${ext}`;
+  const reduced = prefersCalm();
+  const saveData = !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+  const still = reduced || saveData;
+  video.poster = file(still ? "end" : "start", "jpg");
+  // Where the address is written: the open vault right of the sunbeam, or high and centred on a phone.
+  const anchor = () => portrait ? { x: 560, y: 780, width: 700 } : { x: 1390, y: 330, width: 700 };
+  let cenotaph: ReturnType<typeof mountCenotaph> | undefined;
+  const reveal = () => { stage.classList.add("is-vault"); skip.hidden = true; replay.hidden = false; };
+  fetch("/cenotaph/camera.json").then(r => r.json() as Promise<CenotaphMeta>).then(meta => {
+    cenotaph = mountCenotaph({
+      stage, video, canvas, meta, frameSize: () => frame, requested, target: best?.path ?? "rodionbelousov.studio", reduced, anchor,
+      onReveal: reveal, onRepaired: () => evac.classList.add("is-found"),
+    });
+    if (still) { cenotaph.still(); reveal(); return; }
+    video.src = file("film", "mp4");
+    const fallback = setTimeout(() => { if (video.paused && video.currentTime === 0) { video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); } }, 3500);
+    video.play().then(() => clearTimeout(fallback)).catch(() => { clearTimeout(fallback); video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); });
+  }).catch(error => { console.warn("404: no cenotaph", error); video.poster = file("end", "jpg"); reveal(); });
+  skip.addEventListener("click", () => { cenotaph?.skip(); reveal(); });
+  replay.addEventListener("click", () => { stage.classList.remove("is-vault"); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
+  addEventListener("scroll", () => stage.style.setProperty("--dim", String(Math.min(1, scrollY / Math.max(1, innerHeight * .8)))), { passive: true });
+  addEventListener("rb:langchange", paint);
 </script>
 <style>
-  :global(body:has(.lost-world)) { background: #0a0807; }
+  :global(body:has(.lost-world)) { background: #07080b; }
   :global(body:has(.lost-world) .site-fx), :global(body:has(.lost-world) rb-cursor-field) { display: none; }
   :global(html.has-custom-cursor:has(.lost-world)), :global(html.has-custom-cursor:has(.lost-world) a), :global(html.has-custom-cursor:has(.lost-world) button) { cursor: auto; }
   :global(body:has(.lost-world) sy-footer footer) { background: transparent; }
-  :global(body:has(.lost-world) sy-footer) { --footer-deep: 10, 8, 7; }
-  .lost-world { --ember: #dcaa7c; --label: var(--font-inter), system-ui, sans-serif; color: #e8e3dc; }
-  .office { position: fixed; inset: 0; z-index: 0; background: #0a0807; }
-  .office :global(canvas) { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 1.8s ease; }
-  .office:global(.is-live) :global(canvas) { opacity: 1; }
-  .office:global(.is-static) { background: radial-gradient(ellipse 40% 55% at 50% 38%, #3a2716, #0a0807 70%); }
-  .void { position: relative; min-height: max(760px, 100svh); pointer-events: none; }
-  .void-ui { position: relative; z-index: 2; padding: clamp(150px, 20vh, 220px) 0 0; margin-left: 6.5%; width: 34%; max-width: 560px; }
-  .void-eyebrow, .recover-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0 0 26px; font: 500 11px var(--label); text-transform: uppercase; letter-spacing: .22em; color: #c9b39c; }
-  .void-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 14px #e0955c99; }
-  .void-title { margin: 0 0 26px; font: 400 clamp(64px, 7vw, 124px)/.9 var(--font-display), sans-serif; letter-spacing: -.06em; text-wrap: balance; }
-  .void-lead { max-width: 420px; margin: 0; font: 400 17px/1.65 var(--font-inter), sans-serif; color: #b7b0a8; }
-  .void-lead code { display: inline-block; padding: 1px 10px 2px; border-radius: 999px; background: #dcaa7c17; border: 1px solid #dcaa7c3d; font: 500 15px/1.5 var(--font-display), sans-serif; color: #f1cba9; overflow-wrap: anywhere; }
-  [hidden] { display: none !important; }
+  :global(body:has(.lost-world) sy-footer) { --footer-deep: 7, 8, 11; }
+  .lost-world { --ember: #e3b183; --label: var(--font-inter), system-ui, sans-serif; color: #ece6de; }
 
-  /* The answer sits under the corrected word, on the front of the counter. */
-  .counter-ui { position: absolute; z-index: 2; left: var(--ax, 50%); top: calc(var(--ay, 70%) + 26px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 16px; opacity: 0; translate: 0 12px; transition: opacity 1s ease, translate 1s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
-  .counter-ui:global(.is-on) { opacity: 1; translate: 0 0; }
-  .counter-ui:global(.is-on) .void-actions { pointer-events: auto; }
-  .counter-ui:global(.is-static) { position: relative; left: auto; top: auto; transform: none; align-items: flex-start; margin: 40px 0 0 6.5%; }
-  .void-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px 26px; }
-  .void-home { font: 400 14px var(--font-inter), sans-serif; color: #a9a39c; text-decoration: underline; text-decoration-color: #a9a39c55; text-underline-offset: 5px; transition: color .3s; }
+  .stage { --dim: 0; position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #07080b url("/cenotaph/start.jpg") center / cover no-repeat; }
+  @media (orientation: portrait) { .stage { background-image: url("/cenotaph/start-portrait.jpg"); } }
+  @media (prefers-reduced-motion: reduce) { .stage { background-image: url("/cenotaph/end.jpg"); } }
+  @media (prefers-reduced-motion: reduce) and (orientation: portrait) { .stage { background-image: url("/cenotaph/end-portrait.jpg"); } }
+  .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stage video { object-fit: cover; filter: brightness(calc(1 - var(--dim) * .72)); }
+  .stage canvas { opacity: calc(1 - var(--dim) * .8); }
+  /* Ink under the words: the floor of the frame darkens a little more where the copy sits. */
+  .scrim { position: absolute; inset: 0; pointer-events: none; background:
+    linear-gradient(180deg, #07080b8c 0%, transparent 16%),
+    radial-gradient(ellipse 62% 58% at 14% 96%, #07080bd9 0%, #07080b8a 45%, transparent 75%),
+    radial-gradient(ellipse 140% 90% at 50% 45%, transparent 55%, #07080b99 100%); }
+
+  .void { position: relative; min-height: max(700px, 100svh); pointer-events: none; }
+  .void-ui { position: absolute; z-index: 2; left: 6.5%; bottom: 118px; width: min(560px, 42%); opacity: 0; translate: 0 14px; animation: rise 1.4s .5s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes rise { to { opacity: 1; translate: 0 0; } }
+  .void-eyebrow, .recover-eyebrow { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; font: 500 11px var(--label); text-transform: uppercase; letter-spacing: .22em; color: #d6c0a8; }
+  .void-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 14px #e0955c99; }
+  .void-title { margin: 0 0 20px; font: 400 clamp(54px, 5.8vw, 104px)/.92 var(--font-display), sans-serif; letter-spacing: -.055em; text-wrap: balance; text-shadow: 0 2px 30px #0009; }
+  .void-lead { max-width: 440px; margin: 0 0 30px; font: 400 16px/1.65 var(--font-inter), sans-serif; color: #c4bcb2; text-shadow: 0 1px 12px #000c; }
+  .void-lead code { display: inline-block; padding: 1px 10px 2px; border-radius: 999px; background: #e3b18317; border: 1px solid #e3b1833d; font: 500 14px/1.5 var(--font-display), sans-serif; color: #f4d0ae; overflow-wrap: anywhere; }
+  [hidden] { display: none !important; }
+  .void-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; pointer-events: auto; }
+  .void-home { font: 400 14px var(--font-inter), sans-serif; color: #b3aca4; text-decoration: underline; text-decoration-color: #b3aca455; text-underline-offset: 5px; transition: color .3s; }
   .void-home:hover { color: #efe8e1; }
-  .filed { margin: 0; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; color: #bfa98f; opacity: 0; transition: opacity 1s; }
-  .filed:global(.is-on) { opacity: 1; }
+
   .glass-defs { position: absolute; pointer-events: none; }
-  .evac { --glass-x: 24%; --glass-y: 0%; position: relative; display: inline-flex; justify-content: space-between; align-items: center; gap: 30px; min-height: 62px; padding: 9px 10px 9px 27px; border-radius: 999px; font: 500 15px var(--font-inter), sans-serif; color: #f6f2ec; text-decoration: none; isolation: isolate; box-shadow: 0 10px 30px #0008, 0 0 30px #e0a06a10; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .4s; }
+  .evac { --glass-x: 24%; --glass-y: 0%; position: relative; display: inline-flex; justify-content: space-between; align-items: center; gap: 30px; min-height: 62px; padding: 9px 10px 9px 27px; border-radius: 999px; font: 500 15px var(--font-inter), sans-serif; color: #f6f2ec; text-decoration: none; isolation: isolate; box-shadow: 0 10px 30px #0008, 0 0 30px #e0a06a10; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .8s; }
   .evac-glass { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; background: linear-gradient(155deg, #f5ece226, #d8c6b20a 45%, #d6a1751f); box-shadow: inset 0 3px 9px #fff4e80d, inset 0 -3px 8px #0006; backdrop-filter: blur(12px) saturate(1.35); -webkit-backdrop-filter: blur(12px) saturate(1.35); }
   @supports (backdrop-filter: url("#evac-glass-lens")) { .evac:global(.has-lens) .evac-glass { backdrop-filter: url("#evac-glass-lens") saturate(1.35); } }
   .evac::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at var(--glass-x) var(--glass-y), #fff2e442, transparent 65%); opacity: .6; transition: opacity .35s; }
   .evac::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 1px solid #f1e3d42e; border-top-color: #fff1e285; border-bottom-color: #d3ad8555; }
+  .evac:global(.is-found) { box-shadow: 0 10px 30px #0008, 0 0 44px #a9d2ff33, 0 0 0 1px #bcdcff40; }
   .evac-label { position: relative; text-shadow: 0 1px 5px #0007; }
   .evac-arrow { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 21px; background: linear-gradient(145deg,#fff4e81c,#ffffff05); border: 1px solid #fff1e226; transition: transform .4s; }
   .evac:hover { transform: translateY(-2px); box-shadow: 0 14px 34px #0009, 0 0 38px #e0a06a1f; }
   .evac:hover::before { opacity: 1; }
   .evac:hover .evac-arrow { transform: rotate(45deg); }
 
-  .void-bottom { position: absolute; z-index: 2; bottom: 30px; left: 6.5%; right: 6.5%; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid #c9b39c1f; padding-top: 20px; }
-  .void-scroll, .bell-button { pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; color: #bdb5ac; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; }
+  .void-bottom { position: absolute; z-index: 2; bottom: 28px; left: 6.5%; right: 6.5%; display: flex; align-items: center; gap: 28px; border-top: 1px solid #d6c0a824; padding-top: 18px; }
+  .void-scroll, .film-button { pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; color: #c8c0b6; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; }
   .scroll-mark { font-size: 16px; color: var(--ember); }
-  .bell-button { border: 0; padding: 0; background: none; min-height: 44px; cursor: pointer; }
-  .bell-icon { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #c79a6e55; border-radius: 50%; color: var(--ember); transition: box-shadow .3s, transform .3s; }
-  .bell-button:hover .bell-icon { box-shadow: 0 0 24px #d08a5040; transform: rotate(-12deg); }
-  .grab-hint { margin: 0; font: 400 13px var(--font-inter), sans-serif; color: #a39b92; opacity: 0; transition: opacity 1s; }
-  .grab-hint:global(.is-on) { opacity: 1; }
+  .credit { flex: 1; margin: 0; text-align: right; font: italic 400 13px var(--font-inter), sans-serif; color: #9c948b; }
+  .film-button { min-height: 44px; padding: 0 18px; border: 1px solid #d6c0a833; border-radius: 999px; background: #07080b55; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); cursor: pointer; transition: border-color .3s, color .3s; }
+  .film-button:hover { border-color: #e3b18399; color: #f3ece4; }
 
   .recover { position: relative; z-index: 2; max-width: 1440px; margin: 0 auto; padding: 0 6.5% 70px; scroll-margin-top: 100px; }
   .recovery-axis { display: flex; flex-direction: column; align-items: center; gap: 14px; height: 190px; margin-bottom: 30px; opacity: .45; }
@@ -204,24 +206,26 @@ const beacons = [
   .beacon:hover .beacon-go { transform: translate(3px, -3px); }
   .diag { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; margin-top: 45px; padding-top: 22px; border-top: 1px solid #c9b39c1f; font: 500 10px var(--label); letter-spacing: .16em; color: #8f877e; text-transform: uppercase; }
   .diag > span:first-child { display: flex; align-items: center; gap: 9px; }
-  .void-flash { position: fixed; inset: 0; z-index: 250; pointer-events: none; opacity: 0; background: #0a0807; transition: opacity .38s; }
+  .void-flash { position: fixed; inset: 0; z-index: 250; pointer-events: none; opacity: 0; background: #07080b; transition: opacity .38s; }
   .void-flash:global(.is-on) { opacity: 1; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--ember); outline-offset: 6px; }
-  @media (max-width: 1100px) and (min-width: 701px) { .void-ui { width: 44%; } }
+  @media (max-width: 1100px) and (min-width: 701px) { .void-ui { width: 54%; } }
   @media (max-width: 700px), (orientation: portrait) {
-    .void { min-height: max(860px, 100svh); }
-    .office { height: max(860px, 100svh); }
-    .void-ui { padding: 112px 0 0; margin-left: 7%; width: 86%; max-width: none; }
-    .void-eyebrow { font-size: 10px; margin-bottom: 16px; }
-    .void-title { font-size: clamp(50px, 13vw, 84px); margin-bottom: 14px; }
-    .void-lead { font-size: 15px; }
-    .void-lead code { font-size: 13px; }
-    .counter-ui { width: 88%; }
+    .scrim { background:
+      linear-gradient(180deg, #07080bc4 0%, #07080b70 22%, transparent 36%),
+      linear-gradient(0deg, #07080bf0 0%, #07080bb3 18%, transparent 30%); }
+    .void { min-height: max(700px, 100svh); }
+    .void-ui { top: 92px; left: 7%; right: 7%; bottom: 92px; width: auto; display: flex; flex-direction: column; justify-content: space-between; }
+    .void-eyebrow { font-size: 10px; margin-bottom: 12px; }
+    .void-title { font-size: clamp(38px, 10.5vw, 72px); margin-bottom: 0; }
+    .void-lead { font-size: 14px; margin-bottom: 20px; }
+    .void-lead code { font-size: 12px; }
     .evac { gap: 18px; padding: 7px 8px 7px 20px; font-size: 14px; min-height: 54px; }
     .evac-arrow { width: 40px; height: 40px; }
-    .void-bottom { left: 7%; right: 7%; bottom: 22px; gap: 12px; }
-    .grab-hint { display: none; }
-    .void-scroll, .bell-button { font-size: 10px; letter-spacing: .12em; gap: 9px; }
+    .void-bottom { left: 7%; right: 7%; bottom: 20px; gap: 12px; justify-content: space-between; }
+    .credit { display: none; }
+    .void-scroll, .film-button { font-size: 10px; letter-spacing: .12em; gap: 9px; }
+    .film-button { padding: 0 14px; }
     .recover { padding: 0 7% 45px; }
     .recovery-axis { height: 120px; }
     .recover-head { margin-bottom: 42px; }
@@ -231,5 +235,5 @@ const beacons = [
     .beacon-name { font-size: 25px; }
     .diag { font-size: 9px; }
   }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .void-ui { opacity: 1; translate: none; } }
 </style>
