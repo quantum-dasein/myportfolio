@@ -240,7 +240,7 @@ export function mountCenotaph(o: {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     pts.forEach(p => { if (p) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); } });
     w.box = isFinite(x0) ? [x0, y0, x1, y1] : null;
-    const unit = Math.max(.8, Math.min(1.6, view.w / 1100)) * (st8.small ? .72 : 1);
+    const unit = Math.max(.8, Math.min(1.6, view.w / 1100)) * (st8.small ? .86 : 1);
     // Lines: a dark underlay by day, then a fine gold stroke broken where it meets a star.
     ctx.lineCap = 'round';
     for (const pass of day ? [0, 1] : [1]) {
@@ -282,7 +282,7 @@ export function mountCenotaph(o: {
   // ---- The apple: Newton's, dropped from the top of the vault onto the visitor's helmet.
   type Apple = { p: Vec; v: Vec; spin: number; rot: number; rest: boolean; hits: number };
   const apples: Apple[] = [];
-  const HELMET = (): Vec => [FIG[0], FIG[1], 1.72], AR = .16;
+  const HELMET = (): Vec => [FIG[0], FIG[1], 1.72], AR = .23;
   function dropApple() {
     if (apples.length > 6) apples.shift();
     apples.push({ p: [FIG[0] + .06 + Math.random() * .06, FIG[1] - .05, 24], v: [0, 0, 0], spin: 0, rot: Math.random() * 6, rest: false, hits: 0 });
@@ -361,29 +361,29 @@ export function mountCenotaph(o: {
       const after = t - repairedAt;
       extras.forEach((ex, i) => {
         const on = hover === ex.href;
-        drawWord(ex.word, cam, ax, t, { born: s => ease((after - .6 - i * .5 - s.order * .05) / .8), out: 0, inn: 1, slide: 0, diagnose: 0, fresh: 0, fade: on ? 1 : (day ? .9 : .7), bright: on ? 1 : 0, small: true });
+        drawWord(ex.word, cam, ax, t, { born: s => ease((after - .6 - i * .5 - s.order * .05) / .8), out: 0, inn: 1, slide: 0, diagnose: 0, fresh: 0, fade: 1, bright: on ? 1 : .35, small: true });
         if (ex.word.box && after > 1.2 + i * .5) {
-          const [x0, , x1, y1] = ex.word.box, a = Math.min(1, (after - 1.2 - i * .5) / .8) * (on ? 1 : .6);
-          ctx.font = `600 ${Math.round(10 * Math.max(.9, Math.min(1.25, view.w / 1300)))}px Inter, system-ui, sans-serif`;
+          const [x0, , x1, y1] = ex.word.box, a = Math.min(1, (after - 1.2 - i * .5) / .8) * (on ? 1 : .85);
+          ctx.font = `600 ${Math.round(11.5 * Math.max(.9, Math.min(1.3, view.w / 1300)))}px Inter, system-ui, sans-serif`;
           (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0.18em';
           ctx.textAlign = 'center'; ctx.textBaseline = 'top';
           ctx.fillStyle = day ? `rgba(22,13,6,${.55 * a})` : `rgba(0,0,0,${.5 * a})`; ctx.fillText(ex.label, (x0 + x1) / 2 + 1, y1 + 11);
           ctx.fillStyle = `rgba(255,232,200,${.9 * a})`; ctx.fillText(ex.label, (x0 + x1) / 2, y1 + 10);
         }
       });
-      if (visitor?.P && after > 2.2) {
+      if (visitor?.P && after > 1.2) {
         const P = toView(project(visitor.P, cam, ax));
         if (P) {
-          const a = ease((after - 2.2) / 1.2), pulse = 1 + .35 * Math.sin(t * 2.4);
+          const a = ease((after - 1.2) / 1.2), pulse = 1 + .3 * Math.sin(t * 2.4);
           ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a;
-          const hr = 16 * pulse; ctx.drawImage(halo, P[0] - hr, P[1] - hr, hr * 2, hr * 2);
-          ctx.fillStyle = '#f2f7ff'; ctx.beginPath(); ctx.arc(P[0], P[1], 2.6, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = 'rgba(210,230,255,.7)'; ctx.lineWidth = .9;
-          const g = 11 * pulse; ctx.beginPath(); ctx.moveTo(P[0] - g, P[1]); ctx.lineTo(P[0] + g, P[1]); ctx.moveTo(P[0], P[1] - g); ctx.lineTo(P[0], P[1] + g); ctx.stroke();
+          const hr = 30 * pulse; ctx.drawImage(halo, P[0] - hr, P[1] - hr, hr * 2, hr * 2); ctx.drawImage(halo, P[0] - hr * .5, P[1] - hr * .5, hr, hr);
+          ctx.fillStyle = '#f2f7ff'; ctx.beginPath(); ctx.arc(P[0], P[1], 3.6, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = 'rgba(210,230,255,.85)'; ctx.lineWidth = 1.2;
+          const g = 20 * pulse; ctx.beginPath(); ctx.moveTo(P[0] - g, P[1]); ctx.lineTo(P[0] + g, P[1]); ctx.moveTo(P[0], P[1] - g); ctx.lineTo(P[0], P[1] + g); ctx.stroke();
           ctx.globalCompositeOperation = 'source-over';
-          ctx.font = '500 11px Inter, system-ui, sans-serif'; (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0.14em';
+          ctx.font = '600 13px Inter, system-ui, sans-serif'; (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0.14em';
           // Near the right edge the number reads to the left of its star.
-          const left = P[0] > view.w * .7, dx = left ? -14 : 14;
+          const left = P[0] > view.w * .7, dx = left ? -24 : 24;
           ctx.textAlign = left ? 'right' : 'left'; ctx.textBaseline = 'middle';
           const label = `№ ${visitor.n.toLocaleString('de-AT')}`;
           ctx.fillStyle = `rgba(0,0,0,${.55 * a})`; ctx.fillText(label, P[0] + dx + 1, P[1] + 1);

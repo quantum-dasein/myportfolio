@@ -29,10 +29,13 @@ export function mountCenotaphSound(video: HTMLVideoElement, filmEnd: number) {
     ctx = (window as unknown as { __rbAudioContext?: () => AudioContext | null }).__rbAudioContext?.() ?? null;
     if (!ctx) return null;
     const c = ctx;
-    out = c.createGain(); out.gain.value = 0; out.connect(c.destination);
+    // Loud enough to fill the room; a limiter keeps the apple and the chord from clipping.
+    const limit = c.createDynamicsCompressor(); limit.threshold.value = -10; limit.knee.value = 6; limit.ratio.value = 12; limit.attack.value = .003; limit.release.value = .25;
+    limit.connect(c.destination);
+    out = c.createGain(); out.gain.value = 0; out.connect(limit);
     const verb = c.createConvolver(); verb.buffer = impulse(c, 7.5, 2.4);
     const wet = c.createGain(); wet.gain.value = .85; verb.connect(wet).connect(out);
-    const dry = c.createGain(); dry.gain.value = .3; dry.connect(out);
+    const dry = c.createGain(); dry.gain.value = .45; dry.connect(out);
     bus = c.createGain(); bus.connect(verb); bus.connect(dry);
     // A choir on "ah": detuned saws through three vowel formants.
     choir = c.createGain(); choir.gain.value = 0;
@@ -42,7 +45,7 @@ export function mountCenotaphSound(video: HTMLVideoElement, filmEnd: number) {
     });
     for (const f of [55, 82.41, 110, 164.81, 220]) for (const det of [-6, 5]) {
       const osc = c.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = f; osc.detune.value = det;
-      const g = c.createGain(); g.gain.value = .045; osc.connect(g); formants.forEach(bp => g.connect(bp)); osc.start();
+      const g = c.createGain(); g.gain.value = .11; osc.connect(g); formants.forEach(bp => g.connect(bp)); osc.start();
     }
     const lfo = c.createOscillator(); lfo.frequency.value = .07; const lg = c.createGain(); lg.gain.value = 60;
     lfo.connect(lg); lg.connect(formants[0].frequency); lfo.start();
@@ -59,7 +62,7 @@ export function mountCenotaphSound(video: HTMLVideoElement, filmEnd: number) {
     if (!ctx) return;
     const c = ctx, t = c.currentTime, src = c.createBufferSource(); src.buffer = noise(c, .2);
     const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900 + Math.random() * 500; bp.Q.value = 1.4;
-    const g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.32, t + .006); g.gain.exponentialRampToValueAtTime(.001, t + .09);
+    const g = c.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.9, t + .006); g.gain.exponentialRampToValueAtTime(.001, t + .09);
     src.connect(bp).connect(g).connect(bus); src.start(t); src.stop(t + .2);
   }
   function tone(freq: number, dur: number, level: number, type: OscillatorType = 'sine', glide = 0) {
@@ -75,11 +78,11 @@ export function mountCenotaphSound(video: HTMLVideoElement, filmEnd: number) {
     raf = requestAnimationFrame(tick);
     if (!ctx || !wanted()) return;
     const t = video.ended ? filmEnd + 1 : video.currentTime;
-    ramp(wind.gain, t < 7.4 ? .05 : t < 9 ? .015 : 0, 1.2);
-    ramp(choir.gain, t > 9.4 ? .5 : 0, t > 9.4 ? 4 : 1);
+    ramp(wind.gain, t < 7.4 ? .38 : t < 9 ? .12 : 0, 1.2);
+    ramp(choir.gain, t > 9.4 ? 2.4 : 0, t > 9.4 ? 4 : 1);
     if (t > 7.3 && t < 9.9 && !video.paused && performance.now() > stepAt) { step(); stepAt = performance.now() + 470 + Math.random() * 40; }
   }
-  const sync = () => { if (wanted()) { ensure(); if (ctx?.state === 'suspended') ctx.resume().catch(() => {}); } if (ctx) ramp(out.gain, wanted() ? 1 : 0, .6); };
+  const sync = () => { if (wanted()) { ensure(); if (ctx?.state === 'suspended') ctx.resume().catch(() => {}); } if (ctx) ramp(out.gain, wanted() ? 2 : 0, .6); };
   new MutationObserver(sync).observe(html, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('visibilitychange', sync);
   sync(); tick();
@@ -87,12 +90,12 @@ export function mountCenotaphSound(video: HTMLVideoElement, filmEnd: number) {
   return {
     event(e: CenotaphEvent, detail?: unknown) {
       if (!ctx || !wanted()) return;
-      if (e === 'star') { const i = Number(detail) || 0; tone(SCALE[(i * 3) % SCALE.length], 2.4, .05); tone(SCALE[(i * 3) % SCALE.length] * 2, 1.2, .012); }
-      if (e === 'repaired') { tone(110, 5, .08, 'triangle'); tone(164.81, 5, .05, 'triangle'); }
-      if (e === 'visitor') { tone(1318.51, 3.5, .04); tone(2637, 2, .012); }
-      if (e === 'apple-hit') { tone(320, .35, .22, 'triangle', .45); tone(1900, .12, .05, 'square'); }
-      if (e === 'apple-bounce') tone(140, .25, .12, 'sine', .6);
-      if (e === 'open') tone(880, 1.2, .04);
+      if (e === 'star') { const i = Number(detail) || 0; tone(SCALE[(i * 3) % SCALE.length], 2.6, .16); tone(SCALE[(i * 3) % SCALE.length] * 2, 1.4, .04); }
+      if (e === 'repaired') { tone(110, 5.5, .24, 'triangle'); tone(164.81, 5.5, .16, 'triangle'); tone(220, 4, .08); }
+      if (e === 'visitor') { tone(1318.51, 3.8, .14); tone(2637, 2.2, .04); tone(659.25, 3, .06); }
+      if (e === 'apple-hit') { tone(320, .4, .6, 'triangle', .45); tone(1900, .12, .12, 'square'); tone(90, .5, .4, 'sine', .7); }
+      if (e === 'apple-bounce') tone(140, .3, .35, 'sine', .6);
+      if (e === 'open') tone(880, 1.3, .14);
     },
     dispose() { cancelAnimationFrame(raf); },
   };
