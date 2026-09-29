@@ -96,7 +96,7 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
   box(3.25, 4.13, .15, 0, 2.18, 11.61, jade, .08);
   box(3.09, 4, .17, 0, 2.16, 11.49, graphite, .07);
   lettering('THE ARCHIVE', 'RETURN THROUGH THE FRAME', 0, 4.95, 11.8, 2.9, Math.PI);
-  const exit = new THREE.PointLight('#95d6c2', 18, 9, 2);exit.position.set(0, 2.5, 10.5);scene.add(exit);
+  const exit = new THREE.PointLight('#7fe0ae', 18, 9, 2);exit.position.set(0, 2.5, 10.5);scene.add(exit);
 
   const key = new THREE.DirectionalLight('#ffe7c5', 2.5);key.position.set(-3.5, 7, 3);
   key.castShadow = true;key.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);

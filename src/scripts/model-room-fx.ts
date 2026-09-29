@@ -42,8 +42,8 @@ void main(){
   float s = a + r * 5. - uTime * .35; vec2 ring = vec2(cos(s), sin(s));   // seamless round the circle
   float swirl = n2(ring * 2.5 + r * 6. - uTime * .6) * .6 + n2(ring * r * 14. + uTime * .2) * .4;
   float core = exp(-r * r * 9.) * (1.3 + .5 * uNear);
-  vec3 col = mix(vec3(.12, .34, .38), vec3(.72, .95, 1.), core) * (.55 + .7 * swirl);
-  col += vec3(.9, 1., 1.) * pow(core, 3.) * (.35 + .8 * uNear);
+  vec3 col = mix(vec3(.05, .3, .17), vec3(.62, 1., .8), core) * (.55 + .7 * swirl);
+  col += vec3(.85, 1., .9) * pow(core, 3.) * (.35 + .8 * uNear);
   float edge = smoothstep(.5, .44, max(abs(vUv.x - .5), abs(vUv.y - .5)));
   gl_FragColor = vec4(col * edge * uOpen * .5, 1.);
 }`;
@@ -94,7 +94,7 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
   const pm = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uOpen: { value: 1 }, uNear: { value: 0 } }, vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`, fragmentShader: portalFragment, depthWrite: false });
   const membrane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.9), pm); membrane.position.set(0, 2.16, 11.39); membrane.rotation.y = Math.PI; scene.add(membrane);
   disposables.push(membrane.geometry, pm);
-  const portalLight = new THREE.PointLight('#8fe6e0', 5, 9, 1.8); portalLight.position.set(0, 2.2, 10.6); scene.add(portalLight);
+  const portalLight = new THREE.PointLight('#6fe8a8', 5, 9, 1.8); portalLight.position.set(0, 2.2, 10.6); scene.add(portalLight);
 
   updates.push((t) => {
     dm.uniforms.uTime.value = t; dm.uniforms.uPx.value = renderer.getPixelRatio();
