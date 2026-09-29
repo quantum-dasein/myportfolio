@@ -82,7 +82,7 @@ export function mountCenotaphSound(video: HTMLVideoElement, filmEnd: number) {
     ramp(choir.gain, t > 9.4 ? 2.4 : 0, t > 9.4 ? 4 : 1);
     if (t > 7.3 && t < 9.9 && !video.paused && performance.now() > stepAt) { step(); stepAt = performance.now() + 470 + Math.random() * 40; }
   }
-  const sync = () => { if (wanted()) { ensure(); if (ctx?.state === 'suspended') ctx.resume().catch(() => {}); } if (ctx) ramp(out.gain, wanted() ? 2 : 0, .6); };
+  const sync = () => { if (wanted()) { ensure(); if (ctx?.state === 'suspended') ctx.resume().catch(() => {}); } if (ctx) ramp(out.gain, wanted() ? 1.3 : 0, .6); };
   new MutationObserver(sync).observe(html, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('visibilitychange', sync);
   sync(); tick();

@@ -229,7 +229,9 @@ const beacons = [
 </script>
 <style>
   :global(body:has(.lost-world)) { background: #07080b; }
-  :global(body:has(.lost-world) .site-fx), :global(body:has(.lost-world) rb-cursor-field) { display: none; }
+  /* The site's own film grain and vignette carry over; its drifting stars would fight the vault's. */
+  :global(body:has(.lost-world) .site-fx__stars), :global(body:has(.lost-world) rb-cursor-field) { display: none; }
+  :global(body:has(.lost-world) .site-fx__grain) { opacity: .11; }
   :global(html.has-custom-cursor:has(.lost-world)), :global(html.has-custom-cursor:has(.lost-world) a), :global(html.has-custom-cursor:has(.lost-world) button) { cursor: auto; }
   :global(body:has(.lost-world) sy-footer footer) { background: transparent; }
   /* The nav sits over a bright vault by day: give its words a little night to stand on. */
@@ -248,7 +250,10 @@ const beacons = [
   .view { position: absolute; inset: 0; will-change: transform; }
   .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .stage canvas { pointer-events: auto; }
-  .stage video { object-fit: cover; filter: brightness(calc(1 - var(--dim) * .72)); }
+  /* A darker grade than the render, in the site's key: deeper shadows, less colour. */
+  .stage { --grade-b: .8; --grade-c: 1.16; --grade-s: .8; }
+  .stage[data-time="day"] { --grade-b: .66; --grade-c: 1.22; --grade-s: .62; }
+  .stage video { object-fit: cover; filter: brightness(calc(var(--grade-b) * (1 - var(--dim) * .72))) contrast(var(--grade-c)) saturate(var(--grade-s)); }
   .stage video[data-loop] { opacity: 0; }
   .stage:global(.is-looping) video[data-loop] { opacity: 1; }
   .stage canvas { opacity: calc(1 - var(--dim) * .8); }
@@ -256,7 +261,7 @@ const beacons = [
   .scrim { position: absolute; inset: 0; pointer-events: none; background:
     linear-gradient(180deg, #07080bb8 0%, #07080b59 9%, transparent 18%),
     radial-gradient(ellipse 62% 58% at 14% 96%, #07080bd9 0%, #07080b8a 45%, transparent 75%),
-    radial-gradient(ellipse 140% 90% at 50% 45%, transparent 55%, #07080b99 100%); }
+    radial-gradient(ellipse 120% 85% at 50% 42%, transparent 42%, #07080bb3 88%, #07080be6 100%); }
 
   .void { position: relative; min-height: max(700px, 100svh); pointer-events: none; }
   .void-ui { position: absolute; z-index: 2; left: 6.5%; bottom: 118px; width: min(560px, 42%); opacity: 0; translate: 0 14px; animation: rise 1.4s .5s cubic-bezier(.2,.8,.2,1) forwards; }
