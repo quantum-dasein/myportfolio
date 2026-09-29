@@ -154,7 +154,7 @@ const beacons = [
     const spots = portrait ? [] : [at(.2, .215, .2), at(.79, .55, .19), at(.79, .68, .19)];
     return list.slice(0, spots.length).map((sec, i) => ({ ...sec, anchor: spots[i] }));
   };
-  const visitorAnchor = () => portrait ? at(.24, .585, 0) : at(.44, .585, 0);
+  const visitorAnchor = () => portrait ? at(.86, .3, 0) : at(.44, .585, 0);
 
   let cenotaph: ReturnType<typeof mountCenotaph> | undefined;
   const sound = mountCenotaphSound(video, 12);

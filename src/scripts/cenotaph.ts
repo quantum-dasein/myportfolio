@@ -382,10 +382,12 @@ export function mountCenotaph(o: {
           const g = 11 * pulse; ctx.beginPath(); ctx.moveTo(P[0] - g, P[1]); ctx.lineTo(P[0] + g, P[1]); ctx.moveTo(P[0], P[1] - g); ctx.lineTo(P[0], P[1] + g); ctx.stroke();
           ctx.globalCompositeOperation = 'source-over';
           ctx.font = '500 11px Inter, system-ui, sans-serif'; (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0.14em';
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          // Near the right edge the number reads to the left of its star.
+          const left = P[0] > view.w * .7, dx = left ? -14 : 14;
+          ctx.textAlign = left ? 'right' : 'left'; ctx.textBaseline = 'middle';
           const label = `№ ${visitor.n.toLocaleString('de-AT')}`;
-          ctx.fillStyle = `rgba(0,0,0,${.55 * a})`; ctx.fillText(label, P[0] + 15, P[1] + 1);
-          ctx.fillStyle = `rgba(226,238,255,${a})`; ctx.fillText(label, P[0] + 14, P[1]);
+          ctx.fillStyle = `rgba(0,0,0,${.55 * a})`; ctx.fillText(label, P[0] + dx + 1, P[1] + 1);
+          ctx.fillStyle = `rgba(226,238,255,${a})`; ctx.fillText(label, P[0] + dx, P[1]);
           ctx.globalAlpha = 1;
           if (a > .05 && !visitorShown) { visitorShown = true; emit('visitor'); }
         }
