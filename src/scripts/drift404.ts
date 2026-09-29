@@ -22,40 +22,9 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { createAstronaut } from './observatory-astronaut';
 import type { DriftRoute } from '../data/drift-routes';
 
-import { rankSignals, type Signal, type Lang } from '../data/drift-signals';
+import type { Signal, Lang } from '../data/drift-signals';
 
 import { HORIZON_FRAGMENT } from './drift-horizon';
-
-/* ---------- Frames: holograms with a lit edge ---------- */
-const FRAME_VERT = 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
-const FRAME_FRAG = /* glsl */`
-uniform sampler2D uMap;uniform float uTime,uHover,uGold,uAppear,uSeed,uAspect,uBeam;varying vec2 vUv;
-float box(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return length(max(q,0.))+min(max(q.x,q.y),0.)-r;}
-float h1(float x){return fract(sin(x*91.7)*43758.5453);}
-void main(){
-  // The plane is 12% bigger than the image; the margin carries the halo.
-  vec2 p=(vUv-.5)*vec2(uAspect,1.)*1.12;
-  float d=box(p,vec2(uAspect,1.)*.5,.045);
-  vec2 iuv=(p/vec2(uAspect,1.))+.5;
-  // Appear: scanned in from the top with a glitchy leading edge.
-  float line=floor(iuv.y*60.);float jitter=(h1(line+floor(uTime*18.)+uSeed)-.5)*.03*(1.-uAppear);
-  float shown=step(1.-uAppear*1.15,1.-iuv.y+h1(line+uSeed)*.08);
-  vec2 s=iuv+vec2(jitter,0.);
-  float split=.0002;
-  vec3 img=vec3(texture2D(uMap,s+vec2(split,0.)).r,texture2D(uMap,s).g,texture2D(uMap,s-vec2(split,0.)).b);
-  float scan=.985+.015*sin(iuv.y*540.+uTime*2.);
-  float flick=.94+.06*step(.985,h1(floor(uTime*9.)+uSeed));
-  vec3 edgeCol=mix(vec3(.28,.4,.46),vec3(.8,.38,.2),uGold);
-  float inside=1.-smoothstep(0.,.004,d);
-  float rim=exp(-abs(d)*220.)*(.15+.5*uHover+1.4*uBeam);
-  float halo=exp(-max(d,0.)*22.)*(1.-inside)*(.015+.1*uHover+.5*uBeam);
-  vec3 col=mix(vec3(dot(img,vec3(.2126,.7152,.0722))),img,.45+.55*uHover)*(.42+.5*uHover)*scan*flick*inside;
-  col*=1.-.35*smoothstep(.25,.62,length(iuv-.5));
-  col+=edgeCol*(rim+halo);
-  col+=vec3(.7,.9,1.)*uBeam*.6*inside;
-  float a=clamp(inside*(.9+.1*uHover)+rim*.8+halo,0.,1.)*shown*uAppear;
-  gl_FragColor=vec4(col*shown,a);
-}`;
 
 /* ---------- Final pass: fringing, vignette, grain ---------- */
 const FINISH = {
@@ -89,6 +58,10 @@ export type DriftOptions = {
   host: HTMLElement; routes: DriftRoute[]; requested: string; lang: () => Lang;
   onSignals?: (signals: Signal[]) => void; onTelemetry?: (t: { horizon: number; speed: number }) => void;
   onNavigate?: (path: string) => void; reduced: boolean;
+  /** The HTML signal cards: crisp images and type, wired to the scene by anchor. */
+  cards: HTMLElement[];
+  /** Where his chest is on screen, for the little "grab him" hint. */
+  onAstro?: (x: number, y: number, visible: boolean, grabbed: boolean) => void;
 };
 
 export function mountDrift(o: DriftOptions) {
@@ -226,53 +199,37 @@ export function mountDrift(o: DriftOptions) {
     }
   }
 
-  /* ----- Frames ----- */
-  const loader = new THREE.TextureLoader();
-  type Frame = { group: THREE.Group; card: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; labelCanvas: HTMLCanvasElement; signal: Signal; base: THREE.Vector3; seed: number; hover: number; appear: number; best: boolean; thread: THREE.Line<THREE.BufferGeometry, THREE.ShaderMaterial> };
+  /* ----- Signal cards (HTML) ----- */
+  type Frame = { el: HTMLElement; path: string; anchor: THREE.Vector3; hover: number; best: boolean; thread: THREE.Line<THREE.BufferGeometry, THREE.ShaderMaterial> };
   let frames: Frame[] = [];
-  const frameW = mobile ? 1.5 : 1.62, frameH = frameW * .525;
   const threadMat = () => new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uOn: { value: 0 }, uGold: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: 'attribute float t;varying float vT;void main(){vT=t;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'uniform float uTime,uOn,uGold;varying float vT;void main(){float pulse=pow(fract(vT*3.-uTime*.9),6.);float a=(.08+.5*uOn)*(.35+pulse*2.2)*smoothstep(0.,.08,vT)*smoothstep(1.,.9,vT);vec3 c=mix(vec3(.5,.85,1.),vec3(1.,.82,.5),uGold);gl_FragColor=vec4(c*a*2.,a);}',
+    fragmentShader: 'uniform float uTime,uOn,uGold;varying float vT;void main(){float pulse=pow(fract(vT*3.-uTime*.9),6.);float a=(.06+.55*uOn)*(.35+pulse*2.4)*smoothstep(0.,.08,vT)*smoothstep(1.,.92,vT);vec3 c=mix(vec3(.62,.8,.95),vec3(1.,.72,.48),uGold);gl_FragColor=vec4(c*a*2.,a);}',
   });
-  function drawLabel(f: Frame) {
-    const c = f.labelCanvas.getContext('2d')!; const W = f.labelCanvas.width, H = f.labelCanvas.height; c.clearRect(0, 0, W, H);
-    const lang = o.lang();
-    c.fillStyle = f.best ? '#d6a486' : 'rgba(168,183,192,.8)'; c.font = '600 21px ui-monospace,Consolas,monospace';
-    c.fillText(f.best ? (lang === 'de' ? '◎ NÄCHSTES SIGNAL' : '◎ CLOSEST SIGNAL') : '○ SIGNAL', 4, 28);
-    c.fillStyle = '#b7bfc3'; c.font = '500 32px "RB Space",Inter,Arial,sans-serif';
-    let title = f.signal.route[lang].split(' — ')[0]; while (c.measureText(title).width > W - 10 && title.length > 4) title = title.slice(0, -2) + '…';
-    c.fillText(title, 4, 72);
-    c.fillStyle = 'rgba(190,210,230,.5)'; c.font = '400 20px ui-monospace,Consolas,monospace'; c.fillText(f.signal.route.path, 4, 104);
-    f.label.material.map!.needsUpdate = true;
-  }
-  function buildFrames() {
-    frames.forEach(f => { scene.remove(f.group); scene.remove(f.thread); f.card.material.uniforms.uMap.value?.dispose(); f.card.geometry.dispose(); f.thread.geometry.dispose(); });
-    const portrait = host.clientWidth < host.clientHeight * .9;
-    const signals = rankSignals(requested, routes, o.lang(), 2); o.onSignals?.(signals);
-    frames = signals.map((signal, i) => {
-      const group = new THREE.Group();
-      const tex = loader.load(signal.route.image); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-      const best = i === 0 && signal.score > 0;
-      const card = new THREE.Mesh(new THREE.PlaneGeometry(frameW * 1.12, frameH * 1.12), new THREE.ShaderMaterial({
-        uniforms: { uMap: { value: tex }, uTime: { value: 0 }, uHover: { value: 0 }, uGold: { value: best ? 1 : 0 }, uAppear: { value: 0 }, uSeed: { value: Math.random() * 100 }, uAspect: { value: frameW / frameH }, uBeam: { value: 0 } },
-        vertexShader: FRAME_VERT, fragmentShader: FRAME_FRAG, transparent: true, depthWrite: false, toneMapped: false,
-      }));
-      card.userData.frame = i; group.add(card);
-      const labelCanvas = document.createElement('canvas'); labelCanvas.width = 512; labelCanvas.height = 116;
-      const labelTex = new THREE.CanvasTexture(labelCanvas); labelTex.colorSpace = THREE.SRGBColorSpace; labelTex.anisotropy = 4;
-      const label = new THREE.Mesh(new THREE.PlaneGeometry(frameW, frameW * 116 / 512), new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, toneMapped: false, depthWrite: false }));
-      label.position.y = -frameH / 2 - frameW * 58 / 512 - .08; group.add(label);
-      scene.add(group);
+  function bindCards(list: HTMLElement[]) {
+    frames.forEach(f => { scene.remove(f.thread); f.thread.geometry.dispose(); f.thread.material.dispose(); });
+    frames = list.map((el, i) => {
       const threadGeo = new THREE.BufferGeometry(); const n = 48;
       threadGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
       threadGeo.setAttribute('t', new THREE.BufferAttribute(Float32Array.from({ length: n }, (_, k) => k / (n - 1)), 1));
+      const best = el.dataset.best === '1';
       const thread = new THREE.Line(threadGeo, threadMat()); thread.material.uniforms.uGold.value = best ? 1 : 0; thread.frustumCulled = false; scene.add(thread);
-      const f: Frame = { group, card, label, labelCanvas, signal, base: new THREE.Vector3(), seed: Math.random() * 10, hover: 0, appear: 0, best, thread };
-      drawLabel(f); return f;
+      el.addEventListener('pointerenter', () => { if (!beaming) hovered = i; wake(); });
+      el.addEventListener('pointerleave', () => { if (hovered === i) hovered = -1; });
+      el.addEventListener('focus', () => { hovered = i; });
+      el.addEventListener('blur', () => { if (hovered === i) hovered = -1; });
+      el.addEventListener('click', event => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault(); beamTo(i);
+      });
+      return { el, path: el.getAttribute('href') ?? '/', anchor: new THREE.Vector3(), hover: 0, best, thread };
     });
-    layout();
+  }
+  // The point on a card the astronaut reaches for: its left edge, a little above the middle.
+  function anchorOf(f: Frame) {
+    const r = f.el.getBoundingClientRect(), c = canvas.getBoundingClientRect();
+    return worldAt((r.left + 6 - c.left) / c.width * 2 - 1, -((r.top + r.height * .42 - c.top) / c.height) * 2 + 1, .4, f.anchor);
   }
 
   /* ----- Layout in screen space ----- */
@@ -296,10 +253,6 @@ export function mountDrift(o: DriftOptions) {
     worldAt(portrait ? -.24 : .13, portrait ? -.24 : -.15, 1.2, home);
     worldAt(holeUniforms.uCenter.value.x * 2 - 1, holeUniforms.uCenter.value.y * 2 - 1, -14, holeWorld);
     diskLight.position.copy(holeWorld).add(new THREE.Vector3(0, -1.5, 0));
-    const spots = portrait
-      ? [[-.48, -.63, .5], [.46, -.66, .3]]
-      : [[.8, -.62, .2], [.84, .6, -1.6]];
-    frames.forEach((f, i) => { const sp = spots[i] ?? spots[spots.length - 1]; worldAt(sp[0], sp[1], sp[2], f.base); f.group.position.copy(f.base); });
   }
 
   /* ----- Input ----- */
@@ -314,7 +267,6 @@ export function mountDrift(o: DriftOptions) {
   }
   const astroCenter = () => tmp.copy(pos).add(tmp2.set(0, 1.2 * s(), 0));
   const hitAstro = () => !swallowed && astro.visible && ray.ray.distanceSqToPoint(astroCenter()) < Math.pow(1.05 * s(), 2);
-  function hitFrame() { const hits = ray.intersectObjects(frames.map(f => f.card), false); return hits.length ? Number(hits[0].object.userData.frame) : -1; }
   function wake() { lastMove = performance.now(); if (pull > 0 && !swallowed) { pull = 0; vel.multiplyScalar(.3); } }
 
   canvas.addEventListener('pointerdown', event => {
@@ -328,9 +280,8 @@ export function mountDrift(o: DriftOptions) {
   canvas.addEventListener('pointermove', event => {
     pointerRay(event.clientX, event.clientY); wake();
     if (grabbed) { plane.constant = -pos.z; ray.ray.intersectPlane(plane, pointerWorld); return; }
-    hovered = beaming ? -1 : hitFrame();
     const onAstro = hitAstro();
-    canvas.style.cursor = hovered >= 0 ? 'pointer' : onAstro ? 'grab' : 'default';
+    canvas.style.cursor = onAstro ? 'grab' : 'default';
     if (!wave && onAstro && idle > 2.5) wave = 2.4;
   });
   const release = (event: PointerEvent) => {
@@ -340,7 +291,6 @@ export function mountDrift(o: DriftOptions) {
   };
   canvas.addEventListener('pointerup', event => {
     if (grabbed) { release(event); return; }
-    pointerRay(event.clientX, event.clientY); const i = hitFrame(); if (i >= 0) beamTo(i);
   });
   canvas.addEventListener('pointercancel', release);
   canvas.addEventListener('pointerleave', () => { hovered = -1; pointerNdc.set(-9, -9); });
@@ -350,9 +300,9 @@ export function mountDrift(o: DriftOptions) {
     pointerRay(t.clientX, t.clientY); if (hitAstro()) event.preventDefault();
   }, { passive: false });
   function beamTo(index: number) {
-    if (o.reduced) { const path = frames[index]?.signal.route.path; if (path) o.onNavigate?.(path); return; }
+    if (o.reduced) { const path = frames[index]?.path; if (path) o.onNavigate?.(path); return; }
     const frame = frames[index]; if (!frame || beaming) return;
-    beaming = { frame, t: 0, from: pos.clone(), gone: false }; tabletNote = frame.signal.route.path; hovered = index;
+    beaming = { frame, t: 0, from: pos.clone(), gone: false }; tabletNote = frame.path; hovered = index;
   }
 
   /* ----- Beam, streaks ----- */
@@ -412,12 +362,12 @@ export function mountDrift(o: DriftOptions) {
     tabletMode = 'lost';
     if (beaming) {
       beaming.t = Math.min(1, beaming.t + dt / 1.2);
-      const target = tmp.copy(beaming.frame.group.position).add(tmp2.set(-frameW * .15, -1.1 * s(), .7));
+      const target = tmp.copy(beaming.frame.anchor).add(tmp2.set(-.35 * s(), -1.15 * s(), .4));
       const e = beaming.t * beaming.t * (3 - 2 * beaming.t);
       pos.lerpVectors(beaming.from, target, e); goal.dive = 1; goal.float = 0; goal.tablet = .6; tabletMode = 'beam';
       beaming.frame.hover = 1;
       holeUniforms.uFlash.value = Math.max(0, (beaming.t - .75) / .25) * .6;
-      if (beaming.t >= 1 && !beaming.gone) { beaming.gone = true; o.onNavigate?.(beaming.frame.signal.route.path); }
+      if (beaming.t >= 1 && !beaming.gone) { beaming.gone = true; o.onNavigate?.(beaming.frame.path); }
     } else if (grabbed) {
       tmp.copy(pointerWorld).add(grabOffset);
       pointerVel.lerp(tmp2.copy(pointerWorld).sub(prevPointer).divideScalar(Math.max(dt, .008)), .35); prevPointer.copy(pointerWorld);
@@ -459,15 +409,15 @@ export function mountDrift(o: DriftOptions) {
     astro.position.copy(pos).add(tmp2.set(0, Math.sin(elapsed * .7) * .12, 0));
     // Tumble: a slow weightless roll plus whatever the throw put into him; he rights himself.
     prevSpin.copy(spin); spin.multiplyScalar(Math.exp(-dt * .4));
-    const lookYaw = hovered >= 0 && !beaming ? Math.atan2(frames[hovered].group.position.x - pos.x, 7) * .6 : smoothPointer.x * .25;
+    const lookYaw = hovered >= 0 && !beaming ? Math.atan2(frames[hovered].anchor.x - pos.x, 7) * .6 : smoothPointer.x * .25;
     euler.set(Math.sin(elapsed * .29) * .32 + spin.x * .4, Math.sin(elapsed * .21) * .5 + spin.y * .5 + lookYaw, Math.sin(elapsed * .25) * .36 + spin.z * .5);
     targetQ.setFromEuler(euler);
-    if (beaming) targetQ.setFromEuler(euler.set(-1, Math.atan2(beaming.frame.group.position.x - pos.x, 3), 0));
+    if (beaming) targetQ.setFromEuler(euler.set(-1, Math.atan2(beaming.frame.anchor.x - pos.x, 3), 0));
     astro.quaternion.slerp(targetQ, 1 - Math.exp(-dt * (grabbed ? 3 : 2)));
     if (pull > 0) astro.rotateZ(spin.z * dt * 2);
     astro.scale.set(baseScale, baseScale * stretch, baseScale);
     let yaw = smoothPointer.x * .7, pitch = smoothPointer.y * .3;
-    if (hovered >= 0 && !beaming) { yaw = THREE.MathUtils.clamp((frames[hovered].group.position.x - pos.x) * .3, -1, 1); pitch = THREE.MathUtils.clamp((frames[hovered].group.position.y - pos.y - 1) * .15, -.45, .35); }
+    if (hovered >= 0 && !beaming) { yaw = THREE.MathUtils.clamp((frames[hovered].anchor.x - pos.x) * .3, -1, 1); pitch = THREE.MathUtils.clamp((frames[hovered].anchor.y - pos.y - 1) * .15, -.45, .35); }
     const waveW = wave > 0 ? Math.min(1, wave * 2, (2.4 - wave) * 3) : 0;
     curator.animate(elapsed * 2, 0, 0, dt * timeScale, .2, { yaw, pitch, wave: waveW, tablet: W.tablet * (1 - waveW), dive: W.dive, float: W.float, flail: W.flail, reach: W.reach, time: elapsed, sit: W.sit });
     astro.updateMatrixWorld(true);
@@ -482,7 +432,7 @@ export function mountDrift(o: DriftOptions) {
       tablet.quaternion.copy(q).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-.5, 0, 0)));
       tablet.scale.setScalar(s() * 1.3 * Math.min(1, tabletShow * 1.4));
     }
-    if (now - lastTablet > 120) { lastTablet = now; drawTablet(elapsed, beaming ? 'beam' : tabletMode, hovered >= 0 ? frames[hovered]?.signal.route.path ?? '' : ''); }
+    if (now - lastTablet > 120) { lastTablet = now; drawTablet(elapsed, beaming ? 'beam' : tabletMode, hovered >= 0 ? frames[hovered]?.path ?? '' : ''); }
 
     // --- Tether: verlet rope from the belt, drifting, pulled faintly towards the hole ---
     const hips = bone('Hips');
@@ -518,24 +468,21 @@ export function mountDrift(o: DriftOptions) {
     for (let i = 0; i < PUFFS; i++) if (puffLife[i] > 0) { puffLife[i] = Math.max(0, puffLife[i] - dt * 1.4); puffVel[i].multiplyScalar(Math.exp(-dt * 1.5)); puffPos[i * 3] += puffVel[i].x * dt; puffPos[i * 3 + 1] += puffVel[i].y * dt; puffPos[i * 3 + 2] += puffVel[i].z * dt; }
     pl.needsUpdate = true; pp.needsUpdate = true; (puffs.material as THREE.ShaderMaterial).uniforms.uScale.value = renderer.getPixelRatio() * (mobile ? .8 : 1);
 
-    // --- Frames ---
+    // --- Cards: anchors follow the page; a signal line runs from his tablet to each ---
     if (tablet.visible) screen.getWorldPosition(threadFrom); else threadFrom.copy(astroCenter());
     frames.forEach((f, i) => {
-      f.appear = Math.min(1, f.appear + dt / (1.1 + i * .25) * (primed ? 1 : 0));
+      anchorOf(f);
       f.hover = THREE.MathUtils.damp(f.hover, i === hovered ? 1 : 0, 8, dt);
-      f.group.position.set(f.base.x + Math.sin(elapsed * .4 + f.seed) * .08, f.base.y + Math.sin(elapsed * .6 + f.seed * 2) * .1, f.base.z);
-      f.group.rotation.set(Math.sin(elapsed * .5 + f.seed) * .04, -f.base.x * .03 + Math.sin(elapsed * .3 + f.seed) * .05, Math.sin(elapsed * .35 + f.seed) * .015);
-      f.group.scale.setScalar((f.best ? 1.1 : 1) * (1 + f.hover * .06));
-      const u = f.card.material.uniforms; u.uTime.value = elapsed; u.uHover.value = f.hover; u.uAppear.value = f.appear; u.uBeam.value = beaming?.frame === f ? beaming.t : 0;
-      (f.label.material as THREE.MeshBasicMaterial).opacity = f.appear;
-      // Signal line from his tablet to the frame, bowing like it is under gravity.
-      const from = threadFrom; const to = tmp.copy(f.group.position).add(tmp2.set(0, frameH * .56, 0));
-      const mid = from.clone().lerp(to, .5).add(tmp2.set(0, .6, .4));
+      f.el.classList.toggle('is-locked', i === hovered && !beaming);
+      f.el.classList.toggle('is-beaming', beaming?.frame === f);
+      const to = f.anchor; const mid = tmp.copy(threadFrom).lerp(to, .5).add(tmp2.set(0, .7, .5));
       const arr = f.thread.geometry.attributes.position as THREE.BufferAttribute;
-      for (let k = 0; k < arr.count; k++) { const t = k / (arr.count - 1), a = 1 - t; arr.setXYZ(k, a * a * from.x + 2 * a * t * mid.x + t * t * to.x, a * a * from.y + 2 * a * t * mid.y + t * t * to.y, a * a * from.z + 2 * a * t * mid.z + t * t * to.z); }
+      for (let k = 0; k < arr.count; k++) { const t = k / (arr.count - 1), a = 1 - t; arr.setXYZ(k, a * a * threadFrom.x + 2 * a * t * mid.x + t * t * to.x, a * a * threadFrom.y + 2 * a * t * mid.y + t * t * to.y, a * a * threadFrom.z + 2 * a * t * mid.z + t * t * to.z); }
       arr.needsUpdate = true;
-      f.thread.material.uniforms.uTime.value = elapsed; f.thread.material.uniforms.uOn.value = Math.max(f.hover, f.best ? .25 : 0) * f.appear * (astro.visible ? 1 : 0);
+      f.thread.visible = scroll < .35;
+      f.thread.material.uniforms.uTime.value = elapsed; f.thread.material.uniforms.uOn.value = Math.max(f.hover, f.best ? .22 : 0) * (astro.visible ? 1 : 0) * (1 - scroll * 2.5);
     });
+    if (o.onAstro) { const c = astroCenter().clone().project(camera); o.onAstro((c.x * .5 + .5) * canvas.clientWidth, (-c.y * .5 + .5) * canvas.clientHeight, astro.visible && scroll < .3, grabbed); }
 
     // --- Beam: drops him back in on respawn, lifts him out on departure ---
     const beamI = respawn > 0 ? Math.sin(respawn * Math.PI) : beaming ? Math.max(0, (beaming.t - .5) / .5) : 0;
@@ -571,7 +518,7 @@ export function mountDrift(o: DriftOptions) {
   }
   function smoothstepJS(a: number, b: number, x: number) { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
 
-  buildFrames(); pos.copy(home);
+  layout(); bindCards(o.cards); pos.copy(home);
   if (location.search.includes('driftdebug')) (window as unknown as Record<string, unknown>).__drift = { astro, tablet, camera, bone, holeUniforms, renderer };
   const ro = new ResizeObserver(() => layout()); ro.observe(host);
   const io = new IntersectionObserver(([entry]) => { const on = entry.isIntersecting && !document.hidden; if (on && !running) { running = true; last = performance.now(); raf = requestAnimationFrame(tick); } else if (!on && running) { running = false; cancelAnimationFrame(raf); } });
@@ -579,10 +526,11 @@ export function mountDrift(o: DriftOptions) {
   document.addEventListener('visibilitychange', () => { cancelAnimationFrame(raf); if (document.hidden) running = false; else { running = true; last = performance.now(); raf = requestAnimationFrame(tick); } });
   raf = requestAnimationFrame(tick);
   return {
-    relabel() { frames.forEach(drawLabel); drawText(); },
+    relabel() { drawText(); },
+    cards(list: HTMLElement[]) { hovered = -1; bindCards(list); },
     pulse() { wake(); wave = 2.4; tabletNote = o.lang() === "de" ? "DU BIST NICHT ALLEIN" : "YOU ARE NOT ALONE"; },
     scroll(value: number) { scroll = THREE.MathUtils.clamp(value, 0, 1); canvas.style.pointerEvents = scroll > .5 ? "none" : "auto"; },
-    beam(path: string) { const i = frames.findIndex(f => f.signal.route.path === path); if (i >= 0) beamTo(i); else o.onNavigate?.(path); },
+    beam(path: string) { const i = frames.findIndex(f => f.path === path); if (i >= 0) beamTo(i); else o.onNavigate?.(path); },
     dispose() { motionObserver.disconnect(); motionQuery.removeEventListener("change", motion); cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); curator.dispose(); composer.dispose(); renderer.dispose(); quad.dispose(); holeMaterial.dispose(); blitMaterial.dispose(); holeTarget.dispose(); textTex.dispose(); pmrem.dispose(); },
   };
 }

@@ -601,7 +601,11 @@ export const ui = {
     "footer.rights": "All rights reserved.",
 
     // ── 404 — The Event Horizon ─────────────────────────────────────────────
-    "404.eyebrow": "Beyond the map / 404",
+    "404.eyebrow": "Error 404 · Beyond the map",
+    "404.lead.a": "The page",
+    "404.lead.b": "doesn't exist. It slipped past the event horizon.",
+    "404.home": "or back to the start",
+    "404.grab": "Psst — you can grab him.",
     "404.title": "Signal lost.",
     "404.subtitle": "You drifted beyond the known universe. Even here, there is a way home.",
     "404.cta": "Return to base",
@@ -1200,7 +1204,11 @@ export const ui = {
     "footer.rights": "Alle Rechte vorbehalten.",
 
     // ── 404 — Der Ereignishorizont ──────────────────────────────────────────
-    "404.eyebrow": "Jenseits der Karte / 404",
+    "404.eyebrow": "Fehler 404 · Jenseits der Karte",
+    "404.lead.a": "Die Seite",
+    "404.lead.b": "gibt es nicht. Sie ist hinter den Ereignishorizont gerutscht.",
+    "404.home": "oder zurück zum Start",
+    "404.grab": "Psst — du kannst ihn packen.",
     "404.title": "Signal verloren.",
     "404.subtitle": "Du bist über das bekannte Universum hinausgetrieben. Auch hier gibt es einen Weg zurück.",
     "404.cta": "Zurück zur Basis",
