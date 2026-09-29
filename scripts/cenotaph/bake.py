@@ -51,7 +51,11 @@ bm.to_mesh(sphere.data)
 bm.free()
 print('BAKE', len(bake_objs), 'objects')
 
-groups = {'vault': [o for o in bake_objs if o.name == 'Sphere'], 'floor': [o for o in bake_objs if o.name != 'Sphere']}
+# The tomb gets its own map: it is what people walk up to.
+TOMB = ('Podium', 'Sarcophagus', 'Lid')   # not the fire bowls: their glow would swamp the range
+groups = {'vault': [o for o in bake_objs if o.name == 'Sphere'], 'tomb': [o for o in bake_objs if o.name.startswith(TOMB)],
+          'floor': [o for o in bake_objs if o.name != 'Sphere' and not o.name.startswith(TOMB)]}
+group_of = {o.name: g for g, objs in groups.items() for o in objs}
 sc.render.engine = 'CYCLES'
 sc.cycles.samples = SAMPLES
 sc.cycles.use_denoising = True
@@ -123,7 +127,7 @@ for gname, objs in groups.items():
 bpy.ops.object.select_all(action='DESELECT')
 for o in bake_objs:
     o.select_set(True)
-    o.name = ('vault' if o.name == 'Sphere' else 'floor') + '|' + o.name
+    o.name = group_of[o.name] + '|' + o.name
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, f'interior-{MODE}.glb'), use_selection=True, export_materials='NONE',
                           export_texcoords=True, export_normals=True, export_apply=True,
                           export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=8)

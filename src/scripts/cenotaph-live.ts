@@ -14,6 +14,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createAstronaut } from './observatory-astronaut';
 import { layout, editScript } from './cenotaph';
 import type { CenotaphEvent } from './cenotaph';
+import { Guide } from './cenotaph-guide';
+import { Orchard, groundAt } from './cenotaph-apple';
+import type { DriftRoute } from '../data/drift-routes';
 
 type V3 = [number, number, number];
 type Meta = { mode: string; groups: Record<string, { scale: number; objects: string[] }>; fig: V3; fires: V3[]; hole: V3; sphere: { c: V3; rin: number } };
@@ -22,7 +25,7 @@ type Anchor = { dir: THREE.Vector3; width: number };
 /** Blender (Z up) to three (Y up), the same way the glTF exporter turns the scene. */
 const b2t = (v: V3 | number[]) => new THREE.Vector3(v[0], v[2], -v[1]);
 const ease = (x: number) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
-const ARENA = 33.2, PODIUM = 11.8;
+const ARENA = 33.2;
 
 // ------------------------------------------------------------------ stone
 const stoneVertex = /* glsl */`
@@ -35,7 +38,7 @@ void main(){
 }`;
 const stoneFragment = /* glsl */`
 uniform sampler2D tWall, tPave, tLm; uniform float uLmScale, uKind, uTime, uStars, uGain, uDim;
-uniform vec3 uHaze;
+uniform vec3 uHaze, uKey;
 varying vec3 vWorld; varying vec3 vNormal; varying vec2 vLm;
 const float R = 73.8;
 float h31(vec3 p){ p = fract(p * .3183099 + .1); p *= 17.; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
@@ -68,34 +71,61 @@ vec3 holes(vec3 n, float dist){
   }
   return min(e, vec3(2.5)) * smoothstep(-.45, -.12, n.z);
 }
+float luma(vec3 c){ return dot(c, vec3(.3, .59, .11)); }
 void main(){
   vec3 B = vec3(vWorld.x, -vWorld.z, vWorld.y);          // Blender coordinates, for the stone layout
   vec3 N = normalize(vNormal);
+  // Every unwrapping the stone can use, and its derivatives, all computed before any branching.
+  vec3 P = B - vec3(0., 0., 60.); float Lr = length(P); float lat = asin(clamp(P.z / Lr, -1., 1.));
+  float cr = cos(lat) * R;
+  vec2 vA = vec2(atan(P.y, P.x) * cr, lat * R) / 3., vB = vec2(atan(-P.y, -P.x) * cr, lat * R) / 3.;
+  float rc = length(B.xy);
+  vec2 cA = vec2(atan(B.y, B.x) * rc, B.z) / 3., cB = vec2(atan(-B.y, -B.x) * rc, B.z) / 3.;
+  vec2 pl = B.xy / 3.3;
+  vec2 vAx = dFdx(vA), vAy = dFdy(vA), vBx = dFdx(vB), vBy = dFdy(vB);
+  vec2 cAx = dFdx(cA), cAy = dFdy(cA), cBx = dFdx(cB), cBy = dFdy(cB), plx = dFdx(pl), ply = dFdy(pl);
+  vec3 dpx = dFdx(vWorld), dpy = dFdy(vWorld);
+  bool flatTop = abs(N.y) > .7 && uKind > .5 && uKind < 1.5;
+  vec2 uv, gx, gy;
+  if (uKind < .5) { bool a = dot(vAx, vAx) + dot(vAy, vAy) < dot(vBx, vBx) + dot(vBy, vBy); uv = a ? vA : vB; gx = a ? vAx : vBx; gy = a ? vAy : vBy; }
+  else if (flatTop) { uv = pl; gx = plx; gy = ply; }
+  else { bool a = dot(cAx, cAx) + dot(cAy, cAy) < dot(cBx, cBx) + dot(cBy, cBy); uv = a ? cA : cB; gx = a ? cAx : cBx; gy = a ? cAy : cBy; }
+  // Relief: the scan's own light and dark read as height, lit from high in the vault.
+  vec2 e1 = vec2(1. / 1024., 0.), e2 = vec2(0., 1. / 1024.);
+  vec3 s0 = flatTop ? textureGrad(tPave, uv, gx, gy).rgb : textureGrad(tWall, uv, gx, gy).rgb;
+  float h0 = luma(s0);
+  float hx = luma(flatTop ? textureGrad(tPave, uv + e1, gx, gy).rgb : textureGrad(tWall, uv + e1, gx, gy).rgb);
+  float hy = luma(flatTop ? textureGrad(tPave, uv + e2, gx, gy).rgb : textureGrad(tWall, uv + e2, gx, gy).rgb);
+  vec3 nT = normalize(vec3((h0 - hx) * 7., (h0 - hy) * 7., 1.));
+  vec3 d2 = cross(dpy, N), d1 = cross(N, dpx);
+  vec3 Tt = d2 * gx.x + d1 * gy.x, Bt = d2 * gx.y + d1 * gy.y;
+  float im = inversesqrt(max(max(dot(Tt, Tt), dot(Bt, Bt)), 1e-12));
+  vec3 Np = normalize(mat3(Tt * im, Bt * im, N) * nT);
+  vec3 Lk = normalize(uKey - vWorld);
+  float relief = clamp(mix(1., max(dot(Np, Lk), 0.) / max(dot(N, Lk), .25), .6), .55, 1.5);
+  vec3 V = normalize(cameraPosition - vWorld);
   vec3 albedo; vec3 emit = vec3(0.);
   if (uKind < .5) {                                       // the vault: courses follow the sphere
-    vec3 P = B - vec3(0., 0., 60.); float L = length(P); float lat = asin(clamp(P.z / L, -1., 1.));
-    float lon = atan(P.y, P.x), lon2 = atan(-P.y, -P.x);
-    float c = cos(lat) * R;
-    albedo = grade(wrapped(tWall, vec2(lon * c, lat * R) / 3., vec2(lon2 * c, lat * R) / 3.)) * vec3(1.12, 1.05, .93);
-    emit = holes(P / L, length(vWorld - cameraPosition)) * uStars;
+    albedo = grade(s0) * vec3(1.12, 1.05, .93);
+    emit = holes(P / Lr, length(vWorld - cameraPosition)) * uStars;
   } else if (uKind < 1.5) {                               // stone on the floor and the steps
-    if (abs(N.y) > .7) {
-      vec2 uv = B.xy / 3.3;
-      albedo = grade(texture(tPave, uv).rgb) * vec3(.87, .82, .72);
-    } else {
-      float r = length(B.xy); float a = atan(B.y, B.x), a2 = atan(-B.y, -B.x);
-      albedo = grade(wrapped(tWall, vec2(a * r, B.z) / 3., vec2(a2 * r, B.z) / 3.)) * vec3(1.05, .99, .88);
-    }
+    albedo = flatTop ? grade(s0) * vec3(.87, .82, .72) : grade(s0) * vec3(1.05, .99, .88);
     albedo *= mix(.55, 1., smoothstep(0., 3.5, B.z));    // grime at the foot of every wall
   } else if (uKind < 2.5) {
-    albedo = vec3(.07, .066, .062);                       // basalt sarcophagus
+    // Polished basalt: dark, with the pierced vault and the fires mirrored in it.
+    albedo = vec3(.05, .048, .046) * (.8 + .4 * h0); relief = 1.;
+    vec3 Rw = reflect(-V, N); vec3 Rb = vec3(Rw.x, -Rw.z, Rw.y);
+    float fres = .04 + .96 * pow(1. - max(dot(N, V), 0.), 5.);
+    emit = holes(normalize(Rb), 60.) * uStars * .5 * (.25 + fres) + vec3(.9, .5, .25) * .05 * fres * smoothstep(-.2, .4, -Rw.y);
   } else {
     albedo = vec3(.2, .13, .07) * 1.4;                    // bronze bowls
+    float fres = pow(1. - max(dot(N, V), 0.), 3.);
+    emit = vec3(1., .55, .25) * fres * .35;
   }
   vec3 lm = texture(tLm, vLm).rgb; lm = lm * lm * uLmScale;
-  vec3 col = albedo * lm * uGain + emit;
+  vec3 col = albedo * lm * uGain * relief + emit;
   float d = length(vWorld - cameraPosition);
-  col = mix(col, uHaze, (1. - exp(-d * .0035)) * .45);
+  col = mix(col, uHaze, (1. - exp(-d * .0035)) * .35);
   gl_FragColor = vec4(col * (1. - uDim), 1.);
 }`;
 
@@ -185,41 +215,44 @@ class Word {
   }
 }
 
+export type LiveMode = 'menu' | 'explore';
+
 export function mountCenotaphLive(o: {
   host: HTMLElement; base: string; mode: 'day' | 'night'; requested: string; target: string; reduced: boolean; still?: boolean;
-  portrait: boolean;
+  portrait: boolean; routes: DriftRoute[]; targetRoute: DriftRoute | null; lang: () => 'en' | 'de';
   sections?: () => { text: string; href: string; label: string }[];
   onReveal: () => void; onRepaired: () => void; onEvent?: (e: CenotaphEvent, d?: unknown) => void; onOpen?: (href: string) => void;
-  onReady?: () => void;
+  onReady?: () => void; onMode?: (m: LiveMode) => void; ui?: HTMLElement;
 }) {
   const mobile = matchMedia('(pointer: coarse)').matches;
   const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.AgXToneMapping;
-  renderer.toneMappingExposure = o.mode === 'day' ? .9 : 1;
+  renderer.toneMappingExposure = o.mode === 'day' ? 1.15 : 1.45;
   renderer.domElement.className = 'live-canvas';
   o.host.append(renderer.domElement);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(o.mode === 'day' ? '#1a1612' : '#07080b');
-  const camera = new THREE.PerspectiveCamera(o.portrait ? 78 : 62, 1, .1, 600);
+  // The film's last frame: same place, same lens, so the hand-over from video to real time is seamless.
+  const FILM_FOV = o.portrait ? 100.4 : 67.4, FOV = o.portrait ? 78 : 62;
+  const camera = new THREE.PerspectiveCamera(FILM_FOV, 1, .05, 600);
   const clock = new THREE.Clock();
   const emit = (e: CenotaphEvent, d?: unknown) => o.onEvent?.(e, d);
 
-  // Post: bloom on the holes and the flames, a vignette and grain in the site's key.
+  // Post: bloom on the holes and the flames, a light grade, vignette and grain in the site's key.
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: mobile ? 0 : 4 });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .55, .5, .9);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .5, .5, .9);
   composer.addPass(bloom);
   const finish = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: mobile ? .025 : .04 } },
+    uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: mobile ? .02 : .032 } },
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
     fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uGrain; varying vec2 vUv;
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       void main(){ vec3 c = texture2D(tDiffuse, vUv).rgb; vec2 q = vUv - .5;
-        // The films' grade: deeper shadows, less colour.
-        float l = dot(c, vec3(.2126, .7152, .0722)); c = mix(vec3(l), c, .84); c = max(vec3(0.), (c - .18) * 1.14 + .18) * .92;
-        c *= 1. - .75 * smoothstep(.28, .85, length(q * vec2(1.1, 1.)));
+        float l = dot(c, vec3(.2126, .7152, .0722)); c = mix(vec3(l), c, .88); c = max(vec3(0.), (c - .18) * 1.08 + .18);
+        c *= 1. - .6 * smoothstep(.32, .9, length(q * vec2(1.1, 1.)));
         c *= 1. + (h(vUv * 900. + fract(uTime) * 91.) - .5) * uGrain * 4.;
         gl_FragColor = vec4(c, 1.); }`,
   });
@@ -230,64 +263,70 @@ export function mountCenotaphLive(o: {
   const stoneMaterials: THREE.ShaderMaterial[] = [];
   const dynamic: { update: (t: number, dt: number) => void }[] = [];
   let fig = new THREE.Vector3(3.4, 0, 23.5);
+  const clickables: { obj: THREE.Object3D; act: () => void }[] = [];
 
-  // ---- Camera: glide in from the tunnel, then the visitor looks and walks.
-  const START = new THREE.Vector3(0, 1.75, 31);
-  const intro = { from: new THREE.Vector3(0, 1.75, 62), t0: 0, len: o.reduced || o.still ? 0 : 6.5 };
-  // On a phone the view turns a little right, so the astronaut stands in the narrow frame.
+  // ---- Camera and the visitor's body.
+  const START = new THREE.Vector3(0, 2.0, 33.4), EYE = 1.72;
+  const PITCH0 = Math.atan2(17.8, 53.4);
   const YAW0 = o.portrait ? -.3 : 0;
-  let yaw = YAW0, pitch = .3, tYaw = YAW0, tPitch = .3;
-  const pos = intro.len ? intro.from.clone() : START.clone();
-  const goal = START.clone();
-  const keys = new Set<string>();
-  let tourUntil = 0, introDone = false;
+  let yaw = 0, pitch = PITCH0, tYaw = 0, tPitch = PITCH0;
+  const feet = new THREE.Vector3(START.x, START.y - EYE, START.z);
+  let vy = 0, onGround = true, mode: LiveMode = 'menu', enteredAt = Infinity, fovFrom = FILM_FOV;
+  const keys = new Set<string>(), walkTo = new THREE.Vector3(); let walkToOn = false;
+  const mouse = new THREE.Vector2();
 
   const loadTex = (url: string, srgb: boolean) => new Promise<THREE.Texture>((res, rej) => new THREE.TextureLoader().load(url, t => {
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t);
   }, undefined, rej));
 
+  let props: THREE.Group | null = null;
   async function build() {
     meta = await (await fetch(`${o.base}/live-${o.mode}.json`)).json() as Meta;
-    const [wall, pave, lmVault, lmFloor] = await Promise.all([
+    const groups = Object.keys(meta.groups);
+    const [wall, pave, ...maps] = await Promise.all([
       loadTex(`${o.base}/stone-wall.jpg`, true), loadTex(`${o.base}/stone-pave.jpg`, true),
-      loadTex(`${o.base}/lm-${o.mode}-vault.jpg`, false), loadTex(`${o.base}/lm-${o.mode}-floor.jpg`, false),
+      ...groups.map(g => loadTex(`${o.base}/lm-${o.mode}-${g}.jpg`, false)),
     ]);
-    for (const t of [lmVault, lmFloor]) { t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.flipY = false; t.needsUpdate = true; }
+    const lms: Record<string, THREE.Texture> = {};
+    groups.forEach((g, i) => { const t = maps[i]; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.flipY = false; t.needsUpdate = true; lms[g] = t; });
     const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
     const gltf = await new GLTFLoader().setDRACOLoader(draco).loadAsync(`${o.base}/interior-${o.mode}.glb`);
     const haze = new THREE.Color(o.mode === 'day' ? '#2a241e' : '#0c0d12');
+    const key = new THREE.Vector3(0, 26, 0);
     gltf.scene.traverse(obj => {
       const mesh = obj as THREE.Mesh; if (!mesh.isMesh) return;
       const g = mesh.geometry;
       g.setAttribute('lmUv', g.attributes.uv1 ?? g.attributes.uv);
       const name = `${mesh.name} ${mesh.parent?.name ?? ''}`;
-      const vault = /vault|^Sphere/.test(name);
+      const group = (name.match(/(vault|tomb|floor)\|/) ?? [])[1] ?? (/Sphere/.test(name) ? 'vault' : 'floor');
+      const vault = group === 'vault';
       const kind = vault ? 0 : /Sarcophagus|Lid/.test(name) ? 2 : /Cone|Torus/.test(name) ? 3 : 1;
-      const group = meta!.groups[vault ? 'vault' : 'floor'];
+      const lmKey = lms[group] ? group : 'floor';
       const m = new THREE.ShaderMaterial({
         uniforms: {
-          tWall: { value: wall }, tPave: { value: pave }, tLm: { value: vault ? lmVault : lmFloor }, uLmScale: { value: group.scale },
+          tWall: { value: wall }, tPave: { value: pave }, tLm: { value: lms[lmKey] }, uLmScale: { value: meta!.groups[lmKey].scale },
           uKind: { value: kind }, uTime: { value: 0 }, uStars: { value: o.mode === 'day' ? 14 : 30 }, uGain: { value: 1 }, uDim: { value: 0 },
-          uHaze: { value: haze },
+          uHaze: { value: haze }, uKey: { value: key },
         },
-        vertexShader: stoneVertex, fragmentShader: stoneFragment, side: vault ? THREE.BackSide : THREE.FrontSide,
+        vertexShader: stoneVertex, fragmentShader: stoneFragment, side: vault ? THREE.DoubleSide : THREE.FrontSide,
       });
-      if (vault) m.side = THREE.DoubleSide;
       mesh.material = m; stoneMaterials.push(m);
     });
     scene.add(gltf.scene);
     // By day Boullée's lamp hangs over the tomb: brass rings round a glowing core. Its shadows are in the bake.
     if (o.mode === 'day') {
-      const props = await new GLTFLoader().setDRACOLoader(draco).loadAsync(`${o.base}/props-day.glb`).catch(() => null);
-      if (props) {
-        props.scene.traverse(obj => { const m = (obj as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined; if (m && 'emissiveIntensity' in m && m.emissive.getHex()) m.emissiveIntensity = 60; });
-        scene.add(props.scene);
+      const p = await new GLTFLoader().setDRACOLoader(draco).loadAsync(`${o.base}/props-day.glb`).catch(() => null);
+      if (p) {
+        props = p.scene;
+        props.traverse(obj => { const m = (obj as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined; if (m && 'emissiveIntensity' in m && m.emissive.getHex()) m.emissiveIntensity = 60; });
+        scene.add(props);
         const lamp = new THREE.PointLight('#ffd6a4', 2600, 70, 1.4); lamp.position.set(0, 34, 0); scene.add(lamp);
+        clickables.push({ obj: props, act: toggleOrbits });
       }
     }
     fig = b2t(meta.fig);
-    buildTunnel(); buildShaft(); buildFires(); await buildAstronaut(); buildWords();
+    buildTunnel(); buildShaft(); buildFires(); buildInscription(); await buildAstronaut(); buildWords();
     o.onReady?.();
   }
 
@@ -307,7 +346,7 @@ export function mountCenotaphLive(o: {
           vec3 a = texture2D(tWall, uv).rgb;
           float z = vW.z - 36.; float s = mod(z, 11.) - 5.5; float lamp = exp(-s * s * .05) * exp(-pow(vW.y - 4.4, 2.) * .08);
           float fl = .85 + .15 * sin(uTime * 7. + floor(z / 11.) * 3.1);
-          vec3 c = a * (vec3(1., .6, .3) * lamp * 1.8 * fl + vec3(.04, .045, .06)) * exp(-max(0., vW.z - 60.) * .03);
+          vec3 c = a * (vec3(1., .6, .3) * lamp * 1.8 * fl + vec3(.05, .055, .07)) * exp(-max(0., vW.z - 60.) * .03);
           gl_FragColor = vec4(c, 1.); }`,
       side: THREE.BackSide,
     });
@@ -325,7 +364,6 @@ export function mountCenotaphLive(o: {
     const shaft = new THREE.Mesh(geo, m);
     shaft.position.copy(hole); shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), foot.clone().sub(hole).normalize());
     scene.add(shaft);
-    // Dust drifting through the light.
     const dir = hole.clone().sub(foot).normalize(), A = foot.clone().add(new THREE.Vector3(0, 1, 0));
     const n = mobile ? 90 : 160, P = new Float32Array(n * 3), S = new Float32Array(n);
     const side = new THREE.Vector3(1, 0, 0).cross(dir).normalize(), side2 = dir.clone().cross(side).normalize();
@@ -337,7 +375,6 @@ export function mountCenotaphLive(o: {
     const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(P, 3)); dg.setAttribute('aSeed', new THREE.BufferAttribute(S, 1));
     const dm = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uPx: { value: 1 }, uA: { value: A }, uDir: { value: dir } }, vertexShader: dustVertex, fragmentShader: dustFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     scene.add(new THREE.Points(dg, dm));
-    // The light that falls on the astronaut; the stone already has it baked in.
     const spot = new THREE.SpotLight('#ffe6c4', 900, len + 5, .045, .5, 1.2);
     spot.position.copy(hole); spot.target.position.copy(foot); scene.add(spot, spot.target);
     dynamic.push({ update: t => { m.uniforms.uTime.value = t; dm.uniforms.uTime.value = t; dm.uniforms.uPx.value = renderer.getPixelRatio(); spot.intensity = 900 * (1 + .08 * Math.sin(t * .52 + .5)); } });
@@ -347,52 +384,62 @@ export function mountCenotaphLive(o: {
     const geo = new THREE.PlaneGeometry(1, 1.6); geo.translate(0, .8, 0);
     meta!.fires.forEach((f, i) => {
       const at = b2t(f);
-      const big = at.length() < 30 || at.distanceTo(new THREE.Vector3(0, at.y, 0)) < 20;
+      const big = at.distanceTo(new THREE.Vector3(0, at.y, 0)) < 20;
       const m = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uSeed: { value: i * .37 } }, vertexShader: flameVertex, fragmentShader: flameFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
       const flame = new THREE.Mesh(geo, m); flame.position.copy(at).add(new THREE.Vector3(0, -.5 * (big ? 1.2 : .5), 0)); flame.scale.setScalar(big ? 1.35 : .5);
       scene.add(flame);
-      dynamic.push({ update: t => { m.uniforms.uTime.value = t; flame.quaternion.copy(camera.quaternion); } });
+      dynamic.push({ update: t => { m.uniforms.uTime.value = t; flame.rotation.y = Math.atan2(camera.position.x - flame.position.x, camera.position.z - flame.position.z); } });
       if (big) {
         const light = new THREE.PointLight('#ff8a3c', 30, 22, 1.6); light.position.copy(at); scene.add(light);
         dynamic.push({ update: t => { light.intensity = 30 * (1 + .16 * Math.sin(t * 9 + i) + .08 * Math.sin(t * 23 + i * 3)); } });
       }
     });
-    scene.add(new THREE.HemisphereLight(o.mode === 'day' ? '#d8cbb4' : '#5b6a86', '#1a120b', o.mode === 'day' ? 1.4 : .9));
+    scene.add(new THREE.HemisphereLight(o.mode === 'day' ? '#d8cbb4' : '#6f7ea0', '#1a120b', o.mode === 'day' ? 1.5 : 1.1));
   }
 
-  // ---- The astronaut: the Observatory suit, looking up and pointing as the address repairs.
+  // Cut into the end of the sarcophagus that faces the entrance, as on Boullée's drawing.
+  function buildInscription() {
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 256; const g = c.getContext('2d')!;
+    g.font = '500 70px "Times New Roman", serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    (g as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '12px';
+    g.fillStyle = 'rgba(0,0,0,.75)'; g.fillText('ISAACO · NEWTON', 514, 98);
+    g.fillStyle = 'rgba(214,196,160,.55)'; g.fillText('ISAACO · NEWTON', 512, 96);
+    g.font = '400 46px "Times New Roman", serif'; g.fillStyle = 'rgba(214,196,160,.4)'; g.fillText('MDCCXXVII', 512, 190);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.9, .475), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    plate.position.set(0, 2.55, 2.612); scene.add(plate);
+  }
+
+  // ---- The astronaut: the Observatory suit, now the curator of the cenotaph.
   const astro = createAstronaut();
-  const bones: Record<string, THREE.Object3D> = {};
+  let guide: Guide | null = null;
   let pointing = 0, lookUp = 0;
   async function buildAstronaut() {
     astro.root.position.copy(fig);
-    astro.root.rotation.y = Math.PI;             // back to the entrance, facing into the vault
+    astro.root.rotation.y = Math.PI;
     scene.add(astro.root);
     const env = new THREE.PMREMGenerator(renderer);
     const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
-    scene.environment = env.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .25;
+    scene.environment = env.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .3;
     await astro.load().catch(() => {});
-    // The Observatory scales him for its own hall; here he is a person, 1.85 m tall.
     astro.root.updateMatrixWorld(true);
     const hb = new THREE.Box3().setFromObject(astro.root); const hNow = hb.max.y - hb.min.y;
     if (hNow > .5) astro.root.scale.multiplyScalar(1.85 / hNow);
-    astro.root.traverse(b => { const n = b.name.replace(/^mixamorig[:_]?/, ''); if (/^(RightArm|RightForeArm|Spine1)$/.test(n)) bones[n] = b; });
-    // Contact shadow: he is not in the bake.
     const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!;
     const grad = g.createRadialGradient(64, 64, 4, 64, 64, 62); grad.addColorStop(0, 'rgba(0,0,0,.8)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
-    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
-    shadow.rotation.x = -Math.PI / 2; shadow.position.copy(fig).add(new THREE.Vector3(.25, .02, -.35)); scene.add(shadow);
-    const q = new THREE.Quaternion(), ax = new THREE.Vector3();
-    let phase = 0;
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+    guide = new Guide({
+      scene, camera, host: o.host, ui: o.ui, astro, routes: o.routes, lang: o.lang, onOpen: href => { emit('open', href); o.onOpen?.(href); },
+      onSpeak: () => emit('star', 1),
+      canWalkTo: p => { const r = Math.hypot(p.x, p.z); if (r > ARENA - 1) p.multiplyScalar((ARENA - 1) / r); if (r < 12) p.multiplyScalar(12 / Math.max(r, .01)); p.y = 0; return p; },
+    });
+    clickables.push({ obj: astro.root, act: () => { if (!guide!.isOpen) guide!.open(); } });
     dynamic.push({ update: (t, dt) => {
-      phase += dt;
-      astro.animate(phase, 0, 0, dt, 0, { pitch: -.95 * lookUp, yaw: .25 * lookUp });
-      if (pointing > .001 && bones.RightArm) {
-        q.setFromAxisAngle(ax.set(0, 0, 1), -2.35 * pointing); bones.RightArm.quaternion.multiply(q);
-        q.setFromAxisAngle(ax.set(0, 1, 0), .55 * pointing); bones.RightArm.quaternion.multiply(q);
-        q.setFromAxisAngle(ax.set(0, 0, 1), .25 * pointing); bones.RightForeArm.quaternion.multiply(q);
-      }
+      guide!.update(t, dt, { lookUp, point: pointing });
+      shadow.position.set(astro.root.position.x + .2, groundAt(astro.root.position.x, astro.root.position.z) + .02, astro.root.position.z - .2);
+      guide!.place(o.host.clientWidth, o.host.clientHeight);
     } });
   }
 
@@ -410,7 +457,6 @@ export function mountCenotaphLive(o: {
   function place(w: Word, at: Anchor) {
     w.C = vaultHit(START, at.dir.clone().normalize());
     const n = w.C.clone().sub(centre).normalize();
-    // Level baseline as seen from the entrance.
     const toC = w.C.clone().sub(START).normalize();
     const right = new THREE.Vector3().crossVectors(toC, new THREE.Vector3(0, 1, 0)).normalize();
     w.r = right.sub(n.clone().multiplyScalar(right.dot(n))).normalize();
@@ -430,11 +476,10 @@ export function mountCenotaphLive(o: {
     pg.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(n), 1));
     const pm = new THREE.ShaderMaterial({ uniforms: { uPx: { value: 1 } }, vertexShader: starVertex, fragmentShader: starFragment, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
     w.points = new THREE.Points(pg, pm); w.points.frustumCulled = false; w.points.renderOrder = 5;
-    // By day the vault is lit stone: a dark soft disc under every star keeps the words legible.
     if (o.mode === 'day') {
       const sm = new THREE.ShaderMaterial({ uniforms: { uPx: { value: 1 } }, vertexShader: starVertex, transparent: true, depthWrite: false, depthTest: false,
         fragmentShader: 'varying vec3 vColor; varying float vAlpha; void main(){ float d = length(gl_PointCoord - .5) * 2.; gl_FragColor = vec4(vec3(.05, .03, .015), smoothstep(1., .1, d) * .55 * vAlpha); }' });
-      const shade = new THREE.Points(pg, sm); shade.frustumCulled = false; shade.renderOrder = 3; shade.scale.setScalar(1); wordGroup.add(shade);
+      const shade = new THREE.Points(pg, sm); shade.frustumCulled = false; shade.renderOrder = 3; wordGroup.add(shade);
       shadeMats.push(sm);
     }
     const m = w.segs.length, lg = new THREE.BufferGeometry();
@@ -452,7 +497,6 @@ export function mountCenotaphLive(o: {
     place(main, { dir: o.portrait ? dir(15, 26) : dir(24, 27), width: o.portrait ? 36 : 34 });
     meshes(main);
     const secs = o.sections?.() ?? [];
-    // Round the vault, to be found by looking about.
     const spots = [dir(-68, 26), dir(72, 22), dir(-112, 30)];
     extras = secs.slice(0, spots.length).map((sec, i) => {
       const word = new Word(sec.text, sec.text, 30); place(word, { dir: spots[i], width: 13 }); meshes(word);
@@ -500,7 +544,7 @@ export function mountCenotaphLive(o: {
     for (const m of shadeMats) m.uniforms.uPx.value = renderer.getPixelRatio() * 1.6;
   }
 
-  // ---- The visitor's star, and Newton's apple.
+  // ---- The visitor's star.
   let visitorN: number | null = null;
   const visitorEl = document.createElement('span'); visitorEl.className = 'live-visitor'; labels.append(visitorEl);
   const visitorPos = vaultHit(START, new THREE.Vector3(-.28, .55, -1).normalize());
@@ -510,75 +554,104 @@ export function mountCenotaphLive(o: {
     const p = new THREE.Points(g, new THREE.ShaderMaterial({ uniforms: { uPx: { value: 1 } }, vertexShader: starVertex, fragmentShader: starFragment, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending }));
     p.frustumCulled = false; scene.add(p); return p;
   })();
-  type Apple = { m: THREE.Object3D; v: THREE.Vector3; hits: number; rest: boolean; spin: THREE.Vector3 };
-  const apples: Apple[] = [];
-  const appleGeo = new THREE.SphereGeometry(.14, 24, 16); appleGeo.scale(1, .92, 1);
-  const appleMat = new THREE.MeshStandardMaterial({ color: '#b3231a', roughness: .35 });
-  function dropApple() {
-    const g = new THREE.Group(); g.add(new THREE.Mesh(appleGeo, appleMat));
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(.008, .012, .09), new THREE.MeshStandardMaterial({ color: '#4a2c14' })); stem.position.y = .15; g.add(stem);
-    const leaf = new THREE.Mesh(new THREE.SphereGeometry(.05, 8, 6), new THREE.MeshStandardMaterial({ color: '#4f9a3c' })); leaf.scale.set(1, .2, .45); leaf.position.set(.05, .17, 0); g.add(leaf);
-    g.position.copy(fig).add(new THREE.Vector3(.05, 22, -.04)); scene.add(g);
-    apples.push({ m: g, v: new THREE.Vector3(), hits: 0, rest: false, spin: new THREE.Vector3() });
-    if (apples.length > 8) scene.remove(apples.shift()!.m);
-  }
-  function stepApples(dt: number) {
-    const helmet = fig.clone().add(new THREE.Vector3(0, 1.72, 0));
-    for (const a of apples) {
-      if (a.rest) continue;
-      a.v.y -= 9.81 * dt; a.m.position.addScaledVector(a.v, dt);
-      const d = a.m.position.clone().sub(helmet), dist = d.length();
-      if (dist < .38 && a.v.dot(d) < 0) {
-        const n = d.divideScalar(dist); a.v.addScaledVector(n, -1.4 * a.v.dot(n)).add(new THREE.Vector3(.45, 0, .2));
-        a.m.position.copy(helmet).addScaledVector(n, .38); a.hits++; a.spin.set(Math.random() * 8, Math.random() * 8, Math.random() * 8);
-        emit(a.hits === 1 ? 'apple-hit' : 'apple-bounce');
-      }
-      if (a.m.position.y < .14) {
-        a.m.position.y = .14;
-        if (a.v.y < -1.2) { a.v.y *= -.38; a.v.x *= .7; a.v.z *= .7; emit('apple-bounce'); }
-        else { a.v.y = 0; a.v.multiplyScalar(Math.pow(.25, dt)); if (a.v.length() < .03) a.rest = true; }
-        a.spin.set(a.v.z / .14, 0, -a.v.x / .14);
-      }
-      a.m.rotation.x += a.spin.x * dt; a.m.rotation.y += a.spin.y * dt; a.m.rotation.z += a.spin.z * dt;
-    }
+
+  // ---- Newton: apples that fall, bounce off helmets and roll down the steps.
+  const orchard = new Orchard(scene, () => astro.root.position, (kind, speed) => { if (speed > .6) emit(kind === 'helmet' ? 'apple-hit' : 'apple-bounce'); });
+  function dropApple() { orchard.add(astro.root.position.clone().add(new THREE.Vector3(.05, 22, -.04)), new THREE.Vector3()); }
+  function throwApple() {
+    const f = new THREE.Vector3(); camera.getWorldDirection(f);
+    const at = camera.position.clone().addScaledVector(f, .45).add(new THREE.Vector3(0, -.18, 0));
+    orchard.add(at, f.multiplyScalar(12).add(new THREE.Vector3(0, 2.6, 0)));
   }
 
-  // ---- Input: look (drag, mouse, tilt), walk (keys, wheel, tap), click the astronaut or a page.
+  // ---- The armillary sphere by day: click it and the planets take their orbits.
+  let orbits: THREE.Group | null = null, orbitsOn = 0;
+  function toggleOrbits() {
+    if (!orbits) {
+      orbits = new THREE.Group(); orbits.position.set(0, 34, 0); orbits.rotation.x = THREE.MathUtils.degToRad(23.44); scene.add(orbits);
+      const planets: [number, number, string, number][] = [[2.1, .16, '#c9b8a2', 4.1], [2.9, .24, '#f0d9a8', 1.6], [3.8, .26, '#8fb7ff', 1], [4.6, .2, '#e0764a', .53], [5.8, .5, '#e9c89a', .084], [6.9, .42, '#f3e2b8', .034]];
+      planets.forEach(([r, size, col, speed], i) => {
+        const pivot = new THREE.Group(); pivot.rotation.y = i * 1.3; orbits!.add(pivot);
+        const m = new THREE.Mesh(new THREE.SphereGeometry(size, 24, 16), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 3, roughness: .6 }));
+        m.position.x = r; pivot.add(m);
+        if (i === 5) { const ring = new THREE.Mesh(new THREE.RingGeometry(size * 1.4, size * 2.2, 48), new THREE.MeshBasicMaterial({ color: '#f3e2b8', side: THREE.DoubleSide, transparent: true, opacity: .6 })); ring.rotation.x = 1.2; m.add(ring); }
+        const path = new THREE.Mesh(new THREE.TorusGeometry(r, .012, 6, 128), new THREE.MeshBasicMaterial({ color: '#ffd9a6', transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false }));
+        path.rotation.x = Math.PI / 2; orbits!.add(path);
+        dynamic.push({ update: (_t, dt) => { pivot.rotation.y += dt * speed * .9 * orbitsOn; } });
+      });
+      orbits.scale.setScalar(.001);
+    }
+    orbitsOn = orbitsOn > .5 ? 0 : 1;
+    emit('open', 'orbits');
+  }
+  dynamic.push({ update: (_t, dt) => {
+    if (!orbits) return;
+    const s = orbits.scale.x + ((orbitsOn ? 1 : .001) - orbits.scale.x) * (1 - Math.pow(.05, dt)); orbits.scale.setScalar(s);
+    if (props) props.rotation.y += dt * .15 * orbitsOn;
+  } });
+
+  // ---- Input.
   let dragging = false, lastX = 0, lastY = 0, moved = 0;
   const el = renderer.domElement;
-  el.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; moved = 0; el.setPointerCapture(e.pointerId); });
-  el.addEventListener('pointermove', e => {
-    if (!dragging) return;
-    const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
-    const k = (mobile ? .006 : .0035);
-    tYaw -= dx * k; tPitch = THREE.MathUtils.clamp(tPitch + dy * k, -.5, 1.25); tourUntil = clock.elapsedTime + 20;
-  });
-  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const aim = (e: PointerEvent) => { const r = el.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); };
+  const onWord = (w: Word) => { const b = w.screen; return !!b && ndc.x > b[0] - .03 && ndc.x < b[2] + .03 && ndc.y > b[1] - .05 && ndc.y < b[3] + .05; };
+  el.addEventListener('pointerdown', e => { dragging = mode === 'explore'; lastX = e.clientX; lastY = e.clientY; moved = 0; if (dragging) el.setPointerCapture(e.pointerId); });
+  const onMove = (e: PointerEvent) => {
+    mouse.set(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1);
+    if (dragging) {
+      const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+      const k = mobile ? .006 : .0035;
+      tYaw -= dx * k; tPitch = THREE.MathUtils.clamp(tPitch + dy * k, -1.2, 1.35);
+    } else if (e.target === el) {
+      aim(e);
+      const holo = guide?.hitHologram(ray); guide?.hover(!!holo);
+      const hot = holo || clickables.some(c => ray.intersectObject(c.obj, true).length) || extras.some(x => onWord(x.word));
+      el.style.cursor = hot ? 'pointer' : mode === 'explore' ? 'grab' : '';
+    }
+  };
+  addEventListener('pointermove', onMove);
   el.addEventListener('pointerup', e => {
     dragging = false;
     if (moved > 8) return;
-    const r = el.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
-    ray.setFromCamera(ndc, camera);
-    const box = new THREE.Box3().setFromObject(astro.root);
-    if (ray.ray.intersectsBox(box)) { dropApple(); return; }
-    for (const ex of extras) { const b = ex.word.screen; if (b && ndc.x > b[0] - .03 && ndc.x < b[2] + .03 && ndc.y > b[1] - .05 && ndc.y < b[3] + .05) { emit('open', ex.href); o.onOpen?.(ex.href); return; } }
-    const hit = ray.ray.intersectPlane(floor, new THREE.Vector3());
-    if (hit && hit.distanceTo(pos) < 40) { goal.set(hit.x, 1.75, hit.z); tourUntil = clock.elapsedTime + 20; }
+    aim(e);
+    const holo = guide?.hitHologram(ray); if (holo) { emit('open', holo); o.onOpen?.(holo); return; }
+    for (const c of clickables) if (ray.intersectObject(c.obj, true).length) { c.act(); return; }
+    for (const ex of extras) if (onWord(ex.word)) { emit('open', ex.href); o.onOpen?.(ex.href); return; }
+    if (mode !== 'explore') return;
+    if (mobile) { const hit = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -feet.y), new THREE.Vector3()); if (hit && hit.distanceTo(feet) < 30) { walkTo.copy(hit); walkToOn = true; return; } }
+    throwApple();
   });
-  const onKey = (e: KeyboardEvent, down: boolean) => { if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { down ? keys.add(e.code) : keys.delete(e.code); if (down) tourUntil = clock.elapsedTime + 20; } };
+  const onKey = (e: KeyboardEvent, down: boolean) => {
+    if (mode !== 'explore' || (e.target as HTMLElement)?.tagName === 'INPUT') return;
+    if (e.code === 'Space') { if (down) jump(); e.preventDefault(); return; }
+    if (e.code === 'Escape' && down) { setMode('menu'); return; }
+    if (e.code === 'KeyE' && down) { throwApple(); return; }
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft'].includes(e.code)) { down ? keys.add(e.code) : keys.delete(e.code); if (e.code.startsWith('Arrow')) e.preventDefault(); walkToOn = false; }
+  };
   const kd = (e: KeyboardEvent) => onKey(e, true), ku = (e: KeyboardEvent) => onKey(e, false);
   addEventListener('keydown', kd); addEventListener('keyup', ku);
   let tiltYaw = 0, tiltPitch = 0;
   const tilt = (e: DeviceOrientationEvent) => { if (e.gamma == null || e.beta == null) return; tiltYaw = -THREE.MathUtils.degToRad(e.gamma) * .5; tiltPitch = THREE.MathUtils.degToRad(e.beta - 55) * .4; };
   if (mobile) addEventListener('deviceorientation', tilt);
 
-  function keepInside(p: THREE.Vector3) {
-    const r = Math.hypot(p.x, p.z);
-    const tunnel = Math.abs(p.x) < 2.6 && p.z > 30;
-    if (!tunnel && r > ARENA) p.multiplyScalar(ARENA / r).setY(1.75);
-    if (r < PODIUM) { p.x *= PODIUM / r; p.z *= PODIUM / r; }
-    if (p.z > 60) p.z = 60;
-    const toFig = new THREE.Vector2(p.x - fig.x, p.z - fig.z); if (toFig.length() < .9) { toFig.setLength(.9); p.x = fig.x + toFig.x; p.z = fig.z + toFig.y; }
+  function jump() { if (onGround) { vy = 5.4; onGround = false; emit('apple-bounce'); } }
+  function setMode(m: LiveMode) {
+    if (m === mode) return;
+    mode = m; keys.clear(); walkToOn = false;
+    if (m === 'menu') { tYaw = YAW0; tPitch = PITCH0; }
+    o.onMode?.(m);
+  }
+
+  // Walking: steps up to 60 cm are climbed (the podium), higher ones stop you; jumping clears a little more.
+  function tryMove(dx: number, dz: number) {
+    const nx = feet.x + dx, nz = feet.z + dz;
+    const r = Math.hypot(nx, nz), tunnel = Math.abs(nx) < 2.6 && nz > 30 && nz < 64;
+    if (!tunnel && r > ARENA) return false;
+    const g = groundAt(nx, nz);
+    if (g - feet.y > (onGround ? .62 : .3)) return false;
+    const a = astro.root.position; if (Math.hypot(nx - a.x, nz - a.z) < .7) return false;
+    feet.x = nx; feet.z = nz; return true;
   }
 
   // ---- Resize and quality.
@@ -588,53 +661,67 @@ export function mountCenotaphLive(o: {
     renderer.setPixelRatio(dpr); renderer.setSize(w, h, false);
     composer.setPixelRatio(dpr); composer.setSize(w, h);
     bloom.resolution.set(w * dpr / 2, h * dpr / 2);
-    camera.aspect = w / h; camera.fov = w < h ? 78 : 62; camera.updateProjectionMatrix();
+    camera.aspect = w / h; camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize); ro.observe(o.host); resize();
-  let frames = 0, slow = 0, lastCheck = performance.now() + 5000;   // no judging while it loads
+  let frames = 0, slow = 0, lastCheck = performance.now() + 5000;
 
   // ---- Frame.
-  let raf = 0, dim = 0, running = true;
+  let raf = 0, dim = 0, running = true, visitorShown = false;
   function frame() {
     raf = requestAnimationFrame(frame);
     if (!running) return;
     const dt = Math.min(.05, clock.getDelta()), t = clock.elapsedTime;
-    // Intro glide, then walking.
-    const ti = intro.len ? Math.min(1, t / intro.len) : 1;
-    if (ti < 1) { pos.lerpVectors(intro.from, START, ease(ti)); tPitch = .08 + .22 * ease(ti * 1.2 - .2); }
-    else {
-      if (!introDone) { introDone = true; tPitch = .3; tYaw = YAW0; }
+    const since = t - enteredAt;
+    // Lens: from the film's wide angle to the walking one, once the hand-over is done.
+    camera.fov = since > 0 ? THREE.MathUtils.lerp(fovFrom, FOV, ease(since / 2.2)) : fovFrom; camera.updateProjectionMatrix();
+    if (since > .8 && since < 1) tYaw = YAW0;
+    if (mode === 'explore') {
       const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), rgt = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
-      const sp = 5 * dt;
-      if (keys.has('KeyW') || keys.has('ArrowUp')) goal.addScaledVector(f, sp);
-      if (keys.has('KeyS') || keys.has('ArrowDown')) goal.addScaledVector(f, -sp);
-      if (keys.has('KeyA')) goal.addScaledVector(rgt, -sp);
-      if (keys.has('KeyD')) goal.addScaledVector(rgt, sp);
-      if (keys.has('ArrowLeft')) tYaw += 1.4 * dt;
-      if (keys.has('ArrowRight')) tYaw -= 1.4 * dt;
-      keepInside(goal); pos.lerp(goal, 1 - Math.pow(.02, dt)); keepInside(pos);
-      // Left alone, the gaze drifts slowly across the vault.
-      if (t > tourUntil && !dragging) tYaw += (YAW0 + .1 * Math.sin(t * .07) - tYaw) * (1 - Math.pow(.7, dt));
+      const mv = new THREE.Vector3();
+      if (keys.has('KeyW') || keys.has('ArrowUp')) mv.add(f);
+      if (keys.has('KeyS') || keys.has('ArrowDown')) mv.sub(f);
+      if (keys.has('KeyA')) mv.sub(rgt);
+      if (keys.has('KeyD')) mv.add(rgt);
+      if (keys.has('ArrowLeft')) tYaw += 1.6 * dt;
+      if (keys.has('ArrowRight')) tYaw -= 1.6 * dt;
+      if (walkToOn) { const d = new THREE.Vector3(walkTo.x - feet.x, 0, walkTo.z - feet.z); if (d.length() < .2) walkToOn = false; else mv.add(d.normalize()); }
+      if (mv.lengthSq() > 0) {
+        mv.normalize().multiplyScalar((keys.has('ShiftLeft') ? 8.5 : 4.6) * dt);
+        if (!tryMove(mv.x, mv.z)) { if (!tryMove(mv.x, 0)) tryMove(0, mv.z); }
+      }
+    } else {
+      // Menu: the visitor stands at the entrance; the view follows the mouse a little.
+      feet.x += (START.x - feet.x) * (1 - Math.pow(.05, dt)); feet.z += (START.z - feet.z) * (1 - Math.pow(.05, dt));
     }
-    yaw += (tYaw + tiltYaw - yaw) * (1 - Math.pow(.004, dt));
-    pitch += (tPitch + tiltPitch - pitch) * (1 - Math.pow(.004, dt));
-    camera.position.copy(pos).add(new THREE.Vector3(0, Math.sin(t * 1.1) * .012, 0));
+    vy -= 13 * dt; feet.y += vy * dt;
+    const g = groundAt(feet.x, feet.z);
+    if (feet.y <= g) { if (!onGround && vy < -3) emit('apple-bounce'); feet.y = g; vy = 0; onGround = true; } else if (feet.y > g + .05) onGround = false;
+    const idle = mode === 'menu' && since > 1 ? { y: mouse.x * -.09 + .04 * Math.sin(t * .07), p: mouse.y * -.05 } : { y: 0, p: 0 };
+    yaw += (tYaw + tiltYaw + idle.y - yaw) * (1 - Math.pow(.004, dt));
+    pitch += (tPitch + tiltPitch + idle.p - pitch) * (1 - Math.pow(.004, dt));
+    const bob = mode === 'explore' && (keys.size || walkToOn) && onGround ? Math.sin(t * 9) * .025 : Math.sin(t * 1.1) * .01;
+    // The film's camera rode a little higher than eyes do: settle down from it gently.
+    const lift = (START.y - EYE) * (since > 0 ? 1 - ease(since / 3) : 1);
+    camera.position.set(feet.x, feet.y + EYE + bob + lift, feet.z);
     camera.rotation.set(0, 0, 0); camera.rotateY(yaw); camera.rotateX(pitch);
     for (const m of stoneMaterials) { m.uniforms.uTime.value = t; m.uniforms.uDim.value = dim; }
     for (const d of dynamic) d.update(t, dt);
     finish.uniforms.uTime.value = t;
-    stepApples(dt);
+    orchard.step(dt);
 
-    // Story: the address comes out as the visitor arrives, burns, repairs; the astronaut points.
-    const tStory = t - Math.max(0, intro.len - 2.5);
-    if (!revealed && tStory > 1.2) { revealed = true; revealAt = t; o.onReveal(); emit('reveal'); }
-    if (repairAt === Infinity && tStory > 5.4) repairAt = t;
+    // Story, from the hand-over: the address comes out, burns, repairs; he points, then shows the page.
+    if (!revealed && since > 1) { revealed = true; revealAt = t; o.onReveal(); emit('reveal'); }
+    if (repairAt === Infinity && since > 4.4) repairAt = t;
     const m = Math.max(0, t - repairAt) / 2.4;
-    if (!repaired && m >= 1) { repaired = true; repairedAt = t; o.onRepaired(); emit('repaired'); }
+    if (!repaired && m >= 1) {
+      repaired = true; repairedAt = t; o.onRepaired(); emit('repaired');
+      if (o.targetRoute) setTimeout(() => { if (guide && !guide.isOpen && !guide.holoRoute) guide.show(o.targetRoute!); }, 4500);
+    }
     const inn = ease(m * 1.7 - .55), nIn = main.stars.filter(s => s.kind === 'in').length;
     while (nIn && lit < Math.floor(inn * nIn)) { lit++; emit('star', lit); }
-    lookUp += ((tStory > 3 ? 1 : 0) - lookUp) * (1 - Math.pow(.3, dt));
-    const wantPoint = repairAt < Infinity && t - repairAt < 9 ? 1 : 0;
+    lookUp += ((since > 2 && since < 14 ? 1 : 0) - lookUp) * (1 - Math.pow(.3, dt));
+    const wantPoint = repairAt < Infinity && t - repairAt < 4 ? 1 : 0;
     pointing += (wantPoint - pointing) * (1 - Math.pow(.15, dt));
     if (main.points) {
       const t0 = revealAt === Infinity ? t + 99 : revealAt;
@@ -655,26 +742,27 @@ export function mountCenotaphLive(o: {
       if (va > .05 && !visitorShown) { visitorShown = true; emit('visitor'); }
     }
     composer.render(dt);
-    // Keep the frame rate: step the resolution down if the device struggles.
     frames++; const now = performance.now();
     if (now - lastCheck > 2000) { const fps = frames * 1000 / (now - lastCheck); frames = 0; lastCheck = now;
       if (fps < 38 && dpr > (mobile ? .75 : 1)) { if (++slow >= 2) { dpr = Math.max(mobile ? .75 : 1, dpr * .88); resize(); slow = 0; } } else slow = 0; }
   }
-  let visitorShown = false;
   const vis = () => { running = !document.hidden; if (running) clock.getDelta(); };
   document.addEventListener('visibilitychange', vis);
 
   const ready = build().then(() => { clock.start(); frame(); });
-  (window as unknown as { __live: unknown }).__live = { camera, scene, astro, pos, goal, dropApple, get state() { return { yaw, pitch, tYaw, tPitch, t: clock.elapsedTime, dpr }; } };
+  (window as unknown as { __live: unknown }).__live = { camera, scene, astro, feet, orchard, dropApple, throwApple, setMode, jump, get guide() { return guide; }, get state() { return { yaw, pitch, tYaw, tPitch, t: clock.elapsedTime, dpr, mode }; } };
 
   return {
     ready,
-    skip() { intro.len = 0; pos.copy(START); goal.copy(START); },
-    replay() { intro.len = 6.5; introDone = false; clock.start(); revealed = false; repaired = false; revealAt = repairAt = repairedAt = Infinity; lit = 0; visitorShown = false; pos.copy(intro.from); goal.copy(START); tYaw = YAW0; tPitch = .3; },
+    /** The film has reached the vault: take over from its last frame. */
+    enter(fromFilm = true) { if (enteredAt < Infinity) return; enteredAt = clock.elapsedTime; fovFrom = fromFilm ? FILM_FOV : FOV; if (!fromFilm) tYaw = YAW0; },
+    replay() { enteredAt = Infinity; revealed = false; repaired = false; revealAt = repairAt = repairedAt = Infinity; lit = 0; visitorShown = false; feet.set(START.x, START.y - EYE, START.z); tYaw = 0; tPitch = PITCH0; yaw = 0; pitch = PITCH0; setMode('menu'); },
+    setMode, jump, throwApple,
+    talk() { if (guide && !guide.isOpen) guide.open(); },
     visitor(n: number) { visitorN = n; visitorEl.textContent = `№ ${n.toLocaleString('de-AT')}`; },
     dropApple,
     dim(v: number) { dim = v; },
-    story: () => ({ currentTime: Math.min(12, clock.elapsedTime * 12 / Math.max(6.5, intro.len || 6.5)), ended: clock.elapsedTime > intro.len, paused: false }),
-    dispose() { cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis); renderer.dispose(); },
+    story: () => ({ currentTime: enteredAt === Infinity ? 0 : 12 + (clock.elapsedTime - enteredAt), ended: enteredAt < Infinity, paused: false }),
+    dispose() { cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('pointermove', onMove); document.removeEventListener('visibilitychange', vis); renderer.dispose(); },
   };
 }

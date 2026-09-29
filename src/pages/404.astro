@@ -51,6 +51,7 @@ const beacons = [
         <a href="#recovery" class="void-scroll"><span class="scroll-mark" aria-hidden="true">↓</span><span data-i18n="404.scroll">{t("404.scroll")}</span></a>
         <p class="credit" data-i18n="404.credit">{t("404.credit")}</p>
         <p class="live-hint" data-live-hint hidden><span class="hint-desk" data-i18n="404.live.desk">{t("404.live.desk")}</span><span class="hint-touch" data-i18n="404.live.touch">{t("404.live.touch")}</span></p>
+        <button class="film-button explore-button" type="button" data-explore hidden><span class="explore-dot" aria-hidden="true"></span><span data-i18n="404.explore">{t("404.explore")}</span></button>
         <button class="film-button" type="button" data-skip><span data-i18n="404.skip">{t("404.skip")}</span><span aria-hidden="true">→</span></button>
         <button class="film-button" type="button" data-replay hidden><span aria-hidden="true">↺</span><span data-i18n="404.replay">{t("404.replay")}</span></button>
       </div>
@@ -73,6 +74,15 @@ const beacons = [
       </div>
       <div class="diag"><span><i></i><span data-i18n="404.diag.system">{t("404.diag.system")}</span></span><span>HTTP 404 / NO_ROUTE</span><span data-i18n="404.diag.recovery">{t("404.diag.recovery")}</span></div>
     </section>
+    <div class="explore-hud" data-hud hidden>
+      <p class="hud-keys"><span class="hint-desk" data-i18n="404.hud.desk">{t("404.hud.desk")}</span><span class="hint-touch" data-i18n="404.hud.touch">{t("404.hud.touch")}</span></p>
+      <div class="hud-buttons">
+        <button type="button" class="hud-button hud-touch" data-jump><span data-i18n="404.hud.jump">{t("404.hud.jump")}</span></button>
+        <button type="button" class="hud-button hud-touch" data-throw><span data-i18n="404.hud.apple">{t("404.hud.apple")}</span></button>
+        <button type="button" class="hud-button" data-talk><span data-i18n="404.hud.talk">{t("404.hud.talk")}</span></button>
+        <button type="button" class="hud-button hud-exit" data-exit><span data-i18n="404.hud.exit">{t("404.hud.exit")}</span> <kbd class="hint-desk">Esc</kbd></button>
+      </div>
+    </div>
     <div class="void-flash" data-flash aria-hidden="true"></div>
   </div>
 </Layout>
@@ -167,29 +177,52 @@ const beacons = [
   // Films stay for reduced motion, data saver, no WebGL2 or ?film; everywhere else the vault is live.
   const liveMode = !still && !new URLSearchParams(location.search).has("film") && !!document.createElement("canvas").getContext("webgl2");
   let live: Awaited<ReturnType<typeof import("../scripts/cenotaph-live")["mountCenotaphLive"]>> | undefined;
-  const storyClock = { get currentTime() { return live?.story().currentTime ?? 0; }, get ended() { return live?.story().ended ?? false; }, get paused() { return false; } };
+  // The film carries the approach; at its last frame the live vault takes over from the same camera.
+  let handed = false, liveReady = false, filmDone = false;
+  const storyClock = { get currentTime() { return handed ? live?.story().currentTime ?? 12 : video.currentTime; }, get ended() { return handed; }, get paused() { return !handed && video.paused; } };
   const sound = mountCenotaphSound((liveMode ? storyClock : video) as HTMLVideoElement, 12);
   const reveal = () => { stage.classList.add("is-vault"); skip.hidden = true; replay.hidden = false; };
   // If the live vault cannot start, the same address opens again with the films.
   const toFilm = () => location.replace(location.pathname + (location.search ? location.search + "&film" : "?film"));
+  const exploreButton = $<HTMLButtonElement>("[data-explore]"), hud = $("[data-hud]"), world = $(".lost-world");
+  const handOver = (fromFilm: boolean) => {
+    if (handed || !live || !liveReady) return;
+    handed = true; live.enter(fromFilm); stage.classList.add("is-live-on");
+    setTimeout(() => { video.pause(); exploreButton.hidden = false; }, 900);
+  };
   if (liveMode) {
     stage.classList.add("is-live");
     $("[data-live-hint]").hidden = false; $(".credit").hidden = true;
+    const top = guesses[0];
+    const found = top.score > 0 && !["admin", "meta", "newton"].includes(top.reason);
+    // Calm skips the flight; otherwise the film plays while the vault loads behind it.
+    if (!calm) {
+      video.src = file("film", "mp4");
+      video.addEventListener("ended", () => { filmDone = true; handOver(true); });
+      video.play().catch(() => { filmDone = true; handOver(false); });
+    } else filmDone = true;
     import("../scripts/cenotaph-live").then(({ mountCenotaphLive }) => {
-      const top = guesses[0];
-      const target = egg === "newton" ? path : top.score > 0 && top.reason !== "admin" && top.reason !== "meta" ? top.route.path : "rodionbelousov.studio";
+      const target = egg === "newton" ? path : found ? top.route.path : "rodionbelousov.studio";
       live = mountCenotaphLive({
         host: view, base: "/cenotaph/live", mode: time, requested: path, target, reduced: reduced || calm, still: egg === "newton", portrait,
+        routes, targetRoute: found ? top.route : null, lang,
         sections: () => portrait ? [] : sections().map(({ text, href, label }) => ({ text, href, label })),
         onReveal: reveal,
         onRepaired: () => { evac.classList.add("is-found"); if (egg === "newton") setTimeout(() => live?.dropApple(), 900); },
         onEvent: (e, d) => sound.event(e, d),
         onOpen: to => go(to),
-        onReady: () => stage.classList.add("is-live-ready"),
+        onReady: () => { liveReady = true; stage.classList.add("is-live-ready"); if (filmDone) handOver(!calm); },
+        onMode: m => { world.classList.toggle("is-exploring", m === "explore"); hud.hidden = m !== "explore"; document.documentElement.style.overflow = m === "explore" ? "hidden" : ""; if (m === "explore") scrollTo({ top: 0 }); },
+        ui: world,
       });
       if (starNumber) live.visitor(starNumber);
       live.ready.catch(error => { console.warn("404: live vault failed", error); toFilm(); });
     }).catch(error => { console.warn("404: live vault failed", error); toFilm(); });
+    exploreButton.addEventListener("click", () => live?.setMode("explore"));
+    $("[data-exit]").addEventListener("click", () => live?.setMode("menu"));
+    $("[data-jump]").addEventListener("click", () => live?.jump());
+    $("[data-throw]").addEventListener("click", () => live?.throwApple());
+    $("[data-talk]").addEventListener("click", () => live?.talk());
   } else fetch("/cenotaph/camera.json").then(r => r.json() as Promise<CenotaphMeta>).then(meta => {
     const top = guesses[0];
     const target = egg === "newton" ? path : top.score > 0 && top.reason !== "admin" && top.reason !== "meta" ? top.route.path : "rodionbelousov.studio";
@@ -218,8 +251,8 @@ const beacons = [
   // After the flight the film hands over to a living loop shot from the same place: its first frame
   // is the film's last, so the switch cannot be seen.
   const loop = $<HTMLVideoElement>("[data-loop]");
-  const armLoop = () => { if (!loop.getAttribute("src") && !still) { loop.src = file("loop", "mp4"); loop.preload = "auto"; loop.load(); } };
-  const startLoop = () => { if (still) return; armLoop(); loop.currentTime = 0; loop.play().catch(() => {}); };
+  const armLoop = () => { if (!loop.getAttribute("src") && !still && !liveMode) { loop.src = file("loop", "mp4"); loop.preload = "auto"; loop.load(); } };
+  const startLoop = () => { if (still || liveMode) return; armLoop(); loop.currentTime = 0; loop.play().catch(() => {}); };
   loop.addEventListener("playing", () => stage.classList.add("is-looping"));
   video.addEventListener("timeupdate", () => { if (video.currentTime > 5) armLoop(); });
   video.addEventListener("ended", startLoop);
@@ -233,8 +266,8 @@ const beacons = [
     if (document.hidden) return;
     if (stage.classList.contains("is-looping") && loop.paused) loop.play().catch(() => {});
   });
-  skip.addEventListener("click", () => { if (live) { live.skip(); reveal(); return; } cenotaph?.skip(); reveal(); startLoop(); });
-  replay.addEventListener("click", () => { if (live) { live.replay(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; return; } if (!video.getAttribute("src")) { video.src = file("film", "mp4"); video.poster = file("start", "jpg"); } stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
+  skip.addEventListener("click", () => { if (liveMode) { filmDone = true; handOver(false); return; } cenotaph?.skip(); reveal(); startLoop(); });
+  replay.addEventListener("click", () => { if (live) { live.replay(); handed = false; filmDone = false; stage.classList.remove("is-live-on"); exploreButton.hidden = true; if (!video.getAttribute("src")) video.src = file("film", "mp4"); video.currentTime = 0; video.play().catch(() => { filmDone = true; handOver(false); }); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; return; } if (!video.getAttribute("src")) { video.src = file("film", "mp4"); video.poster = file("start", "jpg"); } stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
 
   // Look around the vault: the mouse, or the tilt of a phone, turns the view a little.
   if (!reduced && !liveMode) {
@@ -284,10 +317,43 @@ const beacons = [
   .stage video { object-fit: cover; filter: brightness(calc(var(--grade-b) * (1 - var(--dim) * .72))) contrast(var(--grade-c)) saturate(var(--grade-s)); }
   .stage video[data-loop] { opacity: 0; }
   /* The live vault: its canvas replaces the films; labels for the page constellations ride on top. */
-  .stage:global(.is-live) video, .stage:global(.is-live) canvas[data-sky] { display: none; }
+  .stage:global(.is-live) video[data-loop], .stage:global(.is-live) canvas[data-sky] { display: none; }
 
-  .stage :global(.live-canvas) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; opacity: 0; transition: opacity 1.4s ease; }
-  .stage:global(.is-live-ready) :global(.live-canvas) { opacity: 1; }
+  .stage :global(.live-canvas) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; opacity: 0; transition: opacity .9s ease; }
+  .lost-world:global(.is-exploring) :global(.live-canvas) { cursor: grab; touch-action: none; }
+  /* Walking: the page copy steps aside, a small bar of controls takes its place. */
+  .lost-world:global(.is-exploring) .void-ui, .lost-world:global(.is-exploring) .void-bottom { animation: none; opacity: 0; visibility: hidden; transition: opacity .5s, visibility 0s .5s; }
+  .lost-world:global(.is-exploring) .void :global(*) { pointer-events: none !important; }
+  .void-ui, .void-bottom { transition: opacity .6s; }
+  .explore-button { border-color: #9fd0ff66; color: #eaf4ff; background: #0b1624aa; }
+  .explore-button:hover { border-color: #bfe0ff; color: #fff; }
+  .explore-dot { width: 8px; height: 8px; border-radius: 50%; background: #9fd0ff; box-shadow: 0 0 12px #9fd0ff; animation: explore-pulse 2.2s ease-in-out infinite; }
+  @keyframes explore-pulse { 50% { box-shadow: 0 0 2px #9fd0ff; opacity: .6; } }
+  .explore-hud { position: fixed; left: 50%; bottom: 22px; z-index: 30; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; width: max-content; max-width: calc(100vw - 32px); }
+  .hud-keys { margin: 0; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; color: #ddd4c9; text-shadow: 0 1px 10px #000; text-align: center; }
+  .hud-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .hud-button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #ffffff2e; background: #0a0b0fa6; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #eeeae4; font: 600 11px var(--label); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: border-color .3s; }
+  .hud-button:hover { border-color: #e3b18399; }
+  .hud-button kbd { font: 500 10px var(--label); padding: 2px 6px; border-radius: 6px; border: 1px solid #ffffff33; color: #bbb; }
+  .hud-touch { display: none; }
+  @media (pointer: coarse) { .hud-touch { display: inline-flex; } }
+  /* The curator's panel. */
+  .lost-world :global(.guide) { position: fixed; left: 0; top: 0; z-index: 40; width: min(380px, calc(100vw - 32px)); padding: 14px 16px 16px; border-radius: 20px; background: linear-gradient(155deg, #10151ee6, #0a0b0ff0); border: 1px solid #bcdcff33; box-shadow: 0 24px 60px #000b, inset 0 1px 0 #ffffff14; backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); color: #e9edf3; font: 14px/1.55 var(--font-inter), sans-serif; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+  .lost-world :global(.guide-head) { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .lost-world :global(.guide-who) { display: flex; align-items: center; gap: 8px; font: 600 10px var(--label); letter-spacing: .22em; text-transform: uppercase; color: #a9d6ff; }
+  .lost-world :global(.guide-who::before) { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #9fd0ff; box-shadow: 0 0 10px #9fd0ff; }
+  .lost-world :global(.guide-x) { min-width: 36px; min-height: 36px; border: 0; background: none; color: #aab4c0; font-size: 22px; line-height: 1; cursor: pointer; }
+  .lost-world :global(.guide-say) { margin: 0 0 12px; min-height: 4.6em; color: #eef2f7; }
+  .lost-world :global(.guide-chips) { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .lost-world :global(.guide-chips button), .lost-world :global(.guide-ask button) { min-height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid #bcdcff33; background: #9fd0ff12; color: #dcecff; font: 500 12px var(--font-inter), sans-serif; cursor: pointer; transition: background .25s, border-color .25s; }
+  .lost-world :global(.guide-chips button:hover), .lost-world :global(.guide-ask button:hover) { background: #9fd0ff2a; border-color: #bcdcff88; }
+  .lost-world :global(.guide-ask) { display: flex; gap: 6px; }
+  .lost-world :global(.guide-ask input) { flex: 1; min-width: 0; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid #ffffff26; background: #00000059; color: #fff; font: 14px var(--font-inter), sans-serif; }
+  .lost-world :global(.guide-ask input:focus) { outline: none; border-color: #9fd0ffaa; }
+  .lost-world :global(.guide-go) { display: inline-flex; margin-top: 12px; padding: 9px 16px; border-radius: 999px; background: #e3b18322; border: 1px solid #e3b18366; color: #f7dcc1; font: 600 12px var(--font-inter), sans-serif; text-decoration: none; }
+  .lost-world :global(.guide-go:hover) { background: #e3b18344; }
+  .lost-world :global(.guide [hidden]) { display: none !important; }
+  .stage:global(.is-live-on) :global(.live-canvas) { opacity: 1; }
   .stage :global(.live-canvas:active) { cursor: grabbing; }
   .live-hint { flex: 1; margin: 0; text-align: right; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; color: #c8c0b6; text-shadow: 0 1px 10px #000; }
   .hint-touch { display: none; }
@@ -398,6 +464,8 @@ const beacons = [
     .credit { display: none; }
     .void-scroll, .film-button { font-size: 10px; letter-spacing: .12em; gap: 9px; }
     .film-button { padding: 0 14px; }
+    .lost-world:has(.explore-button:not([hidden])) .void-scroll { display: none; }
+    .void-bottom .film-button { letter-spacing: .08em; }
     .recover { padding: 0 7% 45px; }
     .recovery-axis { height: 120px; }
     .recover-head { margin-bottom: 42px; }
