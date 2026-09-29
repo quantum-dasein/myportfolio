@@ -13,7 +13,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createAstronaut } from './observatory-astronaut';
 import { layout, editScript } from './cenotaph';
-import type { CenotaphEvent } from './cenotaph';
+import type { SoundEvent } from './cenotaph-sound';
 import { Guide } from './cenotaph-guide';
 import { Orchard, groundAt } from './cenotaph-apple';
 import type { DriftRoute } from '../data/drift-routes';
@@ -103,6 +103,8 @@ void main(){
   vec3 Np = normalize(mat3(Tt * im, Bt * im, N) * nT);
   vec3 Lk = normalize(uKey - vWorld);
   float relief = clamp(mix(1., max(dot(Np, Lk), 0.) / max(dot(N, Lk), .25), .6), .55, 1.5);
+  // Relief only where a texel is bigger than a pixel: further off it would only shimmer.
+  relief = mix(relief, 1., smoothstep(.0012, .004, length(gx) + length(gy)));
   vec3 V = normalize(cameraPosition - vWorld);
   vec3 albedo; vec3 emit = vec3(0.);
   if (uKind < .5) {                                       // the vault: courses follow the sphere
@@ -112,17 +114,21 @@ void main(){
     albedo = flatTop ? grade(s0) * vec3(.87, .82, .72) : grade(s0) * vec3(1.05, .99, .88);
     albedo *= mix(.55, 1., smoothstep(0., 3.5, B.z));    // grime at the foot of every wall
   } else if (uKind < 2.5) {
-    // Polished basalt: dark, with the pierced vault and the fires mirrored in it.
-    albedo = vec3(.05, .048, .046) * (.8 + .4 * h0); relief = 1.;
-    vec3 Rw = reflect(-V, N); vec3 Rb = vec3(Rw.x, -Rw.z, Rw.y);
+    // Honed black granite: a faint grain, and a soft sheen of the room (warm fires low, the dim
+    // vault above) rather than a mirror, which read as stars stuck to the stone.
+    float grain = luma(s0);
+    albedo = vec3(.022, .021, .021) * (.75 + .5 * grain); relief = 1.;
+    vec3 Rw = reflect(-V, N);
     float fres = .04 + .96 * pow(1. - max(dot(N, V), 0.), 5.);
-    emit = holes(normalize(Rb), 60.) * uStars * .5 * (.25 + fres) + vec3(.9, .5, .25) * .05 * fres * smoothstep(-.2, .4, -Rw.y);
+    vec3 room = mix(vec3(.55, .32, .16), vec3(.1, .1, .12), smoothstep(-.1, .5, Rw.y));
+    emit = room * fres * .22;
   } else {
     albedo = vec3(.2, .13, .07) * 1.4;                    // bronze bowls
     float fres = pow(1. - max(dot(N, V), 0.), 3.);
     emit = vec3(1., .55, .25) * fres * .35;
   }
   vec3 lm = texture(tLm, vLm).rgb; lm = lm * lm * uLmScale;
+  if (uKind > 1.5 && uKind < 2.5) lm = mix(vec3(luma(lm)), lm, .35);   // granite stays black, not firelit brown
   vec3 col = albedo * lm * uGain * relief + emit;
   float d = length(vWorld - cameraPosition);
   col = mix(col, uHaze, (1. - exp(-d * .0035)) * .35);
@@ -221,7 +227,7 @@ export function mountCenotaphLive(o: {
   host: HTMLElement; base: string; mode: 'day' | 'night'; requested: string; target: string; reduced: boolean; still?: boolean;
   portrait: boolean; routes: DriftRoute[]; targetRoute: DriftRoute | null; lang: () => 'en' | 'de';
   sections?: () => { text: string; href: string; label: string }[];
-  onReveal: () => void; onRepaired: () => void; onEvent?: (e: CenotaphEvent, d?: unknown) => void; onOpen?: (href: string) => void;
+  onReveal: () => void; onRepaired: () => void; onEvent?: (e: SoundEvent, d?: unknown) => void; onOpen?: (href: string) => void;
   onReady?: () => void; onMode?: (m: LiveMode) => void; ui?: HTMLElement;
 }) {
   const mobile = matchMedia('(pointer: coarse)').matches;
@@ -237,7 +243,7 @@ export function mountCenotaphLive(o: {
   const FILM_FOV = o.portrait ? 100.4 : 67.4, FOV = o.portrait ? 78 : 62;
   const camera = new THREE.PerspectiveCamera(FILM_FOV, 1, .05, 600);
   const clock = new THREE.Clock();
-  const emit = (e: CenotaphEvent, d?: unknown) => o.onEvent?.(e, d);
+  const emit = (e: SoundEvent, d?: unknown) => o.onEvent?.(e, d);
 
   // Post: bloom on the holes and the flames, a light grade, vignette and grain in the site's key.
   const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: mobile ? 0 : 4 });
@@ -270,15 +276,20 @@ export function mountCenotaphLive(o: {
   const PITCH0 = Math.atan2(17.8, 53.4);
   const YAW0 = o.portrait ? -.3 : 0;
   let yaw = 0, pitch = PITCH0, tYaw = 0, tPitch = PITCH0;
-  const feet = new THREE.Vector3(START.x, START.y - EYE, START.z);
+  const feet = new THREE.Vector3(START.x, 0, START.z);   // on the floor; the film's extra height is eased out as 'lift'
   let vy = 0, onGround = true, mode: LiveMode = 'menu', enteredAt = Infinity, fovFrom = FILM_FOV;
   const keys = new Set<string>(), walkTo = new THREE.Vector3(); let walkToOn = false;
   const mouse = new THREE.Vector2();
 
-  const loadTex = (url: string, srgb: boolean) => new Promise<THREE.Texture>((res, rej) => new THREE.TextureLoader().load(url, t => {
+  // Images are decoded off the main thread (ImageBitmap), so loading never stalls the film.
+  const textures: THREE.Texture[] = [];
+  const loadTex = async (url: string, srgb: boolean, flip = true) => {
+    const blob = await (await fetch(url)).blob();
+    const bmp = await createImageBitmap(blob, { imageOrientation: flip ? 'flipY' : 'from-image' });
+    const t = new THREE.Texture(bmp as unknown as HTMLImageElement); t.flipY = false; t.needsUpdate = true;
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t);
-  }, undefined, rej));
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy(); textures.push(t); return t;
+  };
 
   let props: THREE.Group | null = null;
   async function build() {
@@ -286,7 +297,7 @@ export function mountCenotaphLive(o: {
     const groups = Object.keys(meta.groups);
     const [wall, pave, ...maps] = await Promise.all([
       loadTex(`${o.base}/stone-wall.jpg`, true), loadTex(`${o.base}/stone-pave.jpg`, true),
-      ...groups.map(g => loadTex(`${o.base}/lm-${o.mode}-${g}.jpg`, false)),
+      ...groups.map(g => loadTex(`${o.base}/lm-${o.mode}-${g}.jpg`, false, false)),
     ]);
     const lms: Record<string, THREE.Texture> = {};
     groups.forEach((g, i) => { const t = maps[i]; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.flipY = false; t.needsUpdate = true; lms[g] = t; });
@@ -333,8 +344,9 @@ export function mountCenotaphLive(o: {
   // The tunnel behind the visitor: dark stone lit by sconces, so turning round is not a void.
   function buildTunnel() {
     const shape = new THREE.Shape();
-    shape.moveTo(-3.5, 0); shape.lineTo(3.5, 0); shape.lineTo(3.5, 6);
-    shape.absarc(0, 6, 3.5, 0, Math.PI, false); shape.lineTo(-3.5, 0);
+    // A hair narrower than the cut through the steps, so the two walls never fight over the same pixels.
+    shape.moveTo(-3.38, 0); shape.lineTo(3.38, 0); shape.lineTo(3.38, 6);
+    shape.absarc(0, 6, 3.38, 0, Math.PI, false); shape.lineTo(-3.38, 0);
     // It starts inside the shell: nearer in, the trench between the steps is already in the bake.
     const geo = new THREE.ExtrudeGeometry(shape, { depth: 80, bevelEnabled: false, curveSegments: 24 });
     geo.translate(0, 0, 43.2);
@@ -391,6 +403,7 @@ export function mountCenotaphLive(o: {
       dynamic.push({ update: t => { m.uniforms.uTime.value = t; flame.rotation.y = Math.atan2(camera.position.x - flame.position.x, camera.position.z - flame.position.z); } });
       if (big) {
         const light = new THREE.PointLight('#ff8a3c', 30, 22, 1.6); light.position.copy(at); scene.add(light);
+        SOLID.push([at.x, at.z, .95]);
         dynamic.push({ update: t => { light.intensity = 30 * (1 + .16 * Math.sin(t * 9 + i) + .08 * Math.sin(t * 23 + i * 3)); } });
       }
     });
@@ -418,9 +431,16 @@ export function mountCenotaphLive(o: {
     astro.root.position.copy(fig);
     astro.root.rotation.y = Math.PI;
     scene.add(astro.root);
+    // A tiny painted environment for his suit and visor: warm stone below, the dim vault above,
+    // a patch of daylight where the shaft comes in. Far cheaper to prefilter than a studio scene.
+    const ec = document.createElement('canvas'); ec.width = 64; ec.height = 32; const eg = ec.getContext('2d')!;
+    const sky = eg.createLinearGradient(0, 0, 0, 32);
+    sky.addColorStop(0, o.mode === 'day' ? '#b9a78c' : '#3a3f4c'); sky.addColorStop(.5, '#6d5a44'); sky.addColorStop(1, '#241a12');
+    eg.fillStyle = sky; eg.fillRect(0, 0, 64, 32);
+    eg.fillStyle = '#fff2dc'; eg.beginPath(); eg.arc(14, 6, 4, 0, 6.283); eg.fill();
+    const etex = new THREE.CanvasTexture(ec); etex.mapping = THREE.EquirectangularReflectionMapping; etex.colorSpace = THREE.SRGBColorSpace;
     const env = new THREE.PMREMGenerator(renderer);
-    const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
-    scene.environment = env.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .3;
+    scene.environment = env.fromEquirectangular(etex).texture; scene.environmentIntensity = .6; env.dispose();
     await astro.load().catch(() => {});
     astro.root.updateMatrixWorld(true);
     const hb = new THREE.Box3().setFromObject(astro.root); const hNow = hb.max.y - hb.min.y;
@@ -432,7 +452,7 @@ export function mountCenotaphLive(o: {
     shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
     guide = new Guide({
       scene, camera, host: o.host, ui: o.ui, astro, routes: o.routes, lang: o.lang, onOpen: href => { emit('open', href); o.onOpen?.(href); },
-      onSpeak: () => emit('star', 1),
+      onSpeak: () => emit('talk'),
       canWalkTo: p => { const r = Math.hypot(p.x, p.z); if (r > ARENA - 1) p.multiplyScalar((ARENA - 1) / r); if (r < 12) p.multiplyScalar(12 / Math.max(r, .01)); p.y = 0; return p; },
     });
     clickables.push({ obj: astro.root, act: () => { if (!guide!.isOpen) guide!.open(); } });
@@ -559,6 +579,7 @@ export function mountCenotaphLive(o: {
   const orchard = new Orchard(scene, () => astro.root.position, (kind, speed) => { if (speed > .6) emit(kind === 'helmet' ? 'apple-hit' : 'apple-bounce'); });
   function dropApple() { orchard.add(astro.root.position.clone().add(new THREE.Vector3(.05, 22, -.04)), new THREE.Vector3()); }
   function throwApple() {
+    emit('throw');
     const f = new THREE.Vector3(); camera.getWorldDirection(f);
     const at = camera.position.clone().addScaledVector(f, .45).add(new THREE.Vector3(0, -.18, 0));
     orchard.add(at, f.multiplyScalar(12).add(new THREE.Vector3(0, 2.6, 0)));
@@ -590,24 +611,58 @@ export function mountCenotaphLive(o: {
     if (props) props.rotation.y += dt * .15 * orbitsOn;
   } });
 
-  // ---- Input.
-  let dragging = false, lastX = 0, lastY = 0, moved = 0;
+  // ---- Input. On a desk, walking works like a game: the pointer is captured, the mouse turns the
+  // head, a click acts on whatever the crosshair is on. On touch, drag to look and tap to walk.
+  let dragging = false, lastX = 0, lastY = 0, moved = 0, locked = false, releasing = false;
   const el = renderer.domElement;
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-  const aim = (e: PointerEvent) => { const r = el.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); };
+  const cross = document.createElement('div'); cross.className = 'live-cross'; o.host.append(cross);
+  const aim = (e?: PointerEvent) => {
+    if (locked || !e) ndc.set(0, 0);
+    else { const r = el.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); }
+    ray.setFromCamera(ndc, camera);
+  };
   const onWord = (w: Word) => { const b = w.screen; return !!b && ndc.x > b[0] - .03 && ndc.x < b[2] + .03 && ndc.y > b[1] - .05 && ndc.y < b[3] + .05; };
-  el.addEventListener('pointerdown', e => { dragging = mode === 'explore'; lastX = e.clientX; lastY = e.clientY; moved = 0; if (dragging) el.setPointerCapture(e.pointerId); });
+  const canLock = !mobile && 'requestPointerLock' in el;
+  const lock = () => { if (canLock && mode === 'explore' && !locked) { try { const r = el.requestPointerLock() as unknown as Promise<void> | undefined; r?.catch?.(err => console.warn('pointer lock', String(err))); } catch (err) { console.warn('pointer lock', String(err)); } } };
+  const unlockFor = () => { if (locked) { releasing = true; document.exitPointerLock(); } };
+  const waiting = () => cross.classList.toggle('is-waiting', canLock && mode === 'explore' && !locked);
+  document.addEventListener('pointerlockchange', () => {
+    locked = document.pointerLockElement === el;
+    cross.classList.toggle('is-on', locked);
+    cross.dataset.hint = o.lang() === 'de' ? 'Klicken zum Umsehen' : 'Click to look around';
+    setTimeout(waiting, 50);
+    // Esc releases the pointer: that is also how you leave. Opening the curator releases it too, but keeps you inside.
+    if (!locked && mode === 'explore' && !releasing) setMode('menu');
+    releasing = false;
+  });
+  /** What the pointer (or the crosshair) is on, and what clicking it does. */
+  function actionAt(): (() => void) | null {
+    const holo = guide?.hitHologram(ray); if (holo) return () => { emit('open', holo); o.onOpen?.(holo); };
+    for (const c of clickables) if (ray.intersectObject(c.obj, true).length) return () => { if (c.obj === astro.root) unlockFor(); c.act(); };
+    for (const ex of extras) if (onWord(ex.word)) return () => { emit('open', ex.href); o.onOpen?.(ex.href); };
+    return null;
+  }
+  el.addEventListener('pointerdown', e => {
+    moved = 0; lastX = e.clientX; lastY = e.clientY;
+    if (mode === 'explore' && canLock && !locked) { lock(); moved = 99; return; }
+    dragging = mode === 'explore' && !locked; if (dragging) el.setPointerCapture(e.pointerId);
+    if (locked) { aim(); const act = actionAt(); if (act) act(); else throwApple(); moved = 99; }
+  });
   const onMove = (e: PointerEvent) => {
     mouse.set(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1);
-    if (dragging) {
+    if (locked) {
+      tYaw -= e.movementX * .0022; tPitch = THREE.MathUtils.clamp(tPitch - e.movementY * .0022, -1.3, 1.45);
+      yaw = tYaw; pitch = tPitch;
+      aim(); const hot = !!actionAt(); guide?.hover(!!guide?.hitHologram(ray)); cross.classList.toggle('is-hot', hot);
+    } else if (dragging) {
       const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
       const k = mobile ? .006 : .0035;
       tYaw -= dx * k; tPitch = THREE.MathUtils.clamp(tPitch + dy * k, -1.2, 1.35);
     } else if (e.target === el) {
       aim(e);
-      const holo = guide?.hitHologram(ray); guide?.hover(!!holo);
-      const hot = holo || clickables.some(c => ray.intersectObject(c.obj, true).length) || extras.some(x => onWord(x.word));
-      el.style.cursor = hot ? 'pointer' : mode === 'explore' ? 'grab' : '';
+      const hot = !!actionAt(); guide?.hover(!!guide?.hitHologram(ray));
+      el.style.cursor = hot ? 'pointer' : mode === 'explore' ? 'crosshair' : '';
     }
   };
   addEventListener('pointermove', onMove);
@@ -615,35 +670,43 @@ export function mountCenotaphLive(o: {
     dragging = false;
     if (moved > 8) return;
     aim(e);
-    const holo = guide?.hitHologram(ray); if (holo) { emit('open', holo); o.onOpen?.(holo); return; }
-    for (const c of clickables) if (ray.intersectObject(c.obj, true).length) { c.act(); return; }
-    for (const ex of extras) if (onWord(ex.word)) { emit('open', ex.href); o.onOpen?.(ex.href); return; }
+    const act = actionAt(); if (act) { act(); return; }
     if (mode !== 'explore') return;
     if (mobile) { const hit = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -feet.y), new THREE.Vector3()); if (hit && hit.distanceTo(feet) < 30) { walkTo.copy(hit); walkToOn = true; return; } }
     throwApple();
   });
+  const MOVE = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'];
   const onKey = (e: KeyboardEvent, down: boolean) => {
     if (mode !== 'explore' || (e.target as HTMLElement)?.tagName === 'INPUT') return;
-    if (e.code === 'Space') { if (down) jump(); e.preventDefault(); return; }
+    if (e.code === 'Space') { if (down && !e.repeat) jump(); e.preventDefault(); return; }
     if (e.code === 'Escape' && down) { setMode('menu'); return; }
-    if (e.code === 'KeyE' && down) { throwApple(); return; }
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft'].includes(e.code)) { down ? keys.add(e.code) : keys.delete(e.code); if (e.code.startsWith('Arrow')) e.preventDefault(); walkToOn = false; }
+    if (e.code === 'KeyE' && down && !e.repeat) { throwApple(); return; }
+    if ((e.code === 'KeyF' || e.code === 'KeyT') && down && !e.repeat) { unlockFor(); guide?.open(); return; }
+    if (MOVE.includes(e.code)) { down ? keys.add(e.code) : keys.delete(e.code); e.preventDefault(); walkToOn = false; }
   };
   const kd = (e: KeyboardEvent) => onKey(e, true), ku = (e: KeyboardEvent) => onKey(e, false);
   addEventListener('keydown', kd); addEventListener('keyup', ku);
+  addEventListener('blur', () => keys.clear());
   let tiltYaw = 0, tiltPitch = 0;
   const tilt = (e: DeviceOrientationEvent) => { if (e.gamma == null || e.beta == null) return; tiltYaw = -THREE.MathUtils.degToRad(e.gamma) * .5; tiltPitch = THREE.MathUtils.degToRad(e.beta - 55) * .4; };
   if (mobile) addEventListener('deviceorientation', tilt);
 
-  function jump() { if (onGround) { vy = 5.4; onGround = false; emit('apple-bounce'); } }
+  function jump() { if (onGround) { vy = 5.2; onGround = false; emit('jump'); } }
   function setMode(m: LiveMode) {
     if (m === mode) return;
-    mode = m; keys.clear(); walkToOn = false;
-    if (m === 'menu') { tYaw = YAW0; tPitch = PITCH0; }
+    mode = m; keys.clear(); walkToOn = false; vel.set(0, 0, 0);
+    if (m === 'menu') { tYaw = YAW0; tPitch = PITCH0; if (locked) { releasing = true; document.exitPointerLock(); } }
+    else lock();
+    cross.dataset.hint = o.lang() === 'de' ? 'Klicken zum Umsehen' : 'Click to look around';
+    setTimeout(waiting, 400);
     o.onMode?.(m);
   }
+  // Leaving the page (or coming back to it from history) resets the conversation and the controls.
+  const onHide = () => { guide?.close(); guide?.forget(); if (mode === 'explore') setMode('menu'); };
+  addEventListener('pagehide', onHide);
 
   // Walking: steps up to 60 cm are climbed (the podium), higher ones stop you; jumping clears a little more.
+  const SOLID: [number, number, number][] = [];   // round obstacles: x, z, radius (fire bowls on their pedestals)
   function tryMove(dx: number, dz: number) {
     const nx = feet.x + dx, nz = feet.z + dz;
     const r = Math.hypot(nx, nz), tunnel = Math.abs(nx) < 2.6 && nz > 30 && nz < 64;
@@ -651,8 +714,10 @@ export function mountCenotaphLive(o: {
     const g = groundAt(nx, nz);
     if (g - feet.y > (onGround ? .62 : .3)) return false;
     const a = astro.root.position; if (Math.hypot(nx - a.x, nz - a.z) < .7) return false;
+    for (const [x, z, rr] of SOLID) if (Math.hypot(nx - x, nz - z) < rr && feet.y < 1.4) return false;
     feet.x = nx; feet.z = nz; return true;
   }
+  const vel = new THREE.Vector3(); let stepDist = 0;
 
   // ---- Resize and quality.
   let dpr = Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5);
@@ -671,6 +736,8 @@ export function mountCenotaphLive(o: {
   function frame() {
     raf = requestAnimationFrame(frame);
     if (!running) return;
+    // While the film is still playing, the vault only waits: rendering it unseen would steal frames from the video.
+    if (enteredAt === Infinity) { clock.getDelta(); return; }
     const dt = Math.min(.05, clock.getDelta()), t = clock.elapsedTime;
     const since = t - enteredAt;
     // Lens: from the film's wide angle to the walking one, once the hand-over is done.
@@ -686,9 +753,16 @@ export function mountCenotaphLive(o: {
       if (keys.has('ArrowLeft')) tYaw += 1.6 * dt;
       if (keys.has('ArrowRight')) tYaw -= 1.6 * dt;
       if (walkToOn) { const d = new THREE.Vector3(walkTo.x - feet.x, 0, walkTo.z - feet.z); if (d.length() < .2) walkToOn = false; else mv.add(d.normalize()); }
-      if (mv.lengthSq() > 0) {
-        mv.normalize().multiplyScalar((keys.has('ShiftLeft') ? 8.5 : 4.6) * dt);
-        if (!tryMove(mv.x, mv.z)) { if (!tryMove(mv.x, 0)) tryMove(0, mv.z); }
+      // Velocity eases in and out (less in the air), so walking has weight without feeling sluggish.
+      const run = keys.has('ShiftLeft') || keys.has('ShiftRight');
+      if (mv.lengthSq() > 0) mv.normalize().multiplyScalar(run ? 8 : 4.4);
+      vel.lerp(mv, 1 - Math.pow(onGround ? .0004 : .2, dt));
+      const sx = vel.x * dt, sz = vel.z * dt;
+      if (Math.abs(sx) + Math.abs(sz) > 1e-5) {
+        const bx = feet.x, bz = feet.z;
+        if (!tryMove(sx, sz)) { if (!tryMove(sx, 0)) tryMove(0, sz); }
+        const d = Math.hypot(feet.x - bx, feet.z - bz);
+        if (onGround) { stepDist += d; if (stepDist > (run ? 1.05 : .78)) { stepDist = 0; emit('step'); } }
       }
     } else {
       // Menu: the visitor stands at the entrance; the view follows the mouse a little.
@@ -696,13 +770,14 @@ export function mountCenotaphLive(o: {
     }
     vy -= 13 * dt; feet.y += vy * dt;
     const g = groundAt(feet.x, feet.z);
-    if (feet.y <= g) { if (!onGround && vy < -3) emit('apple-bounce'); feet.y = g; vy = 0; onGround = true; } else if (feet.y > g + .05) onGround = false;
+    if (feet.y <= g) { if (!onGround && vy < -2.5) emit('land', Math.min(1.5, -vy / 6)); feet.y = g; vy = 0; onGround = true; } else if (feet.y > g + .05) onGround = false;
     const idle = mode === 'menu' && since > 1 ? { y: mouse.x * -.09 + .04 * Math.sin(t * .07), p: mouse.y * -.05 } : { y: 0, p: 0 };
     yaw += (tYaw + tiltYaw + idle.y - yaw) * (1 - Math.pow(.004, dt));
     pitch += (tPitch + tiltPitch + idle.p - pitch) * (1 - Math.pow(.004, dt));
-    const bob = mode === 'explore' && (keys.size || walkToOn) && onGround ? Math.sin(t * 9) * .025 : Math.sin(t * 1.1) * .01;
+    const speed = Math.hypot(vel.x, vel.z);
+    const bob = mode === 'explore' && onGround ? Math.sin(t * (7 + speed)) * .006 * speed : Math.sin(t * 1.1) * .01;
     // The film's camera rode a little higher than eyes do: settle down from it gently.
-    const lift = (START.y - EYE) * (since > 0 ? 1 - ease(since / 3) : 1);
+    const lift = (START.y - EYE - groundAt(START.x, START.z)) * (since > 0 ? 1 - ease(since / 3) : 1);
     camera.position.set(feet.x, feet.y + EYE + bob + lift, feet.z);
     camera.rotation.set(0, 0, 0); camera.rotateY(yaw); camera.rotateX(pitch);
     for (const m of stoneMaterials) { m.uniforms.uTime.value = t; m.uniforms.uDim.value = dim; }
@@ -749,20 +824,49 @@ export function mountCenotaphLive(o: {
   const vis = () => { running = !document.hidden; if (running) clock.getDelta(); };
   document.addEventListener('visibilitychange', vis);
 
-  const ready = build().then(() => { clock.start(); frame(); });
-  (window as unknown as { __live: unknown }).__live = { camera, scene, astro, feet, orchard, dropApple, throwApple, setMode, jump, get guide() { return guide; }, get state() { return { yaw, pitch, tYaw, tPitch, t: clock.elapsedTime, dpr, mode }; } };
+  // Once loaded, compile every shader and draw one frame at the film's last pose, so the hand-over does not stutter.
+  const ready = build().then(async () => {
+    camera.position.set(START.x, START.y, START.z); camera.rotation.set(0, 0, 0); camera.rotateX(PITCH0);
+    // Upload one texture per frame and let the GPU compile in parallel: no single long frame.
+    const nextFrame = () => new Promise(r => requestAnimationFrame(r));
+    for (const t of textures) { renderer.initTexture(t); await nextFrame(); }
+    // Everything that will ever be drawn gets compiled now, in parallel on the GPU: the scene with
+    // its hidden props made visible for the moment, and every full-screen pass of the post chain.
+    const hidden: THREE.Object3D[] = [];
+    scene.traverse(ob => { if (!ob.visible) { hidden.push(ob); ob.visible = true; } });
+    const warm = new THREE.Scene(), quad = new THREE.PlaneGeometry(2, 2);
+    const passMats: THREE.Material[] = [];
+    for (const pass of composer.passes) {
+      const pp = pass as unknown as Record<string, unknown>;
+      for (const k of Object.keys(pp)) {
+        const v = pp[k];
+        if (v instanceof THREE.Material) passMats.push(v);
+        if (Array.isArray(v)) v.forEach(x => { if (x instanceof THREE.Material) passMats.push(x); });
+      }
+    }
+    passMats.forEach(m => warm.add(new THREE.Mesh(quad, m)));
+    // Compiled for the half-float buffer the scene is really drawn into (tone mapping differs from the screen).
+    renderer.setRenderTarget(composer.readBuffer);
+    try { await Promise.all([renderer.compileAsync(scene, camera), renderer.compileAsync(warm, camera)]); } catch { /* compiled on first draw instead */ }
+    renderer.setRenderTarget(null);
+    hidden.forEach(ob => { ob.visible = false; });
+    // Allocate the post chain's targets at a tiny size first, then at full size on the hand-over.
+    await nextFrame();
+    clock.start(); frame();
+  });
+  (window as unknown as { __live: unknown }).__live = { camera, scene, astro, feet, orchard, dropApple, throwApple, setMode, jump, setView: (y: number, p: number) => { yaw = tYaw = y; pitch = tPitch = p; }, get guide() { return guide; }, get state() { return { yaw, pitch, tYaw, tPitch, t: clock.elapsedTime, dpr, mode }; } };
 
   return {
     ready,
     /** The film has reached the vault: take over from its last frame. */
     enter(fromFilm = true) { if (enteredAt < Infinity) return; enteredAt = clock.elapsedTime; fovFrom = fromFilm ? FILM_FOV : FOV; if (!fromFilm) tYaw = YAW0; },
-    replay() { enteredAt = Infinity; revealed = false; repaired = false; revealAt = repairAt = repairedAt = Infinity; lit = 0; visitorShown = false; feet.set(START.x, START.y - EYE, START.z); tYaw = 0; tPitch = PITCH0; yaw = 0; pitch = PITCH0; setMode('menu'); },
+    replay() { enteredAt = Infinity; revealed = false; repaired = false; revealAt = repairAt = repairedAt = Infinity; lit = 0; visitorShown = false; feet.set(START.x, 0, START.z); tYaw = 0; tPitch = PITCH0; yaw = 0; pitch = PITCH0; setMode('menu'); },
     setMode, jump, throwApple,
     talk() { if (guide && !guide.isOpen) guide.open(); },
     visitor(n: number) { visitorN = n; visitorEl.textContent = `№ ${n.toLocaleString('de-AT')}`; },
     dropApple,
     dim(v: number) { dim = v; },
     story: () => ({ currentTime: enteredAt === Infinity ? 0 : 12 + (clock.elapsedTime - enteredAt), ended: enteredAt < Infinity, paused: false }),
-    dispose() { cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('pointermove', onMove); document.removeEventListener('visibilitychange', vis); renderer.dispose(); },
+    dispose() { removeEventListener('pagehide', onHide); cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('pointermove', onMove); document.removeEventListener('visibilitychange', vis); renderer.dispose(); },
   };
 }

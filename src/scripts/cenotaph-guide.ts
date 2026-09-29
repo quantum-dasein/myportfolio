@@ -132,7 +132,9 @@ export class Guide {
     if (dist > 6.5) this.target.addScaledVector(dir.normalize(), Math.min(dist - 6, 4.5));
     if (this.o.canWalkTo) this.target.copy(this.o.canWalkTo(this.target));
   }
-  close() { this.panel.hidden = true; this.mood = this.holoRoute ? 'present' : 'idle'; }
+  close() { clearInterval(this.sayTimer); this.panel.hidden = true; this.mood = this.holoRoute ? 'present' : 'idle'; }
+  /** Put the hologram away and walk back to the shaft: used when the visitor leaves the page. */
+  forget() { this.holoWant = 0; this.holoOn = 0; this.holo.visible = false; this.holoRoute = null; this.mood = 'idle'; this.o.astro.root.position.copy(this.home); }
   get isOpen() { return !this.panel.hidden; }
 
   private sayTimer = 0;

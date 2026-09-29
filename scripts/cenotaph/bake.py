@@ -66,6 +66,10 @@ for d in prefs.devices:
     d.use = d.type == 'OPTIX'
 sc.cycles.device = 'GPU'
 sc.render.bake.margin = 6
+# The vault's star holes are tiny, bright and not sampled as lights: without a clamp they bake in as fireflies.
+sc.cycles.sample_clamp_direct = 6.0
+sc.cycles.sample_clamp_indirect = 1.5
+sc.cycles.use_adaptive_sampling = False
 
 meta = {'mode': MODE, 'groups': {}}
 for gname, objs in groups.items():
