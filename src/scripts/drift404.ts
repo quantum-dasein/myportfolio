@@ -22,115 +22,9 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { createAstronaut } from './observatory-astronaut';
 import type { DriftRoute } from '../data/drift-routes';
 
-type Lang = 'en' | 'de';
-export type Signal = { route: DriftRoute; score: number };
+import { rankSignals, type Signal, type Lang } from '../data/drift-signals';
 
-/* ---------- Where did they mean to go? ---------- */
-const norm = (s: string) => s.toLowerCase().replace(/\.(html?|php)$/, '').replace(/[^a-z0-9äöüß]+/g, ' ').trim();
-function lev(a: string, b: string) {
-  if (a === b) return 0; if (!a.length) return b.length; if (!b.length) return a.length;
-  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    const cur = [i];
-    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    prev = cur;
-  }
-  return prev[b.length];
-}
-const similar = (a: string, b: string) => 1 - lev(a, b) / Math.max(a.length, b.length, 1);
-const IGNORE = new Set(['en', 'de', 'www', 'index', 'page', 'the']);
-export function rankSignals(requested: string, routes: DriftRoute[], lang: Lang, count: number): Signal[] {
-  const wanted = norm(requested).split(' ').filter(t => t && !IGNORE.has(t));
-  const scored = routes.map(route => {
-    if (!wanted.length) return { route, score: 0 };
-    const tokens = [...norm(route.path).split(' '), ...norm(route[lang]).split(' ')].filter(t => t && !IGNORE.has(t));
-    const whole = similar(wanted.join(''), norm(route.path).replace(/ /g, ''));
-    const per = wanted.reduce((sum, w) => sum + Math.max(0, ...tokens.map(t => t.startsWith(w) && w.length > 2 ? .92 : similar(w, t))), 0) / wanted.length;
-    const fit = route.lang === 'any' || route.lang === lang ? 1 : .9;
-    return { route, score: Math.max(whole, per * .97) * fit };
-  }).sort((a, b) => b.score - a.score);
-  const picks: Signal[] = scored.filter(s => s.score >= .55).slice(0, Math.min(3, count));
-  const defaults = lang === 'de' ? ['/', '/gallery/', '/de/leistungen/', '/de/kontakt/', '/work/studio/'] : ['/', '/gallery/', '/services/', '/contact/', '/work/studio/'];
-  for (const path of defaults) {
-    if (picks.length >= count) break;
-    if (picks.some(p => p.route.path === path)) continue;
-    const route = routes.find(r => r.path === path); if (route) picks.push({ route, score: 0 });
-  }
-  return picks;
-}
-
-/* ---------- The black hole (linear HDR out; the final pass tone-maps) ---------- */
-const HOLE_FRAG = /* glsl */`
-precision highp float;
-uniform vec2 uRes;uniform float uTime;uniform vec2 uCenter;uniform float uDist;uniform vec2 uTilt;uniform int uSteps;uniform float uFlash;
-float hash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
-float vnoise(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
-  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
-             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
-float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*vnoise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return s;}
-vec3 sky(vec3 d){
-  vec3 col=vec3(.002,.003,.007);
-  // A galactic band across the sky, dusty and uneven.
-  vec3 axis=normalize(vec3(.35,1.,.25));float lat=dot(d,axis);
-  float band=exp(-lat*lat*14.);float dustLane=smoothstep(.35,.75,fbm(d*6.+2.));
-  col+=vec3(.035,.03,.05)*band*(.3+.9*fbm(d*3.2))*(1.-.7*dustLane*exp(-lat*lat*60.));
-  float n=fbm(d*2.2+vec3(3.,0.,uTime*.004));
-  col+=vec3(.015,.028,.075)*smoothstep(.5,.95,n);
-  col+=vec3(.08,.015,.05)*smoothstep(.6,1.05,fbm(d*3.1-4.))*.45;
-  for(int k=0;k<3;k++){
-    float sc=k==0?90.:k==1?210.:420.;vec3 p=d*sc;vec3 c=floor(p);float h=hash(c+float(k)*17.);
-    vec3 f=fract(p)-.5-(vec3(hash(c+3.1),hash(c+7.7),hash(c+1.3))-.5)*.6;
-    float s=smoothstep(k==0?.985:k==1?.96:.94,1.,h)*max(0.,1.-length(f)*(k==0?2.2:3.4));
-    float tw=.65+.35*sin(uTime*(1.+h*3.)+h*50.);
-    vec3 tint=mix(vec3(.62,.78,1.),vec3(1.,.8,.6),fract(h*13.));
-    col+=tint*s*s*tw*(k==0?3.2:k==1?1.3:.6)*(1.+band*1.2*float(k>0));
-  }
-  return col;
-}
-void main(){
-  vec2 uv=(gl_FragCoord.xy/uRes-uCenter)*vec2(uRes.x/uRes.y,1.);
-  vec3 ro=vec3(0.,0.,-uDist);vec3 rd=normalize(vec3(uv,1.25));
-  float cx=cos(uTilt.x),sx=sin(uTilt.x),cy=cos(uTilt.y),sy=sin(uTilt.y);
-  mat3 rx=mat3(1.,0.,0.,0.,cx,sx,0.,-sx,cx);mat3 ry=mat3(cy,0.,-sy,0.,1.,0.,sy,0.,cy);
-  ro=ry*(rx*ro);rd=ry*(rx*rd);
-  vec3 pos=ro,dir=rd;vec3 h=cross(pos,dir);float h2=dot(h,h);
-  vec4 acc=vec4(0.);bool hole=false,escaped=false;float ring=0.;
-  for(int i=0;i<200;i++){
-    if(i>=uSteps)break;
-    float r2=dot(pos,pos);float r=sqrt(r2);
-    // Fine steps near the photon sphere keep the edge of the shadow clean.
-    float dt=clamp(.045*r*max(r-1.,.25)+.012,.012,1.4);
-    vec3 npos=pos+dir*dt;
-    if(pos.y*npos.y<0.){
-      float t=pos.y/(pos.y-npos.y);vec3 hp=mix(pos,npos,t);float dr=length(hp.xz);
-      if(dr>2.35&&dr<14.){
-        float ang=atan(hp.z,hp.x);float spin=uTime*2.4/(dr*sqrt(dr));
-        float swirl=fbm(vec3(dr*1.7,(ang+spin)*3.,dr*.35));float fine=vnoise(vec3(dr*11.,(ang+spin)*18.,1.));
-        float heat=1.-smoothstep(2.35,14.,dr);
-        vec3 c=mix(vec3(1.,.3,.06),vec3(1.,.9,.76),heat*heat)*(.12+1.35*heat*heat*heat);
-        c*=.35+.9*swirl+.3*fine;
-        vec3 v=normalize(vec3(-hp.z,0.,hp.x));float dop=1.+.6*dot(v,-normalize(dir));c*=dop*dop;
-        // The hot inner rim, just outside the last stable orbit.
-        c+=vec3(1.,.85,.65)*exp(-(dr-2.55)*(dr-2.55)*18.)*.7*dop;
-        float a=smoothstep(2.35,2.7,dr)*(1.-smoothstep(9.,14.,dr))*(.45+.55*swirl);
-        acc.rgb+=(1.-acc.a)*c*a;acc.a+=(1.-acc.a)*a*.9;
-        if(acc.a>.97)break;
-      }
-    }
-    // Light skimming the photon sphere piles up into a thin bright ring.
-    ring+=dt*exp(-(r-1.5)*(r-1.5)*40.);
-    dir+=-1.5*h2*pos/(r2*r2*r)*dt;pos=npos;
-    if(r2<1.){hole=true;break;}
-    if(r2>1600.){escaped=true;break;}
-  }
-  // Out of steps while still circling close in: it would have fallen in.
-  if(!hole&&!escaped&&acc.a<.97&&dot(pos,pos)<36.)hole=true;
-  vec3 col=acc.rgb;
-  if(!hole)col+=(1.-acc.a)*sky(normalize(dir));
-  if(!hole)col+=vec3(1.,.78,.55)*min(ring,2.)*.3*(1.-acc.a);
-  col+=vec3(.75,.88,1.)*uFlash*1.6;
-  gl_FragColor=vec4(col,1.);
-}`;
+import { HORIZON_FRAGMENT } from './drift-horizon';
 
 /* ---------- Frames: holograms with a lit edge ---------- */
 const FRAME_VERT = 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
@@ -147,15 +41,15 @@ void main(){
   float line=floor(iuv.y*60.);float jitter=(h1(line+floor(uTime*18.)+uSeed)-.5)*.03*(1.-uAppear);
   float shown=step(1.-uAppear*1.15,1.-iuv.y+h1(line+uSeed)*.08);
   vec2 s=iuv+vec2(jitter,0.);
-  float split=.001+.0018*(1.-uHover);
+  float split=.0002;
   vec3 img=vec3(texture2D(uMap,s+vec2(split,0.)).r,texture2D(uMap,s).g,texture2D(uMap,s-vec2(split,0.)).b);
-  float scan=.93+.07*sin(iuv.y*540.+uTime*6.);
+  float scan=.985+.015*sin(iuv.y*540.+uTime*2.);
   float flick=.94+.06*step(.985,h1(floor(uTime*9.)+uSeed));
-  vec3 edgeCol=mix(vec3(.45,.8,1.),vec3(1.,.8,.45),uGold);
+  vec3 edgeCol=mix(vec3(.28,.4,.46),vec3(.8,.38,.2),uGold);
   float inside=1.-smoothstep(0.,.004,d);
-  float rim=exp(-abs(d)*90.)*(.7+1.6*uHover+2.4*uBeam);
-  float halo=exp(-max(d,0.)*22.)*(1.-inside)*(.12+.45*uHover+.8*uBeam);
-  vec3 col=img*(.62+.5*uHover)*scan*flick*inside;
+  float rim=exp(-abs(d)*220.)*(.15+.5*uHover+1.4*uBeam);
+  float halo=exp(-max(d,0.)*22.)*(1.-inside)*(.015+.1*uHover+.5*uBeam);
+  vec3 col=mix(vec3(dot(img,vec3(.2126,.7152,.0722))),img,.45+.55*uHover)*(.42+.5*uHover)*scan*flick*inside;
   col*=1.-.35*smoothstep(.25,.62,length(iuv-.5));
   col+=edgeCol*(rim+halo);
   col+=vec3(.7,.9,1.)*uBeam*.6*inside;
@@ -165,10 +59,10 @@ void main(){
 
 /* ---------- Final pass: fringing, vignette, grain ---------- */
 const FINISH = {
-  uniforms: { tDiffuse: { value: null as THREE.Texture | null }, uTime: { value: 0 }, uHole: { value: new THREE.Vector2(.69, .52) }, uAspect: { value: 1.6 }, uFringe: { value: 1 } },
+  uniforms: { tDiffuse: { value: null as THREE.Texture | null }, uTime: { value: 0 }, uHole: { value: new THREE.Vector2(.69, .52) }, uAspect: { value: 1.6 }, uFringe: { value: .1 }, uScroll: { value: 0 } },
   vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse;uniform float uTime,uAspect,uFringe;uniform vec2 uHole;varying vec2 vUv;
+    uniform sampler2D tDiffuse;uniform float uTime,uAspect,uFringe,uScroll;uniform vec2 uHole;varying vec2 vUv;
     float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
     void main(){
       // The sky is already lensed by the hole itself; the foreground stays true.
@@ -177,12 +71,14 @@ const FINISH = {
       vec2 off=c*(.0012+.006*edge)*uFringe;
       vec3 col=vec3(texture2D(tDiffuse,uv+off).r,texture2D(tDiffuse,uv).g,texture2D(tDiffuse,uv-off).b);
       col*=1.-.55*smoothstep(.18,.62,edge*1.6);
-      col+=(h(vUv*vec2(1920.,1080.)+fract(uTime*7.))-.5)*.018;
+      col+=(h(vUv*vec2(1920.,1080.)+fract(uTime*3.))-.5)*.0006;
+      col*=mix(1.,.09,uScroll);
+      col*=mix(.45,1.,smoothstep(.05,.5,vUv.x));
       gl_FragColor=vec4(max(col,0.),1.);
     }`,
 };
 
-/** The first pass: the hole into its own small target, then hole + scene into the composer. */
+/** Draw the analytic horizon and foreground at the same display resolution. */
 class DriftPass extends Pass {
   constructor(private draw: (target: THREE.WebGLRenderTarget) => void) { super(); this.needsSwap = false; }
   render(_renderer: THREE.WebGLRenderer, _write: THREE.WebGLRenderTarget, read: THREE.WebGLRenderTarget) { this.draw(read); }
@@ -201,7 +97,7 @@ export function mountDrift(o: DriftOptions) {
   const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
   let pixelRatio = Math.min(devicePixelRatio || 1, mobile ? 1.75 : 1.5);
   renderer.setPixelRatio(pixelRatio);
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .95;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .78;
   renderer.autoClear = false;
   host.append(renderer.domElement);
   const canvas = renderer.domElement; canvas.style.touchAction = 'pan-y';
@@ -209,29 +105,43 @@ export function mountDrift(o: DriftOptions) {
   const gl = renderer.getContext();
   const name = String(gl.getParameter((gl.getExtension('WEBGL_debug_renderer_info')?.UNMASKED_RENDERER_WEBGL) ?? gl.RENDERER));
   const weak = /SwiftShader|llvmpipe|Software|Microsoft Basic/i.test(name) || (/Intel|HD Graphics|UHD Graphics|Mali|Adreno|PowerVR/i.test(name) && !/Iris Xe|Arc/i.test(name));
-  let holeScale = mobile ? .46 : weak ? .42 : .6, steps = mobile ? 130 : weak ? 120 : 180;
-
-  // The hole, drawn small and stretched: it is soft by nature, the stars stay crisp enough.
+  // The hole is drawn into its own, smaller target and stretched: gas is soft by nature,
+  // and the cost is what adapts first when a device struggles.
+  let holeScale = mobile ? .45 : weak ? .42 : .62, steps = mobile ? 190 : weak ? 180 : 300;
   const holeTarget = new THREE.WebGLRenderTarget(2, 2, { depthBuffer: false, type: THREE.HalfFloatType });
-  const holeUniforms = { uRes: { value: new THREE.Vector2(2, 2) }, uTime: { value: 0 }, uCenter: { value: new THREE.Vector2(.69, .52) }, uDist: { value: 21 }, uTilt: { value: new THREE.Vector2(.085, 0) }, uSteps: { value: steps }, uFlash: { value: 0 } };
+  // The typed address, rendered once as a strip of glyphs the shader writes into the disk.
+  const textCanvas = document.createElement('canvas'); textCanvas.width = 2048; textCanvas.height = 192;
+  const textTex = new THREE.CanvasTexture(textCanvas); textTex.anisotropy = 8;
+  function drawText() {
+    const c = textCanvas.getContext('2d')!; c.clearRect(0, 0, 2048, 192);
+    const label = requested.length > 42 ? requested.slice(0, 41) + '…' : requested;
+    let size = 150; c.font = `500 ${size}px "RB Space", Inter, Arial, sans-serif`;
+    while (c.measureText(label).width > 1960 && size > 40) { size -= 6; c.font = `500 ${size}px "RB Space", Inter, Arial, sans-serif`; }
+    c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.textAlign = 'center'; c.fillText(label, 1024, 100);
+    textTex.needsUpdate = true;
+  }
+  const holeUniforms = { uRes: { value: new THREE.Vector2(2, 2) }, uTime: { value: 0 }, uCenter: { value: new THREE.Vector2(.71, .53) }, uDist: { value: 25 }, uTilt: { value: new THREE.Vector2(.3, -.06) }, uDetail: { value: weak || mobile ? 0 : 1 }, uFlash: { value: 0 }, uSteps: { value: steps }, uText: { value: textTex }, uTextFall: { value: 0 }, uTextAge: { value: 0 }, uTextAspect: { value: 2048 / 192 }, uTextOn: { value: 1 } };
+  drawText();
   const quad = new THREE.BufferGeometry(); quad.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
   const flat = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const holeScene = new THREE.Scene();
-  holeScene.add(new THREE.Mesh(quad, new THREE.RawShaderMaterial({ uniforms: holeUniforms, vertexShader: 'attribute vec3 position;void main(){gl_Position=vec4(position.xy,0.,1.);}', fragmentShader: HOLE_FRAG, depthTest: false, depthWrite: false })));
+  const holeMaterial = new THREE.RawShaderMaterial({ uniforms: holeUniforms, vertexShader: 'attribute vec3 position;void main(){gl_Position=vec4(position.xy,0.,1.);}', fragmentShader: HORIZON_FRAGMENT, depthTest: false, depthWrite: false });
+  holeScene.add(new THREE.Mesh(quad, holeMaterial));
   const blitScene = new THREE.Scene();
-  blitScene.add(new THREE.Mesh(quad, new THREE.RawShaderMaterial({
+  const blitMaterial = new THREE.RawShaderMaterial({
     uniforms: { uMap: { value: holeTarget.texture } },
     vertexShader: 'attribute vec3 position;varying vec2 vUv;void main(){vUv=position.xy*.5+.5;gl_Position=vec4(position.xy,0.,1.);}',
     fragmentShader: 'precision highp float;uniform sampler2D uMap;varying vec2 vUv;void main(){gl_FragColor=vec4(texture2D(uMap,vUv).rgb,1.);}', depthTest: false, depthWrite: false,
-  })));
+  });
+  blitScene.add(new THREE.Mesh(quad, blitMaterial));
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(38, 1, .1, 200); camera.position.set(0, 0, 11);
-  const pmrem = new THREE.PMREMGenerator(renderer); scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .3;
-  scene.add(new THREE.HemisphereLight('#7f9eff', '#1a0c05', .45));
-  const diskLight = new THREE.DirectionalLight('#ffab66', 4.2); scene.add(diskLight);
-  const rim = new THREE.DirectionalLight('#8fc0ff', 1.6); rim.position.set(-7, 5, -4); scene.add(rim);
-  const key = new THREE.DirectionalLight('#ffffff', .75); key.position.set(-3, 2, 8); scene.add(key);
+  const pmrem = new THREE.PMREMGenerator(renderer); scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .12;
+  scene.add(new THREE.HemisphereLight('#7f9eff', '#100806', .18));
+  const diskLight = new THREE.DirectionalLight('#d07843', 1.8); scene.add(diskLight);
+  const rim = new THREE.DirectionalLight('#718b9d', .85); rim.position.set(-7, 5, -4); scene.add(rim);
+  const key = new THREE.DirectionalLight('#bcc8cf', .35); key.position.set(-3, 2, 8); scene.add(key);
 
   // Post: bloom picks up the disk, the ring, the frame edges and the beam.
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType }));
@@ -239,14 +149,14 @@ export function mountDrift(o: DriftOptions) {
     renderer.setRenderTarget(holeTarget); renderer.render(holeScene, flat);
     renderer.setRenderTarget(target); renderer.clear(); renderer.render(blitScene, flat); renderer.clearDepth(); renderer.render(scene, camera);
   }));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), mobile ? .42 : .5, .36, .95); composer.addPass(bloom);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), mobile ? .2 : .28, .25, .65); composer.addPass(bloom);
   const finish = new ShaderPass(FINISH); composer.addPass(finish);
   composer.addPass(new OutputPass());
 
   /* ----- The astronaut ----- */
-  const curator = createAstronaut(); const astro = curator.root; const baseScale = 1.42 * (mobile ? .62 : .76); astro.scale.setScalar(baseScale); scene.add(astro);
+  const curator = createAstronaut(); const astro = curator.root; const baseScale = 1.42 * (mobile ? .5 : .6); astro.scale.setScalar(baseScale); scene.add(astro);
   void curator.load();
-  const visor = astro.userData.visorUniforms; if (visor) visor.uVisorTint.value.set('#ffae6a');
+  const visor = astro.userData.visorUniforms; if (visor) visor.uVisorTint.value.set('#b9835a');
   const s = () => baseScale / 1.42;
   const bonesCache: Record<string, THREE.Object3D | undefined> = {}; let rigSeen = '';
   const bone = (tail: string) => {
@@ -260,7 +170,7 @@ export function mountDrift(o: DriftOptions) {
   const tabletTex = new THREE.CanvasTexture(tabletCanvas); tabletTex.colorSpace = THREE.SRGBColorSpace;
   const tablet = new THREE.Group();
   tablet.add(new THREE.Mesh(new THREE.BoxGeometry(.36, .24, .02), new THREE.MeshStandardMaterial({ color: '#1a2129', metalness: .6, roughness: .35 })));
-  const screenMat = new THREE.MeshBasicMaterial({ map: tabletTex, toneMapped: false, color: new THREE.Color(1.6, 1.6, 1.6) });
+  const screenMat = new THREE.MeshBasicMaterial({ map: tabletTex, toneMapped: false, color: new THREE.Color(.8, .8, .8) });
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(.33, .21), screenMat); screen.position.z = .011; tablet.add(screen);
   scene.add(tablet);
   let tabletNote = '';
@@ -320,7 +230,7 @@ export function mountDrift(o: DriftOptions) {
   const loader = new THREE.TextureLoader();
   type Frame = { group: THREE.Group; card: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; labelCanvas: HTMLCanvasElement; signal: Signal; base: THREE.Vector3; seed: number; hover: number; appear: number; best: boolean; thread: THREE.Line<THREE.BufferGeometry, THREE.ShaderMaterial> };
   let frames: Frame[] = [];
-  const frameW = mobile ? 1.62 : 1.9, frameH = frameW * .525;
+  const frameW = mobile ? 1.5 : 1.62, frameH = frameW * .525;
   const threadMat = () => new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 }, uOn: { value: 0 }, uGold: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: 'attribute float t;varying float vT;void main(){vT=t;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -329,10 +239,10 @@ export function mountDrift(o: DriftOptions) {
   function drawLabel(f: Frame) {
     const c = f.labelCanvas.getContext('2d')!; const W = f.labelCanvas.width, H = f.labelCanvas.height; c.clearRect(0, 0, W, H);
     const lang = o.lang();
-    c.fillStyle = f.best ? '#ffd98a' : 'rgba(160,205,240,.8)'; c.font = '600 21px ui-monospace,Consolas,monospace';
+    c.fillStyle = f.best ? '#d6a486' : 'rgba(168,183,192,.8)'; c.font = '600 21px ui-monospace,Consolas,monospace';
     c.fillText(f.best ? (lang === 'de' ? '◎ NÄCHSTES SIGNAL' : '◎ CLOSEST SIGNAL') : '○ SIGNAL', 4, 28);
-    c.fillStyle = '#f2f7fb'; c.font = '500 34px "RB Space",Inter,Arial,sans-serif';
-    let title = f.signal.route[lang]; while (c.measureText(title).width > W - 10 && title.length > 4) title = title.slice(0, -2) + '…';
+    c.fillStyle = '#b7bfc3'; c.font = '500 32px "RB Space",Inter,Arial,sans-serif';
+    let title = f.signal.route[lang].split(' — ')[0]; while (c.measureText(title).width > W - 10 && title.length > 4) title = title.slice(0, -2) + '…';
     c.fillText(title, 4, 72);
     c.fillStyle = 'rgba(190,210,230,.5)'; c.font = '400 20px ui-monospace,Consolas,monospace'; c.fillText(f.signal.route.path, 4, 104);
     f.label.material.map!.needsUpdate = true;
@@ -340,7 +250,7 @@ export function mountDrift(o: DriftOptions) {
   function buildFrames() {
     frames.forEach(f => { scene.remove(f.group); scene.remove(f.thread); f.card.material.uniforms.uMap.value?.dispose(); f.card.geometry.dispose(); f.thread.geometry.dispose(); });
     const portrait = host.clientWidth < host.clientHeight * .9;
-    const signals = rankSignals(requested, routes, o.lang(), portrait ? 2 : 5); o.onSignals?.(signals);
+    const signals = rankSignals(requested, routes, o.lang(), 2); o.onSignals?.(signals);
     frames = signals.map((signal, i) => {
       const group = new THREE.Group();
       const tex = loader.load(signal.route.image); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
@@ -377,18 +287,18 @@ export function mountDrift(o: DriftOptions) {
     renderer.setPixelRatio(pixelRatio); renderer.setSize(w, h, false); composer.setPixelRatio(pixelRatio); composer.setSize(w, h);
     bloom.resolution.set(w * pixelRatio * .5, h * pixelRatio * .5);
     camera.aspect = w / h; camera.fov = portrait ? 50 : 38; camera.position.copy(camBase); camera.lookAt(0, 0, 0); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
-    holeUniforms.uCenter.value.set(portrait ? .5 : .69, portrait ? .53 : .52);
-    holeUniforms.uDist.value = portrait ? 33 : 21;
+    holeUniforms.uCenter.value.set(portrait ? .57 : .71, portrait ? .43 : .53);
+    holeUniforms.uDist.value = portrait ? 36 : 25;
     finish.uniforms.uHole.value.copy(holeUniforms.uCenter.value); finish.uniforms.uAspect.value = w / h;
-    finish.uniforms.uFringe.value = mobile ? .5 : 1;
+    finish.uniforms.uFringe.value = mobile ? 0 : .1;
     holeTarget.setSize(Math.max(2, Math.round(w * pixelRatio * holeScale)), Math.max(2, Math.round(h * pixelRatio * holeScale)));
     holeUniforms.uRes.value.set(holeTarget.width, holeTarget.height);
-    worldAt(portrait ? .02 : .06, portrait ? -.1 : -.2, 1.2, home);
+    worldAt(portrait ? -.24 : .13, portrait ? -.24 : -.15, 1.2, home);
     worldAt(holeUniforms.uCenter.value.x * 2 - 1, holeUniforms.uCenter.value.y * 2 - 1, -14, holeWorld);
     diskLight.position.copy(holeWorld).add(new THREE.Vector3(0, -1.5, 0));
     const spots = portrait
-      ? [[-.47, -.5, .5], [.47, -.54, .3]]
-      : [[-.4, -.5, .6], [.07, -.6, .1], [.5, -.52, -.4], [.85, .14, -1.6], [.63, .66, -2.6]];
+      ? [[-.48, -.63, .5], [.46, -.66, .3]]
+      : [[.8, -.62, .2], [.84, .6, -1.6]];
     frames.forEach((f, i) => { const sp = spots[i] ?? spots[spots.length - 1]; worldAt(sp[0], sp[1], sp[2], f.base); f.group.position.copy(f.base); });
   }
 
@@ -440,6 +350,7 @@ export function mountDrift(o: DriftOptions) {
     pointerRay(t.clientX, t.clientY); if (hitAstro()) event.preventDefault();
   }, { passive: false });
   function beamTo(index: number) {
+    if (o.reduced) { const path = frames[index]?.signal.route.path; if (path) o.onNavigate?.(path); return; }
     const frame = frames[index]; if (!frame || beaming) return;
     beaming = { frame, t: 0, from: pos.clone(), gone: false }; tabletNote = frame.signal.route.path; hovered = index;
   }
@@ -452,7 +363,7 @@ export function mountDrift(o: DriftOptions) {
   })); beam.visible = false; scene.add(beam);
 
   // Light streaks spiralling into the hole, each a short line from head to tail.
-  const STREAKS = mobile ? 160 : 420;
+  const STREAKS = mobile ? 32 : 80;
   const streakPos = new Float32Array(STREAKS * 6), streakCol = new Float32Array(STREAKS * 6), streakState = Array.from({ length: STREAKS }, () => ({ p: new THREE.Vector3(), v: new THREE.Vector3(), seed: Math.random() }));
   const streakGeo = new THREE.BufferGeometry(); streakGeo.setAttribute('position', new THREE.BufferAttribute(streakPos, 3)); streakGeo.setAttribute('color', new THREE.BufferAttribute(streakCol, 3));
   const streaks = new THREE.LineSegments(streakGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })); streaks.frustumCulled = false; scene.add(streaks);
@@ -465,23 +376,33 @@ export function mountDrift(o: DriftOptions) {
   /* ----- Frame loop ----- */
   let last = performance.now(), elapsed = 0, raf = 0, running = true, frameTimes: number[] = [], lastTablet = 0, primed = false;
   const q = new THREE.Quaternion(), targetQ = new THREE.Quaternion(), fwd = new THREE.Vector3(), upv = new THREE.Vector3(), handPos = new THREE.Vector3(), belt = new THREE.Vector3(), packPos = new THREE.Vector3(), prevSpin = new THREE.Vector3();
-  const timeScale = o.reduced ? .2 : 1;
+  let timeScale = o.reduced ? 0 : 1;
+  let scroll = 0;
+  const motion = () => { o.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("rb-calm"); timeScale = o.reduced ? 0 : 1; };
+  const motionObserver = new MutationObserver(motion); motionObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  const motionQuery = matchMedia("(prefers-reduced-motion: reduce)"); motionQuery.addEventListener("change", motion);
   const W = { float: 1, flail: 0, reach: 0, tablet: .9, dive: 0, sit: 0 };
   let tabletMode: 'lost' | 'lock' | 'beam' | 'back' = 'lost';
 
   function tick(now: number) {
     raf = requestAnimationFrame(tick);
-    const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; elapsed += dt * timeScale;
-    // Adaptive cost: the hole gives way first, then the whole drawing buffer.
-    frameTimes.push(dt); if (frameTimes.length >= 50) {
+    const wallDt = Math.max(0, (now - last) / 1000);
+    const dt = Math.min(.05, wallDt); last = now; elapsed += Math.min(.25, wallDt) * timeScale;
+    finish.uniforms.uScroll.value = scroll;
+    // Foreground objects leave with the opening chapter; the horizon stays behind the links.
+    scene.position.y = scroll * 2 * Math.tan(camera.fov * Math.PI / 360) * camBase.z * .8;
+    scene.visible = scroll < .8;
+    // Reduce texture detail before resolution, and never render below a CSS pixel.
+    frameTimes.push(wallDt); if (frameTimes.length >= 50) {
       const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length; frameTimes = [];
       if (avg > 1 / 45) {
-        if (holeScale > .28) { holeScale *= .82; steps = Math.max(56, Math.round(steps * .85)); holeUniforms.uSteps.value = steps; layout(); }
-        else if (pixelRatio > 1) { pixelRatio = Math.max(1, pixelRatio * .85); layout(); }
+        if (holeUniforms.uDetail.value > 0) holeUniforms.uDetail.value = 0;
+        else if (holeScale > .3) { holeScale *= .85; steps = Math.max(110, Math.round(steps * .88)); holeUniforms.uSteps.value = steps; layout(); }
+        else if (pixelRatio > 1) { pixelRatio = Math.max(1, pixelRatio * .9); layout(); }
       }
     }
     idle = (now - lastMove) / 1000;
-    smoothPointer.lerp(pointerNdc.x > -2 ? pointerNdc : zero2, 1 - Math.exp(-dt * 3));
+    smoothPointer.lerp(!o.reduced && pointerNdc.x > -2 ? pointerNdc : zero2, 1 - Math.exp(-dt * 3));
 
     // Camera drifts a touch with the hand, so the frames slide against the sky.
     camera.position.set(camBase.x + smoothPointer.x * .35, camBase.y + smoothPointer.y * .22, camBase.z); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
@@ -585,7 +506,7 @@ export function mountDrift(o: DriftOptions) {
 
     // --- Puffs from the pack while he steadies himself ---
     const pack = bone('Spine2');
-    if (pack && astro.visible && !grabbed && !beaming) {
+    if (pack && astro.visible && !grabbed && !beaming && !o.reduced) {
       const steadying = prevSpin.length() > .25 || vel.length() > 1.2;
       if (steadying && Math.random() < dt * 14 || Math.random() < dt * .25) {
         pack.getWorldPosition(packPos); astro.getWorldQuaternion(q);
@@ -632,13 +553,17 @@ export function mountDrift(o: DriftOptions) {
       const tail = tmp.copy(st.p).addScaledVector(st.v, -.12 - st.seed * .08);
       streakPos.set([st.p.x, st.p.y, st.p.z, tail.x, tail.y, tail.z], i * 6);
       const b = Math.min(1.6, .25 + st.v.length() * .35) * (st.seed > .7 ? 1.4 : .8) * smoothstepJS(2.2, 4.5, d);
-      streakCol.set([b * 1., b * .78, b * .6, 0, 0, 0], i * 6);
+      streakCol.set([b * .22, b * .16, b * .12, 0, 0, 0], i * 6);
     }
     streakGeo.attributes.position.needsUpdate = true; streakGeo.attributes.color.needsUpdate = true;
 
     holeUniforms.uFlash.value = beaming ? holeUniforms.uFlash.value : holeUniforms.uFlash.value * Math.exp(-dt * 2.5);
     holeUniforms.uTime.value = elapsed;
-    holeUniforms.uTilt.value.set(.085 + smoothPointer.y * .02, smoothPointer.x * .05);
+    // A slow, breathing camera; scrolling down lowers it towards the plane of the disk.
+    holeUniforms.uTilt.value.set(.3 - scroll * .16 + Math.sin(elapsed * .17) * .025 + smoothPointer.y * .04, -.06 + Math.sin(elapsed * .11) * .02 + smoothPointer.x * .03);
+    // The address falls in over 14 s, rests 3 s, and is written again.
+    const cycle = (elapsed % 17) / 14; holeUniforms.uTextFall.value = Math.min(1, cycle); holeUniforms.uTextAge.value = (elapsed % 17);
+    holeUniforms.uTextOn.value = cycle < 1 ? 1 : 0;
     finish.uniforms.uTime.value = elapsed;
     o.onTelemetry?.({ horizon: pos.distanceTo(holeWorld), speed: vel.length() });
     composer.render(dt);
@@ -647,15 +572,17 @@ export function mountDrift(o: DriftOptions) {
   function smoothstepJS(a: number, b: number, x: number) { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
 
   buildFrames(); pos.copy(home);
-  if (location.search.includes('driftdebug')) (window as unknown as Record<string, unknown>).__drift = { astro, tablet, camera, bone };
+  if (location.search.includes('driftdebug')) (window as unknown as Record<string, unknown>).__drift = { astro, tablet, camera, bone, holeUniforms, renderer };
   const ro = new ResizeObserver(() => layout()); ro.observe(host);
   const io = new IntersectionObserver(([entry]) => { const on = entry.isIntersecting && !document.hidden; if (on && !running) { running = true; last = performance.now(); raf = requestAnimationFrame(tick); } else if (!on && running) { running = false; cancelAnimationFrame(raf); } });
   io.observe(host);
   document.addEventListener('visibilitychange', () => { cancelAnimationFrame(raf); if (document.hidden) running = false; else { running = true; last = performance.now(); raf = requestAnimationFrame(tick); } });
   raf = requestAnimationFrame(tick);
   return {
-    relabel() { buildFrames(); },
+    relabel() { frames.forEach(drawLabel); drawText(); },
+    pulse() { wake(); wave = 2.4; tabletNote = o.lang() === "de" ? "DU BIST NICHT ALLEIN" : "YOU ARE NOT ALONE"; },
+    scroll(value: number) { scroll = THREE.MathUtils.clamp(value, 0, 1); canvas.style.pointerEvents = scroll > .5 ? "none" : "auto"; },
     beam(path: string) { const i = frames.findIndex(f => f.signal.route.path === path); if (i >= 0) beamTo(i); else o.onNavigate?.(path); },
-    dispose() { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); curator.dispose(); composer.dispose(); renderer.dispose(); holeTarget.dispose(); pmrem.dispose(); },
+    dispose() { motionObserver.disconnect(); motionQuery.removeEventListener("change", motion); cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); curator.dispose(); composer.dispose(); renderer.dispose(); quad.dispose(); holeMaterial.dispose(); blitMaterial.dispose(); holeTarget.dispose(); textTex.dispose(); pmrem.dispose(); },
   };
 }

@@ -2,508 +2,252 @@
 import Layout from "../layouts/Layout.astro";
 import { useTranslations } from "../i18n/utils";
 import { driftRoutes } from "../data/drift-routes";
-
 const t = useTranslations("en");
+const beacons = [
+  { id: "01", key: "studio", path: "/", type: "BASE" },
+  { id: "02", key: "archive", path: "/gallery/", type: "OBSERVATORY" },
+  { id: "03", key: "services", path: "/services/", type: "WORKSHOP" },
+  { id: "04", key: "bridge", path: "/work/bridge-consult/", type: "CASE STUDY" },
+  { id: "05", key: "fidic", path: "/work/fidic/", type: "CASE STUDY" },
+  { id: "06", key: "meta", path: "/work/studio/", type: "ENGINE ROOM" },
+] as const;
 ---
-
-<Layout
-  title="404 — Signal Lost"
-  description="You've drifted off course. These coordinates do not exist in the current space."
-  noindex={true}
-  noWebgl={true}
->
-  <section class="void" aria-labelledby="void-title">
-    <!-- z1: open space — a black hole, the drifting astronaut, the frames still transmitting -->
-    <div class="void-gl" data-drift data-routes={JSON.stringify(driftRoutes)}></div>
-
-    <!-- z2: the readout -->
-    <div class="void-ui">
-      <p class="void-eyebrow" data-i18n="404.eyebrow" data-decode-in>{t("404.eyebrow")}</p>
-      <h1 id="void-title" class="void-title" data-i18n="404.title" data-split>{t("404.title")}</h1>
-      <p class="void-sub"><span data-i18n="404.drift.sub">{t("404.drift.sub")}</span> <code class="void-path" data-drift-path></code></p>
-      <p class="void-hint" data-i18n="404.drift.hint">{t("404.drift.hint")}</p>
-      <p class="void-closest" data-drift-closest hidden><span data-i18n="404.drift.closest">{t("404.drift.closest")}</span> <a href="/" data-drift-closest-link></a></p>
-      <a href="/" class="evac" data-magnetic data-cursor="HOME">
-        <span class="evac-inner" data-i18n="404.cta">{t("404.cta")}</span>
-        <span class="evac-arrow" aria-hidden="true">→</span>
-      </a>
-    </div>
-
-    <div class="void-corner br" aria-hidden="true">
-      <span>HORIZON <b data-tele="horizon">--.-</b> KM</span>
-      <span>DRIFT <b data-tele="speed">0.00</b> M/S</span>
-    </div>
-
-    <span class="void-bracket tl" aria-hidden="true"></span>
-    <span class="void-bracket tr" aria-hidden="true"></span>
-    <span class="void-bracket bl" aria-hidden="true"></span>
-    <span class="void-bracket br" aria-hidden="true"></span>
+<Layout title="404 — Signal Lost" description="You've drifted off course. Somewhere beyond the map, a signal is still reaching you." noindex={true} noWebgl={true} hideFinale={true}>
+  <div class="lost-world">
+    <svg class="glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs><filter id="evac-glass-lens" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feImage data-glass-map result="lens" width="100%" height="100%" preserveAspectRatio="none" />
+        <feDisplacementMap in="SourceGraphic" in2="lens" scale="22" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.35" />
+      </filter></defs>
+    </svg>
+    <div class="void-gl" data-drift data-routes={JSON.stringify(driftRoutes)} aria-hidden="true"></div>
+    <div class="distress-ripple" data-ripple aria-hidden="true"></div>
+    <section class="void" aria-labelledby="void-title">
+      <div class="void-ui">
+        <p class="void-eyebrow"><i></i><span data-i18n="404.eyebrow">{t("404.eyebrow")}</span><span class="void-eyebrow-rule"></span><span>NO. 004</span></p>
+        <h1 id="void-title" class="void-title" data-i18n="404.title">{t("404.title")}</h1>
+        <p class="void-sub" data-i18n="404.subtitle">{t("404.subtitle")}</p>
+        <div class="void-coordinate"><span data-i18n="404.drift.sub">{t("404.drift.sub")}</span><code data-drift-path>/unknown</code></div>
+        <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><span class="evac-label" data-i18n="404.cta">{t("404.cta")}</span><span class="evac-arrow" aria-hidden="true">↗</span></a>
+        <p class="void-closest" data-drift-closest hidden><span data-i18n="404.drift.closest">{t("404.drift.closest")}</span><a href="/" data-drift-closest-link></a></p>
+        <p class="void-hint" data-i18n="404.drift.hint">{t("404.drift.hint")}</p>
+      </div>
+      <span class="void-number" aria-hidden="true">404</span>
+      <div class="void-bottom">
+        <a href="#recovery" class="void-scroll"><span class="scroll-mark" aria-hidden="true">↓</span><span data-i18n="404.scroll">{t("404.scroll")}</span></a>
+        <div class="void-telemetry" aria-hidden="true"><span>HORIZON <b data-tele="horizon">—</b> KM</span><span>DRIFT <b data-tele="speed">0.00</b> M/S</span></div>
+        <button class="distress" type="button" data-distress><span class="distress-icon" aria-hidden="true">◎</span><span data-i18n="404.pulse">{t("404.pulse")}</span></button>
+      </div>
+      <p class="pulse-status" data-pulse-status role="status" aria-live="polite"></p>
+    </section>
+    <section class="recover" id="recovery" aria-labelledby="recover-title">
+      <div class="recovery-axis" aria-hidden="true"><span></span><b>+</b><span></span></div>
+      <div class="recover-head">
+        <p class="recover-eyebrow"><span data-i18n="404.recover.eyebrow">{t("404.recover.eyebrow")}</span><span>06 / ONLINE</span></p>
+        <h2 id="recover-title" data-i18n="404.recover.title">{t("404.recover.title")}</h2>
+        <p class="recover-sub" data-i18n="404.recover.sub">{t("404.recover.sub")}</p>
+      </div>
+      <div class="beacons">
+        {beacons.map(beacon => (
+          <a class="beacon" href={beacon.path} data-beacon data-lang-href-en={beacon.key === "services" ? "/services/" : undefined} data-lang-href-de={beacon.key === "services" ? "/de/leistungen/" : undefined}>
+            <span class="beacon-id">{beacon.id}</span>
+            <span class="beacon-copy"><span class="beacon-type">{beacon.type}<i></i></span><span class="beacon-name" data-i18n={`404.beacon.${beacon.key}.name`}>{t(`404.beacon.${beacon.key}.name`)}</span><span class="beacon-desc" data-i18n={`404.beacon.${beacon.key}.desc`}>{t(`404.beacon.${beacon.key}.desc`)}</span></span>
+            <span class="beacon-go" aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </div>
+      <div class="diag"><span><i></i><span data-i18n="404.diag.system">{t("404.diag.system")}</span></span><span>HTTP 404 / NO_ROUTE</span><span data-i18n="404.diag.recovery">{t("404.diag.recovery")}</span></div>
+    </section>
     <div class="void-flash" data-drift-flash aria-hidden="true"></div>
-  </section>
-
-  <!-- ── Signal recovery: real destinations, dressed as navigation beacons ──── -->
-  <section class="recover" aria-labelledby="recover-title">
-    <div class="recover-head">
-      <span class="recover-eyebrow" data-i18n="404.recover.eyebrow" data-decode-in>{t("404.recover.eyebrow")}</span>
-      <h2 id="recover-title" data-i18n="404.recover.title">{t("404.recover.title")}</h2>
-      <p data-i18n="404.recover.sub">{t("404.recover.sub")}</p>
-    </div>
-
-    <div class="beacons">
-      <a class="beacon" href="/" data-beacon data-magnetic data-cursor="HOME">
-        <span class="beacon-top"><span class="beacon-id">00 / BASE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name" data-i18n="404.beacon.studio.name">{t("404.beacon.studio.name")}</span>
-        <span class="beacon-desc" data-i18n="404.beacon.studio.desc">{t("404.beacon.studio.desc")}</span>
-        <span class="beacon-go" aria-hidden="true">→</span>
-      </a>
-      <a class="beacon" href="/services/" data-beacon data-magnetic data-cursor="OPEN">
-        <span class="beacon-top"><span class="beacon-id">01 / WORKSHOP</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name" data-i18n="404.beacon.services.name">{t("404.beacon.services.name")}</span>
-        <span class="beacon-desc" data-i18n="404.beacon.services.desc">{t("404.beacon.services.desc")}</span>
-        <span class="beacon-go" aria-hidden="true">→</span>
-      </a>
-      <a class="beacon" href="/gallery/" data-beacon data-magnetic data-cursor="ENTER">
-        <span class="beacon-top"><span class="beacon-id">02 / ARCHIVE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name" data-i18n="404.beacon.archive.name">{t("404.beacon.archive.name")}</span>
-        <span class="beacon-desc" data-i18n="404.beacon.archive.desc">{t("404.beacon.archive.desc")}</span>
-        <span class="beacon-go" aria-hidden="true">→</span>
-      </a>
-      <a class="beacon" href="/work/bridge-consult/" data-beacon data-magnetic data-cursor="OPEN">
-        <span class="beacon-top"><span class="beacon-id">03 / CASE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name" data-i18n="404.beacon.bridge.name">{t("404.beacon.bridge.name")}</span>
-        <span class="beacon-desc" data-i18n="404.beacon.bridge.desc">{t("404.beacon.bridge.desc")}</span>
-        <span class="beacon-go" aria-hidden="true">→</span>
-      </a>
-      <a class="beacon" href="/work/fidic/" data-beacon data-magnetic data-cursor="OPEN">
-        <span class="beacon-top"><span class="beacon-id">04 / CASE</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name" data-i18n="404.beacon.fidic.name">{t("404.beacon.fidic.name")}</span>
-        <span class="beacon-desc" data-i18n="404.beacon.fidic.desc">{t("404.beacon.fidic.desc")}</span>
-        <span class="beacon-go" aria-hidden="true">→</span>
-      </a>
-      <a class="beacon" href="/work/studio/" data-beacon data-magnetic data-cursor="OPEN">
-        <span class="beacon-top"><span class="beacon-id">05 / META</span><span class="beacon-dot"></span></span>
-        <span class="beacon-name" data-i18n="404.beacon.meta.name">{t("404.beacon.meta.name")}</span>
-        <span class="beacon-desc" data-i18n="404.beacon.meta.desc">{t("404.beacon.meta.desc")}</span>
-        <span class="beacon-go" aria-hidden="true">→</span>
-      </a>
-    </div>
-
-    <div class="diag" aria-hidden="true">
-      <div class="diag-cell"><span class="diag-key">System</span><span class="diag-val"><i class="diag-pulse"></i><span data-i18n="404.diag.system">{t("404.diag.system")}</span></span></div>
-      <div class="diag-cell"><span class="diag-key">Sector</span><span class="diag-val">rodionbelousov.studio</span></div>
-      <div class="diag-cell"><span class="diag-key">Error</span><span class="diag-val">HTTP 404 · NO_ROUTE</span></div>
-      <div class="diag-cell"><span class="diag-key">Recovery</span><span class="diag-val" data-i18n="404.diag.recovery">{t("404.diag.recovery")}</span></div>
-    </div>
-  </section>
+  </div>
 </Layout>
-
 <script>
-  // 404 — "The Drift": the scene lives in src/scripts/drift404.ts.
   import gsap from "gsap";
-  import { decodeText, prefersCalm } from "../utils/decode";
+  import { prefersCalm } from "../utils/decode";
+  import { rankSignals } from "../data/drift-signals";
   import type { DriftRoute } from "../data/drift-routes";
-
-  const host = document.querySelector<HTMLElement>("[data-drift]");
+  import { mountLiquidGlass } from "../scripts/liquid-glass";
+  mountLiquidGlass(document.querySelector<HTMLElement>("[data-evac]")!, document.querySelector<SVGImageElement>("[data-glass-map]")!);
+  const host = document.querySelector<HTMLElement>("[data-drift]")!;
   const requested = (() => { try { return decodeURI(location.pathname) || "/"; } catch { return location.pathname; } })();
-  const lang = (): "en" | "de" => (document.documentElement.lang.startsWith("de") ? "de" : "en");
-  const reduced = prefersCalm();
-  document.querySelectorAll<HTMLElement>("[data-drift-path]").forEach((el) => (el.textContent = requested));
-
-  const closest = document.querySelector<HTMLElement>("[data-drift-closest]");
-  const closestLink = document.querySelector<HTMLAnchorElement>("[data-drift-closest-link]");
-  const flash = document.querySelector<HTMLElement>("[data-drift-flash]");
+  const lang = (): "en" | "de" => document.documentElement.lang.startsWith("de") ? "de" : "en";
+  const routes = JSON.parse(host.dataset.routes || "[]") as DriftRoute[];
+  const closest = document.querySelector<HTMLElement>("[data-drift-closest]")!;
+  const closestLink = document.querySelector<HTMLAnchorElement>("[data-drift-closest-link]")!;
+  const flash = document.querySelector<HTMLElement>("[data-drift-flash]")!;
   const horizon = document.querySelector<HTMLElement>('[data-tele="horizon"]');
   const speed = document.querySelector<HTMLElement>('[data-tele="speed"]');
+  const status = document.querySelector<HTMLElement>("[data-pulse-status]")!;
+  const ripple = document.querySelector<HTMLElement>("[data-ripple]")!;
+  let drift: ReturnType<typeof import("../scripts/drift404").mountDrift> | undefined;
   let best: DriftRoute | undefined;
+  let pulseSent = false;
+  document.querySelector<HTMLElement>("[data-drift-path]")!.textContent = requested;
   const showClosest = () => {
-    if (!closest || !closestLink) return;
+    const first = rankSignals(requested, routes, lang(), 3)[0];
+    best = first?.score > 0 ? first.route : undefined;
     closest.hidden = !best;
-    if (best) { closestLink.href = best.path; closestLink.textContent = best[lang()]; }
+    if (best) { closestLink.href = best.path; closestLink.textContent = best[lang()].split(" — ")[0] + " ↗"; }
+    if (pulseSent) status.textContent = lang() === "de" ? "Signal empfangen. Du bist nicht allein." : "Signal received. You're not alone.";
   };
-  // The beam ends in a white-blue flash, then the page changes underneath it.
+  showClosest();
   const go = (path: string) => {
-    if (!flash || reduced) { location.href = path; return; }
+    if (prefersCalm()) { location.href = path; return; }
     flash.classList.add("is-on");
-    setTimeout(() => (location.href = path), 420);
+    setTimeout(() => location.href = path, 380);
   };
-  addEventListener("pageshow", () => flash?.classList.remove("is-on"));
-
-  const webgl = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
-  if (host && webgl) {
-    import("../scripts/drift404").then(({ mountDrift }) => {
-      const routes = JSON.parse(host.dataset.routes || "[]") as DriftRoute[];
-      let lastTele = 0;
-      const drift = mountDrift({
-        host, routes, requested, lang, reduced,
-        onSignals: (signals) => { best = signals[0] && signals[0].score > 0 ? signals[0].route : undefined; showClosest(); },
-        onTelemetry: ({ horizon: h, speed: v }) => {
-          const now = performance.now(); if (now - lastTele < 160) return; lastTele = now;
-          if (horizon) horizon.textContent = (h * 1.7).toFixed(1);
-          if (speed) speed.textContent = v.toFixed(2);
-        },
-        onNavigate: go,
-      });
-      closestLink?.addEventListener("click", (event) => {
-        if (!best || event.metaKey || event.ctrlKey || event.shiftKey) return;
-        event.preventDefault(); drift.beam(best.path);
-      });
-      addEventListener("rb:langchange", () => { drift.relabel(); showClosest(); });
-      document.fonts?.ready.then(() => drift.relabel());
-    }).catch((error) => { console.warn("404: showing the static scene.", error); host.classList.add("is-static"); });
-  } else host?.classList.add("is-static");
-
-  // Title: characters resolve in a scrambled order.
-  document.querySelectorAll<HTMLElement>("[data-split]").forEach((el) => {
-    const text = el.textContent ?? "";
-    el.textContent = ""; el.setAttribute("aria-label", text);
-    const spans: HTMLElement[] = [];
-    for (const ch of text) {
-      const s = document.createElement("span"); s.className = "void-char"; s.textContent = ch === " " ? " " : ch;
-      s.setAttribute("aria-hidden", "true"); el.appendChild(s); spans.push(s);
-    }
-    if (reduced) return;
-    gsap.set(spans, { opacity: 0, y: (i) => (i % 2 ? 30 : -30), rotateX: -60 });
-    gsap.to(spans, { opacity: 1, y: 0, rotateX: 0, duration: 0.9, ease: "power3.out", delay: 0.25, stagger: { each: 0.05, from: "random" } });
+  addEventListener("pageshow", () => flash.classList.remove("is-on"));
+  const progress = () => Math.min(1, scrollY / Math.max(1, host.clientHeight * .8));
+  const scrollScene = () => {
+    const p = progress();
+    host.style.setProperty("--scroll", String(p));
+    drift?.scroll(p);
+  };
+  addEventListener("scroll", scrollScene, { passive: true });
+  let lastTele = 0;
+  import("../scripts/drift404").then(({ mountDrift }) => {
+    drift = mountDrift({ host, routes, requested, lang, reduced: prefersCalm(), onNavigate: go,
+      onTelemetry: ({ horizon: h, speed: v }) => {
+        if (performance.now() - lastTele < 250) return;
+        lastTele = performance.now();
+        if (horizon) horizon.textContent = (h * 1.7).toFixed(1);
+        if (speed) speed.textContent = v.toFixed(2);
+      },
+    });
+    scrollScene();
+  }).catch((error) => { console.warn("404: static scene", error); host.classList.add("is-static"); });
+  addEventListener("rb:langchange", () => { showClosest(); drift?.relabel(); });
+  document.fonts.ready.then(() => drift?.relabel());
+  document.querySelectorAll<HTMLAnchorElement>("[data-evac], [data-drift-closest-link]").forEach(link => {
+    link.addEventListener("click", event => {
+      if (!drift || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      event.preventDefault(); event.stopPropagation(); drift.beam(link.pathname);
+    });
   });
-  document.querySelectorAll<HTMLElement>("[data-decode-in]").forEach((el, i) => gsap.delayedCall(0.5 + i * 0.08, () => decodeText(el, { duration: 720 })));
-  if (!reduced) gsap.fromTo([".void-sub", ".void-hint", ".void-closest", ".evac"], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out", delay: 0.7, stagger: 0.1 });
-
-  // Beacon grid drifts into range as it scrolls into view.
-  const beacons = gsap.utils.toArray<HTMLElement>("[data-beacon]");
-  if (beacons.length && !reduced) {
-    gsap.set(beacons, { opacity: 0, y: 26 });
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e, i) => { if (!e.isIntersecting) return; gsap.to(e.target, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: (i % 3) * 0.08 }); io.unobserve(e.target); });
-    }, { threshold: 0.18 });
-    beacons.forEach((b) => io.observe(b));
+  document.querySelector<HTMLButtonElement>("[data-distress]")!.addEventListener("click", () => {
+    pulseSent = true; showClosest(); drift?.pulse();
+    if (!prefersCalm()) { ripple.classList.remove("is-pulsing"); void ripple.offsetWidth; ripple.classList.add("is-pulsing"); }
+  });
+  if (!prefersCalm()) {
+    gsap.fromTo(".void-ui > *", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.25, stagger: .09, ease: "power3.out", clearProps: "all" });
   }
 </script>
-
 <style>
-  .void {
-    position: relative;
-    min-height: 100svh;
-    overflow: hidden;
-    background: #020305;
-  }
-  .void-gl { position: absolute; inset: 0; z-index: 1; opacity: 0; transition: opacity 1.4s ease; }
-  .void-gl:global(.is-live) { opacity: 1; }
-  .void-gl :global(canvas) { display: block; width: 100%; height: 100%; }
-  .void-gl:global(.is-static) {
-    opacity: 1;
-    background:
-      radial-gradient(circle at 69% 48%, #000 0 6.5%, #ffcf94 7.2%, #b8521a 9.5%, rgba(80, 30, 10, 0.4) 14%, transparent 24%),
-      radial-gradient(90% 70% at 69% 48%, #0b1426, #020305 70%);
-  }
-
-  .void-ui {
-    position: absolute;
-    z-index: 2;
-    left: clamp(1.2rem, 5vw, 5rem);
-    top: clamp(7rem, 18vh, 11rem);
-    max-width: min(34rem, 40vw);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    pointer-events: none;
-  }
-  .void-ui a { pointer-events: auto; }
-
-  .void-eyebrow {
-    margin: 0;
-    font-family: var(--font-inter);
-    font-size: 0.62rem;
-    font-weight: 500;
-    letter-spacing: 0.5em;
-    color: rgba(255, 190, 150, 0.72);
-    text-transform: uppercase;
-  }
-  .void-title {
-    margin: 0;
-    font-family: var(--font-display), sans-serif;
-    font-weight: 500;
-    font-size: clamp(3rem, 7vw, 6.6rem);
-    line-height: 0.92;
-    letter-spacing: -0.03em;
-    color: #f2f6fb;
-    text-shadow: 0 0 4rem rgba(255, 170, 110, 0.18);
-  }
-  .void-char { display: inline-block; will-change: transform, opacity; }
-  .void-sub, .void-hint, .void-closest {
-    margin: 0;
-    font-family: var(--font-inter);
-    font-size: clamp(0.85rem, 1.15vw, 1rem);
-    line-height: 1.6;
-    color: rgba(216, 226, 240, 0.74);
-  }
-  .void-hint { color: rgba(216, 226, 240, 0.5); font-size: clamp(0.78rem, 0.95vw, 0.88rem); max-width: 30rem; }
-  .void-path {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.9em;
-    color: #ffc9a8;
-    background: rgba(255, 140, 90, 0.1);
-    border: 1px solid rgba(255, 150, 100, 0.26);
-    border-radius: 0.35rem;
-    padding: 0.05rem 0.4rem;
-    word-break: break-all;
-  }
-  .void-closest { color: rgba(255, 217, 138, 0.82); font-size: 0.82rem; letter-spacing: 0.02em; }
+  :global(body:has(.lost-world)) { background: #020304; }
+  :global(body:has(.lost-world) .site-fx), :global(body:has(.lost-world) rb-cursor-field) { display: none; }
+  :global(html.has-custom-cursor:has(.lost-world)), :global(html.has-custom-cursor:has(.lost-world) a), :global(html.has-custom-cursor:has(.lost-world) button) { cursor: auto; }
+  :global(body:has(.lost-world) sy-footer footer) { background: transparent; }
+  :global(body:has(.lost-world) sy-footer) { --footer-deep: 2, 3, 4; }
+  .lost-world { --ember: #d69a77; --muted: #9b9e9f; --mono: ui-monospace, SFMono-Regular, Consolas, monospace; color: #e1e0dc; }
+  .void-gl { position: fixed; inset: 0; z-index: 0; background: #020304; }
+  .void-gl :global(canvas) { display: block; width: 100%; height: 100%; opacity: 0; transition: opacity 1.5s; }
+  .void-gl:global(.is-live) :global(canvas) { opacity: 1; }
+  .void-gl::before { content: ""; position: absolute; width: 34vw; height: 34vw; left: 54%; top: 24%; border: 1px solid #bc6b3c44; border-radius: 50%; box-shadow: 0 0 55px #ab54221c, inset 0 0 35px #ae54221a; }
+  .void-gl:global(.is-live)::before { display: none; }
+  .void-gl:global(.is-static) { background: radial-gradient(ellipse at 70% 50%, #100b08, #020304 60%); }
+  .void-orbit { position: fixed; left: 71%; top: 47%; width: min(44vw, 72vh); aspect-ratio: 1; transform: translate(-50%, -50%) rotate(-18deg); pointer-events: none; z-index: 1; }
+  .void-orbit i { position: absolute; inset: 0; border: 1px solid #a5978220; border-radius: 50%; }
+  .void-orbit i + i { inset: -12%; border-style: dashed; border-color: #a5978211; }
+  .void-orbit span { position: absolute; left: 50%; bottom: -10%; white-space: nowrap; font: 9px var(--mono); letter-spacing: .22em; color: #9d8c7a88; }
+  .void { position: relative; min-height: max(820px, 100svh); pointer-events: none; }
+  .void-ui { position: relative; z-index: 2; padding: clamp(160px, 22vh, 240px) 0 140px; margin-left: 6.5%; width: 40%; max-width: 660px; }
+  .void-eyebrow, .recover-eyebrow { display: flex; align-items: center; gap: 14px; margin: 0 0 32px; font: 10px var(--mono); text-transform: uppercase; letter-spacing: .2em; color: #baaa9a; }
+  .void-eyebrow i { width: 5px; height: 5px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 12px #cf875566; }
+  .void-eyebrow-rule { width: 32px; height: 1px; background: #9b8c7a55; }
+  .void-eyebrow > span:last-child { color: #777b7e; }
+  .void-title { max-width: 6ch; margin: 0 0 30px; font: 400 clamp(80px, 8.7vw, 156px)/.89 var(--font-display), sans-serif; letter-spacing: -.065em; text-wrap: balance; }
+  .void-sub { max-width: 330px; margin: 0 0 25px; font: 400 15px/1.75 var(--font-inter), sans-serif; color: #a5a6a5; }
+  .void-coordinate { display: flex; flex-direction: column; gap: 9px; margin-bottom: 30px; font: 10px var(--mono); text-transform: uppercase; letter-spacing: .13em; color: #81888c; }
+  .void-coordinate code { max-width: 90%; overflow-wrap: anywhere; color: #cda286; font: 12px/1.6 var(--mono); text-transform: none; letter-spacing: .02em; }
+  .glass-defs { position: absolute; pointer-events: none; }
+  .evac { --glass-x: 24%; --glass-y: 0%; position: relative; display: inline-flex; justify-content: space-between; align-items: center; gap: 32px; min-height: 64px; padding: 9px 10px 9px 27px; border: 0; border-radius: 999px; background: transparent; font: 500 13px var(--font-inter), sans-serif; color: #f0efeb; text-decoration: none; pointer-events: auto; isolation: isolate; box-shadow: 0 8px 24px #0005, 0 0 24px #c7d6e508; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .4s; }
+  .evac-glass { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; background: linear-gradient(155deg, #e6f0fc26, #c6d5e509 45%, #d6a1751a); box-shadow: inset 0 3px 9px #eef6ff0c, inset 0 -3px 8px #0005; backdrop-filter: blur(10px) saturate(1.35); -webkit-backdrop-filter: blur(10px) saturate(1.35); }
+  @supports (backdrop-filter: url("#evac-glass-lens")) { .evac:global(.has-lens) .evac-glass { backdrop-filter: url("#evac-glass-lens") saturate(1.35); } }
+  .evac::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(ellipse at var(--glass-x) var(--glass-y), #edf5ff42, transparent 65%); opacity: .65; transition: opacity .35s; }
+  .evac::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 1px solid #d8e4f12e; border-top-color: #edf5ff80; border-bottom-color: #d3ad8550; box-shadow: inset 0 1px 2px #f2f7ff35, inset 1px 0 1px #d8e8ff20, inset 0 -1px 2px #d3b59424; }
+  .evac-label { position: relative; text-shadow: 0 1px 5px #0007; }
+  .evac-arrow { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; background: linear-gradient(145deg,#edf5ff1a,#e1efff06); border: 1px solid #ebf4ff24; box-shadow: inset 0 1px 1px #fff3, 0 2px 5px #0002; transition: transform .4s, background .4s; }
+  .evac:hover { transform: translateY(-2px); box-shadow: 0 12px 28px #0005, 0 0 32px #c7d6e512; }
+  .evac:hover::before { opacity: 1; }
+  .evac:hover .evac-arrow { transform: rotate(45deg); background: linear-gradient(145deg,#edf5ff2a,#e1efff12); }
+  .evac:active { transform: translateY(0) scale(.98); }
+  .void-closest { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; font: 11px/1.6 var(--font-inter), sans-serif; color: #8d9396; }
   .void-closest[hidden] { display: none; }
-  .void-closest a { color: #ffd98a; text-decoration: underline; text-underline-offset: 0.25em; }
-
-  .evac {
-    --mx: 0px; --my: 0px;
-    margin-top: 0.6rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 1.4rem;
-    height: 3.3rem;
-    padding: 0 1.5rem 0 1.8rem;
-    font-family: var(--font-inter);
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: rgba(240, 246, 252, 0.92);
-    background: rgba(140, 170, 210, 0.08);
-    border: 1px solid rgba(180, 205, 235, 0.24);
-    border-radius: 2rem;
-    transform: translate3d(var(--mx), var(--my), 0);
-    transition: background 0.5s var(--ease-out-expo), border-color 0.5s var(--ease-out-expo);
-  }
-  .evac:hover { background: rgba(190, 215, 245, 0.16); border-color: rgba(200, 222, 250, 0.5); color: #fff; }
-  .evac-arrow { font-size: 1.15em; font-weight: 300; transition: transform 0.4s var(--ease-out-expo); }
-  .evac:hover .evac-arrow { transform: translateX(5px); }
-
-  .void-corner {
-    position: absolute;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    font-family: var(--font-inter);
-    font-size: 0.54rem;
-    font-weight: 500;
-    letter-spacing: 0.24em;
-    color: rgba(180, 200, 225, 0.42);
-    pointer-events: none;
-  }
-  .void-corner.tl { top: 6.5rem; left: clamp(1.2rem, 4vw, 3rem); }
-  .void-corner.br { bottom: 2rem; right: clamp(1.2rem, 4vw, 3rem); text-align: right; align-items: flex-end; }
-  .void-corner b { color: rgba(230, 236, 244, 0.78); font-weight: 500; font-variant-numeric: tabular-nums; }
-  .void-bracket { position: absolute; z-index: 2; width: 16px; height: 16px; opacity: 0.35; pointer-events: none; }
-  .void-bracket.tl { top: 5.6rem; left: 1.2rem; border-top: 1px solid #cdd8e6; border-left: 1px solid #cdd8e6; }
-  .void-bracket.tr { top: 5.6rem; right: 1.2rem; border-top: 1px solid #cdd8e6; border-right: 1px solid #cdd8e6; }
-  .void-bracket.bl { bottom: 1.2rem; left: 1.2rem; border-bottom: 1px solid #cdd8e6; border-left: 1px solid #cdd8e6; }
-  .void-bracket.br { bottom: 1.2rem; right: 1.2rem; border-bottom: 1px solid #cdd8e6; border-right: 1px solid #cdd8e6; }
-  .void-scroll {
-    position: absolute; left: 50%; bottom: 1.7rem; z-index: 2; transform: translateX(-50%);
-    display: inline-flex; align-items: center; gap: .6rem;
-    font-family: var(--font-inter); font-size: .54rem; font-weight: 500; letter-spacing: .34em; text-transform: uppercase;
-    color: rgba(180, 200, 225, .42); pointer-events: none;
-  }
-  .void-scroll b { width: 1px; height: 2rem; background: linear-gradient(rgba(180, 200, 225, 0), rgba(180, 200, 225, .7)); animation: scroll-pull 2.4s ease-in-out infinite; }
-  @keyframes scroll-pull { 0%, 100% { transform: scaleY(.4); opacity: .4; transform-origin: top; } 50% { transform: scaleY(1); opacity: 1; transform-origin: top; } }
-  /* The white-blue flash of the beam, over everything, just before the page changes. */
-  .void-flash { position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, #eaf6ff, #8fd8ff 45%, #0b1830); transition: opacity .42s ease-in; }
+  .void-closest a { pointer-events: auto; color: #cda286; text-decoration: underline; text-underline-offset: 4px; }
+  .void-number { position: absolute; left: 4%; bottom: 40px; font: 500 22vw/.8 var(--font-display); letter-spacing: -.07em; color: #b4b8b605; -webkit-text-stroke: 1px #b4b8b60b; }
+  .void-hint { max-width: 280px; margin: 16px 0 0; font: 10px/1.8 var(--mono); color: #81888d; }
+  .void-bottom { position: absolute; z-index: 2; bottom: 32px; left: 6.5%; right: 6.5%; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid #b5b4ad20; padding-top: 22px; }
+  .void-scroll, .distress { pointer-events: auto; display: inline-flex; align-items: center; gap: 13px; color: #b1b2ae; font: 10px var(--mono); letter-spacing: .09em; text-decoration: none; }
+  .scroll-mark { font: 18px var(--mono); color: var(--ember); }
+  .void-telemetry { display: flex; gap: 30px; font: 9px var(--mono); letter-spacing: .1em; color: #787e82; }
+  .void-telemetry b { color: #b2b6b7; font-weight: 400; font-variant-numeric: tabular-nums; }
+  .distress { border: 0; padding: 0; background: none; min-height: 44px; cursor: pointer; }
+  .distress-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #bd90784f; border-radius: 50%; font: 22px var(--mono); color: var(--ember); transition: box-shadow .3s; }
+  .distress:hover .distress-icon { box-shadow: 0 0 25px #b4764933; }
+  .pulse-status { position: absolute; right: 6.5%; bottom: 102px; max-width: 230px; font: 11px/1.6 var(--mono); color: var(--ember); text-align: right; }
+  .distress-ripple { position: fixed; pointer-events: none; z-index: 1; left: 71%; top: 47%; width: 8vw; aspect-ratio: 1; border: 1px solid #d59972; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; }
+  .distress-ripple:global(.is-pulsing) { animation: distress-wave 3s ease-out forwards; }
+  @keyframes distress-wave { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.5); } 12% { opacity: .65; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(16); } }
+  .recover { position: relative; z-index: 2; max-width: 1440px; margin: 0 auto; padding: 0 6.5% 70px; scroll-margin-top: 100px; }
+  .recovery-axis { display: flex; flex-direction: column; align-items: center; gap: 14px; height: 210px; margin-bottom: 30px; opacity: .45; }
+  .recovery-axis span { width: 1px; flex: 1; background: linear-gradient(transparent, #b89a78); }
+  .recovery-axis span:last-child { background: linear-gradient(#b89a78, transparent); }
+  .recovery-axis b { font: 14px var(--mono); color: var(--ember); }
+  .recover-head { max-width: 730px; margin-bottom: 70px; }
+  .recover-eyebrow { justify-content: space-between; margin-bottom: 24px; }
+  .recover-eyebrow span:last-child { color: #747b7e; }
+  .recover-head h2 { max-width: 650px; margin: 0 0 22px; font: 400 clamp(42px, 5.1vw, 76px)/1.02 var(--font-display); letter-spacing: -.05em; text-wrap: balance; }
+  .recover-sub { max-width: 430px; margin: 0; font: 14px/1.8 var(--font-inter); color: #9da2a4; }
+  .beacons { display: grid; grid-template-columns: 1fr 1fr; column-gap: 64px; }
+  .beacon { position: relative; display: flex; align-items: flex-start; gap: 25px; min-height: 160px; border-top: 1px solid #b5b4ad33; padding: 30px 0; text-decoration: none; transition: border-color .3s; }
+  .beacon-id { padding-top: 1px; font: 10px var(--mono); color: #847366; }
+  .beacon-copy { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .beacon-type { display: flex; align-items: center; gap: 10px; font: 9px var(--mono); letter-spacing: .16em; color: #94938e; }
+  .beacon-type i, .diag i { width: 3px; height: 3px; border-radius: 50%; background: #a2b5a4; }
+  .beacon-name { font: 400 clamp(20px, 2vw, 30px)/1.25 var(--font-display); letter-spacing: -.035em; color: #d2d3cf; transition: color .3s; }
+  .beacon-desc { max-width: 310px; font: 12px/1.65 var(--font-inter); color: #8c9397; }
+  .beacon-go { font: 22px var(--mono); color: #a49c91; transition: transform .3s, color .3s; }
+  .beacon:hover { border-color: #cda286a6; }
+  .beacon:hover .beacon-name, .beacon:hover .beacon-go { color: #ecc3a6; }
+  .beacon:hover .beacon-go { transform: translate(3px, -3px); }
+  .diag { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; margin-top: 45px; padding-top: 22px; border-top: 1px solid #b5b4ad20; font: 9px var(--mono); letter-spacing: .1em; color: #858e93; text-transform: uppercase; }
+  .diag > span:first-child { display: flex; align-items: center; gap: 9px; }
+  .void-flash { position: fixed; inset: 0; z-index: 250; pointer-events: none; opacity: 0; background: #020304; transition: opacity .38s; }
   .void-flash:global(.is-on) { opacity: 1; }
-
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--ember); outline-offset: 6px; }
+  @media (max-width: 1000px) and (min-width: 701px) { .void-ui { width: 44%; } .void-title { font-size: 88px; } .void-hint { display: none; } }
   @media (max-width: 700px), (orientation: portrait) {
-    .void-ui { top: 5.6rem; bottom: 1.3rem; left: 1.2rem; right: 1.2rem; max-width: none; gap: 0.55rem; }
-    .void-title { font-size: clamp(2.3rem, 10.5vw, 3.4rem); }
-    .void-hint { display: none; }
-    .void-sub, .void-closest { font-size: 0.8rem; }
-    .evac { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); margin: 0; height: 3rem; white-space: nowrap; }
-    .void-corner.tl, .void-corner.br, .void-bracket, .void-scroll { display: none; }
+    .void { min-height: max(1100px, 100svh); }
+    .void-gl { height: max(1100px, 100svh); }
+    .void-ui { padding: 122px 0 0; margin-left: 7%; width: 86%; max-width: none; }
+    .void-eyebrow { font-size: 8px; gap: 10px; margin-bottom: 20px; }
+    .void-title { max-width: none; font-size: clamp(54px, 13.5vw, 92px); line-height: 1; margin-bottom: 15px; text-wrap: initial; }
+    .void-sub { font-size: 12px; max-width: 280px; margin-bottom: 16px; }
+    .void-coordinate { font-size: 8px; gap: 5px; margin-bottom: 17px; }
+    .void-coordinate code { font-size: 10px; }
+    .evac { gap: 24px; padding: 7px 8px 7px 21px; font-size: 12px; min-height: 56px; }
+    .evac-arrow { width: 40px; height: 40px; font-size: 20px; }
+    .void-closest { font-size: 10px; margin-top: 12px; }
+    .void-orbit { left: 57%; top: max(627px, 57svh); width: 76vw; }
+    .void-orbit span { font-size: 7px; left: 45%; }
+    .distress-ripple { left: 57%; top: max(627px, 57svh); }
+    .void-number { bottom: 120px; font-size: 42vw; }
+    .void-bottom { left: 7%; right: 7%; gap: 15px; bottom: 24px; }
+    .void-telemetry, .void-hint { display: none; }
+    .void-scroll, .distress { font-size: 9px; gap: 9px; }
+    .pulse-status { bottom: 85px; font-size: 9px; }
+    .recover { padding: 0 7% 45px; }
+    .recovery-axis { height: 135px; }
+    .recover-head { margin-bottom: 42px; }
+    .recover-eyebrow { font-size: 8px; letter-spacing: .12em; }
+    .recover-head h2 { font-size: 43px; }
+    .recover-sub { font-size: 12px; }
+    .beacons { grid-template-columns: 1fr; }
+    .beacon { min-height: 140px; gap: 20px; padding: 25px 0; }
+    .beacon-name { font-size: 25px; }
+    .diag { font-size: 8px; }
   }
-  @media (prefers-reduced-motion: reduce) { .void-scroll b { animation: none; } .void-flash { transition: none; } }
-
-  /* ── Signal recovery ───────────────────────────────────────────────────── */
-  /* Flat #030405 — exactly the void's WebGL clear colour — so the seam between
-     the two sections disappears and the page reads as one black space instead
-     of shifting blue toward the bottom. */
-  .recover {
-    position: relative;
-    z-index: 2;
-    padding: clamp(4rem, 9vw, 8rem) clamp(1.2rem, 5vw, 5rem) clamp(5rem, 10vw, 9rem);
-    background: #030405;
-  }
-  /* A scattered starfield (not a regular grid) that carries the void's stars
-     down through the lower half. Four layers at coprime sizes never line up,
-     so it reads as random sky. */
-  .recover::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      radial-gradient(1.3px 1.3px at 24% 33%, rgba(255, 255, 255, .6), transparent 60%),
-      radial-gradient(1px 1px at 72% 61%, rgba(255, 255, 255, .45), transparent 60%),
-      radial-gradient(1.4px 1.4px at 52% 84%, rgba(205, 222, 255, .5), transparent 60%),
-      radial-gradient(1px 1px at 88% 20%, rgba(255, 255, 255, .38), transparent 60%);
-    background-size: 9rem 9rem, 13rem 13rem, 17rem 17rem, 23rem 23rem;
-    pointer-events: none;
-  }
-  .recover-head {
-    position: relative;
-    max-width: 46rem;
-    margin: 0 auto clamp(2.6rem, 5vw, 4.2rem);
-    text-align: center;
-  }
-  .recover-eyebrow {
-    display: block;
-    margin-bottom: 1.1rem;
-    font-family: var(--font-inter);
-    font-size: .6rem;
-    font-weight: 500;
-    letter-spacing: .5em;
-    text-indent: .5em;
-    text-transform: uppercase;
-    color: rgba(190, 210, 235, .5);
-  }
-  .recover-head h2 {
-    margin: 0 0 1.1rem;
-    font-family: var(--font-display), sans-serif;
-    font-weight: 500;
-    font-size: clamp(2.1rem, 5.2vw, 3.7rem);
-    line-height: 1;
-    letter-spacing: -.02em;
-    color: #f2f6fb;
-  }
-  .recover-head p {
-    margin: 0 auto;
-    max-width: 34rem;
-    font-family: var(--font-inter);
-    font-size: clamp(.9rem, 1.4vw, 1.02rem);
-    line-height: 1.65;
-    color: rgba(216, 226, 240, .6);
-  }
-
-  .beacons {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
-    gap: clamp(.8rem, 1.6vw, 1.1rem);
-    max-width: 74rem;
-    margin: 0 auto;
-  }
-  .beacon {
-    --mx: 0px; --my: 0px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: .55rem;
-    padding: clamp(1.4rem, 2.4vw, 1.9rem);
-    border: 1px solid rgba(180, 205, 235, .14);
-    border-radius: 10px;
-    background: linear-gradient(150deg, rgba(255, 255, 255, .035), rgba(255, 255, 255, .006));
-    text-decoration: none;
-    overflow: hidden;
-    transform: translate3d(var(--mx), var(--my), 0);
-    transition: border-color .5s var(--ease-out-expo), background .5s var(--ease-out-expo);
-  }
-  .beacon::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 82% 0%, rgba(150, 190, 255, .16), transparent 60%);
-    opacity: 0;
-    transition: opacity .5s var(--ease-out-expo);
-    pointer-events: none;
-  }
-  .beacon:hover {
-    border-color: rgba(200, 222, 250, .44);
-    background: linear-gradient(150deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .015));
-  }
-  .beacon:hover::after { opacity: 1; }
-  .beacon-top { display: flex; align-items: center; justify-content: space-between; }
-  .beacon-id {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: .56rem;
-    letter-spacing: .2em;
-    color: rgba(180, 200, 225, .5);
-  }
-  .beacon-dot {
-    width: .4rem;
-    height: .4rem;
-    border-radius: 50%;
-    background: rgba(150, 190, 255, .45);
-    box-shadow: 0 0 .5rem rgba(150, 190, 255, .4);
-    transition: background .4s var(--ease-out-expo), box-shadow .4s var(--ease-out-expo);
-  }
-  .beacon:hover .beacon-dot { background: #9ec3ff; box-shadow: 0 0 .8rem #9ec3ff; }
-  .beacon-name {
-    font-family: var(--font-display), sans-serif;
-    font-weight: 500;
-    font-size: clamp(1.35rem, 2.2vw, 1.7rem);
-    line-height: 1.05;
-    color: #f2f6fb;
-  }
-  .beacon-desc {
-    font-family: var(--font-inter);
-    font-size: .82rem;
-    line-height: 1.55;
-    color: rgba(210, 222, 238, .56);
-  }
-  .beacon-go {
-    margin-top: .35rem;
-    font-size: 1.1rem;
-    color: rgba(200, 222, 250, .7);
-    transition: transform .4s var(--ease-out-expo);
-  }
-  .beacon:hover .beacon-go { transform: translateX(6px); }
-
-  .diag {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    max-width: 74rem;
-    margin: clamp(1.8rem, 3vw, 2.4rem) auto 0;
-    border: 1px solid rgba(255, 255, 255, .09);
-    border-radius: 8px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    overflow: hidden;
-  }
-  .diag-cell {
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-    padding: 1rem clamp(1rem, 2vw, 1.6rem);
-  }
-  .diag-cell + .diag-cell { border-left: 1px solid rgba(255, 255, 255, .09); }
-  .diag-key {
-    font-size: .52rem;
-    letter-spacing: .22em;
-    text-transform: uppercase;
-    color: rgba(var(--rgb-text), .34);
-  }
-  .diag-val {
-    display: flex;
-    align-items: center;
-    gap: .45rem;
-    font-size: .66rem;
-    letter-spacing: .06em;
-    color: rgba(var(--rgb-text), .74);
-  }
-  .diag-pulse {
-    width: .4rem;
-    height: .4rem;
-    border-radius: 50%;
-    background: #7dffa4;
-    box-shadow: 0 0 .6rem #7dffa4;
-    animation: diag-blink 2s ease-in-out infinite;
-  }
-  @keyframes diag-blink { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
-
-  @media (max-width: 720px) {
-    .diag { grid-template-columns: repeat(2, 1fr); }
-    .diag-cell:nth-child(3) { border-left: 0; }
-    .diag-cell:nth-child(n + 3) { border-top: 1px solid rgba(255, 255, 255, .09); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .void-char { opacity: 1 !important; transform: none !important; }
-    .void-scroll b, .diag-pulse { animation: none; }
-  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  :global(html.rb-calm) .distress-ripple { animation: none; }
 </style>

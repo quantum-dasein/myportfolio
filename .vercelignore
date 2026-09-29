@@ -1,0 +1,17 @@
+# Local renders, source experiments and build output do not belong in deployments.
+artifacts/
+dist/
+.astro/
+.vite/
+.claude/
+.vscode/
+.env*
+*.bat
+*-log.txt
+test-*.mjs
+tunnel_*.astro
+/*.png
+/*.jpg
+/serve.mjs
+/test-*.mjs
+/gallery-test.png
