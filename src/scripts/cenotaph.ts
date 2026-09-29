@@ -33,7 +33,7 @@ const GLYPHS: Record<string, string> = {
 };
 type Glyph = { pts: [number, number][]; segs: [number, number][]; w: number };
 const cache = new Map<string, Glyph>();
-function glyph(ch: string): Glyph {
+export function glyph(ch: string): Glyph {
   const key = ch.toLowerCase();
   if (cache.has(key)) return cache.get(key)!;
   const src = GLYPHS[key] ?? (/\s/.test(ch) ? '' : GLYPHS['?']);
@@ -50,7 +50,7 @@ function glyph(ch: string): Glyph {
 }
 
 /** Levenshtein with backtrack: how to turn what was typed into what was meant. */
-function editScript(a: string, b: string) {
+export function editScript(a: string, b: string) {
   const A = [...a], B = [...b], D: number[][] = A.map(() => []).concat([[]]);
   for (let i = 0; i <= A.length; i++) for (let j = 0; j <= B.length; j++)
     D[i][j] = !i ? j : !j ? i : Math.min(D[i - 1][j] + 1, D[i][j - 1] + 1, D[i - 1][j - 1] + (A[i - 1] === B[j - 1] ? 0 : 1));
@@ -64,7 +64,7 @@ function editScript(a: string, b: string) {
 }
 
 /** Letter origins in glyph units; long addresses break after a slash, dot or hyphen onto a second line. */
-function layout(text: string, maxLine: number) {
+export function layout(text: string, maxLine: number) {
   const chars = [...text];
   let split = -1;
   if (chars.length > maxLine) {

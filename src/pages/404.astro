@@ -50,6 +50,7 @@ const beacons = [
       <div class="void-bottom">
         <a href="#recovery" class="void-scroll"><span class="scroll-mark" aria-hidden="true">↓</span><span data-i18n="404.scroll">{t("404.scroll")}</span></a>
         <p class="credit" data-i18n="404.credit">{t("404.credit")}</p>
+        <p class="live-hint" data-live-hint hidden><span class="hint-desk" data-i18n="404.live.desk">{t("404.live.desk")}</span><span class="hint-touch" data-i18n="404.live.touch">{t("404.live.touch")}</span></p>
         <button class="film-button" type="button" data-skip><span data-i18n="404.skip">{t("404.skip")}</span><span aria-hidden="true">→</span></button>
         <button class="film-button" type="button" data-replay hidden><span aria-hidden="true">↺</span><span data-i18n="404.replay">{t("404.replay")}</span></button>
       </div>
@@ -95,7 +96,9 @@ const beacons = [
     en: { back: "Back to the start", star: "Your star on the vault: №", gallery: "ARCHIVE", services: "SERVICES", contact: "CONTACT" },
     de: { back: "Zurück zum Start", star: "Dein Stern im Gewölbe: №", gallery: "ARCHIV", services: "LEISTUNGEN", contact: "KONTAKT" },
   };
-  $("[data-path]").textContent = path + (location.search.length > 1 && location.search.length < 40 ? location.search : "");
+  // The page's own switches (?film, ?live, ?t=) are not part of what the visitor typed.
+  const typedSearch = (() => { const q = new URLSearchParams(location.search); ["film", "live", "t"].forEach(k => q.delete(k)); const s = q.toString(); return s ? `?${s}` : ""; })();
+  $("[data-path]").textContent = path + (typedSearch.length > 1 && typedSearch.length < 40 ? typedSearch : "");
   const egg = special(path);
 
   // Did you mean: the best reading of the address, and up to two other close ones.
@@ -103,7 +106,7 @@ const beacons = [
   const title = (route: DriftRoute) => route[lang()].split(" — ")[0];
   function paint() {
     const l = copy[lang()];
-    guesses = guess(path + location.search, routes, lang(), 3);
+    guesses = guess(path + typedSearch, routes, lang(), 3);
     const top = guesses[0], found = top.score > 0 && !["admin", "meta", "newton"].includes(top.reason);
     reasonEl.textContent = REASONS[lang()][top.reason];
     kicker.hidden = !found;
@@ -160,9 +163,34 @@ const beacons = [
   const visitorAnchor = () => portrait ? at(.86, .3, 0) : at(.44, .585, 0);
 
   let cenotaph: ReturnType<typeof mountCenotaph> | undefined;
-  const sound = mountCenotaphSound(video, 12);
+  // The vault in real time (still a prototype, behind ?live): lightmapped stone, walkable.
+  // Films stay for reduced motion, data saver, no WebGL2 or ?film; everywhere else the vault is live.
+  const liveMode = !still && !new URLSearchParams(location.search).has("film") && !!document.createElement("canvas").getContext("webgl2");
+  let live: Awaited<ReturnType<typeof import("../scripts/cenotaph-live")["mountCenotaphLive"]>> | undefined;
+  const storyClock = { get currentTime() { return live?.story().currentTime ?? 0; }, get ended() { return live?.story().ended ?? false; }, get paused() { return false; } };
+  const sound = mountCenotaphSound((liveMode ? storyClock : video) as HTMLVideoElement, 12);
   const reveal = () => { stage.classList.add("is-vault"); skip.hidden = true; replay.hidden = false; };
-  fetch("/cenotaph/camera.json").then(r => r.json() as Promise<CenotaphMeta>).then(meta => {
+  // If the live vault cannot start, the same address opens again with the films.
+  const toFilm = () => location.replace(location.pathname + (location.search ? location.search + "&film" : "?film"));
+  if (liveMode) {
+    stage.classList.add("is-live");
+    $("[data-live-hint]").hidden = false; $(".credit").hidden = true;
+    import("../scripts/cenotaph-live").then(({ mountCenotaphLive }) => {
+      const top = guesses[0];
+      const target = egg === "newton" ? path : top.score > 0 && top.reason !== "admin" && top.reason !== "meta" ? top.route.path : "rodionbelousov.studio";
+      live = mountCenotaphLive({
+        host: view, base: "/cenotaph/live", mode: time, requested: path, target, reduced: reduced || calm, still: egg === "newton", portrait,
+        sections: () => portrait ? [] : sections().map(({ text, href, label }) => ({ text, href, label })),
+        onReveal: reveal,
+        onRepaired: () => { evac.classList.add("is-found"); if (egg === "newton") setTimeout(() => live?.dropApple(), 900); },
+        onEvent: (e, d) => sound.event(e, d),
+        onOpen: to => go(to),
+        onReady: () => stage.classList.add("is-live-ready"),
+      });
+      if (starNumber) live.visitor(starNumber);
+      live.ready.catch(error => { console.warn("404: live vault failed", error); toFilm(); });
+    }).catch(error => { console.warn("404: live vault failed", error); toFilm(); });
+  } else fetch("/cenotaph/camera.json").then(r => r.json() as Promise<CenotaphMeta>).then(meta => {
     const top = guesses[0];
     const target = egg === "newton" ? path : top.score > 0 && top.reason !== "admin" && top.reason !== "meta" ? top.route.path : "rodionbelousov.studio";
     cenotaph = mountCenotaph({
@@ -184,7 +212,7 @@ const beacons = [
   // Every lost visitor adds a star to the vault. Only the number is kept, never the address.
   fetch("/api/lost/", { method: "POST" }).then(r => r.ok ? r.json() : null).then(d => {
     if (!d || typeof d.number !== "number") return;
-    starNumber = d.number; paint(); starNote.hidden = false; cenotaph?.visitor(d.number);
+    starNumber = d.number; paint(); starNote.hidden = false; cenotaph?.visitor(d.number); live?.visitor(d.number);
   }).catch(() => {});
 
   // After the flight the film hands over to a living loop shot from the same place: its first frame
@@ -205,11 +233,11 @@ const beacons = [
     if (document.hidden) return;
     if (stage.classList.contains("is-looping") && loop.paused) loop.play().catch(() => {});
   });
-  skip.addEventListener("click", () => { cenotaph?.skip(); reveal(); startLoop(); });
-  replay.addEventListener("click", () => { if (!video.getAttribute("src")) { video.src = file("film", "mp4"); video.poster = file("start", "jpg"); } stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
+  skip.addEventListener("click", () => { if (live) { live.skip(); reveal(); return; } cenotaph?.skip(); reveal(); startLoop(); });
+  replay.addEventListener("click", () => { if (live) { live.replay(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; return; } if (!video.getAttribute("src")) { video.src = file("film", "mp4"); video.poster = file("start", "jpg"); } stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
 
   // Look around the vault: the mouse, or the tilt of a phone, turns the view a little.
-  if (!reduced) {
+  if (!reduced && !liveMode) {
     let tx = 0, ty = 0, x = 0, y = 0;
     addEventListener("pointermove", e => { if (e.pointerType === "mouse") { tx = e.clientX / innerWidth * 2 - 1; ty = e.clientY / innerHeight * 2 - 1; } }, { passive: true });
     const tilt = (e: DeviceOrientationEvent) => { if (e.gamma == null || e.beta == null) return; tx = Math.max(-1, Math.min(1, e.gamma / 25)); ty = Math.max(-1, Math.min(1, (e.beta - 50) / 25)); };
@@ -224,7 +252,7 @@ const beacons = [
     };
     look();
   }
-  addEventListener("scroll", () => stage.style.setProperty("--dim", String(Math.min(1, scrollY / Math.max(1, innerHeight * .8)))), { passive: true });
+  addEventListener("scroll", () => { const d = Math.min(1, scrollY / Math.max(1, innerHeight * .8)); stage.style.setProperty("--dim", String(d)); live?.dim(d * .75); }, { passive: true });
   addEventListener("rb:langchange", () => { paint(); cenotaph?.resize(); });
 </script>
 <style>
@@ -255,6 +283,20 @@ const beacons = [
   .stage[data-time="day"] { --grade-b: .78; --grade-c: 1.16; --grade-s: .68; }
   .stage video { object-fit: cover; filter: brightness(calc(var(--grade-b) * (1 - var(--dim) * .72))) contrast(var(--grade-c)) saturate(var(--grade-s)); }
   .stage video[data-loop] { opacity: 0; }
+  /* The live vault: its canvas replaces the films; labels for the page constellations ride on top. */
+  .stage:global(.is-live) video, .stage:global(.is-live) canvas[data-sky] { display: none; }
+
+  .stage :global(.live-canvas) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; opacity: 0; transition: opacity 1.4s ease; }
+  .stage:global(.is-live-ready) :global(.live-canvas) { opacity: 1; }
+  .stage :global(.live-canvas:active) { cursor: grabbing; }
+  .live-hint { flex: 1; margin: 0; text-align: right; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; color: #c8c0b6; text-shadow: 0 1px 10px #000; }
+  .hint-touch { display: none; }
+  @media (pointer: coarse) { .hint-desk { display: none; } .hint-touch { display: inline; } }
+  @media (max-width: 700px), (orientation: portrait) { .live-hint { display: none; } }
+  .stage :global(.live-labels) { position: absolute; inset: 0; pointer-events: none; }
+  .stage :global(.live-label) { position: absolute; left: 0; top: 0; pointer-events: auto; font: 600 12px var(--font-inter), sans-serif; letter-spacing: .18em; text-transform: uppercase; color: #f2e2cc; text-decoration: none; text-shadow: 0 1px 10px #000; opacity: 0; transition: color .3s; }
+  .stage :global(.live-label:hover) { color: #fff; }
+  .stage :global(.live-visitor) { position: absolute; left: 0; top: 0; font: 600 13px var(--font-inter), sans-serif; letter-spacing: .14em; color: #e2eeff; text-shadow: 0 1px 10px #000; opacity: 0; }
   .stage:global(.is-looping) video[data-loop] { opacity: 1; }
   .stage canvas { opacity: calc(1 - var(--dim) * .8); }
   /* Ink under the words: the floor of the frame darkens a little more where the copy sits. */
