@@ -14,9 +14,43 @@ ARENA = 36.0
 RIN = R - SHELL
 D1, H1 = 112.0, 18.0           # lower drum radius / height
 D2, H2 = 94.0, 14.0            # upper drum
-FIG = Vector((3.2, -16.0, 0.0))  # the visitor stands in the sunbeam
+FIG = Vector((3.4, -23.5, 0.0))  # the visitor stands in the sunbeam
 HOLE = Vector((0, 0, CZ)) + Vector((-.78, .12, .62)).normalized() * (RIN - .05)
 rnd = random.Random(7)
+MODE = ARGS.get('mode', 'night')          # night: the vault pierced with daylight; day: Boullée's lamp
+DAY = MODE == 'day'
+LOOP = ARGS.get('loop') == '1'            # the living hold after the flight, camera still
+LOOP_T = 240                              # frames in the loop (10 s at 24 fps)
+TEXDIR = ARGS.get('tex', 'C:/Users/user/Documents/rodionbelousov/.tools/textures/')
+ARM_C = Vector((0.0, 0.0, 34.0))          # the armillary lamp hangs over the tomb
+F0 = 0 if LOOP else 289                   # the film's last frame is the loop's first
+W_LOOP = 2 * math.pi / LOOP_T             # one turn per loop, so every motion closes on itself
+
+
+def fcurves_of(idblock):
+    ad = idblock.animation_data
+    if hasattr(ad.action, 'fcurves'):
+        return ad.action.fcurves
+    from bpy_extras import anim_utils
+    return anim_utils.action_get_channelbag_for_slot(ad.action, ad.action_slot).fcurves
+
+
+def oscillate(idblock, path, index, amp, k=1, phase=0.0):
+    """Adds amp*sin(k*turn*(frame-F0)+phase) on top of a property: loops seamlessly."""
+    idblock.keyframe_insert(path, index=index, frame=0)
+    fc = next(f for f in fcurves_of(idblock) if f.data_path == path and f.array_index == max(index, 0))
+    m = fc.modifiers.new('FNGENERATOR')
+    m.function_type, m.use_additive = 'SIN', True
+    m.amplitude, m.phase_multiplier = amp, W_LOOP * k
+    m.phase_offset = phase - W_LOOP * k * F0
+
+
+def frame_socket(tree):
+    """Frames since the loop began, for shaders that breathe or twinkle."""
+    v = tree.nodes.new('ShaderNodeValue')
+    d = v.outputs[0].driver_add('default_value').driver
+    d.type, d.expression = 'SCRIPTED', f'frame - {F0}'
+    return v.outputs[0]
 
 
 def link(o):
@@ -126,7 +160,7 @@ def masonry(t, U, V, course, block):
     return groove, cell.outputs['Value']
 
 
-def stone(t, groove, cellr, pos, base, rough=.8, dark=1.0, extra_emit=None):
+def stone(t, groove, cellr, pos, base, rough=.8, dark=1.0, extra_emit=None, sc_=None):
     stain = t.n('ShaderNodeTexNoise', noise_dimensions='3D', inputs={'Scale': .06, 'Detail': 8.0, 'Roughness': .62})
     t.set(stain.inputs['Vector'], t.v('MULTIPLY', pos, (1.0, 1.0, .25)))
     grain = t.n('ShaderNodeTexNoise', noise_dimensions='3D', inputs={'Scale': 3.5, 'Detail': 10.0, 'Roughness': .7})
@@ -139,12 +173,18 @@ def stone(t, groove, cellr, pos, base, rough=.8, dark=1.0, extra_emit=None):
     k = t.m('MULTIPLY', k, t.mr(streak.outputs['Fac'], .5, .72, 1.0, .72))
     wz = t.xyz(t.n('ShaderNodeNewGeometry').outputs['Position'])[2]
     k = t.m('MULTIPLY', k, t.mr(wz, .0, 3.5, .5, 1.0))
-    col = t.v('SCALE', tuple(c * dark for c in base), scale=k)
-    bump = t.n('ShaderNodeBump', inputs={'Strength': .55, 'Distance': .04})
-    t.set(bump.inputs['Height'], t.m('ADD', t.m('MULTIPLY', groove, -1.0), t.m('MULTIPLY', grain.outputs['Fac'], .25)))
     b = t.n('ShaderNodeBsdfPrincipled', inputs={'Roughness': rough})
-    t.set(b.inputs['Base Color'], col)
-    t.set(b.inputs['Normal'], bump)
+    if sc_ is not None:
+        k = t.m('MULTIPLY', k, t.m('ADD', .35, t.m('MULTIPLY', sc_['ao'], .65)))
+        t.set(b.inputs['Base Color'], t.v('SCALE', sc_['col'], scale=t.m('MULTIPLY', k, dark)))
+        t.set(b.inputs['Normal'], sc_['normal'])
+        t.set(b.inputs['Roughness'], t.m('ADD', .15, t.m('MULTIPLY', sc_['rough'], .85)))
+    else:
+        col = t.v('SCALE', tuple(c * dark for c in base), scale=k)
+        bump = t.n('ShaderNodeBump', inputs={'Strength': .55, 'Distance': .04})
+        t.set(bump.inputs['Height'], t.m('ADD', t.m('MULTIPLY', groove, -1.0), t.m('MULTIPLY', grain.outputs['Fac'], .25)))
+        t.set(b.inputs['Base Color'], col)
+        t.set(b.inputs['Normal'], bump)
     if extra_emit is not None:
         colr, strength = extra_emit
         b.inputs['Emission Color'].default_value = colr
@@ -153,6 +193,39 @@ def stone(t, groove, cellr, pos, base, rough=.8, dark=1.0, extra_emit=None):
 
 
 LIME = (.74, .67, .56)
+_IMGS = {}
+
+
+def image(name, data=False):
+    if name not in _IMGS:
+        im = bpy.data.images.load(TEXDIR + name)
+        if data:
+            im.colorspace_settings.name = 'Non-Color'
+        _IMGS[name] = im
+    return _IMGS[name]
+
+
+def scan(t, U, V, key, tile=3.0, crop=None, tint=(1.12, 1.05, .93)):
+    """Photo-scanned stone (Poly Haven, CC0) laid out in metres; crop keeps only whole courses."""
+    u = t.m('DIVIDE', U, tile)
+    v = t.m('DIVIDE', V, tile * ((crop[1] - crop[0]) if crop else 1.0))
+    if crop:
+        v = t.m('ADD', crop[0], t.m('MULTIPLY', t.m('FRACT', v), crop[1] - crop[0]))
+    uv = t.comb(u, v, 0.0)
+    tex = {}
+    for kind, data in (('diff', False), ('nor_gl', True), ('arm', True)):
+        nd = t.n('ShaderNodeTexImage', interpolation='Linear')
+        nd.image = image(f'{key}_{kind}_2k.jpg', data)
+        t.set(nd.inputs['Vector'], uv)
+        tex[kind] = nd.outputs['Color']
+    hs = t.n('ShaderNodeHueSaturation', inputs={'Hue': .5, 'Saturation': .62, 'Value': 1.45, 'Fac': 1.0})
+    t.set(hs.inputs['Color'], tex['diff'])
+    col = t.v('MULTIPLY', hs.outputs['Color'], tint)
+    nm = t.n('ShaderNodeNormalMap', inputs={'Strength': .6})
+    t.set(nm.inputs['Color'], tex['nor_gl'])
+    ao, rough, _ = t.xyz(tex['arm'])
+    return {'col': col, 'normal': nm.outputs['Normal'], 'ao': ao, 'rough': rough}
+
 
 
 def mat_sphere():
@@ -164,7 +237,8 @@ def mat_sphere():
     lon = t.m('ARCTAN2', y, x)
     V = t.m('MULTIPLY', lat, R)
     U = t.m('MULTIPLY', t.m('MULTIPLY', lon, R), t.m('COSINE', lat))
-    groove, cellr = masonry(t, U, V, 1.5, 3.1)
+    S = scan(t, U, V, 'large_sandstone_blocks_01', 3.0)
+    groove, cellr = 0.0, .5
     # The vault is pierced: daylight through thousands of small funnels reads as stars.
     nrm = t.v('NORMALIZE', P)
     nx, ny, nz = t.xyz(nrm)
@@ -172,6 +246,7 @@ def mat_sphere():
     inside = t.m('LESS_THAN', L, R - .6)
     upper = t.mr(nz, -.45, -.12)
     emit = 0.0
+    FR = frame_socket(t.t)
     for scale, thr, gain, pw in ((95.0, .75, 1.0, 6.0), (230.0, .83, .3, 8.0)):
         vor = t.n('ShaderNodeTexVoronoi', feature='F1', voronoi_dimensions='3D', inputs={'Scale': scale, 'Randomness': .95})
         t.set(vor.inputs['Vector'], nrm)
@@ -182,10 +257,14 @@ def mat_sphere():
         hole = t.m('LESS_THAN', d, radius)
         pick = t.m('GREATER_THAN', cg, t.m('SUBTRACT', thr, t.m('MULTIPLY', band, .22)))
         bright = t.m('ADD', .12, t.m('MULTIPLY', t.m('POWER', cb, pw), 3.0))
+        # Each hole twinkles at 1-3 cycles per loop, from its own phase.
+        kk = t.m('ADD', 1.0, t.m('FLOOR', t.m('MULTIPLY', t.m('FRACT', t.m('MULTIPLY', cb, 7.0)), 3.0)))
+        tw = t.m('SINE', t.m('ADD', t.m('MULTIPLY', t.m('MULTIPLY', FR, W_LOOP), kk), t.m('MULTIPLY', cr, 40.0)))
+        bright = t.m('MULTIPLY', bright, t.m('ADD', 1.0, t.m('MULTIPLY', tw, .38)))
         layer = t.m('MULTIPLY', t.m('MULTIPLY', hole, pick), t.m('MULTIPLY', bright, gain))
         emit = layer if emit == 0.0 else t.m('ADD', emit, layer)
-    strength = t.m('MULTIPLY', t.m('MULTIPLY', emit, t.m('MULTIPLY', inside, upper)), float(ARGS.get('stars', 260)))
-    b = stone(t, groove, cellr, P, LIME, extra_emit=((1.0, .9, .78, 1.0), strength))
+    strength = t.m('MULTIPLY', t.m('MULTIPLY', emit, t.m('MULTIPLY', inside, upper)), float(ARGS.get('stars', 150 if DAY else 260)))
+    b = stone(t, groove, cellr, P, LIME, extra_emit=((1.0, .9, .78, 1.0), strength), sc_=S)
     try:
         t.mat.cycles.emission_sampling = 'NONE'
     except Exception as e:
@@ -199,16 +278,19 @@ def mat_drum():
     x, y, z = t.xyz(P)
     r = t.v('LENGTH', t.comb(x, y, 0.0))
     U = t.m('MULTIPLY', t.m('ARCTAN2', y, x), r)
-    groove, cellr = masonry(t, U, z, 1.2, 2.6)
-    return t.out(stone(t, groove, cellr, P, (.7, .63, .53)))
+    S = scan(t, U, z, 'large_sandstone_blocks_01', 3.0, tint=(1.05, .99, .88))
+    return t.out(stone(t, 0.0, .5, P, (.7, .63, .53), sc_=S))
 
 
 def mat_paving(name='Paving', base=(.46, .43, .38), rough=.7, slab=2.2):
     t = NT(name)
     P = t.coords()
     x, y, z = t.xyz(P)
-    groove, cellr = masonry(t, x, y, slab, slab)
-    return t.out(stone(t, groove, cellr, P, base, rough=rough))
+    if name == 'Basalt':
+        groove, cellr = masonry(t, x, y, slab, slab)
+        return t.out(stone(t, groove, cellr, P, base, rough=rough))
+    S = scan(t, x, y, 'large_sandstone_blocks', slab * 1.5, crop=(.14, .81), tint=tuple(c * (2.5 if DAY else 1.9) for c in base))
+    return t.out(stone(t, 0.0, .5, P, base, rough=rough, sc_=S))
 
 
 def mat_simple(name, col, rough=.8, emit=None):
@@ -229,8 +311,8 @@ def mat_grass():
     t.set(n2.inputs['Vector'], P)
     mix = t.n('ShaderNodeMix', data_type='RGBA')
     t.set(NT.inp(mix, 'Factor_Float'), t.m('MULTIPLY', n1.outputs['Fac'], n2.outputs['Fac']))
-    NT.inp(mix, 'A_Color').default_value = (.03, .036, .016, 1)
-    NT.inp(mix, 'B_Color').default_value = (.1, .082, .05, 1)
+    NT.inp(mix, 'A_Color').default_value = (.05, .07, .025, 1) if DAY else (.03, .036, .016, 1)
+    NT.inp(mix, 'B_Color').default_value = (.16, .14, .07, 1) if DAY else (.1, .082, .05, 1)
     bump = t.n('ShaderNodeBump', inputs={'Strength': .4, 'Distance': .1})
     t.set(bump.inputs['Height'], n2.outputs['Fac'])
     b = t.n('ShaderNodeBsdfPrincipled', inputs={'Roughness': .95})
@@ -506,6 +588,7 @@ moon.data.materials.append(t.mat)
 md = Vector((math.sin(math.radians(24)) * math.cos(math.radians(15)), math.cos(math.radians(24)) * math.cos(math.radians(15)), math.sin(math.radians(15))))
 moon.location = Vector((0, -500, 3)) + md * 3200
 moon.visible_shadow = False
+moon.hide_render = DAY
 for attr in ('visible_diffuse', 'visible_glossy'):
     setattr(moon, attr, attr == 'visible_glossy')
 
@@ -523,7 +606,9 @@ smooth(hills)
 # The visitor: stand-in astronaut, replaced by the site's own suit if a GLB is supplied.
 def astronaut():
     if ARGS.get('astro'):
-        bpy.ops.import_scene.gltf(filepath=bpy.path.abspath(ARGS['astro']))
+        src = ARGS.get('astroanim') if LOOP and ARGS.get('astroanim') else ARGS['astro']
+        bpy.ops.import_scene.gltf(filepath=bpy.path.abspath(src))
+        sc.frame_set(0)
         parts = [o for o in bpy.context.selected_objects if o.type == 'MESH']
         bpy.context.view_layer.update()
         zs = [(o.matrix_world @ Vector(c)).z for o in parts for c in o.bound_box]
@@ -535,7 +620,8 @@ def astronaut():
         k = 1.85 / (hi - lo)
         root.scale = (k, k, k)
         root.location = FIG - Vector((0, 0, lo * k))
-        root.rotation_euler = (0, 0, math.radians(-18))
+        # Seen from behind, a little turned: he faces the vault and the address written on it.
+        root.rotation_euler = (0, 0, math.radians(float(ARGS.get('astroyaw', 160))))
         return
     parts = []
     def cap(p, r, h):
@@ -572,14 +658,14 @@ wn = world.node_tree
 wn.nodes.clear()
 sky = wn.nodes.new('ShaderNodeTexSky')
 sky.sky_type = 'MULTIPLE_SCATTERING'
-SUN_EL = math.radians(float(ARGS.get('sunel', 2.6)))
+SUN_EL = math.radians(float(ARGS.get('sunel', 15 if DAY else 2.6)))
 SUN_AZ = math.radians(float(ARGS.get('sunaz', 250)))
-for k, val in (('sun_elevation', SUN_EL * .4), ('sun_rotation', SUN_AZ), ('sun_disc', False), ('altitude', 200.0),
+for k, val in (('sun_elevation', SUN_EL if DAY else SUN_EL * .4), ('sun_rotation', SUN_AZ), ('sun_disc', False), ('altitude', 200.0),
                ('air_density', 1.2), ('aerosol_density', 2.2), ('dust_density', 2.2), ('ozone_density', 1.0)):
     if hasattr(sky, k):
         setattr(sky, k, val)
 bg = wn.nodes.new('ShaderNodeBackground')
-bg.inputs['Strength'].default_value = float(ARGS.get('skyk', .9))
+bg.inputs['Strength'].default_value = float(ARGS.get('skyk', .5 if DAY else .9))
 wo = wn.nodes.new('ShaderNodeOutputWorld')
 wtc = wn.nodes.new('ShaderNodeTexCoord')
 wsep = wn.nodes.new('ShaderNodeSeparateXYZ'); wn.links.new(wtc.outputs['Generated'], wsep.inputs[0])
@@ -597,20 +683,26 @@ dot = wm('MULTIPLY', dot, wm('GREATER_THAN', wsc.outputs[1], .72))
 dot = wm('MULTIPLY', dot, wm('MULTIPLY', wm('POWER', wsc.outputs[2], 3.0), 1.0))
 up = wn.nodes.new('ShaderNodeMapRange'); up.interpolation_type = 'SMOOTHSTEP'
 wn.links.new(wsep.outputs['Z'], up.inputs[0]); up.inputs[1].default_value = .12; up.inputs[2].default_value = .55
-starsky = wm('MULTIPLY', wm('MULTIPLY', dot, up.outputs[0]), float(ARGS.get('skystars', 4.0)))
+starsky = wm('MULTIPLY', wm('MULTIPLY', dot, up.outputs[0]), 0.0 if DAY else float(ARGS.get('skystars', 4.0)))
 ramp = wn.nodes.new('ShaderNodeValToRGB')
 wn.links.new(wsep.outputs['Z'], ramp.inputs[0])
 els = ramp.color_ramp.elements
-els[0].position, els[0].color = 0.0, (1.0, .52, .3, 1)
-els[1].position, els[1].color = .55, (.035, .05, .13, 1)
-for pos, col in ((.035, (.95, .5, .42, 1)), (.1, (.55, .36, .5, 1)), (.24, (.2, .22, .42, 1))):
-    e = els.new(pos); e.color = col
+if DAY:
+    els[0].position, els[0].color = 0.0, (.95, .9, .82, 1)
+    els[1].position, els[1].color = .6, (.06, .16, .48, 1)
+    for pos, col in ((.05, (.62, .72, .86, 1)), (.22, (.22, .38, .72, 1))):
+        e = els.new(pos); e.color = col
+else:
+    els[0].position, els[0].color = 0.0, (1.0, .52, .3, 1)
+    els[1].position, els[1].color = .55, (.035, .05, .13, 1)
+    for pos, col in ((.035, (.95, .5, .42, 1)), (.1, (.55, .36, .5, 1)), (.24, (.2, .22, .42, 1))):
+        e = els.new(pos); e.color = col
 sd = wn.nodes.new('ShaderNodeVectorMath'); sd.operation = 'DOT_PRODUCT'
 wn.links.new(wtc.outputs['Generated'], sd.inputs[0])
 sd.inputs[1].default_value = (math.sin(SUN_AZ), math.cos(SUN_AZ), .05)
 glow = wm('MULTIPLY', wm('POWER', wm('MAXIMUM', sd.outputs['Value'], 0.0), 5.0), 1.2)
 gcol = wn.nodes.new('ShaderNodeVectorMath'); gcol.operation = 'SCALE'
-gcol.inputs[0].default_value = (1.0, .45, .16); wn.links.new(glow, gcol.inputs[3])
+gcol.inputs[0].default_value = (.5, .45, .35) if DAY else (1.0, .45, .16); wn.links.new(glow, gcol.inputs[3])
 g1 = wn.nodes.new('ShaderNodeVectorMath'); g1.operation = 'ADD'
 wn.links.new(ramp.outputs[0], g1.inputs[0]); wn.links.new(gcol.outputs[0], g1.inputs[1])
 sadd = wn.nodes.new('ShaderNodeVectorMath'); sadd.operation = 'ADD'
@@ -618,15 +710,15 @@ wn.links.new(g1.outputs[0], sadd.inputs[0]); wn.links.new(starsky, sadd.inputs[1
 amb = wn.nodes.new('ShaderNodeMix')
 amb.data_type = 'RGBA'
 wn.links.new(sadd.outputs[0], NT.inp(amb, 'A_Color'))
-NT.inp(amb, 'B_Color').default_value = (.3, .36, .5, 1)
+NT.inp(amb, 'B_Color').default_value = (.62, .56, .47, 1) if DAY else (.3, .36, .5, 1)
 wn.links.new(amb.outputs[2], bg.inputs[0])
 wn.links.new(bg.outputs[0], wo.inputs['Surface'])
 
 sun_dir = Vector((math.sin(SUN_AZ) * math.cos(SUN_EL), math.cos(SUN_AZ) * math.cos(SUN_EL), math.sin(SUN_EL)))  # towards the sun
 sun = link(bpy.data.objects.new('Sun', bpy.data.lights.new('Sun', 'SUN')))
-sun.data.energy = float(ARGS.get('sunk', 9.0))
+sun.data.energy = float(ARGS.get('sunk', 12.0 if DAY else 9.0))
 sun.data.angle = math.radians(.8)
-sun.data.color = (1.0, .52, .28)
+sun.data.color = (1.0, .86, .7) if DAY else (1.0, .52, .28)
 sun.rotation_euler = (-sun_dir).to_track_quat('-Z', 'Y').to_euler()
 
 # Inside: one shaft of sun through one hole, landing on the visitor.
@@ -639,6 +731,7 @@ spot.data.shadow_soft_size = .05
 spot.data.color = (1.0, .9, .75)
 spot.location = HOLE - beam_dir * .1
 spot.rotation_euler = beam_dir.to_track_quat('-Z', 'Y').to_euler()
+oscillate(spot.data, 'energy', -1, spot.data.energy * .08, 1, .5)
 bm = bmesh.new()
 bmesh.ops.create_circle(bm, cap_ends=True, segments=24, radius=.55)
 hole = obj_from_bm('SunHole', bm)
@@ -655,7 +748,8 @@ geo = sh.n('ShaderNodeNewGeometry')
 bz = sh.xyz(geo.outputs['Position'])[2]
 k = sh.m('MULTIPLY', sh.m('MULTIPLY', edge, sh.mr(dust.outputs['Fac'], .3, .7, .55, 1.15)), sh.mr(bz, 0.0, 70.0, 1.0, .35))
 em = sh.n('ShaderNodeEmission', inputs={'Color': (1.0, .88, .7, 1.0)})
-sh.set(em.inputs['Strength'], sh.m('MULTIPLY', k, float(ARGS.get('shaftglow', .55))))
+breath = sh.m('ADD', 1.0, sh.m('MULTIPLY', sh.m('SINE', sh.m('ADD', sh.m('MULTIPLY', frame_socket(sh.t), W_LOOP), .5)), .08))
+sh.set(em.inputs['Strength'], sh.m('MULTIPLY', sh.m('MULTIPLY', k, breath), float(ARGS.get('shaftglow', .55))))
 tr = sh.n('ShaderNodeBsdfTransparent')
 add = sh.n('ShaderNodeAddShader')
 sh.set(add.inputs[0], tr)
@@ -677,6 +771,87 @@ shaft.rotation_euler = (HOLE - FIG).to_track_quat('Z', 'Y').to_euler()
 shaft.visible_shadow = False
 for attr in ('visible_diffuse', 'visible_glossy', 'visible_transmission'):
     setattr(shaft, attr, False)
+
+mt = NT('Mote')
+oi = mt.n('ShaderNodeObjectInfo')
+A0 = FIG + Vector((0, 0, 1.0))
+rel = mt.v('SUBTRACT', oi.outputs['Location'], tuple(A0))
+off = mt.v('LENGTH', mt.v('CROSS_PRODUCT', rel, tuple(-beam_dir)))
+lit = mt.mr(off, 1.35, .35)
+twk = mt.m('ADD', .6, mt.m('MULTIPLY', oi.outputs['Random'], .8))
+em = mt.n('ShaderNodeEmission', inputs={'Color': (1.0, .9, .76, 1.0)})
+mt.set(em.inputs['Strength'], mt.m('MULTIPLY', mt.m('MULTIPLY', lit, twk), float(ARGS.get('motek', 22))))
+mt.out(em)
+bm = bmesh.new()
+bmesh.ops.create_icosphere(bm, subdivisions=1, radius=.014)
+mote_me = bpy.data.meshes.new('Mote')
+bm.to_mesh(mote_me)
+bm.free()
+mote_me.materials.append(mt.mat)
+side = Vector((1, 0, 0)).cross(beam_dir).normalized()
+side2 = beam_dir.cross(side).normalized()
+mr_ = random.Random(11)
+for i in range(int(ARGS.get('motes', 90))):
+    s_ = mr_.random() ** 1.6 * 14.0
+    ang, rad = mr_.random() * 6.283, math.sqrt(mr_.random()) * 1.3
+    pos = A0 - beam_dir * s_ + (side * math.cos(ang) + side2 * math.sin(ang)) * rad
+    o = link(bpy.data.objects.new('Mote', mote_me))
+    o.location = pos
+    o.visible_shadow = False
+    for axis in range(3):
+        oscillate(o, 'location', axis, .15 + mr_.random() * .45, mr_.choice((1, 1, 2)), mr_.random() * 6.283)
+
+# Day: Boullee's own lamp, an armillary sphere hung over the tomb, flooding the vault with light
+# and throwing its rings across the stone.
+if DAY:
+    brass = mat_simple('Brass', (.95, .72, .38), .28)
+    for nd in brass.node_tree.nodes:
+        if nd.type == 'BSDF_PRINCIPLED':
+            nd.inputs['Metallic'].default_value = 1.0
+    core_m = mat_simple('Core', (1, .9, .7), .5, ((1.0, .8, .55), float(ARGS.get('corek', 55))))
+    arm = link(bpy.data.objects.new('Armillary', None))
+    arm.location = ARM_C
+    tilt = link(bpy.data.objects.new('ArmTilt', None))
+    tilt.parent = arm
+    tilt.rotation_euler = (math.radians(41), 0, 0)
+
+    def ring_(name, R_, r_, rot=(0, 0, 0), z=0.0, flat=1.0):
+        bpy.ops.mesh.primitive_torus_add(major_radius=R_, minor_radius=r_, major_segments=160, minor_segments=14, location=(0, 0, z), rotation=rot)
+        o = bpy.context.active_object
+        o.name = name
+        o.scale = (1, 1, flat)
+        o.data.materials.append(brass)
+        smooth(o)
+        o.parent = tilt
+        return o
+    ring_('Equator', 7.0, .15)
+    ring_('Colure1', 7.0, .13, (math.pi / 2, 0, 0))
+    ring_('Colure2', 7.0, .13, (0, math.pi / 2, 0))
+    ecl = ring_('Ecliptic', 6.85, .42, flat=.28)
+    ecl.rotation_euler = (math.radians(23.44), 0, 0)
+    for zz in (-1, 1):
+        ring_('Tropic', 7.0 * math.cos(math.radians(23.44)), .07, z=zz * 7.0 * math.sin(math.radians(23.44)))
+        ring_('Polar', 7.0 * math.sin(math.radians(23.44)), .06, z=zz * 7.0 * math.cos(math.radians(23.44)))
+    bpy.ops.mesh.primitive_cylinder_add(radius=.08, depth=19.0, vertices=24)
+    ax = bpy.context.active_object
+    ax.data.materials.append(brass)
+    ax.parent = tilt
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=1.5, segments=48, ring_count=24)
+    core = bpy.context.active_object
+    core.data.materials.append(core_m)
+    smooth(core)
+    core.parent = arm
+    core.visible_shadow = False
+    top = Vector((0, 0, CZ + RIN))
+    bpy.ops.mesh.primitive_cylinder_add(radius=.06, depth=(top - ARM_C).length - 7.0, vertices=16, location=(ARM_C + top) / 2 + Vector((0, 0, 3.5)))
+    bpy.context.active_object.data.materials.append(brass)
+    lamp = link(bpy.data.objects.new('Lamp', bpy.data.lights.new('Lamp', 'POINT')))
+    lamp.data.energy = float(ARGS.get('lampk', 1.6e5))
+    lamp.data.shadow_soft_size = .35
+    lamp.data.color = (1.0, .84, .64)
+    lamp.parent = arm
+    oscillate(arm, 'rotation_euler', 2, .09, 1, 0.0)
+    oscillate(tilt, 'rotation_euler', 1, .035, 1, 1.7)
 
 # Haze inside the sphere, so the shaft and the star-holes read in the air.
 HAZE = float(ARGS.get('haze', 0))
@@ -711,7 +886,7 @@ glow.data.shadow_soft_size = 1.2
 glow.data.color = (1.0, .8, .6)
 glow.location = FIG + Vector((0, 0, .35))
 fill = link(bpy.data.objects.new('ArenaFill', bpy.data.lights.new('ArenaFill', 'POINT')))
-fill.data.energy = float(ARGS.get('fillk', 1.4e4))
+fill.data.energy = float(ARGS.get('fillk', 0 if DAY else 4.2e4))
 fill.data.shadow_soft_size = 14
 fill.data.color = (.62, .72, 1.0)
 fill.location = (0, 0, CZ + 20)
@@ -753,17 +928,19 @@ def hermite(t):
 
 
 IN0, IN1 = int(7.75 * 24), int(8.5 * 24)
-AMB = float(ARGS.get('amb', .34))
-for f, k in ((IN0, 1.0), (IN1, 0.0)):
-    bg.inputs['Strength'].default_value = float(ARGS.get('skyk', .9)) * k + AMB * (1 - k)
+AMB = float(ARGS.get('amb', .8 if DAY else 1.1))
+for f, k in (() if LOOP else ((IN0, 1.0), (IN1, 0.0))):
+    bg.inputs['Strength'].default_value = float(ARGS.get('skyk', .5 if DAY else .9)) * k + AMB * (1 - k)
     bg.inputs['Strength'].keyframe_insert('default_value', frame=f)
     fac = NT.inp(amb, 'Factor_Float')
     fac.default_value = 1 - k
     fac.keyframe_insert('default_value', frame=f)
-    sun.data.energy = float(ARGS.get('sunk', 9.0)) * k
+    sun.data.energy = float(ARGS.get('sunk', 12.0 if DAY else 9.0)) * k
     sun.data.keyframe_insert('energy', frame=f)
-bg.inputs['Strength'].default_value = float(ARGS.get('skyk', .9))
-sun.data.energy = float(ARGS.get('sunk', 9.0))
+bg.inputs['Strength'].default_value = AMB if LOOP else float(ARGS.get('skyk', .5 if DAY else .9))
+sun.data.energy = 0.0 if LOOP else float(ARGS.get('sunk', 12.0 if DAY else 9.0))
+if LOOP:
+    NT.inp(amb, 'Factor_Float').default_value = 1.0
 
 cam = link(bpy.data.objects.new('Camera', bpy.data.cameras.new('Camera')))
 sc.camera = cam
@@ -772,7 +949,7 @@ cam.data.sensor_width = 36
 cam.data.clip_start = .1
 cam.data.clip_end = 5000
 frames = []
-for f in range(NF):
+for f in (range(NF) if not LOOP else []):
     pos, look, lens = hermite(f / FPS)
     cam.location = pos
     q = (look - pos).to_track_quat('-Z', 'Y')
@@ -782,15 +959,21 @@ for f in range(NF):
     cam.keyframe_insert('rotation_euler', frame=f + 1)
     cam.data.keyframe_insert('lens', frame=f + 1)
     frames.append({'p': [round(c, 4) for c in pos], 'q': [round(c, 6) for c in (q.w, q.x, q.y, q.z)], 'lens': round(lens, 4)})
-for fc in (cam.animation_data.action.fcurves if hasattr(cam.animation_data.action, 'fcurves') else []):
+for fc in (fcurves_of(cam) if cam.animation_data else []):
     for kp in fc.keyframe_points:
         kp.interpolation = 'LINEAR'
 sc.frame_start, sc.frame_end = 1, NF
+if LOOP:
+    pos, look, lens = hermite(TOTAL)
+    cam.location, cam.data.lens = pos, lens
+    cam.rotation_euler = (look - pos).to_track_quat('-Z', 'Y').to_euler()
+    sc.frame_start, sc.frame_end = 0, LOOP_T - 1
 sc.render.fps = FPS
 
 meta = {'fps': FPS, 'frames': frames, 'sensor': 36, 'sphere': {'c': [0, 0, CZ], 'rin': RIN}, 'hole': list(HOLE), 'fig': list(FIG)}
-with open(bpy.path.abspath(ARGS.get('meta', '//camera.json')) if bpy.data.filepath else ARGS.get('meta', 'camera.json'), 'w') as fh:
-    json.dump(meta, fh)
+if not LOOP:
+    with open(ARGS.get('meta', 'camera.json'), 'w') as fh:
+        json.dump(meta, fh)
 
 # ---------------------------------------------------------------- render
 r = sc.render
@@ -853,12 +1036,12 @@ ng = bpy.data.node_groups.new('Post', 'CompositorNodeTree')
 ng.interface.new_socket('Image', in_out='OUTPUT', socket_type='NodeSocketColor')
 N = ng.nodes
 rl = N.new('CompositorNodeRLayers')
-fk = N.new('ShaderNodeMath'); fk.operation = 'MULTIPLY'; fk.inputs[1].default_value = float(ARGS.get('fog', .42))
+fk = N.new('ShaderNodeMath'); fk.operation = 'MULTIPLY'; fk.inputs[1].default_value = float(ARGS.get('fog', .2 if DAY else .42))
 ng.links.new(rl.outputs['Mist'], fk.inputs[0])
 fog = N.new('ShaderNodeMix'); fog.data_type = 'RGBA'
 ng.links.new(fk.outputs[0], NT.inp(fog, 'Factor_Float'))
 ng.links.new(rl.outputs['Image'], NT.inp(fog, 'A_Color'))
-NT.inp(fog, 'B_Color').default_value = (.42, .36, .36, 1)
+NT.inp(fog, 'B_Color').default_value = (.66, .72, .8, 1) if DAY else (.42, .36, .36, 1)
 gl = N.new('CompositorNodeGlare')
 for k, val in (('Type', 'Bloom'), ('Quality', 'High'), ('Highlights Threshold', 1.0), ('Strength', .35), ('Size', .6)):
     try:

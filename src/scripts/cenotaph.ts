@@ -103,7 +103,7 @@ type Star = { a: [number, number] | null; b: [number, number] | null; kind: 'kee
 
 export function mountCenotaph(o: {
   stage: HTMLElement; video: HTMLVideoElement; canvas: HTMLCanvasElement; meta: CenotaphMeta;
-  frameSize: () => [number, number]; requested: string; target: string; reduced: boolean;
+  frameSize: () => [number, number]; requested: string; target: string; reduced: boolean; theme?: 'day' | 'night';
   anchor: () => { x: number; y: number; width: number }; onReveal: () => void; onRepaired: () => void;
 }) {
   const { video, canvas, meta } = o;
@@ -197,6 +197,12 @@ export function mountCenotaph(o: {
     g.drawImage(sprite, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = rgb; g.globalAlpha = .55; g.fillRect(0, 0, 64, 64); return c;
   };
   const ember = tinted('#ff6a3a'), cool = tinted('#9fd0ff');
+  // By day the vault is lit stone: every star and line gets a soft shadow so it still reads.
+  const day = o.theme === 'day';
+  const shade = document.createElement('canvas'); shade.width = shade.height = 64;
+  { const g = shade.getContext('2d')!, grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(24,14,6,.9)'); grad.addColorStop(.45, 'rgba(24,14,6,.45)'); grad.addColorStop(1, 'rgba(24,14,6,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, 64, 64); }
   let dpr = 1, view = { w: 1, h: 1, s: 1, ox: 0, oy: 0 };
   function resize() {
     dpr = Math.min(devicePixelRatio || 1, 2);
@@ -230,18 +236,22 @@ export function mountCenotaph(o: {
       alpha.push(a);
     }
     // Lines first, thin and gold, broken where they meet a star.
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.lineWidth = 1;
+    const line = (shadow: boolean) => {
+    ctx.globalCompositeOperation = shadow ? 'source-over' : 'lighter';
+    ctx.lineWidth = shadow ? 3 : 1;
     for (const [p, q, kind] of segs) {
       const A = pts[p], B = pts[q]; const a = Math.min(alpha[p], alpha[q]); if (!A || !B || a < .01) continue;
       const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy), gap = Math.min(L * .3, 6);
       if (L < 1) continue;
       const wrong = kind === 'out' ? diagnose : 0, fresh = kind === 'in' ? 1 - ease(m * 1.2 - .6) : 0;
-      ctx.strokeStyle = wrong ? `rgba(255,${120 - 40 * wrong},${80 - 40 * wrong},${.55 * a})` : fresh ? `rgba(170,215,255,${.6 * a})` : `rgba(255,212,160,${.42 * a})`;
+      ctx.strokeStyle = shadow ? `rgba(30,18,8,${.55 * a})` : wrong ? `rgba(255,${120 - 40 * wrong},${80 - 40 * wrong},${.55 * a})` : fresh ? `rgba(170,215,255,${.6 * a})` : `rgba(255,212,160,${(day ? .7 : .42) * a})`;
       ctx.setLineDash(wrong > .5 ? [3, 4] : []);
       ctx.beginPath(); ctx.moveTo(A[0] + dx / L * gap, A[1] + dy / L * gap); ctx.lineTo(B[0] - dx / L * gap, B[1] - dy / L * gap); ctx.stroke();
     }
     ctx.setLineDash([]);
+    };
+    if (day) line(true);
+    line(false);
     const base = Math.max(4.5, Math.min(12, view.w / 160));
     stars.forEach((st, i) => {
       const P = pts[i], a = alpha[i]; if (!P || a < .01) return;
@@ -249,6 +259,7 @@ export function mountCenotaph(o: {
       const wrong = st.kind === 'out' ? diagnose * (.75 + .25 * Math.sin(t * 7 + st.tw)) : 0;
       const fresh = st.kind === 'in' ? 1 - ease(m * 1.2 - .6) : 0;
       const r = base * st.mag * (1 + .25 * fresh) * twinkle;
+      if (day) { ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = a; ctx.drawImage(shade, P[0] - r * 1.5, P[1] - r * 1.5, r * 3, r * 3); ctx.globalCompositeOperation = 'lighter'; }
       ctx.globalAlpha = a * (1 - wrong * .15);
       ctx.drawImage(sprite, P[0] - r, P[1] - r, r * 2, r * 2);
       if (wrong > .01) { ctx.globalAlpha = a * wrong; ctx.drawImage(ember, P[0] - r * 1.2, P[1] - r * 1.2, r * 2.4, r * 2.4); }

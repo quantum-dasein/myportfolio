@@ -23,9 +23,11 @@ const beacons = [
     </svg>
     <div class="stage" data-stage data-routes={JSON.stringify(driftRoutes)} aria-hidden="true">
       <video data-film muted playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+      <video data-loop muted playsinline loop preload="none" disablepictureinpicture disableremoteplayback></video>
       <canvas data-sky></canvas>
       <div class="scrim"></div>
     </div>
+    <script is:inline>(function(){var s=document.querySelector('[data-stage]'),q=new URLSearchParams(location.search).get('t'),h=new Date().getHours();s.dataset.time=(q?q==='day':h>=7&&h<19)?'day':'night';})();</script>
     <section class="void" aria-labelledby="void-title">
       <div class="void-ui" data-ui>
         <div class="void-head">
@@ -103,19 +105,24 @@ const beacons = [
 
   // One film per orientation, both flown along the same camera path.
   const portrait = innerHeight > innerWidth;
-  const frame: [number, number] = portrait ? [1080, 1920] : [1920, 1080];
-  const file = (name: string, ext: string) => `/cenotaph/${name}${portrait ? "-portrait" : ""}.${ext}`;
+  const frame: [number, number] = portrait ? [810, 1440] : [1920, 1080];
+  // Boullée drew both effects: by day the lamp lights the vault; by night the vault is the sky.
+  const time = stage.dataset.time === "day" ? "day" : "night";
+  const file = (name: string, ext: string) => `/cenotaph/${name}-${time}${portrait ? "-portrait" : ""}.${ext}`;
   const reduced = prefersCalm();
   const saveData = !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
   const still = reduced || saveData;
   video.poster = file(still ? "end" : "start", "jpg");
   // Where the address is written: the open vault right of the sunbeam, or high and centred on a phone.
-  const anchor = () => portrait ? { x: 560, y: 780, width: 700 } : { x: 1390, y: 330, width: 700 };
+  const anchor = () => {
+    const [W, H] = frame;
+    return portrait ? { x: W * .52, y: H * (time === "day" ? .525 : .41), width: W * .65 } : { x: W * .724, y: H * .306, width: W * .365 };
+  };
   let cenotaph: ReturnType<typeof mountCenotaph> | undefined;
   const reveal = () => { stage.classList.add("is-vault"); skip.hidden = true; replay.hidden = false; };
   fetch("/cenotaph/camera.json").then(r => r.json() as Promise<CenotaphMeta>).then(meta => {
     cenotaph = mountCenotaph({
-      stage, video, canvas, meta, frameSize: () => frame, requested, target: best?.path ?? "rodionbelousov.studio", reduced, anchor,
+      stage, video, canvas, meta, frameSize: () => frame, requested, target: best?.path ?? "rodionbelousov.studio", reduced, anchor, theme: time,
       onReveal: reveal, onRepaired: () => evac.classList.add("is-found"),
     });
     if (still) { cenotaph.still(); reveal(); return; }
@@ -123,8 +130,16 @@ const beacons = [
     const fallback = setTimeout(() => { if (video.paused && video.currentTime === 0) { video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); } }, 3500);
     video.play().then(() => clearTimeout(fallback)).catch(() => { clearTimeout(fallback); video.poster = file("end", "jpg"); cenotaph?.still(); reveal(); });
   }).catch(error => { console.warn("404: no cenotaph", error); video.poster = file("end", "jpg"); reveal(); });
-  skip.addEventListener("click", () => { cenotaph?.skip(); reveal(); });
-  replay.addEventListener("click", () => { stage.classList.remove("is-vault"); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
+  // After the flight the film hands over to a living loop shot from the same place: its first frame
+  // is the film's last, so the switch cannot be seen.
+  const loop = $<HTMLVideoElement>("[data-loop]");
+  const armLoop = () => { if (!loop.getAttribute("src") && !still) { loop.src = file("loop", "mp4"); loop.preload = "auto"; loop.load(); } };
+  const startLoop = () => { if (still) return; armLoop(); loop.currentTime = 0; loop.play().catch(() => {}); };
+  loop.addEventListener("playing", () => stage.classList.add("is-looping"));
+  video.addEventListener("timeupdate", () => { if (video.currentTime > 5) armLoop(); });
+  video.addEventListener("ended", startLoop);
+  skip.addEventListener("click", () => { cenotaph?.skip(); reveal(); startLoop(); });
+  replay.addEventListener("click", () => { stage.classList.remove("is-vault", "is-looping"); loop.pause(); evac.classList.remove("is-found"); skip.hidden = false; replay.hidden = true; cenotaph?.replay(); });
   addEventListener("scroll", () => stage.style.setProperty("--dim", String(Math.min(1, scrollY / Math.max(1, innerHeight * .8)))), { passive: true });
   addEventListener("rb:langchange", paint);
 </script>
@@ -136,12 +151,15 @@ const beacons = [
   :global(body:has(.lost-world) sy-footer) { --footer-deep: 7, 8, 11; }
   .lost-world { --ember: #e3b183; --label: var(--font-inter), system-ui, sans-serif; color: #ece6de; }
 
-  .stage { --dim: 0; position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #07080b url("/cenotaph/start.jpg") center / cover no-repeat; }
-  @media (orientation: portrait) { .stage { background-image: url("/cenotaph/start-portrait.jpg"); } }
-  @media (prefers-reduced-motion: reduce) { .stage { background-image: url("/cenotaph/end.jpg"); } }
-  @media (prefers-reduced-motion: reduce) and (orientation: portrait) { .stage { background-image: url("/cenotaph/end-portrait.jpg"); } }
+  .stage { --dim: 0; position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #07080b url("/cenotaph/start-night.jpg") center / cover no-repeat; }
+  .stage[data-time="day"] { background-image: url("/cenotaph/start-day.jpg"); }
+  @media (orientation: portrait) { .stage { background-image: url("/cenotaph/start-night-portrait.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/start-day-portrait.jpg"); } }
+  @media (prefers-reduced-motion: reduce) { .stage { background-image: url("/cenotaph/end-night.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/end-day.jpg"); } }
+  @media (prefers-reduced-motion: reduce) and (orientation: portrait) { .stage { background-image: url("/cenotaph/end-night-portrait.jpg"); } .stage[data-time="day"] { background-image: url("/cenotaph/end-day-portrait.jpg"); } }
   .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .stage video { object-fit: cover; filter: brightness(calc(1 - var(--dim) * .72)); }
+  .stage video[data-loop] { opacity: 0; }
+  .stage:global(.is-looping) video[data-loop] { opacity: 1; }
   .stage canvas { opacity: calc(1 - var(--dim) * .8); }
   /* Ink under the words: the floor of the frame darkens a little more where the copy sits. */
   .scrim { position: absolute; inset: 0; pointer-events: none; background:
@@ -178,7 +196,7 @@ const beacons = [
   .void-bottom { position: absolute; z-index: 2; bottom: 28px; left: 6.5%; right: 6.5%; display: flex; align-items: center; gap: 28px; border-top: 1px solid #d6c0a824; padding-top: 18px; }
   .void-scroll, .film-button { pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; color: #c8c0b6; font: 500 11px var(--label); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; }
   .scroll-mark { font-size: 16px; color: var(--ember); }
-  .credit { flex: 1; margin: 0; text-align: right; font: italic 400 13px var(--font-inter), sans-serif; color: #9c948b; }
+  .credit { flex: 1; margin: 0; text-align: right; font: italic 400 13px var(--font-inter), sans-serif; color: #b3aba1; text-shadow: 0 1px 10px #000, 0 0 3px #000c; }
   .film-button { min-height: 44px; padding: 0 18px; border: 1px solid #d6c0a833; border-radius: 999px; background: #07080b55; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); cursor: pointer; transition: border-color .3s, color .3s; }
   .film-button:hover { border-color: #e3b18399; color: #f3ece4; }
 
@@ -218,7 +236,7 @@ const beacons = [
     .void-ui { top: 92px; left: 7%; right: 7%; bottom: 92px; width: auto; display: flex; flex-direction: column; justify-content: space-between; }
     .void-eyebrow { font-size: 10px; margin-bottom: 12px; }
     .void-title { font-size: clamp(38px, 10.5vw, 72px); margin-bottom: 0; }
-    .void-lead { font-size: 14px; margin-bottom: 20px; }
+    .void-lead { font-size: 14px; margin-bottom: 20px; max-width: 72%; }
     .void-lead code { font-size: 12px; }
     .evac { gap: 18px; padding: 7px 8px 7px 20px; font-size: 14px; min-height: 54px; }
     .evac-arrow { width: 40px; height: 40px; }
