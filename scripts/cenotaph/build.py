@@ -867,19 +867,208 @@ o = t.n('ShaderNodeOutputMaterial')
 t.set(o.inputs['Volume'], vol)
 haze.data.materials.append(t.mat)
 
-# Warm lamps down the tunnel, and a glow at the portal to draw you in.
-for i, y in enumerate(range(-36, -112, -11)):
-    for s in (-1, 1):
-        lp = link(bpy.data.objects.new('TL', bpy.data.lights.new('TL', 'POINT')))
-        lp.data.energy = 260
-        lp.data.shadow_soft_size = .12
-        lp.data.color = (1.0, .66, .38)
-        lp.location = (s * 3.25, y, 4.6)
+# ---------------------------------------------------------------- furnishings
+# Fire: a flame of emissive fog-like glow with a flickering light in it; every flicker closes on the loop.
+fire_rng = random.Random(23)
+t = NT('Flame')
+fn = t.n('ShaderNodeTexNoise', noise_dimensions='3D', inputs={'Scale': 3.0, 'Detail': 4.0})
+t.set(fn.inputs['Vector'], t.coords())
+fz = t.xyz(t.coords('Generated'))[2]
+lwf = t.n('ShaderNodeLayerWeight', inputs={'Blend': .45})
+fk = t.m('MULTIPLY', t.m('MULTIPLY', t.mr(fn.outputs['Fac'], .3, .7, .4, 1.3), t.mr(fz, 1.0, .1, 0.0, 1.0)), t.m('SUBTRACT', 1.0, t.m('MULTIPLY', lwf.outputs['Fresnel'], .8)))
+fe = t.n('ShaderNodeEmission', inputs={'Color': (1.0, .52, .18, 1.0)})
+t.set(fe.inputs['Strength'], t.m('MULTIPLY', fk, float(ARGS.get('flamek', 26))))
+ftr = t.n('ShaderNodeBsdfTransparent')
+fadd = t.n('ShaderNodeAddShader')
+t.set(fadd.inputs[0], ftr)
+t.set(fadd.inputs[1], fe)
+t.out(fadd)
+try:
+    t.mat.surface_render_method = 'BLENDED'
+    t.mat.cycles.emission_sampling = 'NONE'
+except Exception as e:
+    print('flame', e)
+M_FLAME = t.mat
+bronze = mat_simple('Bronze', (.2, .13, .07), .42)
+for nd in bronze.node_tree.nodes:
+    if nd.type == 'BSDF_PRINCIPLED':
+        nd.inputs['Metallic'].default_value = .85
+
+
+def flame(loc, size=1.0, energy=900.0, shadow=False):
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=12, radius=1.0)
+    for v in bm.verts:
+        tz = (v.co.z + 1) / 2
+        v.co.x *= .32 * (1 - .75 * tz ** 1.4)
+        v.co.y *= .32 * (1 - .75 * tz ** 1.4)
+        v.co.z = tz * 1.1
+    f = obj_from_bm('Flame', bm)
+    f.data.materials.append(M_FLAME)
+    smooth(f)
+    f.location = loc
+    f.scale = (size, size, size)
+    f.visible_shadow = False
+    oscillate(f, 'scale', 2, size * .14, fire_rng.choice((5, 6, 7)), fire_rng.random() * 6.28)
+    oscillate(f, 'scale', 0, size * .06, fire_rng.choice((7, 9)), fire_rng.random() * 6.28)
+    lp = link(bpy.data.objects.new('Fire', bpy.data.lights.new('Fire', 'POINT')))
+    lp.data.energy = energy
+    lp.data.color = (1.0, .5, .2)
+    lp.data.shadow_soft_size = .25 * size
+    lp.data.use_shadow = shadow
+    lp.location = Vector(loc) + Vector((0, 0, .45 * size))
+    oscillate(lp.data, 'energy', -1, energy * .16, fire_rng.choice((6, 7, 8)), fire_rng.random() * 6.28)
+    oscillate(lp.data, 'energy', -1, energy * .08, fire_rng.choice((13, 17)), fire_rng.random() * 6.28)
+    return f
+
+
+def brazier(x, y, z=0.0, scale=1.0, energy=1500.0, shadow=False):
+    """A bronze fire bowl on a round stone pedestal."""
+    ped = cylinder('Pedestal', .38 * scale, z, z + 1.05 * scale, 32, M_DRUM)
+    ped.location = (x, y, 0)
+    bpy.ops.mesh.primitive_cone_add(vertices=40, radius1=.26 * scale, radius2=.72 * scale, depth=.42 * scale, location=(x, y, z + 1.26 * scale))
+    bowl = bpy.context.active_object
+    bowl.data.materials.append(bronze)
+    smooth(bowl)
+    bpy.ops.mesh.primitive_torus_add(major_radius=.72 * scale, minor_radius=.05 * scale, location=(x, y, z + 1.47 * scale))
+    rim = bpy.context.active_object
+    rim.data.materials.append(bronze)
+    flame((x, y, z + 1.36 * scale), .95 * scale, energy, shadow)
+
+
+M_OBSIDIAN = mat_simple('Obsidian', (.035, .033, .036), .22)
+
+
+def obelisk(x, y, h, base):
+    bm = bmesh.new()
+    top = base * .62
+    pts = [(-base, -base, 0), (base, -base, 0), (base, base, 0), (-base, base, 0), (-top, -top, h), (top, -top, h), (top, top, h), (-top, top, h)]
+    vs = [bm.verts.new(p_) for p_ in pts]
+    apex = bm.verts.new((0, 0, h + top * 2.2))
+    bm.faces.new((vs[3], vs[2], vs[1], vs[0]))
+    for i in range(4):
+        j = (i + 1) % 4
+        bm.faces.new((vs[i], vs[j], vs[4 + j], vs[4 + i]))
+        bm.faces.new((vs[4 + i], vs[4 + j], apex))
+    o = obj_from_bm('Obelisk', bm)
+    o.location = (x, y, 0)
+    o.data.materials.append(M_OBSIDIAN)
+    plinth = cylinder('ObeliskPlinth', base * 2.1, 0, 1.2, 4, M_TERRACE)
+    plinth.location = (x, y, 0)
+    plinth.rotation_euler = (0, 0, math.pi / 4)
+
+
+# The processional way: bronze fire bowls on both sides, obelisks at its start and before the portal.
+for i, y in enumerate(range(-140, -500, -36)):
+    for sx in (-1, 1):
+        brazier(sx * 9.5, y, energy=float(ARGS.get('wayfire', 1800)))
+# Rising out of the basins, so the water doubles them.
+for y, h in ((-178, 34.0), (-455, 27.0)):
+    for sx in (-1, 1):
+        obelisk(sx * 29.5, y, h, 1.7)
+
+# Inside: fire bowls round the tomb, and a ring of stone mourners on the top step, facing it.
+for i in range(6):
+    a = math.radians(i * 60)
+    brazier(math.cos(a) * 14.5, math.sin(a) * 14.5, 0.0, 1.25, float(ARGS.get('innerfire', 2600)), shadow=i % 2 == 0)
+M_STATUE = M_DRUM
+mr2 = random.Random(5)
+for i in range(18):
+    a = math.radians(-90 + 22 + i * (360 - 44) / 17)
+    k = 3
+    rr, zz = ARENA + 2.5 * k + 1.3, 1.5 * (k + 1)
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=28, radius1=.62, radius2=.3, depth=2.6)
+    for v in bm.verts:
+        v.co.x *= 1.0 + .08 * math.sin(v.co.z * 5 + i)
+        v.co.z += 1.3
+    body = obj_from_bm('Mourner', bm)
+    body.data.materials.append(M_STATUE)
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=14, radius=.34)
+    for v in bm.verts:
+        v.co.z *= 1.35
+        if v.co.z > 0:
+            v.co.y -= v.co.z * .35
+    hood = obj_from_bm('Hood', bm)
+    hood.data.materials.append(M_STATUE)
+    hood.parent = body
+    hood.location = (0, .08, 2.85)
+    hood.rotation_euler = (math.radians(-18 - mr2.random() * 14), 0, 0)
+    smooth(body)
+    smooth(hood)
+    body.location = (math.cos(a) * rr, math.sin(a) * rr, zz)
+    # Face the tomb, heads a little bowed.
+    body.rotation_euler = (0, 0, math.atan2(-math.sin(a), -math.cos(a)) + math.pi / 2)
+    s_ = 1.9 + mr2.random() * .3   # colossal, as in Boullée's drawings
+    body.scale = (s_, s_, s_)
+    up = link(bpy.data.objects.new('StatueLight', bpy.data.lights.new('StatueLight', 'SPOT')))
+    up.data.energy = float(ARGS.get('statuek', 240))
+    up.data.color = (1.0, .6, .32)
+    up.data.spot_size = math.radians(55)
+    up.data.spot_blend = .9
+    up.data.use_shadow = False
+    tip = Vector((math.cos(a) * rr, math.sin(a) * rr, zz))
+    up.location = tip - Vector((math.cos(a), math.sin(a), 0)) * 2.6 + Vector((0, 0, .3))
+    up.rotation_euler = (tip + Vector((0, 0, 4.5)) - up.location).to_track_quat('-Z', 'Y').to_euler()
+    oscillate(up.data, 'energy', -1, 60, fire_rng.choice((5, 7)), fire_rng.random() * 6.28)
+
+# Mist: low over the ground outside, over the arena floor inside.
+if float(ARGS.get('mist', 1)) > 0:
+    t = NT('Mist')
+    mn2 = t.n('ShaderNodeTexNoise', noise_dimensions='3D', inputs={'Scale': .05, 'Detail': 3.0})
+    t.set(mn2.inputs['Vector'], t.coords())
+    mz = t.xyz(t.n('ShaderNodeNewGeometry').outputs['Position'])[2]
+    dens = t.m('MULTIPLY', t.mr(mn2.outputs['Fac'], .35, .7, .2, 1.0), t.mr(mz, 3.2, 0.0, 0.0, 1.0))
+    vol = t.n('ShaderNodeVolumePrincipled', inputs={'Anisotropy': .3})
+    vol.inputs['Color'].default_value = (.8, .78, .76, 1)
+    t.set(vol.inputs['Density'], t.m('MULTIPLY', dens, float(ARGS.get('mistk', .05))))
+    o = t.n('ShaderNodeOutputMaterial')
+    t.set(o.inputs['Volume'], vol)
+    for name, cx, cy, sx_, sy_ in (('MistOut', 0, -330, 150, 420), ('MistIn', 0, 0, 58, 58)):
         bm = bmesh.new()
-        bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=8, radius=.14)
-        g = obj_from_bm('Bulb', bm)
-        g.location = (s * 3.4, y, 4.6)
-        g.data.materials.append(M_LAMP)
+        bmesh.ops.create_cube(bm, size=1.0)
+        bmesh.ops.scale(bm, vec=(sx_, sy_, 3.6), verts=bm.verts)
+        bmesh.ops.translate(bm, vec=(cx, cy, 1.8), verts=bm.verts)
+        mo = obj_from_bm(name, bm)
+        mo.data.materials.append(t.mat)
+
+# Night: a comet low over the hills, the space the site belongs to.
+if not DAY:
+    t = NT('Comet')
+    gen = t.coords('Generated')
+    gx, gy, gz = t.xyz(gen)
+    tail = t.m('MULTIPLY', t.m('POWER', gx, 2.2), t.mr(t.m('ABSOLUTE', t.m('SUBTRACT', gy, .5)), .5, 0.0, 0.0, 1.0))
+    tail = t.m('MULTIPLY', tail, t.m('POWER', t.mr(t.m('ABSOLUTE', t.m('SUBTRACT', gy, .5)), .5 * 1.0, 0.0), t.m('ADD', 1.0, t.m('MULTIPLY', t.m('SUBTRACT', 1.0, gx), 6.0))))
+    ce = t.n('ShaderNodeEmission', inputs={'Color': (.78, .88, 1.0, 1.0)})
+    t.set(ce.inputs['Strength'], t.m('MULTIPLY', tail, .75))
+    ct = t.n('ShaderNodeBsdfTransparent')
+    ca = t.n('ShaderNodeAddShader')
+    t.set(ca.inputs[0], ct)
+    t.set(ca.inputs[1], ce)
+    t.out(ca)
+    try:
+        t.mat.surface_render_method = 'BLENDED'
+    except Exception:
+        pass
+    bm = bmesh.new()
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=.5)
+    comet = obj_from_bm('Comet', bm)
+    comet.data.materials.append(t.mat)
+    cdir = Vector((-math.sin(math.radians(28)) * math.cos(math.radians(19)), math.cos(math.radians(28)) * math.cos(math.radians(19)), math.sin(math.radians(19))))
+    comet.location = Vector((0, -500, 3)) + cdir * 3000
+    comet.scale = (400, 140, 1)
+    comet.rotation_euler = (cdir.to_track_quat('-Z', 'Y').to_euler())
+    comet.rotation_euler.rotate_axis('Z', math.radians(-24))
+    comet.visible_shadow = False
+
+# Bronze sconces with live flames down the tunnel.
+for i, y in enumerate(range(-36, -112, -11)):
+    for sx in (-1, 1):
+        bpy.ops.mesh.primitive_cone_add(vertices=24, radius1=.08, radius2=.2, depth=.26, location=(sx * 3.3, y, 4.35))
+        cup = bpy.context.active_object
+        cup.data.materials.append(bronze)
+        flame((sx * 3.3, y, 4.46), .42, 320, shadow=False)
 glow = link(bpy.data.objects.new('PoolBounce', bpy.data.lights.new('PoolBounce', 'POINT')))
 glow.data.energy = float(ARGS.get('bouncek', 900))
 glow.data.shadow_soft_size = 1.2
