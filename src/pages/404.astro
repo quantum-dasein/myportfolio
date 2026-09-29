@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { useTranslations } from "../i18n/utils";
+import { driftRoutes } from "../data/drift-routes";
 
 const t = useTranslations("en");
 ---
@@ -12,34 +13,33 @@ const t = useTranslations("en");
   noWebgl={true}
 >
   <section class="void" aria-labelledby="void-title">
-    <!-- z1: the whole anomaly (stars → ghost 404 → obsidian sphere → RGB split) -->
-    <rb-anomaly class="void-gl" aria-hidden="true"></rb-anomaly>
+    <!-- z1: open space — a black hole, the drifting astronaut, the frames still transmitting -->
+    <div class="void-gl" data-drift data-routes={JSON.stringify(driftRoutes)}></div>
 
-    <!-- z2: the readout, over the scene -->
+    <!-- z2: the readout -->
     <div class="void-ui">
       <p class="void-eyebrow" data-i18n="404.eyebrow" data-decode-in>{t("404.eyebrow")}</p>
       <h1 id="void-title" class="void-title" data-i18n="404.title" data-split>{t("404.title")}</h1>
-      <p class="void-sub" data-i18n="404.subtitle" data-decode-in>{t("404.subtitle")}</p>
-
+      <p class="void-sub"><span data-i18n="404.drift.sub">{t("404.drift.sub")}</span> <code class="void-path" data-drift-path></code></p>
+      <p class="void-hint" data-i18n="404.drift.hint">{t("404.drift.hint")}</p>
+      <p class="void-closest" data-drift-closest hidden><span data-i18n="404.drift.closest">{t("404.drift.closest")}</span> <a href="/" data-drift-closest-link></a></p>
       <a href="/" class="evac" data-magnetic data-cursor="HOME">
         <span class="evac-inner" data-i18n="404.cta">{t("404.cta")}</span>
         <span class="evac-arrow" aria-hidden="true">→</span>
       </a>
     </div>
 
-    <!-- corner telemetry, for the "adrift" mood -->
     <div class="void-corner tl" aria-hidden="true"><span data-decode-in>LOST SIGNAL</span></div>
     <div class="void-corner br" aria-hidden="true">
-      <span>LAT <b data-coord="lat">--.----</b></span>
-      <span>LON <b data-coord="lon">--.----</b></span>
+      <span>HORIZON <b data-tele="horizon">--.-</b> KM</span>
+      <span>DRIFT <b data-tele="speed">0.00</b> M/S</span>
     </div>
 
     <span class="void-bracket tl" aria-hidden="true"></span>
     <span class="void-bracket tr" aria-hidden="true"></span>
     <span class="void-bracket bl" aria-hidden="true"></span>
     <span class="void-bracket br" aria-hidden="true"></span>
-
-    <span class="void-scroll" aria-hidden="true"><b></b><span data-i18n="404.scroll">drift on</span></span>
+    <div class="void-flash" data-drift-flash aria-hidden="true"></div>
   </section>
 
   <!-- ── Signal recovery: real destinations, dressed as navigation beacons ──── -->
@@ -99,506 +99,84 @@ const t = useTranslations("en");
 </Layout>
 
 <script>
-  // ───────────────────────────────────────────────────────────────────────────
-  //  404 — "The Event Horizon".
-  //
-  //  The studio's liquid-obsidian sphere, but unstable: an FBM noise field
-  //  breathes and tears through its surface, it periodically glitches — flashing
-  //  its wireframe skeleton and shattering a few facets outward — and the whole
-  //  frame splits into RGB when the pointer moves fast or a glitch fires.
-  //
-  //  One opaque scene, composited in order: a slow starfield, a giant ghost 404
-  //  behind the sphere, the sphere in front, then a single RGB-split post pass.
-  //  Everything is self-contained here; the homepage hero (Webgl.astro) is left
-  //  untouched.
-  // ───────────────────────────────────────────────────────────────────────────
-  import * as THREE from "three";
-  import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+  // 404 — "The Drift": the scene lives in src/scripts/drift404.ts.
   import gsap from "gsap";
   import { decodeText, prefersCalm } from "../utils/decode";
+  import type { DriftRoute } from "../data/drift-routes";
 
-  // Injected into both the sphere and its wireframe so their vertices move as
-  // one. Displacement rides `normalize(position)` (the sphere's own normal) so
-  // it never depends on a `normal` attribute being present in the material.
-  const NOISE = /* glsl */ `
-    uniform float uTime;
-    uniform float uGlitch;
-    uniform float uBurst;
-    vec3 rbHash(vec3 p){
-      p = vec3(dot(p, vec3(127.1, 311.7, 74.7)),
-               dot(p, vec3(269.5, 183.3, 246.1)),
-               dot(p, vec3(113.5, 271.9, 124.6)));
-      return fract(sin(p) * 43758.5453123) * 2.0 - 1.0;
-    }
-    float rbNoise(vec3 p){
-      vec3 i = floor(p); vec3 f = fract(p);
-      vec3 u = f * f * (3.0 - 2.0 * f);
-      return mix(mix(mix(dot(rbHash(i + vec3(0,0,0)), f - vec3(0,0,0)),
-                         dot(rbHash(i + vec3(1,0,0)), f - vec3(1,0,0)), u.x),
-                     mix(dot(rbHash(i + vec3(0,1,0)), f - vec3(0,1,0)),
-                         dot(rbHash(i + vec3(1,1,0)), f - vec3(1,1,0)), u.x), u.y),
-                 mix(mix(dot(rbHash(i + vec3(0,0,1)), f - vec3(0,0,1)),
-                         dot(rbHash(i + vec3(1,0,1)), f - vec3(1,0,1)), u.x),
-                     mix(dot(rbHash(i + vec3(0,1,1)), f - vec3(0,1,1)),
-                         dot(rbHash(i + vec3(1,1,1)), f - vec3(1,1,1)), u.x), u.y), u.z);
-    }
-    float rbFbm(vec3 p){
-      float v = 0.0, a = 0.5;
-      for (int i = 0; i < 4; i++) { v += a * rbNoise(p); p = p * 2.03 + 1.3; a *= 0.5; }
-      return v;
-    }
-  `;
+  const host = document.querySelector<HTMLElement>("[data-drift]");
+  const requested = (() => { try { return decodeURI(location.pathname) || "/"; } catch { return location.pathname; } })();
+  const lang = (): "en" | "de" => (document.documentElement.lang.startsWith("de") ? "de" : "en");
+  const reduced = prefersCalm();
+  document.querySelectorAll<HTMLElement>("[data-drift-path]").forEach((el) => (el.textContent = requested));
 
-  const DISPLACE = /* glsl */ `
-    vec3 rbDir = normalize(position + 1e-5);
-    float rbN = rbFbm(position * 1.5 + uTime * 0.28);
-    float rbBreath = sin(uTime * 0.6) * 0.045;
-    float rbDisp = rbN * 0.15 + rbBreath;
-    float rbRnd = fract(sin(dot(position, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
-    // A glitch burst throws a subset of facets outward — the sphere shatters.
-    rbDisp += uBurst * smoothstep(0.55, 1.0, rbRnd) * (0.4 + 0.9 * rbRnd);
-    // Fine radial jitter whenever glitch is hot.
-    rbDisp += uGlitch * (rbRnd - 0.5) * 0.35;
-    transformed += rbDir * rbDisp;
-    // Lateral tearing on glitch.
-    transformed += normalize(position.zxy + 1e-5) * uGlitch * (rbRnd - 0.5) * 0.25;
-  `;
+  const closest = document.querySelector<HTMLElement>("[data-drift-closest]");
+  const closestLink = document.querySelector<HTMLAnchorElement>("[data-drift-closest-link]");
+  const flash = document.querySelector<HTMLElement>("[data-drift-flash]");
+  const horizon = document.querySelector<HTMLElement>('[data-tele="horizon"]');
+  const speed = document.querySelector<HTMLElement>('[data-tele="speed"]');
+  let best: DriftRoute | undefined;
+  const showClosest = () => {
+    if (!closest || !closestLink) return;
+    closest.hidden = !best;
+    if (best) { closestLink.href = best.path; closestLink.textContent = best[lang()]; }
+  };
+  // The beam ends in a white-blue flash, then the page changes underneath it.
+  const go = (path: string) => {
+    if (!flash || reduced) { location.href = path; return; }
+    flash.classList.add("is-on");
+    setTimeout(() => (location.href = path), 420);
+  };
+  addEventListener("pageshow", () => flash?.classList.remove("is-on"));
 
-  const POST_VERT = /* glsl */ `
-    varying vec2 vUv;
-    void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
-  `;
-  const POST_FRAG = /* glsl */ `
-    precision highp float;
-    uniform sampler2D uTex;
-    uniform vec2 uSplit;
-    uniform vec2 uRes;
-    uniform float uTime;
-    varying vec2 vUv;
-    float rand(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-    void main(){
-      vec2 o = uSplit;
-      vec3 col;
-      col.r = texture2D(uTex, vUv + o).r;
-      col.g = texture2D(uTex, vUv).g;
-      col.b = texture2D(uTex, vUv - o).b;
-      // Faint scanline shear, only while actively glitching (wide split).
-      float amt = length(uSplit);
-      float band = step(0.6, rand(vec2(floor(vUv.y * uRes.y / 3.0), floor(uTime * 22.0))));
-      col += band * amt * 6.0 * vec3(0.10, 0.12, 0.16);
-      // Fine grain keeps the black from banding.
-      col += (rand(vUv + fract(uTime)) - 0.5) * 0.015;
-      gl_FragColor = vec4(col, 1.0);
-    }
-  `;
-
-  class Anomaly extends HTMLElement {
-    private renderer?: THREE.WebGLRenderer;
-    private scene = new THREE.Scene();
-    private camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-    private target?: THREE.WebGLRenderTarget;
-    private postScene = new THREE.Scene();
-    private postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    private post?: THREE.ShaderMaterial;
-    private sphere?: THREE.Mesh;
-    private wire?: THREE.Mesh;
-    private stars?: THREE.Points;
-    private ghost?: THREE.Mesh;
-    private uniforms = {
-      uTime: { value: 0 },
-      uGlitch: { value: 0 },
-      uBurst: { value: 0 },
-    };
-    private clock = new THREE.Clock();
-    private raf = 0;
-    private mouse = new THREE.Vector2();
-    private mouseTarget = new THREE.Vector2();
-    private lastPointer = new THREE.Vector2();
-    private vel = 0;
-    private split = new THREE.Vector2();
-    private lowPower = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
-    private visible = true;
-    private calm = document.documentElement.classList.contains("rb-calm");
-    private reduced = prefersCalm();
-    private lastFrame = 0;
-    private glitchTimer?: gsap.core.Tween;
-
-    connectedCallback() {
-      const gl = new THREE.WebGLRenderer({ antialias: !this.lowPower, alpha: false, powerPreference: "high-performance" });
-      this.renderer = gl;
-      gl.setPixelRatio(Math.min(devicePixelRatio || 1, this.lowPower ? 1.3 : 1.5));
-      gl.setClearColor(0x030405, 1);
-      gl.outputColorSpace = THREE.SRGBColorSpace;
-      gl.toneMapping = THREE.ACESFilmicToneMapping;
-      gl.toneMappingExposure = 1.1;
-      this.append(gl.domElement);
-
-      const pmrem = new THREE.PMREMGenerator(gl);
-      this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-      pmrem.dispose();
-
-      this.camera.position.set(0, 0, 7.2);
-      this.camera.lookAt(0, 0, 0);
-
-      this.buildStars();
-      this.buildGhost();
-      this.buildSphere();
-      this.buildLights();
-
-      // Post pass (RGB split + scanline shear). Skipped on low-power: it renders
-      // straight to the canvas there.
-      if (!this.lowPower) {
-        this.target = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: true });
-        this.post = new THREE.ShaderMaterial({
-          vertexShader: POST_VERT,
-          fragmentShader: POST_FRAG,
-          depthTest: false,
-          depthWrite: false,
-          uniforms: {
-            uTex: { value: this.target.texture },
-            uSplit: { value: this.split },
-            uRes: { value: new THREE.Vector2(1, 1) },
-            uTime: { value: 0 },
-          },
-        });
-        this.postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.post));
-      }
-
-      this.resize();
-      addEventListener("resize", this.resize, { passive: true });
-      addEventListener("pointermove", this.onPointerMove, { passive: true });
-      document.addEventListener("visibilitychange", this.onVisibility);
-      addEventListener("rb:calmchange", this.onCalm as EventListener);
-
-      if (!this.reduced && !this.calm) this.scheduleGlitch();
-      this.lastFrame = performance.now();
-      this.raf = requestAnimationFrame(this.render);
-      if (this.calm || this.reduced) this.draw(0); // one static frame
-    }
-
-    disconnectedCallback() {
-      cancelAnimationFrame(this.raf);
-      this.glitchTimer?.kill();
-      removeEventListener("resize", this.resize);
-      removeEventListener("pointermove", this.onPointerMove);
-      document.removeEventListener("visibilitychange", this.onVisibility);
-      removeEventListener("rb:calmchange", this.onCalm as EventListener);
-      this.scene.traverse((o) => {
-        const m = o as THREE.Mesh;
-        m.geometry?.dispose?.();
-        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-        if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
-        else mat?.dispose();
+  const webgl = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
+  if (host && webgl) {
+    import("../scripts/drift404").then(({ mountDrift }) => {
+      const routes = JSON.parse(host.dataset.routes || "[]") as DriftRoute[];
+      let lastTele = 0;
+      const drift = mountDrift({
+        host, routes, requested, lang, reduced,
+        onSignals: (signals) => { best = signals[0] && signals[0].score > 0 ? signals[0].route : undefined; showClosest(); },
+        onTelemetry: ({ horizon: h, speed: v }) => {
+          const now = performance.now(); if (now - lastTele < 160) return; lastTele = now;
+          if (horizon) horizon.textContent = (h * 1.7).toFixed(1);
+          if (speed) speed.textContent = v.toFixed(2);
+        },
+        onNavigate: go,
       });
-      this.scene.environment?.dispose();
-      this.target?.dispose();
-      this.post?.dispose();
-      this.renderer?.dispose();
-      this.renderer = undefined;
-    }
-
-    private inject = (shader: THREE.WebGLProgramParametersWithUniforms) => {
-      shader.uniforms.uTime = this.uniforms.uTime;
-      shader.uniforms.uGlitch = this.uniforms.uGlitch;
-      shader.uniforms.uBurst = this.uniforms.uBurst;
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\n" + NOISE)
-        .replace("#include <begin_vertex>", "#include <begin_vertex>\n" + DISPLACE);
-    };
-
-    private buildSphere() {
-      const detail = this.lowPower ? 4 : 6;
-      const geo = new THREE.IcosahedronGeometry(1.75, detail);
-
-      // Dark, glossy obsidian — reads as a solid polished orb, not a bubble.
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(0x070a10),
-        metalness: 0.42,
-        roughness: 0.13,
-        clearcoat: 1,
-        clearcoatRoughness: 0.09,
-        envMapIntensity: 1.05,
-        emissive: new THREE.Color(0x0a1626),
-        emissiveIntensity: 0.22,
+      closestLink?.addEventListener("click", (event) => {
+        if (!best || event.metaKey || event.ctrlKey || event.shiftKey) return;
+        event.preventDefault(); drift.beam(best.path);
       });
-      mat.onBeforeCompile = this.inject;
-      this.sphere = new THREE.Mesh(geo, mat);
-      this.scene.add(this.sphere);
+      addEventListener("rb:langchange", () => { drift.relabel(); showClosest(); });
+      document.fonts?.ready.then(() => drift.relabel());
+    }).catch((error) => { console.warn("404: showing the static scene.", error); host.classList.add("is-static"); });
+  } else host?.classList.add("is-static");
 
-      // The skeleton underneath — nearly invisible at rest, it flares only when
-      // the orb glitches (opacity is driven per-frame in draw()).
-      const wireMat = new THREE.MeshBasicMaterial({
-        color: 0x9fb6cc,
-        wireframe: true,
-        transparent: true,
-        opacity: 0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      });
-      wireMat.onBeforeCompile = this.inject;
-      this.wire = new THREE.Mesh(geo, wireMat);
-      this.wire.scale.setScalar(1.004);
-      this.scene.add(this.wire);
+  // Title: characters resolve in a scrambled order.
+  document.querySelectorAll<HTMLElement>("[data-split]").forEach((el) => {
+    const text = el.textContent ?? "";
+    el.textContent = ""; el.setAttribute("aria-label", text);
+    const spans: HTMLElement[] = [];
+    for (const ch of text) {
+      const s = document.createElement("span"); s.className = "void-char"; s.textContent = ch === " " ? " " : ch;
+      s.setAttribute("aria-hidden", "true"); el.appendChild(s); spans.push(s);
     }
-
-    private buildGhost() {
-      const c = document.createElement("canvas");
-      c.width = 2048; c.height = 1024;
-      const ctx = c.getContext("2d")!;
-      ctx.clearRect(0, 0, c.width, c.height);
-      ctx.fillStyle = "rgba(255,255,255,0.085)";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "900 620px Inter, 'Helvetica Neue', Arial, sans-serif";
-      ctx.fillText("404", c.width / 2, c.height / 2 + 30);
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = Math.min(this.renderer!.capabilities.getMaxAnisotropy(), 8);
-      const geo = new THREE.PlaneGeometry(20, 10);
-      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 1 });
-      this.ghost = new THREE.Mesh(geo, mat);
-      this.ghost.position.z = -5.5;
-      this.scene.add(this.ghost);
-    }
-
-    private buildStars() {
-      const count = this.lowPower ? 520 : 1100;
-      const pos = new Float32Array(count * 3);
-      const size = new Float32Array(count);
-      for (let i = 0; i < count; i++) {
-        const r = 22 + Math.random() * 55;
-        const a = Math.random() * Math.PI * 2;
-        const y = (Math.random() * 2 - 1) * 40;
-        pos[i * 3] = Math.cos(a) * r;
-        pos[i * 3 + 1] = y;
-        pos[i * 3 + 2] = -12 - Math.random() * 60;
-        size[i] = 0.5 + Math.random() * 1.6;
-      }
-      const g = new THREE.BufferGeometry();
-      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      g.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
-      const m = new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: { uTime: this.uniforms.uTime, uPr: { value: Math.min(devicePixelRatio || 1, 2) } },
-        vertexShader: `
-          attribute float aSize; uniform float uTime; uniform float uPr; varying float vT;
-          void main(){
-            vec4 mv = modelViewMatrix * vec4(position, 1.0);
-            gl_Position = projectionMatrix * mv;
-            vT = 0.6 + 0.4 * sin(uTime * 1.4 + position.x * 3.0 + position.y);
-            gl_PointSize = aSize * uPr * (60.0 / -mv.z);
-          }`,
-        fragmentShader: `
-          precision highp float; varying float vT;
-          void main(){
-            float d = length(gl_PointCoord - 0.5);
-            float a = smoothstep(0.5, 0.0, d) * vT * 0.7;
-            if (a < 0.01) discard;
-            gl_FragColor = vec4(vec3(0.82, 0.88, 0.95), a);
-          }`,
-      });
-      this.stars = new THREE.Points(g, m);
-      this.scene.add(this.stars);
-    }
-
-    private buildLights() {
-      const key = new THREE.DirectionalLight(0xdfe9ff, 3.4);
-      key.position.set(-4, 5, 6);
-      this.scene.add(key);
-      const rim = new THREE.PointLight(0x88a6ff, 22, 30, 2);
-      rim.position.set(4, -2, 3);
-      this.scene.add(rim);
-      this.scene.add(new THREE.AmbientLight(0x0a1018, 0.5));
-    }
-
-    /** Random glitch bursts: flash the wireframe, shatter, widen the RGB split. */
-    private scheduleGlitch = () => {
-      const gap = 2.6 + Math.random() * 5.2;
-      this.glitchTimer = gsap.delayedCall(gap, () => {
-        const tl = gsap.timeline({ onComplete: this.scheduleGlitch });
-        tl.to(this.uniforms.uGlitch, { value: 0.4 + Math.random() * 0.35, duration: 0.06, ease: "power2.in" })
-          .to(this.uniforms.uBurst, { value: 0.2 + Math.random() * 0.3, duration: 0.06 }, 0)
-          .to(this.split, { x: (Math.random() - 0.5) * 0.007, y: (Math.random() - 0.5) * 0.003, duration: 0.06 }, 0)
-          .to(this.uniforms.uGlitch, { value: 0, duration: 0.28 + Math.random() * 0.3, ease: "power2.out" }, ">-0.02")
-          .to(this.uniforms.uBurst, { value: 0, duration: 0.42, ease: "power3.out" }, "<")
-          .to(this.split, { x: 0, y: 0, duration: 0.3, ease: "power2.out" }, "<");
-      });
-    };
-
-    private onPointerMove = (e: PointerEvent) => {
-      const nx = e.clientX / innerWidth - 0.5;
-      const ny = 0.5 - e.clientY / innerHeight;
-      this.mouseTarget.set(nx, ny);
-      const dx = nx - this.lastPointer.x;
-      const dy = ny - this.lastPointer.y;
-      this.lastPointer.set(nx, ny);
-      this.vel = Math.min(1, this.vel + Math.sqrt(dx * dx + dy * dy) * 6);
-    };
-
-    private onVisibility = () => {
-      this.visible = !document.hidden;
-      if (this.visible && !this.raf && !this.calm) {
-        this.lastFrame = performance.now();
-        this.raf = requestAnimationFrame(this.render);
-      }
-    };
-
-    private onCalm = (e: CustomEvent<{ calm: boolean }>) => {
-      this.calm = Boolean(e.detail?.calm);
-      if (this.calm) { this.glitchTimer?.kill(); requestAnimationFrame(() => this.draw(this.clock.getElapsedTime())); }
-      else if (!this.raf && this.visible) { this.scheduleGlitch(); this.lastFrame = performance.now(); this.raf = requestAnimationFrame(this.render); }
-    };
-
-    private resize = () => {
-      if (!this.renderer) return;
-      const w = innerWidth, h = innerHeight;
-      this.renderer.setSize(w, h, false);
-      const aspect = w / h;
-      this.camera.aspect = aspect;
-      this.camera.updateProjectionMatrix();
-      const dpr = this.renderer.getPixelRatio();
-      if (this.target && this.post) {
-        this.target.setSize(Math.round(w * dpr), Math.round(h * dpr));
-        (this.post.uniforms.uRes.value as THREE.Vector2).set(w * dpr, h * dpr);
-      }
-      // The ghost "404" is 20 units wide — on a portrait phone it runs off both
-      // sides and vanishes. Shrink it to fit the frame and pull the orb in a
-      // little so the digits read around it, the way they flank it on desktop.
-      if (this.ghost) this.ghost.scale.setScalar(aspect < 1 ? Math.max(0.46, aspect * 0.92) : 1);
-      if (this.sphere) {
-        const s = aspect < 0.8 ? 0.56 : 1;
-        this.sphere.scale.setScalar(s);
-        this.wire?.scale.setScalar(s * 1.004);
-      }
-    };
-
-    private draw(elapsed: number) {
-      if (!this.renderer) return;
-      this.uniforms.uTime.value = elapsed;
-
-      // Pointer parallax + a slow adrift sway.
-      this.mouse.lerp(this.mouseTarget, 0.05);
-      this.camera.position.x += (this.mouse.x * 1.6 + Math.sin(elapsed * 0.13) * 0.25 - this.camera.position.x) * 0.04;
-      this.camera.position.y += (this.mouse.y * 1.1 + Math.cos(elapsed * 0.17) * 0.18 - this.camera.position.y) * 0.04;
-      this.camera.lookAt(0, 0, 0);
-
-      if (this.sphere) {
-        this.sphere.rotation.y = elapsed * 0.12 + this.mouse.x * 0.4;
-        this.sphere.rotation.x = Math.sin(elapsed * 0.2) * 0.12 - this.mouse.y * 0.3;
-        this.wire!.rotation.copy(this.sphere.rotation);
-      }
-      if (this.stars) this.stars.rotation.z = elapsed * 0.01;
-
-      // Velocity decays; it and the live glitch drive the RGB split + wire flash.
-      this.vel *= 0.88;
-      const g = this.uniforms.uGlitch.value;
-      if (this.wire) (this.wire.material as THREE.MeshBasicMaterial).opacity = 0.015 + g * 0.5 + this.vel * 0.05;
-      if (this.ghost) {
-        const gm = this.ghost.material as THREE.MeshBasicMaterial;
-        // Ghost 404 flickers like a failing panel during a glitch.
-        gm.opacity = 1 - g * (0.4 + 0.5 * Math.sin(elapsed * 80.0));
-        this.ghost.position.x = g * (Math.random() - 0.5) * 0.3;
-      }
-
-      // Ease the split toward the velocity-driven baseline unless a glitch tween
-      // is actively pushing it wider. Kept subtle — a chromatic accent, not a wash.
-      if (g < 0.05) {
-        this.split.x += (this.vel * 0.004 - this.split.x) * 0.2;
-        this.split.y += (0 - this.split.y) * 0.2;
-      }
-      if (this.post) (this.post.uniforms.uTime.value as number) = elapsed;
-
-      if (this.target && this.post && !this.lowPower) {
-        this.renderer.setRenderTarget(this.target);
-        this.renderer.render(this.scene, this.camera);
-        this.renderer.setRenderTarget(null);
-        this.renderer.render(this.postScene, this.postCam);
-      } else {
-        this.renderer.render(this.scene, this.camera);
-      }
-    }
-
-    private render = (now = performance.now()) => {
-      this.raf = 0;
-      if (!this.renderer || !this.visible || this.calm) return;
-      const fps = this.lowPower ? 40 : 60;
-      if (now - this.lastFrame < 1000 / fps) { this.raf = requestAnimationFrame(this.render); return; }
-      this.lastFrame = now;
-      this.draw(this.clock.getElapsedTime());
-      this.raf = requestAnimationFrame(this.render);
-    };
-  }
-
-  if (!customElements.get("rb-anomaly")) customElements.define("rb-anomaly", Anomaly);
-
-  // ── Copy choreography ──────────────────────────────────────────────────────
-  const page = document.querySelector(".void");
-  if (page) {
-    const reduced = prefersCalm();
-
-    // Title: split into characters that resolve in a scrambled order.
-    document.querySelectorAll<HTMLElement>("[data-split]").forEach((el) => {
-      const text = el.textContent ?? "";
-      el.textContent = "";
-      el.setAttribute("aria-label", text);
-      const spans: HTMLElement[] = [];
-      for (const ch of text) {
-        const s = document.createElement("span");
-        s.className = "void-char";
-        s.textContent = ch === " " ? " " : ch;
-        s.setAttribute("aria-hidden", "true");
-        el.appendChild(s);
-        spans.push(s);
-      }
-      if (reduced) { gsap.set(spans, { opacity: 1, y: 0 }); return; }
-      gsap.set(spans, { opacity: 0, y: (i) => (i % 2 ? 30 : -30), rotateX: -60 });
-      gsap.to(spans, {
-        opacity: 1, y: 0, rotateX: 0, duration: 0.9, ease: "power3.out",
-        delay: 0.25, stagger: { each: 0.05, from: "random" },
-      });
-    });
-
-    document.querySelectorAll<HTMLElement>("[data-decode-in]").forEach((el, i) => {
-      gsap.delayedCall(0.5 + i * 0.08, () => decodeText(el, { duration: 720 }));
-    });
-
-    if (!reduced) {
-      gsap.fromTo(".void-sub", { opacity: 0 }, { opacity: 1, duration: 1.2, delay: 0.7 });
-      gsap.fromTo(".evac", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1.1, ease: "power3.out", delay: 0.9 });
-
-      // Drifting coordinates readout.
-      const lat = document.querySelector<HTMLElement>('[data-coord="lat"]');
-      const lon = document.querySelector<HTMLElement>('[data-coord="lon"]');
-      const drift = () => {
-        if (lat) lat.textContent = (Math.random() * 180 - 90).toFixed(4);
-        if (lon) lon.textContent = (Math.random() * 360 - 180).toFixed(4);
-        gsap.delayedCall(0.6 + Math.random() * 1.4, drift);
-      };
-      drift();
-    }
-  }
+    if (reduced) return;
+    gsap.set(spans, { opacity: 0, y: (i) => (i % 2 ? 30 : -30), rotateX: -60 });
+    gsap.to(spans, { opacity: 1, y: 0, rotateX: 0, duration: 0.9, ease: "power3.out", delay: 0.25, stagger: { each: 0.05, from: "random" } });
+  });
+  document.querySelectorAll<HTMLElement>("[data-decode-in]").forEach((el, i) => gsap.delayedCall(0.5 + i * 0.08, () => decodeText(el, { duration: 720 })));
+  if (!reduced) gsap.fromTo([".void-sub", ".void-hint", ".void-closest", ".evac"], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1, ease: "power3.out", delay: 0.7, stagger: 0.1 });
 
   // Beacon grid drifts into range as it scrolls into view.
   const beacons = gsap.utils.toArray<HTMLElement>("[data-beacon]");
-  if (beacons.length) {
-    if (prefersCalm()) {
-      gsap.set(beacons, { opacity: 1, y: 0 });
-    } else {
-      gsap.set(beacons, { opacity: 0, y: 26 });
-      const io = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((e, i) => {
-            if (!e.isIntersecting) return;
-            gsap.to(e.target, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: (i % 3) * 0.08 });
-            io.unobserve(e.target);
-          });
-        },
-        { threshold: 0.18 },
-      );
-      beacons.forEach((b) => io.observe(b));
-    }
+  if (beacons.length && !reduced) {
+    gsap.set(beacons, { opacity: 0, y: 26 });
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => { if (!e.isIntersecting) return; gsap.to(e.target, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: (i % 3) * 0.08 }); io.unobserve(e.target); });
+    }, { threshold: 0.18 });
+    beacons.forEach((b) => io.observe(b));
   }
 </script>
 
@@ -606,99 +184,97 @@ const t = useTranslations("en");
   .void {
     position: relative;
     min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 1.5rem;
     overflow: hidden;
-    background: radial-gradient(120% 90% at 50% 40%, #05070b 0%, #010203 70%);
+    background: #020305;
   }
-
-  .void-gl {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: block;
-    pointer-events: none;
-  }
+  .void-gl { position: absolute; inset: 0; z-index: 1; opacity: 0; transition: opacity 1.4s ease; }
+  .void-gl:global(.is-live) { opacity: 1; }
   .void-gl :global(canvas) { display: block; width: 100%; height: 100%; }
+  .void-gl:global(.is-static) {
+    opacity: 1;
+    background:
+      radial-gradient(circle at 69% 48%, #000 0 6.5%, #ffcf94 7.2%, #b8521a 9.5%, rgba(80, 30, 10, 0.4) 14%, transparent 24%),
+      radial-gradient(90% 70% at 69% 48%, #0b1426, #020305 70%);
+  }
 
   .void-ui {
-    position: relative;
+    position: absolute;
     z-index: 2;
+    left: clamp(1.2rem, 5vw, 5rem);
+    top: clamp(7rem, 18vh, 11rem);
+    max-width: min(34rem, 40vw);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 1.4rem;
-    max-width: 42rem;
+    align-items: flex-start;
+    gap: 1rem;
     pointer-events: none;
   }
+  .void-ui a { pointer-events: auto; }
 
   .void-eyebrow {
     margin: 0;
     font-family: var(--font-inter);
     font-size: 0.62rem;
     font-weight: 500;
-    letter-spacing: 0.55em;
-    text-indent: 0.55em;
-    color: rgba(190, 210, 235, 0.55);
+    letter-spacing: 0.5em;
+    color: rgba(255, 190, 150, 0.72);
     text-transform: uppercase;
   }
-
   .void-title {
     margin: 0;
     font-family: var(--font-display), sans-serif;
     font-weight: 500;
-    font-size: clamp(3.2rem, 12vw, 8rem);
+    font-size: clamp(3rem, 7vw, 6.6rem);
     line-height: 0.92;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     color: #f2f6fb;
-    text-shadow: 0 0 5rem rgba(150, 190, 255, 0.28);
+    text-shadow: 0 0 4rem rgba(255, 170, 110, 0.18);
   }
   .void-char { display: inline-block; will-change: transform, opacity; }
-
-  .void-sub {
+  .void-sub, .void-hint, .void-closest {
     margin: 0;
-    max-width: 34rem;
     font-family: var(--font-inter);
-    font-size: clamp(0.85rem, 1.4vw, 1rem);
-    font-weight: 400;
-    line-height: 1.7;
-    color: rgba(216, 226, 240, 0.66);
+    font-size: clamp(0.85rem, 1.15vw, 1rem);
+    line-height: 1.6;
+    color: rgba(216, 226, 240, 0.74);
   }
+  .void-hint { color: rgba(216, 226, 240, 0.5); font-size: clamp(0.78rem, 0.95vw, 0.88rem); max-width: 30rem; }
+  .void-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    color: #ffc9a8;
+    background: rgba(255, 140, 90, 0.1);
+    border: 1px solid rgba(255, 150, 100, 0.26);
+    border-radius: 0.35rem;
+    padding: 0.05rem 0.4rem;
+    word-break: break-all;
+  }
+  .void-closest { color: rgba(255, 217, 138, 0.82); font-size: 0.82rem; letter-spacing: 0.02em; }
+  .void-closest[hidden] { display: none; }
+  .void-closest a { color: #ffd98a; text-decoration: underline; text-underline-offset: 0.25em; }
 
-  /* Premium glassmorphism + magnetic pull (CursorField drives --mx/--my). */
   .evac {
     --mx: 0px; --my: 0px;
-    pointer-events: auto;
-    margin-top: 0.8rem;
+    margin-top: 0.6rem;
     display: inline-flex;
     align-items: center;
     gap: 1.4rem;
-    height: 3.5rem;
-    padding: 0 1.6rem 0 2rem;
+    height: 3.3rem;
+    padding: 0 1.5rem 0 1.8rem;
     font-family: var(--font-inter);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     text-decoration: none;
-    color: rgba(240, 246, 252, 0.9);
+    color: rgba(240, 246, 252, 0.92);
     background: rgba(140, 170, 210, 0.08);
-    border: 1px solid rgba(180, 205, 235, 0.22);
+    border: 1px solid rgba(180, 205, 235, 0.24);
     border-radius: 2rem;
-    backdrop-filter: blur(18px) saturate(1.2);
-    -webkit-backdrop-filter: blur(18px) saturate(1.2);
     transform: translate3d(var(--mx), var(--my), 0);
     transition: background 0.5s var(--ease-out-expo), border-color 0.5s var(--ease-out-expo);
   }
-  .evac:hover {
-    background: rgba(190, 215, 245, 0.16);
-    border-color: rgba(200, 222, 250, 0.5);
-    color: #fff;
-  }
+  .evac:hover { background: rgba(190, 215, 245, 0.16); border-color: rgba(200, 222, 250, 0.5); color: #fff; }
   .evac-arrow { font-size: 1.15em; font-weight: 300; transition: transform 0.4s var(--ease-out-expo); }
   .evac:hover .evac-arrow { transform: translateX(5px); }
 
@@ -712,56 +288,38 @@ const t = useTranslations("en");
     font-size: 0.54rem;
     font-weight: 500;
     letter-spacing: 0.24em;
-    color: rgba(180, 200, 225, 0.4);
+    color: rgba(180, 200, 225, 0.42);
     pointer-events: none;
   }
   .void-corner.tl { top: 6.5rem; left: clamp(1.2rem, 4vw, 3rem); }
   .void-corner.br { bottom: 2rem; right: clamp(1.2rem, 4vw, 3rem); text-align: right; align-items: flex-end; }
-  .void-corner b { color: rgba(210, 224, 240, 0.72); font-weight: 500; font-variant-numeric: tabular-nums; }
-
-  .void-bracket {
-    position: absolute;
-    z-index: 2;
-    width: 16px; height: 16px;
-    opacity: 0.35;
-    pointer-events: none;
-  }
+  .void-corner b { color: rgba(230, 236, 244, 0.78); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .void-bracket { position: absolute; z-index: 2; width: 16px; height: 16px; opacity: 0.35; pointer-events: none; }
   .void-bracket.tl { top: 5.6rem; left: 1.2rem; border-top: 1px solid #cdd8e6; border-left: 1px solid #cdd8e6; }
   .void-bracket.tr { top: 5.6rem; right: 1.2rem; border-top: 1px solid #cdd8e6; border-right: 1px solid #cdd8e6; }
   .void-bracket.bl { bottom: 1.2rem; left: 1.2rem; border-bottom: 1px solid #cdd8e6; border-left: 1px solid #cdd8e6; }
   .void-bracket.br { bottom: 1.2rem; right: 1.2rem; border-bottom: 1px solid #cdd8e6; border-right: 1px solid #cdd8e6; }
-
-  @media (max-width: 600px) {
-    .void-corner.tl { top: 5.2rem; }
-    .void-corner.br { bottom: 6.5rem; }
-    .void-ui { gap: 1.1rem; }
-  }
-
-  /* A quiet nudge that there is more below the full-height void. */
   .void-scroll {
-    position: absolute;
-    left: 50%;
-    bottom: 1.7rem;
-    z-index: 2;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: .6rem;
-    font-family: var(--font-inter);
-    font-size: .54rem;
-    font-weight: 500;
-    letter-spacing: .34em;
-    text-transform: uppercase;
-    color: rgba(180, 200, 225, .42);
-    pointer-events: none;
+    position: absolute; left: 50%; bottom: 1.7rem; z-index: 2; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: .6rem;
+    font-family: var(--font-inter); font-size: .54rem; font-weight: 500; letter-spacing: .34em; text-transform: uppercase;
+    color: rgba(180, 200, 225, .42); pointer-events: none;
   }
-  .void-scroll b {
-    width: 1px;
-    height: 2rem;
-    background: linear-gradient(rgba(180, 200, 225, 0), rgba(180, 200, 225, .7));
-    animation: scroll-pull 2.4s ease-in-out infinite;
-  }
+  .void-scroll b { width: 1px; height: 2rem; background: linear-gradient(rgba(180, 200, 225, 0), rgba(180, 200, 225, .7)); animation: scroll-pull 2.4s ease-in-out infinite; }
   @keyframes scroll-pull { 0%, 100% { transform: scaleY(.4); opacity: .4; transform-origin: top; } 50% { transform: scaleY(1); opacity: 1; transform-origin: top; } }
+  /* The white-blue flash of the beam, over everything, just before the page changes. */
+  .void-flash { position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, #eaf6ff, #8fd8ff 45%, #0b1830); transition: opacity .42s ease-in; }
+  .void-flash:global(.is-on) { opacity: 1; }
+
+  @media (max-width: 700px), (orientation: portrait) {
+    .void-ui { top: 5.6rem; bottom: 1.3rem; left: 1.2rem; right: 1.2rem; max-width: none; gap: 0.55rem; }
+    .void-title { font-size: clamp(2.3rem, 10.5vw, 3.4rem); }
+    .void-hint { display: none; }
+    .void-sub, .void-closest { font-size: 0.8rem; }
+    .evac { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); margin: 0; height: 3rem; white-space: nowrap; }
+    .void-corner.tl, .void-corner.br, .void-bracket, .void-scroll { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .void-scroll b { animation: none; } .void-flash { transition: none; } }
 
   /* ── Signal recovery ───────────────────────────────────────────────────── */
   /* Flat #030405 — exactly the void's WebGL clear colour — so the seam between
