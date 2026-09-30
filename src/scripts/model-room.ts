@@ -236,8 +236,8 @@ export async function mountModelRoom(root: HTMLElement) {
     environment = pmrem.fromScene(room, .04);scene.environment = environment.texture;scene.environmentIntensity = .45;room.dispose();pmrem.dispose();
     design=createModelRoomDesign(scene,coarse.matches);home();
     fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches });
-    exhibits = createExhibits({ scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal() });
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, select: (x: number, y: number) => select(x, y) };
+    exhibits = createExhibits({ scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal(), target: () => composer?.readBuffer ?? null });
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, renderer, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
@@ -346,6 +346,16 @@ export async function mountModelRoom(root: HTMLElement) {
     });
     guide.begin(performance.now() / 1000);
     if (location.search.includes('mrdebug')) (window as unknown as { __mr: Record<string, unknown> }).__mr.guide = guide;
+    // Compile every shader while the loading glow still covers the room, for the buffer the frame is really drawn
+    // into (post-processing, not the canvas), then draw one hidden frame so the passes and shadows are ready too.
+    // Without this the first frames compiled ~5 s of shaders synchronously: the freeze on arrival.
+    if (composer && renderer) {
+      renderer.setRenderTarget(composer.readBuffer);
+      const compiling = renderer.compileAsync(scene, camera).catch(() => {});
+      renderer.setRenderTarget(null); await compiling;
+      if (disposed) return;
+      composer.render();
+    }
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.

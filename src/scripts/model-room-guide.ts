@@ -24,11 +24,12 @@ type Stop = { id: string; path: THREE.Vector3[]; look: THREE.Vector3; beats: Bea
 
 const STOPS: Stop[] = [
   {
-    id: 'ebike', path: [V(.7, 0, 7.4), V(-1.3, 0, 4.7)], look: V(-3.2, .7, 2.6), leave: 6.2,
+    // The SVJ on its turntable: he stops in awe, gets down to the wheel, then declares his love.
+    id: 'svj', path: [V(.7, 0, 7.4), V(-1.15, 0, 4.9)], look: V(-4.4, .6, 2.6), leave: 7.2,
     beats: [
       { at: .2, emote: 'wow' },
-      { at: 1, pose: { sit: .42 }, hold: 2.6, look: V(-2.5, .35, 3.1) },          // down on his knees to look at the wheel
-      { at: 4, pose: { reach: .85 }, hold: 1.5, emote: 'spark' },               // and points at it
+      { at: 1.1, pose: { sit: .42 }, hold: 2.8, look: V(-2.6, .35, 3.4) },         // down to look at a wheel as it comes round
+      { at: 4.3, pose: { reach: .85 }, hold: 1.6, emote: 'love' },                // and points at the car
     ],
   },
   {
@@ -50,7 +51,16 @@ const STOPS: Stop[] = [
     ],
   },
   {
-    id: 'house', path: [V(3.6, 0, 2.8), V(4.2, 0, 5.2)], look: V(5.5, .95, 5.2), leave: 6.6,
+    // The e-bike on the wall: he looks it over from wheel to wheel and points up at it.
+    id: 'ebike', path: [V(6.95, 0, 3.1)], look: V(8.4, 1.45, 3.1), leave: 5.6,
+    beats: [
+      { at: .2, emote: 'curious', look: V(8.4, 1.3, 2.3) },
+      { at: 1.4, look: V(8.4, 1.3, 3.9) },
+      { at: 2.6, pose: { reach: .9 }, hold: 1.6, emote: 'spark', look: V(8.4, 1.5, 3.1) },
+    ],
+  },
+  {
+    id: 'house', path: [V(4.4, 0, 3.7), V(4.2, 0, 5.2)], look: V(5.5, .95, 5.2), leave: 6.6,
     beats: [
       { at: .2, emote: 'think' },
       { at: 1, pose: { sit: .22 }, hold: 3, look: V(5.5, .95, 4.7) },            // bends to the model's eye level
@@ -60,7 +70,6 @@ const STOPS: Stop[] = [
   },
 ];
 const TO_SOFA = [V(2.4, 0, 7.3), V(-1.4, 0, 8.1)];
-
 function bubble(kind: Emote) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d')!;
   // A hologram speech bubble: dark glass, a mint outline, a little tail.

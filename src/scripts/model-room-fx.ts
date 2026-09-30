@@ -72,7 +72,9 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
     const body = new THREE.Mesh(can, bronze); body.position.set(x, 5.72, z); scene.add(body);
     const rod = new THREE.Mesh(stem, bronze); rod.scale.y = .55; rod.position.set(x, 6.12, z); scene.add(rod);
     const glass = new THREE.Mesh(disc, lens); glass.rotation.x = Math.PI / 2; glass.position.set(x, 5.585, z); scene.add(glass);
-    const spot = new THREE.SpotLight('#ffe1bd', mobile ? 26 : 32, 12, .5, .85, 2); spot.position.set(x, 5.55, z);
+    // Phones light every pixel against every lamp: keep only the middle one there, the fixtures still glow.
+    if (mobile && x !== 0) continue;
+    const spot = new THREE.SpotLight('#ffe1bd', mobile ? 40 : 32, 12, mobile ? .75 : .5, .85, 2); spot.position.set(x, 5.55, z);
     spot.target.position.set(x * .85, .9, z - .2); scene.add(spot, spot.target);
   }  const N = mobile ? 180 : 420, P = new Float32Array(N * 3), S = new Float32Array(N);
   for (let i = 0; i < N; i++) { P.set([(Math.random() - .5) * 8, Math.random() * 5.6, -3.4 + (Math.random() - .5) * 4.4], i * 3); S[i] = Math.random(); }

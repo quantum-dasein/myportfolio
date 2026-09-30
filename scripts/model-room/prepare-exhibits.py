@@ -1,12 +1,16 @@
 # Prepares the Model Room's exhibits from Rodion's original model files.
-#   blender -b --factory-startup --python scripts/model-room/prepare-exhibits.py -- <sources dir> <out dir> [name ...]
+#   blender -b --factory-startup --python scripts/model-room/prepare-exhibits.py -- <sources dir> <out dir> [mobile] [name ...]
+# With 'mobile' it writes <name>.mobile.glb for phones: textures at most 1024 px, 45 % of the triangles, sparser foliage.
 # Only meshes survive (the re-upload's text and helper objects are dropped). Parts are merged by
 # material, reduced to a web budget, scaled to real size, standing on the floor and centred, then
 # written as Draco-compressed GLB with WebP textures (no side larger than 2048 px).
 import bpy, sys, os, math, mathutils
 
 args = sys.argv[sys.argv.index('--') + 1:]
-SRC, OUT, ONLY = args[0], args[1], set(args[2:])
+SRC, OUT = args[0], args[1]
+MOBILE = 'mobile' in args[2:]
+ONLY = set(a for a in args[2:] if a != 'mobile')
+TEX = 1024 if MOBILE else 2048
 
 EXHIBITS = {
     # name: source file, which dimension to fit and its size in metres, triangle budget
@@ -19,6 +23,10 @@ EXHIBITS = {
     'abs-house': dict(file='house2/FBX.FBX', fit='length', size=1.3, tris=160000),
     # The sofa set is already in metres; the rug exists twice in the file.
     'sofa': dict(file='sofa/Vavicci_Sofa_C_FBX.FBX', fit=None, tris=160000, exclude=('Viavcci_Carpet03',)),
+    # Rodion's own Aventador SVJ Roadster (2021): 3.2 M triangles in 176 parts.
+    'svj': dict(file=r'C:\Telegram Desktop\Lamborghini_Aventador_Roadster_SVJ_2021_3D_Model\Lamborghini Aventador Roadster SVJ 2021 3D Model\lamborghini-aventador-roadster-svj-2021.fbx', fit='length', size=4.943, tris=320000, floor=0.05),
+    # A hanging rack of pendant pots with trailing plants: modelled leaves, 3.2 M triangles.
+    'plant-pendant': dict(file=r'C:\Telegram Desktop\Pot light pendant plant light hanging 08 3D Model\pot light pendant - plant light hanging 08.obj', fit='length', size=2.02, tris=110000, floor=0.02, thin=('wire_204204204', .35)),
 }
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -40,7 +48,9 @@ def decal(folder, cfg):
 
 def load(path, exclude=()):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    if path.lower().endswith('.fbx'):
+    if path.lower().endswith('.obj'):
+        bpy.ops.wm.obj_import(filepath=path)
+    elif path.lower().endswith('.fbx'):
         try:
             bpy.ops.import_scene.fbx(filepath=path)
         except RuntimeError as error:
@@ -72,10 +82,31 @@ def merge_by_material():
         if len(objs) > 1: bpy.ops.object.join()
         bpy.context.view_layer.objects.active.name = key.split('|')[0] or 'part'
 
+def thin(material, keep, big=3000):
+    """Foliage: drop a share of the separate leaf pieces (stems and anything large always stay).
+    Collapse decimation cannot take a leaf below a few triangles, so thinning is what makes it light."""
+    import bmesh, random
+    rng = random.Random(7)
+    for o in bpy.context.scene.objects:
+        if not any(s.material and s.material.name == material for s in o.material_slots): continue
+        bm = bmesh.new(); bm.from_mesh(o.data); bm.faces.ensure_lookup_table()
+        seen = bytearray(len(bm.faces)); drop = []
+        for f in bm.faces:
+            if seen[f.index]: continue
+            stack = [f]; seen[f.index] = 1; island = []
+            while stack:
+                g = stack.pop(); island.append(g)
+                for e in g.edges:
+                    for h in e.link_faces:
+                        if not seen[h.index]: seen[h.index] = 1; stack.append(h)
+            if len(island) < big and rng.random() > keep: drop.extend(island)
+        bmesh.ops.delete(bm, geom=drop, context='FACES'); bm.to_mesh(o.data); bm.free()
+    print('THINNED', material, 'keep', keep)
+
 def tri_count(o):
     return sum(len(p.vertices) - 2 for p in o.data.polygons)
 
-def reduce(budget):
+def reduce(budget, floor=0.08):
     objs = list(bpy.context.scene.objects); total = sum(tri_count(o) for o in objs)
     print('TRIS before', total)
     if not budget or total <= budget: return
@@ -83,7 +114,7 @@ def reduce(budget):
     for o in objs:
         n = tri_count(o)
         if n < 1500: continue
-        m = o.modifiers.new('reduce', 'DECIMATE'); m.ratio = max(ratio, 0.08); m.use_collapse_triangulate = True
+        m = o.modifiers.new('reduce', 'DECIMATE'); m.ratio = max(ratio, floor); m.use_collapse_triangulate = True
         bpy.context.view_layer.objects.active = o; bpy.ops.object.modifier_apply(modifier=m.name)
     print('TRIS after', sum(tri_count(o) for o in bpy.context.scene.objects))
 
@@ -110,7 +141,7 @@ def place(fit, size=None):
 def pbr(folder, maps):
     def image(name, colour):
         img = bpy.data.images.load(os.path.join(folder, name))
-        if max(img.size) > 2048: img.scale(2048, 2048)
+        if max(img.size) > TEX: img.scale(TEX, TEX)
         img.colorspace_settings.name = 'sRGB' if colour else 'Non-Color'
         return img
     base, rough, normal = image(maps['base'], True), image(maps['rough'], False), image(maps['normal'], False)
@@ -129,24 +160,27 @@ def strip_missing_images():
     for m in bpy.data.materials:
         if not m.use_nodes: continue
         for n in list(m.node_tree.nodes):
-            if n.type == 'TEX_IMAGE' and (not n.image or not n.image.has_data):
+            # Images load lazily (has_data is False until touched), so ask the disk, not the image.
+            if n.type != 'TEX_IMAGE': continue
+            if not n.image or not (n.image.packed_file or os.path.exists(bpy.path.abspath(n.image.filepath))):
                 m.node_tree.nodes.remove(n)
 
 def shrink_images():
     for img in bpy.data.images:
-        if img.size[0] and max(img.size) > 2048:
-            w, h = img.size; k = 2048 / max(w, h); img.scale(int(w * k), int(h * k))
+        if img.size[0] and max(img.size) > TEX:
+            w, h = img.size; k = TEX / max(w, h); img.scale(int(w * k), int(h * k))
 
 for name, cfg in EXHIBITS.items():
     if ONLY and name not in ONLY: continue
     path = os.path.join(SRC, cfg['file']); print('==', name, path)
     load(path, cfg.get('exclude', ()))
     strip_missing_images()
+    if cfg.get('thin'): thin(cfg['thin'][0], cfg['thin'][1] * (.5 if MOBILE else 1))
     merge_by_material()
     if cfg.get('rotate_x'):
         turn = mathutils.Matrix.Rotation(math.radians(cfg['rotate_x']), 4, 'X')
         for o in bpy.context.scene.objects: o.data.transform(turn)
-    reduce(cfg['tris'])
+    reduce(int(cfg['tris'] * (.45 if MOBILE else 1)), cfg.get('floor', 0.08) * (.6 if MOBILE else 1))
     smooth()
     place(cfg['fit'], cfg.get('size'))
     if 'pbr' in cfg: pbr(os.path.dirname(path), cfg['pbr'])
@@ -162,9 +196,9 @@ for name, cfg in EXHIBITS.items():
         bpy.data.objects.remove(o, do_unlink=True); fresh.name = keep
     os.makedirs(OUT, exist_ok=True)
     bpy.ops.export_scene.gltf(
-        filepath=os.path.join(OUT, name + '.glb'), export_format='GLB', export_yup=True, export_apply=True,
+        filepath=os.path.join(OUT, name + ('.mobile' if MOBILE else '') + '.glb'), export_format='GLB', export_yup=True, export_apply=True,
         export_image_format='WEBP', export_image_quality=82, export_materials='EXPORT', export_texcoords=True, export_normals=True,
         export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=6,
         export_draco_position_quantization=14, export_draco_normal_quantization=10, export_draco_texcoord_quantization=12,
         export_cameras=False, export_lights=False, export_animations=False)
-    print('WROTE', name, os.path.getsize(os.path.join(OUT, name + '.glb')))
+    print('WROTE', name, 'mobile' if MOBILE else '', os.path.getsize(os.path.join(OUT, name + ('.mobile' if MOBILE else '') + '.glb')))
