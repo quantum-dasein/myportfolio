@@ -443,10 +443,12 @@ export async function mountObservatory(root:HTMLElement){
       for(const [href,as] of [[work.portalHref,'document'],['/models/exhibits/kitchen-modern-25.glb','fetch']] as const){
         const link=document.createElement('link');link.rel='prefetch';link.href=href;link.as=as;if(as==='fetch')link.crossOrigin='anonymous';document.head.append(link);
       }
-      stopTour();sound.open();
+      stopTour();sound.open();sound.hush(true);
+      // Back from the room through the browser's history: the ambience returns.
+      addEventListener('pageshow',()=>sound.hush(false),{once:true});
       if(firstPerson)setFirstPerson(false);
       const crossed=await world?.enterModelPortal();
-      if(token!==openToken||!crossed)return;
+      if(token!==openToken||!crossed){sound.hush(false);return;}
       const veil=document.createElement('div');veil.className='obs-model-crossing';
       veil.setAttribute('aria-hidden','true');document.body.append(veil);
       const calm=world?.isCalm()||matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -491,9 +493,9 @@ export async function mountObservatory(root:HTMLElement){
       if(mapping||viewer.open)return;
       if(inFinale)return;
       if(firstPerson)setFirstPerson(false);
-      inFinale=true;root.classList.add('is-finale');world.setFinale(true);sound.gate();
+      inFinale=true;root.classList.add('is-finale');world.setFinale(true);sound.gate();sound.hush(true);
     }else{
-      root.classList.remove('is-contact');finale.setAttribute('aria-hidden','true');world.setFinale(false);
+      root.classList.remove('is-contact');finale.setAttribute('aria-hidden','true');world.setFinale(false);sound.hush(false);
     }
   }
   const portalLines=()=>de()

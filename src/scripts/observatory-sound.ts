@@ -24,9 +24,9 @@ const LEVEL=.55;
 export function createHallSound(){
   let ctx:AudioContext|undefined,master:GainNode|undefined,air:{gain:GainNode;filter:BiquadFilterNode}|undefined;
   const pads:GainNode[]=[];
-  let own=true,filmOpen=false,lastLamp=0,lastPing=0,lastRooms='';
+  let own=true,filmOpen=false,hushed=false,lastLamp=0,lastPing=0,lastRooms='';
   const html=document.documentElement;
-  const wanted=()=>html.classList.contains('rb-sound')&&!html.classList.contains('rb-calm')&&!document.hidden&&!filmOpen;
+  const wanted=()=>html.classList.contains('rb-sound')&&!html.classList.contains('rb-calm')&&!document.hidden&&!filmOpen&&!hushed;
 
   function build(){
     const Ctor=window.AudioContext||(window as any).webkitAudioContext;if(!Ctor)return;
@@ -137,6 +137,12 @@ export function createHallSound(){
     // Caught comet: a bright rising sparkle.
     comet(){[1318.5,1661.2,1975.5,2637].forEach((freq,i)=>chime(freq,.03,i*.06));},
     open(){swell(200,1400,1.1,.35);swellUntil=(ctx?.currentTime??0)+1.1;},
+    // Into a portal: the hall and the studio drone fade out together over a few seconds; back out, they return.
+    hush(on:boolean){
+      if(hushed===on)return;hushed=on;
+      dispatchEvent(new CustomEvent('rb:ambience-hush',{detail:on}));
+      if(master&&ctx)ramp(master.gain,wanted()?LEVEL:0,on?1:.5);
+    },
     close(){swell(1200,220,.9,.25);swellUntil=(ctx?.currentTime??0)+.9;},
     dispose(){clearInterval(breathTimer);if(own)void ctx?.close();else master?.disconnect();},
   };

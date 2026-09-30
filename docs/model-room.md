@@ -43,7 +43,28 @@ is shown the way its kind is shown in the world:
 - **Exhibit 002, the Audi e-bike:** on a showroom turntable, under two light
   boxes.
 - **Exhibit 003, K-2SO:** on a museum pedestal, with a spot from above and a
-  green rim light. The astronaut walks over and looks up at it.
+  green rim light.
+- **Exhibit 004, ABS House V176:** three variants shown as a white
+  architectural model at about 1:15, on a model table under a glass vitrine.
+- **Exhibit 005, the lounge:** the Vavicci Sofa C set by the entrance, dressed
+  in the room's palette because its textures were not in the archive.
+
+`src/scripts/model-room-guide.ts` makes the astronaut a visitor. He tours the
+pieces along fixed paths and reacts to each one:
+
+- he crouches at the e-bike's wheel;
+- photographs the kitchen;
+- is startled by K-2SO, then waves at it;
+- leans over the house model.
+
+Then he sits on the sofa and waits impatiently: checks his tablet, looks for
+you, dozes, and waves when you come close. Reactions show as a hologram bubble
+over his helmet and in his visor colour. He stops if you stand in his way.
+
+`scripts/model-room/fbx6.py` reads FBX 6.1 files (3ds Max, around 2010), which
+Blender's importer refuses. It reuses Blender's low-level FBX reader to rebuild
+meshes, UVs, materials and 3ds Max transforms. `prepare-exhibits.py` falls back
+to it on its own.
 
 Every stand has a lit lectern, a green floor halo and a contact shadow.
 

@@ -68,8 +68,8 @@
   }
 
   const isCalm = () => document.documentElement.classList.contains("rb-calm");
-  let exhibitionFilmOpen = false;
-  const level = () => (enabled && !isCalm() && !document.hidden && !exhibitionFilmOpen ? 1 : 0);
+  let exhibitionFilmOpen = false, hushed = false;
+  const level = () => (enabled && !isCalm() && !document.hidden && !exhibitionFilmOpen && !hushed ? 1 : 0);
 
   function ensureContext() {
     if (ctx) return ctx;
@@ -95,7 +95,31 @@
     if (buffers.has(key) || !ctx) return;
     const res = await fetch(SRC[key]);
     const raw = await res.arrayBuffer();
-    buffers.set(key, await ctx.decodeAudioData(raw));
+    const decoded = await ctx.decodeAudioData(raw);
+    buffers.set(key, key === "drone" ? seamless(decoded) : decoded);
+  }
+
+  // The drone file fades in and out at its ends (and AAC adds a little silence), so a plain loop
+  // dipped and hiccuped once a minute. Keep only the steady part and crossfade its tail into its
+  // head, equal-power, so the loop point cannot be heard.
+  const CROSSFADE = 4; // seconds
+  function seamless(buf: AudioBuffer) {
+    if (!ctx) return buf;
+    const sr = buf.sampleRate, win = Math.floor(sr * 0.05), d = buf.getChannelData(0);
+    const levels: number[] = [];
+    for (let i = 0; i + win <= d.length; i += win) { let s = 0; for (let j = i; j < i + win; j++) s += d[j] * d[j]; levels.push(Math.sqrt(s / win)); }
+    const sorted = [...levels].sort((a, b) => a - b), steady = sorted[Math.floor(sorted.length / 2)] * 0.7;
+    const first = levels.findIndex((l) => l >= steady), last = levels.length - 1 - [...levels].reverse().findIndex((l) => l >= steady);
+    const a = Math.max(0, first) * win, b = Math.min(d.length, (last + 1) * win), x = Math.floor(sr * CROSSFADE);
+    if (first < 0 || b - a < x * 3) return buf;
+    const out = ctx.createBuffer(buf.numberOfChannels, b - a - x, sr);
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      const src = buf.getChannelData(c), dst = out.getChannelData(c);
+      dst.set(src.subarray(a, b - x));
+      // The head fades in while the old tail fades out on top of it.
+      for (let i = 0; i < x; i++) { const t = i / x; dst[i] = src[a + i] * Math.sin(t * Math.PI / 2) + src[b - x + i] * Math.cos(t * Math.PI / 2); }
+    }
+    return out;
   }
 
   /** Fetch + decode everything once, on the first activation only. */
@@ -280,6 +304,12 @@
   addEventListener("rb:exhibition-film", (event) => {
     exhibitionFilmOpen = Boolean((event as CustomEvent).detail);
     fade(level(), 0.3);
+  });
+
+  // Walking into a portal (the contact finale, a room beyond the archive) the ambience bows out slowly.
+  addEventListener("rb:ambience-hush", (event) => {
+    hushed = Boolean((event as CustomEvent).detail);
+    fade(level(), hushed ? 3.2 : 1.6);
   });
 
   // The secret transmission opening — a heavier cue than a click, if sound is on.

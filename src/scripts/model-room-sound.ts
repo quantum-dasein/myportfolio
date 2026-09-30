@@ -142,6 +142,13 @@ export function createRoomSound() {
     leave() { if (!act()) return; burst({ f: 400, to: 3600, q: .6, dur: .9, level: .16, attack: .2 }); [880, 659.25, 554.37, 440].forEach((f, i) => bell(f, .045, i * .09, sfxBus)); },
     /** A piece printed into the room: a soft rising scan and three notes, with the music. */
     reveal() { if (!ctx || ctx.state !== 'running' || !wanted()) return; burst({ f: 300, to: 2400, q: .9, dur: 2, level: .05, attack: .6 }); [554.37, 659.25, 880].forEach((f, i) => bell(f, .03, .4 + i * .45, sfxBus)); },
+    /** The astronaut's reactions: a tiny glassy chirp, rising when he is delighted, falling when he is tired. */
+    chirp(kind: string) {
+      if (!ctx || ctx.state !== 'running' || !wanted()) return;
+      const up = ['wow', 'love', 'hi', 'happy', 'spark', 'photo'].includes(kind), down = ['tired', 'sleep', 'clock'].includes(kind);
+      const f = up ? 1318.51 : down ? 659.25 : 987.77;
+      tone(f, .22, .018, { type: 'sine', glide: up ? 1.5 : down ? .7 : 1.12, dest: sfxBus });
+    },
     /** A detail picked out, or inspection toggled. */
     select() { if (!act()) return; bell(1318.51, .04, 0, sfxBus); tone(659.25, .8, .03, { dest: sfxBus }); },
     click() { if (!act()) return; tone(880, .25, .03, { type: 'triangle', dest: sfxBus }); },

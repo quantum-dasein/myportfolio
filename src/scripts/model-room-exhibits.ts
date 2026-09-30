@@ -21,7 +21,7 @@ export const KITCHEN: ExhibitInfo = {
 };
 
 type Stage = {
-  info: ExhibitInfo; url: string; stand: 'turntable' | 'pedestal';
+  info: ExhibitInfo; url: string; stand: 'turntable' | 'pedestal' | 'table' | 'lounge';
   at: THREE.Vector3; lift: number; spin: number; yaw: number; reach: number; height: number;
   lectern: { x: number; z: number; face: number; title: string; line: string };
 };
@@ -46,6 +46,26 @@ const STAGES: Stage[] = [
     },
     url: '/models/exhibits/k2so.glb', stand: 'pedestal', at: new THREE.Vector3(4.8, 0, .4), lift: .5, spin: 0, yaw: -.75, reach: .75, height: 2.8,
     lectern: { x: 6.1, z: 1.25, face: -.45, title: 'K-2SO', line: 'EXHIBIT 003  ·  CHARACTER  ·  FAN STUDY' },
+  },
+  {
+    info: {
+      id: 'house', no: '004', kind: { en: 'Architecture', de: 'Architektur' }, title: 'ABS House',
+      sub: { en: 'V176, three variants', de: 'V176, drei Varianten' },
+      text: { en: 'A two-storey house in three variants,\nshown as a white architectural model.', de: 'Ein zweigeschossiges Haus in drei Varianten,\nals weißes Architekturmodell.' },
+      focus: new THREE.Vector3(5.5, .95, 5.2), distance: 2.6,
+    },
+    url: '/models/exhibits/abs-house.glb', stand: 'table', at: new THREE.Vector3(5.5, 0, 5.2), lift: .845, spin: 0, yaw: Math.PI / 2, reach: .9, height: .3,
+    lectern: { x: 4.25, z: 3.9, face: -1.05, title: 'ABS HOUSE', line: 'EXHIBIT 004  ·  ARCHITECTURE  ·  1:15' },
+  },
+  {
+    info: {
+      id: 'sofa', no: '005', kind: { en: 'Furniture', de: 'Möbel' }, title: 'Lounge',
+      sub: { en: 'Vavicci Sofa C and its set', de: 'Vavicci Sofa C mit Ensemble' },
+      text: { en: 'Velvet, linen and a knitted throw.\nThe astronaut rests here and waits for you.', de: 'Samt, Leinen und ein Strickplaid.\nHier ruht der Astronaut und wartet auf Sie.' },
+      focus: new THREE.Vector3(-5.3, .6, 9.55), distance: 4.6,
+    },
+    url: '/models/exhibits/sofa.glb', stand: 'lounge', at: new THREE.Vector3(-5.3, 0, 9.55), lift: 0, spin: 0, yaw: Math.PI, reach: 1.9, height: 1,
+    lectern: { x: -3.05, z: 7.55, face: .8, title: 'LOUNGE', line: 'EXHIBIT 005  ·  FURNITURE  ·  VAVICCI' },
   },
 ];
 export const EXHIBITS: ExhibitInfo[] = [KITCHEN, ...STAGES.map(s => s.info)];
@@ -112,7 +132,8 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
       fragmentShader: `varying vec2 vUv; void main(){ vec2 p = (vUv - .5) * 2.; float d = dot(p, p); gl_FragColor = vec4(0., 0., 0., .72 * exp(-d * 3.2) * smoothstep(1., .6, d)); }`,
     })));
     shade.rotation.x = -Math.PI / 2; shade.position.y = stage.lift + .006; shade.renderOrder = 1;
-    if (stage.stand === 'turntable') shade.scale.set(.8, 2.2, 1); else shade.scale.set(.95, .95, 1);
+    if (stage.stand === 'turntable') shade.scale.set(.8, 2.2, 1); else if (stage.stand === 'table') shade.scale.set(1.45, .5, 1); else shade.scale.set(.95, .95, 1);
+    shade.visible = stage.stand !== 'lounge';   // the rug is its own ground
     spinner.add(shade);
     if (stage.stand === 'turntable') {
       // Showroom turntable: a low gloss-black disc with a lit green edge and two long light boxes above.
@@ -127,6 +148,26 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
       }
       halo(at.x, at.z, reach + .07, .55);
       colliders.push(new THREE.Box3(new THREE.Vector3(at.x - reach, 0, at.z - reach), new THREE.Vector3(at.x + reach, 1.2, at.z + reach)));
+    } else if (stage.stand === 'table') {
+      // Architect's model table: a white top on slim black legs, the model under a glass vitrine.
+      const white = own(new THREE.MeshStandardMaterial({ color: '#e9e6df', roughness: .7 })), steel = own(new THREE.MeshStandardMaterial({ color: '#141616', metalness: .7, roughness: .35 }));
+      const top = new THREE.Mesh(own(new THREE.BoxGeometry(.82, .05, 1.72)), white); top.position.set(at.x, .82, at.z); top.castShadow = top.receiveShadow = true; scene.add(top);
+      for (const [dx, dz] of [[-.36, -.8], [.36, -.8], [-.36, .8], [.36, .8]]) { const leg = new THREE.Mesh(own(new THREE.BoxGeometry(.035, .8, .035)), steel); leg.position.set(at.x + dx, .4, at.z + dz); leg.castShadow = true; scene.add(leg); }
+      const glass = new THREE.Mesh(own(new THREE.BoxGeometry(.66, .36, 1.56)), own(new THREE.MeshPhysicalMaterial({ color: '#dfeee8', roughness: .03, metalness: 0, transparent: true, opacity: .1, depthWrite: false, envMapIntensity: 1.6 })));
+      glass.position.set(at.x, .845 + .18, at.z); glass.renderOrder = 2; scene.add(glass);
+      const edges = new THREE.LineSegments(own(new THREE.EdgesGeometry(glass.geometry)), own(new THREE.LineBasicMaterial({ color: new THREE.Color(.5, 1.3, .9), toneMapped: false, transparent: true, opacity: .55 })));
+      edges.position.copy(glass.position); scene.add(edges);
+      downlight(at.x - .6, at.z, new THREE.Vector3(at.x, .9, at.z), 40, .38);
+      halo(at.x, at.z, 1.05, .3);
+      colliders.push(new THREE.Box3(new THREE.Vector3(at.x - .45, 0, at.z - .9), new THREE.Vector3(at.x + .45, 1.2, at.z + .9)));
+    } else if (stage.stand === 'lounge') {
+      // The waiting corner by the entrance: a warm pendant over the coffee table. Its collider comes from the sofa once loaded.
+      const shadeMat = own(new THREE.MeshStandardMaterial({ color: '#1b1f1d', metalness: .6, roughness: .4, side: THREE.DoubleSide }));
+      const pendant = new THREE.Mesh(own(new THREE.ConeGeometry(.32, .26, 40, 1, true)), shadeMat); pendant.position.set(at.x + .4, 2.35, at.z - .6); scene.add(pendant);
+      const cord = new THREE.Mesh(stem, bronze); cord.scale.y = 4; cord.position.set(at.x + .4, 4.45, at.z - .6); scene.add(cord);
+      const bulb = new THREE.Mesh(own(new THREE.SphereGeometry(.05, 16, 12)), lens); bulb.position.set(at.x + .4, 2.26, at.z - .6); scene.add(bulb);
+      const lamp = new THREE.PointLight('#ffc98f', mobile ? 5 : 6, 5.5, 2); lamp.position.set(at.x + .4, 2.1, at.z - .6); scene.add(lamp);
+      downlight(at.x - .8, at.z - 1.6, new THREE.Vector3(at.x, .4, at.z), 26, .6);
     } else {
       // Museum pedestal: dark stone, a bronze cap, a green line of light at its foot; a spot from above and a rim light.
       const block = new THREE.Mesh(own(new THREE.BoxGeometry(1.1, .44, 1.1)), stone); block.position.set(at.x, .22, at.z); block.castShadow = block.receiveShadow = true; scene.add(block);
@@ -151,7 +192,27 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
       const mesh = node as THREE.Mesh; if (!mesh.isMesh) return;
       const m = mesh.material as THREE.MeshStandardMaterial; const name = m.name;
       if (id === 'k2so') Object.assign(m, { metalness: .45, envMapIntensity: 1.1 });
-      else if (name === 'bicycles_Decal') Object.assign(m, { transparent: false, alphaTest: .5, depthWrite: true, metalness: .3, roughness: .4 });
+      else if (id === 'house') {
+        // A white architectural model: one white, dark glass, the house's own green accent, dark steel.
+        if (/Arch_Glass/.test(name)) mesh.material = own(new THREE.MeshPhysicalMaterial({ name, color: '#14302a', roughness: .05, metalness: .1, transparent: true, opacity: .6, depthWrite: false, envMapIntensity: 1.5 }));
+        else if (/Material #192/.test(name)) Object.assign(m, { metalness: 0, roughness: .6 }), m.color.set('#3f9e72');
+        else if (/steel2|Exposed 910/.test(name)) Object.assign(m, { metalness: .2, roughness: .6 }), m.color.set('#2b2e2d');
+        else Object.assign(m, { metalness: 0, roughness: .88 }), m.color.set('#eeebe4');
+      } else if (id === 'sofa') {
+        // The textures never made it into the archive; the set is dressed in the room's palette instead.
+        const velvet = (color: string, sheen: string) => own(new THREE.MeshPhysicalMaterial({ name, color, roughness: .82, sheen: 1, sheenColor: new THREE.Color(sheen), sheenRoughness: .42 }));
+        const fabric = (color: string) => own(new THREE.MeshPhysicalMaterial({ name, color, roughness: .95, sheen: .45, sheenColor: new THREE.Color('#ffffff'), sheenRoughness: .8 }));
+        const swap: Record<string, () => THREE.Material> = {
+          'Material #7100': () => velvet('#23402f', '#7fc6a0'), 'Material #7087': () => velvet('#1a3226', '#5fa07e'),
+          'Material #7024': () => fabric('#d9cfbb'), 'Material #7137': () => fabric('#b8764f'), 'Material #7162': () => velvet('#2f5a47', '#8fd0b0'),
+          'Material #7136': () => fabric('#cbbfa6'), 'Material #7160': () => fabric('#1e2426'),
+        };
+        if (swap[name]) mesh.material = swap[name]();
+        else if (name === 'Material #7022') Object.assign(m, { metalness: 0, roughness: .5 }), m.color.set('#aeaba4');
+        else if (/Chrome|Nickel|Brass|Material #698|Material #6975/.test(name)) Object.assign(m, { metalness: .85, roughness: .3 }), m.color.set(/Brass/.test(name) ? '#b08a4a' : '#1a1a1a');
+        else Object.assign(m, { roughness: Math.max(.35, m.roughness) });
+        if (name === 'Material #7160') mesh.receiveShadow = true;
+      } else if (name === 'bicycles_Decal') Object.assign(m, { transparent: false, alphaTest: .5, depthWrite: true, metalness: .3, roughness: .4 });
       else if (name === 'tyre') Object.assign(m, { metalness: 0, roughness: .9 });
       else if (name === 'Copper') Object.assign(m, { metalness: .9, roughness: .3 });
       else Object.assign(m, { metalness: .35, roughness: .38 });
@@ -161,6 +222,7 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
 
   const frame = () => new Promise<void>(r => requestAnimationFrame(() => r()));
   let disposed = false;
+  const lounge: { sofa?: THREE.Box3; table?: THREE.Box3 } = {};
   /** Stream the pieces in one after another, each uploaded and compiled before it appears. */
   async function load() {
     for (const slot of slots) {
@@ -180,6 +242,18 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
         });
         for (const t of textures) { renderer.initTexture(t); await frame(); }
         slot.clip.constant = -1; slot.spinner.add(root);
+        if (slot.stage.stand === 'lounge') {
+          // Walls you cannot walk through: the sofa itself and the coffee table, measured once they stand in the room.
+          root.updateMatrixWorld(true);
+          const sofaBox = new THREE.Box3(), tableBox = new THREE.Box3();
+          root.traverse(node => {
+            const mesh = node as THREE.Mesh; if (!mesh.isMesh) return; const n = (mesh.material as THREE.Material).name;
+            if (/#7100|#7087|#7024|#7137|#7162|#7136|#698|#6975/.test(n)) sofaBox.expandByObject(mesh);
+            else if (/#7022|Chrome/.test(n)) tableBox.expandByObject(mesh);
+          });
+          if (!sofaBox.isEmpty()) { colliders.push(sofaBox); lounge.sofa = sofaBox; }
+          if (!tableBox.isEmpty()) { colliders.push(tableBox); lounge.table = tableBox; }
+        }
         await renderer.compileAsync(slot.spinner, camera as THREE.PerspectiveCamera, scene).catch(() => {});
         if (disposed) return;
         slot.state = 'revealing'; slot.scan.visible = true; o.onReveal?.(slot.stage.info.id);
@@ -203,8 +277,10 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
   });
 
   return {
-    colliders, meshes,
+    colliders, meshes, lounge,
     load,
+    /** Whether a piece has been printed into the room yet. */
+    shown(id: string) { return slots.find(s => s.stage.info.id === id)?.state === 'shown'; },
     update(t: number, dt: number) { for (const u of updates) u(t, dt); },
     /** Hold a piece still while it is being inspected. */
     hold(id: string | null) { for (const slot of slots) slot.paused = slot.stage.info.id === id; },

@@ -12,6 +12,7 @@ import { createRoomFx } from './model-room-fx';
 import { createAstronaut } from './observatory-astronaut';
 import { createRoomSound } from './model-room-sound';
 import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits';
+import { createGuide } from './model-room-guide';
 
 // Names for the parts you can pick out on each exhibit (by mesh material).
 const PARTS: Record<string, Record<string, [string, string]>> = {
@@ -51,7 +52,8 @@ export async function mountModelRoom(root: HTMLElement) {
     veil.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 650, easing: 'ease-in', fill: 'forwards' }).finished.then(go, go);
   }
   addEventListener('pageshow', event => { if (event.persisted) { leaving = false; root.querySelectorAll('.mr-exit-veil').forEach(v => v.remove()); if (ready) home(); } });
-  const astro = createAstronaut(); let astroPhase = 0, astroWalk = 0;
+  const astro = createAstronaut();
+  let guide: ReturnType<typeof createGuide> | undefined;
   const sound = createRoomSound(); let stepping = 0;
   let exhibits: ReturnType<typeof createExhibits> | undefined;
   const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
@@ -73,7 +75,7 @@ export async function mountModelRoom(root: HTMLElement) {
       fill(); box.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' });
     }, fill);
   }
-  const astroFrom = new THREE.Vector3(1.1, 0, 10.9), astroTo = new THREE.Vector3(3.3, 0, .75), astroVia = new THREE.Vector3(3.2, 0, 6);
+  const astroFrom = new THREE.Vector3(1.1, 0, 10.9);
   let composer: EffectComposer | undefined, bloom: UnrealBloomPass | undefined;
   let studioLight = false;
   let frame = 0, last = 0, disposed = false, ready = false, failed = false;
@@ -104,7 +106,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;keys.clear();touchKeys.clear();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();guide?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -182,7 +184,8 @@ export async function mountModelRoom(root: HTMLElement) {
     // The rear frame is open: you may walk into it (and that takes you back to the archive).
     if (Math.abs(x) > 8.5 || z < -7.05 || z > (Math.abs(x) < 1.3 ? 11.3 : 10.9)) return true;
     if (astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
-    return colliders.some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
+    // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
+    return [...colliders, ...(exhibits?.colliders ?? [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
   }
   function tick(time: number) {
     frame = 0;if (disposed || failed || document.hidden) return;
@@ -207,19 +210,8 @@ export async function mountModelRoom(root: HTMLElement) {
       camera.position.z = THREE.MathUtils.lerp(11.1, coarse.matches ? 9.6 : 9, e); fx?.setOpen(1);
       if (k >= 1) arriveAt = -1;
     }
-    // The astronaut came through with you: he walks to the exhibit, then stands and looks at it.
-    if (astro.root.visible) {
-      // A wide arc past you on the right, so he never walks through the view.
-      const goal = astro.root.position.z > 6.2 ? astroVia : astroTo;
-      const d = new THREE.Vector3().subVectors(goal, astro.root.position).setY(0), dist = d.length();
-      const walking = t - (arriveAtStart ?? t) > .6 && (goal === astroVia || dist > .08) ? 1 : 0;
-      astroWalk += (walking - astroWalk) * Math.min(1, dt * 4);
-      if (walking) { astro.root.position.addScaledVector(d.normalize(), Math.min(dist, 1.35 * dt)); astro.root.rotation.y = Math.atan2(d.x, d.z); }
-      // Arrived, he stands with K-2SO and looks up at it, one visitor from space to one from a galaxy far away.
-      else { const face = Math.atan2(4.8 - astro.root.position.x, .4 - astro.root.position.z); astro.root.rotation.y += Math.atan2(Math.sin(face - astro.root.rotation.y), Math.cos(face - astro.root.rotation.y)) * Math.min(1, dt * 2); }
-      astroPhase += dt * (1 + astroWalk * 5);
-      astro.animate(astroPhase, astroWalk, 0, dt, 0, { yaw: .18 * Math.sin(t * .23), pitch: -.08 - .3 * (1 - astroWalk) });
-    }
+    // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
+    if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
     fx?.update(t, dt);exhibits?.update(t, dt);
     // Walking, the caption follows what you look at.
     if (ready && exhibits && !inspecting && time - captionAt > 250) {
@@ -245,9 +237,9 @@ export async function mountModelRoom(root: HTMLElement) {
     design=createModelRoomDesign(scene,coarse.matches);home();
     fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches });
     exhibits = createExhibits({ scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal() });
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, select: (x: number, y: number) => select(x, y) };
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
-    colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)),...exhibits.colliders);
+    colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
     bloom=new UnrealBloomPass(new THREE.Vector2(1,1),.32,.5,1.05);composer.addPass(bloom);composer.addPass(new OutputPass());
     { const r = $('stage').getBoundingClientRect(); fx.extendComposer(composer, Math.max(1, r.width), Math.max(1, r.height)); }
@@ -338,6 +330,18 @@ export async function mountModelRoom(root: HTMLElement) {
     astro.root.updateMatrixWorld(true);
     { const hb = new THREE.Box3().setFromObject(astro.root), h = hb.max.y - hb.min.y; if (h > .5) astro.root.scale.multiplyScalar(1.8 / h); }
     astro.root.position.copy(astroFrom); astro.root.rotation.y = Math.PI; astro.root.visible = !reduced;
+    guide = createGuide({
+      scene, astro, camera, reduced, from: astroFrom,
+      shown: id => id === 'kitchen' || Boolean(exhibits?.shown(id)),
+      // His seat: on the sofa's long side, a little in from its back, facing into the room.
+      seat: () => {
+        const s = exhibits?.lounge.sofa; if (!s) return null;
+        // The left seat by the cushions, reached from in front, beside the coffee table rather than through it.
+        return { at: new THREE.Vector3(s.min.x + .95, 0, s.max.z - .78), approach: new THREE.Vector3(s.min.x + 1.25, 0, s.min.z - .5), face: Math.PI };
+      },
+      chirp: kind => sound.chirp(kind),
+    });
+    guide.begin(performance.now() / 1000);
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.

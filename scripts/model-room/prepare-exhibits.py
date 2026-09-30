@@ -15,7 +15,12 @@ EXHIBITS = {
     # The .blend was built Y-up (for a game engine): stand it up before fitting.
     'audi-ebike': dict(file='ebike/Audi e-bike Low-poly 3D model.blend', fit='length', size=1.86, tris=0, rotate_x=90,
                        decal=dict(material='bicycles_Decal', alpha='mat4_a.jpg')),
+    # An FBX 6.1 house, shown as an architectural model at about 1:15.
+    'abs-house': dict(file='house2/FBX.FBX', fit='length', size=1.3, tris=160000),
+    # The sofa set is already in metres; the rug exists twice in the file.
+    'sofa': dict(file='sofa/Vavicci_Sofa_C_FBX.FBX', fit=None, tris=160000, exclude=('Viavcci_Carpet03',)),
 }
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def decal(folder, cfg):
     """Pack the decal sheet's separate alpha image into its colour image, cut out (alpha mask)."""
@@ -33,16 +38,20 @@ def decal(folder, cfg):
     tex.image = packed; nt.links.new(tex.outputs['Alpha'], bsdf.inputs['Alpha'])
     m.blend_method = 'CLIP'; m.alpha_threshold = .5
 
-def load(path):
+def load(path, exclude=()):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     if path.lower().endswith('.fbx'):
-        bpy.ops.import_scene.fbx(filepath=path)
+        try:
+            bpy.ops.import_scene.fbx(filepath=path)
+        except RuntimeError as error:
+            if 'unsupported' not in str(error): raise
+            import fbx6; fbx6.load(path)   # an FBX older than 2011
     else:
         with bpy.data.libraries.load(path) as (src, dst): dst.objects = src.objects
         for o in dst.objects:
             if o: bpy.context.scene.collection.objects.link(o)
     for o in list(bpy.context.scene.objects):
-        if o.type != 'MESH': bpy.data.objects.remove(o, do_unlink=True)
+        if o.type != 'MESH' or o.name in exclude: bpy.data.objects.remove(o, do_unlink=True)
     # Bake parents and transforms into the meshes.
     for o in bpy.context.scene.objects:
         mw = o.matrix_world.copy(); o.parent = None; o.matrix_world = mw
@@ -83,7 +92,7 @@ def smooth():
         bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
         bpy.ops.object.shade_smooth_by_angle(angle=0.61)
 
-def place(fit, size):
+def place(fit, size=None):
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     for o in bpy.context.scene.objects:
@@ -93,7 +102,7 @@ def place(fit, size):
         for v in o.data.vertices: lo = mathutils.Vector(map(min, lo, v.co)); hi = mathutils.Vector(map(max, hi, v.co))
     dim = hi - lo
     current = dim.z if fit == 'height' else max(dim.x, dim.y)
-    k = size / current; offset = mathutils.Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))
+    k = size / current if fit else 1.0; offset = mathutils.Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))
     for o in bpy.context.scene.objects:
         for v in o.data.vertices: v.co = (v.co - offset) * k
     print('SIZE', [round(x * k, 3) for x in dim])
@@ -115,6 +124,14 @@ def pbr(folder, maps):
         nt.links.new(t.outputs[0], nm.inputs['Color']); nt.links.new(nm.outputs[0], bsdf.inputs['Normal'])
         bsdf.inputs['Metallic'].default_value = .6
 
+def strip_missing_images():
+    """Texture files the archive did not include: drop their nodes so the exporter keeps the plain colours."""
+    for m in bpy.data.materials:
+        if not m.use_nodes: continue
+        for n in list(m.node_tree.nodes):
+            if n.type == 'TEX_IMAGE' and (not n.image or not n.image.has_data):
+                m.node_tree.nodes.remove(n)
+
 def shrink_images():
     for img in bpy.data.images:
         if img.size[0] and max(img.size) > 2048:
@@ -123,14 +140,15 @@ def shrink_images():
 for name, cfg in EXHIBITS.items():
     if ONLY and name not in ONLY: continue
     path = os.path.join(SRC, cfg['file']); print('==', name, path)
-    load(path)
+    load(path, cfg.get('exclude', ()))
+    strip_missing_images()
     merge_by_material()
     if cfg.get('rotate_x'):
         turn = mathutils.Matrix.Rotation(math.radians(cfg['rotate_x']), 4, 'X')
         for o in bpy.context.scene.objects: o.data.transform(turn)
     reduce(cfg['tris'])
     smooth()
-    place(cfg['fit'], cfg['size'])
+    place(cfg['fit'], cfg.get('size'))
     if 'pbr' in cfg: pbr(os.path.dirname(path), cfg['pbr'])
     if 'decal' in cfg: decal(os.path.dirname(path), cfg['decal'])
     shrink_images()
