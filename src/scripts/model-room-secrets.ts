@@ -2,13 +2,15 @@
 // away where only a curious visitor looks: up on the e-bike's wall mount, inside the house model's vitrine
 // (at 1:15 he is exactly a person's size there) and behind K-2SO's feet. Clicking one collects it. With all
 // three found, a wall safe by the lounge slides open onto a golden trophy, and confetti comes down.
+// The trophy is a key: clicked, the back of the safe becomes a portal of warm light into a private scene
+// (/gallery/night/), entered by stepping up to it or clicking it.
 import * as THREE from 'three';
 
 type Spot = { at: THREE.Vector3; face: number; scale?: number };
 
 export function createSecrets(o: {
-  scene: THREE.Scene; root: HTMLElement; de: () => boolean; mobile: boolean;
-  onFound?: (n: number, of: number) => void; onAll?: () => void;
+  scene: THREE.Scene; root: HTMLElement; de: () => boolean; mobile: boolean; camera: THREE.Camera;
+  onFound?: (n: number, of: number) => void; onAll?: () => void; onPortal?: () => void; onEnter?: () => void;
 }) {
   const { scene } = o;
   const disposables: { dispose: () => void }[] = [];
@@ -66,6 +68,18 @@ export function createSecrets(o: {
   const trophy = figure(.42); trophy.position.set(0, .83, .14); safe.add(trophy);
   const plinth = box(.3, .05, .2, own(new THREE.MeshStandardMaterial({ color: '#0d0f0f', metalness: .6, roughness: .3 })), 0, .805, .14); void plinth;
   const glow = new THREE.PointLight('#ffc27a', 0, 3.2, 2); glow.position.set(0, 1.8, .2); safe.add(glow);
+  // The portal behind the trophy: a slow swirl of rose and gold light, hidden until the trophy is clicked.
+  const portalMat = own(new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uOpen: { value: 0 } }, transparent: true, depthWrite: false, toneMapped: false,
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+    fragmentShader: `uniform float uTime, uOpen; varying vec2 vUv;
+      void main(){ vec2 p = (vUv - .5) * vec2(1.02, 1.2); float r = length(p), a = atan(p.y, p.x);
+        float swirl = sin(a * 3. + r * 18. - uTime * 2.4) * .5 + .5, core = exp(-r * r * 9.);
+        vec3 rose = vec3(2.2, .9, 1.1), gold = vec3(2.4, 1.7, .8), c = mix(rose, gold, swirl) * (.35 + core * 1.6);
+        float edge = smoothstep(.62, .45, max(abs(p.x) / 1.02 * 2. * .5 + .0, abs(p.y) / 1.2));
+        gl_FragColor = vec4(c, uOpen * edge * (.55 + .45 * swirl)); }`,
+  }));
+  const portal = new THREE.Mesh(own(new THREE.PlaneGeometry(1.02, 1.2)), portalMat); portal.position.set(0, 1.4, .03); portal.visible = false; portal.userData.portal = true; safe.add(portal);
   const collider = new THREE.Box3().setFromObject(safe);
 
   // Confetti: a few hundred gold and green flakes that tumble down in front of the safe.
@@ -89,8 +103,15 @@ export function createSecrets(o: {
   let toastTimer = 0;
   function say(text: string, ms = 3200) { toast.textContent = text; toast.classList.add('is-on'); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => toast.classList.remove('is-on'), ms); }
 
-  let count = 0, openAt = -1, now = 0, confettiAt = -1;
+  let count = 0, openAt = -1, now = 0, confettiAt = -1, portalAt = -1, entered = false;
+  trophy.traverse(n => { n.userData.trophy = true; });
+  function openPortal() {
+    if (portalAt >= 0) return; portalAt = now; portal.visible = true; targets.push(portal as unknown as THREE.Mesh);
+    say('Для Лиды ♥  Шагни в свет', 6000); o.onPortal?.();
+  }
   function find(object: THREE.Object3D) {
+    if (object.userData.portal) { if (!entered) { entered = true; o.onEnter?.(); } return true; }
+    if (object.userData.trophy) { if (openAt >= 0 && now > openAt + 1.2) openPortal(); return true; }
     const i = object.userData.mini as number | undefined; if (i === undefined) return false;
     const m = minis[i]; if (m.found) return true;
     m.found = true; m.foundAt = now; count++;
@@ -99,6 +120,8 @@ export function createSecrets(o: {
     else {
       say(o.de() ? 'Alle drei gefunden. Beim Sofa hat sich etwas geöffnet …' : 'All three found. Something has opened by the sofa …', 5200);
       openAt = now + 1.2; confettiAt = now + 1.8; o.onAll?.();
+      // The trophy can now be clicked.
+      trophy.traverse(n => { if ((n as THREE.Mesh).isMesh) targets.push(n as THREE.Mesh); });
     }
     return true;
   }
@@ -122,6 +145,14 @@ export function createSecrets(o: {
         const k = Math.min(1, (t - openAt) / 1.8), e = 1 - Math.pow(1 - k, 3);
         doors.forEach((d, i) => { d.position.x = (i ? 1 : -1) * (.255 + e * .5); });
         inner.emissiveIntensity = .5 * e; glow.intensity = 6 * e; trophy.rotation.y = t * .6;
+      }
+      if (portalAt >= 0) {
+        // The trophy steps aside into the light as the portal opens behind it.
+        const k = Math.min(1, (t - portalAt) / 1.6);
+        portalMat.uniforms.uOpen.value = k; portalMat.uniforms.uTime.value = t;
+        trophy.scale.setScalar(.42 * (1 - k)); trophy.visible = k < 1; glow.color.set('#ff9fb8'); glow.intensity = 6 + k * 6;
+        // Walking up to it takes you through.
+        if (k >= 1 && !entered) { const p = o.camera.position, w = safe.position; if (Math.hypot(p.x - w.x, p.z - w.z) < 1.35) { entered = true; o.onEnter?.(); } }
       }
       if (confettiAt >= 0 && t > confettiAt) {
         const age = t - confettiAt; (confetti.material as THREE.PointsMaterial).opacity = Math.min(1, age * 3) * (1 - THREE.MathUtils.smoothstep(age, 5, 7));

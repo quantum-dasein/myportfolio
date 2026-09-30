@@ -9,11 +9,11 @@ import type { createAstronaut } from './observatory-astronaut';
 
 type Astro = ReturnType<typeof createAstronaut>;
 type Pose = { yaw?: number; pitch?: number; wave?: number; sit?: number; tablet?: number; reach?: number };
-type Emote = 'wow' | 'curious' | 'love' | 'photo' | 'hi' | 'spark' | 'think' | 'tired' | 'clock' | 'dots' | 'sleep' | 'happy';
+export type Emote = 'wow' | 'curious' | 'love' | 'photo' | 'hi' | 'spark' | 'think' | 'tired' | 'clock' | 'dots' | 'sleep' | 'happy';
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 // Visor colours by mood.
-const TINT: Record<Emote, string> = {
+export const TINT: Record<Emote, string> = {
   wow: '#7dffc2', curious: '#9fc8ff', love: '#ff9fc6', photo: '#e8f4ff', hi: '#9dffd0', spark: '#ffe29a',
   think: '#b9b0ff', tired: '#8a97a8', clock: '#ffb76b', dots: '#a9c2c6', sleep: '#6f7c95', happy: '#8dffb4',
 };
@@ -70,7 +70,7 @@ const STOPS: Stop[] = [
   },
 ];
 const TO_SOFA = [V(2.4, 0, 7.3), V(-1.4, 0, 8.1)];
-function bubble(kind: Emote) {
+export function bubble(kind: Emote) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d')!;
   // A hologram speech bubble: dark glass, a mint outline, a little tail.
   x.fillStyle = 'rgba(8,20,16,.72)'; x.strokeStyle = 'rgba(140,255,200,.95)'; x.lineWidth = 7;

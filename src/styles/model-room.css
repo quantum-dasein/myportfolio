@@ -75,3 +75,4 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 }
 .mr-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 @media (max-width: 600px) { .mr-toast { font-size: 12px; white-space: normal; width: max-content; max-width: calc(100vw - 32px); text-align: center; } }
+.mr-exit-veil.is-rose { background: radial-gradient(ellipse at center, #fff4ec 0%, #ffc6cf 32%, #3a1a2a 85%); }

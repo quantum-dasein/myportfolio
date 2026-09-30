@@ -1,0 +1,49 @@
+---
+// A private page, reached only through the Model Room's hidden portal. Not in the sitemap, not indexed.
+import Layout from '../../layouts/Layout.astro';
+import '../../styles/night.css';
+---
+<Layout mode="deck" noindex title="Night | Rodion Belousov" description="A private scene in the Model Room.">
+  <section class="night" data-night lang="ru" aria-label="Ночь">
+    <div class="n-stage" data-n-stage></div>
+
+    <div class="n-intro" data-n-intro>
+      <p class="n-eyebrow">для Лиды</p>
+      <h1>Одна ночь<br />из нашего будущего</h1>
+      <p class="n-note">Включи звук</p>
+      <button type="button" class="n-start" data-n-start disabled>Войти <span aria-hidden="true">♥</span></button>
+      <p class="n-loading" data-n-loading role="status">Зажигаю свет…</p>
+    </div>
+
+    <p class="n-sub" data-n-sub aria-live="polite"></p>
+
+    <div class="n-answer" data-n-answer hidden>
+      <button type="button">Да</button>
+      <button type="button">Да, конечно!</button>
+    </div>
+
+    <div class="n-viewfinder" data-n-viewfinder hidden aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+      <i class="n-focus"></i>
+      <b class="n-count" data-n-count></b>
+    </div>
+    <div class="n-flash" data-n-flash aria-hidden="true"></div>
+
+    <div class="n-end" data-n-end hidden>
+      <div class="n-photos" data-n-photos></div>
+      <div class="n-actions">
+        <button type="button" data-n-save>Сохранить фото</button>
+        <button type="button" data-n-replay>Посмотреть ещё раз</button>
+        <a href="/gallery/models/">Вернуться в комнату</a>
+      </div>
+    </div>
+    <noscript><p class="n-nojs">Для этой сцены нужен JavaScript.</p></noscript>
+  </section>
+</Layout>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-night]');
+  if (root) import('../../scripts/night').then(({ mountNight }) => mountNight(root)).catch(error => {
+    console.warn('Night could not open', error);
+    root.querySelector<HTMLElement>('[data-n-loading]')!.textContent = 'Не получилось открыть сцену. Обнови страницу.';
+  });
+</script>

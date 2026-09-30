@@ -265,7 +265,15 @@ export async function mountModelRoom(root: HTMLElement) {
       onOpen: () => { keys.clear(); touchKeys.clear(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
     });
     secrets = createSecrets({
-      scene, root, de, mobile: coarse.matches,
+      scene, root, de, mobile: coarse.matches, camera,
+      // The hidden portal: fetch the scene behind it while it opens; step in and the light takes you there.
+      onPortal: () => { const l = document.createElement('link'); l.rel = 'prefetch'; l.href = '/gallery/night/'; document.head.append(l); void fetch(coarse.matches ? '/models/night/pavilion.mobile.glb' : '/models/night/pavilion.glb').catch(() => {}); sound.arrive(); },
+      onEnter: () => {
+        leaving = true; sound.leave(); if (document.pointerLockElement) document.exitPointerLock();
+        const veil = document.createElement('div'); veil.className = 'mr-exit-veil is-rose'; root.append(veil);
+        const go = () => location.assign('/gallery/night/');
+        if (reduced) go(); else veil.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 900, easing: 'ease-in', fill: 'forwards' }).finished.then(go, go);
+      },
       onFound: (n, of) => { sound.found(n, of); if (n === of) guide?.emote('wow', performance.now() / 1000); },
       onAll: () => setTimeout(() => guide?.emote('love', performance.now() / 1000), 2600),
     });

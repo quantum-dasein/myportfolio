@@ -59,9 +59,10 @@ const failures = [];
 // elements, so grepping for "25 production routes" finds nothing even though
 // the page says exactly that. Here the two are read from the DOM and compared
 // with the pages actually on disk.
+// Private pages (noindex, reached by no link) are not production routes either.
 const routeCount = pages.filter((file) => {
   const rel = path.relative(dist, file);
-  return !rel.startsWith("404") && !rel.startsWith("google");
+  return !rel.startsWith("404") && !rel.startsWith("google") && !/<meta name="robots" content="noindex/.test(readFileSync(file, "utf8"));
 }).length;
 
 for (const file of pages) {
