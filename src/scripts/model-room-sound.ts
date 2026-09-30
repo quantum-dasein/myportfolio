@@ -152,6 +152,38 @@ export function createRoomSound() {
     /** A detail picked out, or inspection toggled. */
     select() { if (!act()) return; bell(1318.51, .04, 0, sfxBus); tone(659.25, .8, .03, { dest: sfxBus }); },
     click() { if (!act()) return; tone(880, .25, .03, { type: 'triangle', dest: sfxBus }); },
+    /**
+     * The SVJ's V12: two detuned saws and the firing-order fifth under a low-pass, with a burble in the level.
+     * Walking up it idles quietly for a few seconds; clicked, it blips the throttle.
+     */
+    engine(rev: boolean) {
+      if (!act() || !ctx) return;
+      const c = ctx, t = c.currentTime, dur = rev ? 2 : 3.4, f0 = rev ? 36 : 31;
+      const out = c.createGain(); out.gain.setValueAtTime(0, t);
+      out.gain.linearRampToValueAtTime(rev ? .2 : .085, t + (rev ? .06 : .7)); out.gain.setTargetAtTime(0, t + dur * .55, dur * .18);
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3; lp.frequency.setValueAtTime(rev ? 260 : 200, t);
+      if (rev) { lp.frequency.exponentialRampToValueAtTime(1300, t + .32); lp.frequency.exponentialRampToValueAtTime(240, t + 1.4); }
+      const burble = c.createGain(); burble.gain.value = .6; const lfo = c.createOscillator(); lfo.type = 'square'; lfo.frequency.value = rev ? 14 : 9.5;
+      const depth = c.createGain(); depth.gain.value = .4; lfo.connect(depth).connect(burble.gain);
+      burble.connect(lp).connect(out).connect(sfxBus);
+      const oscs = [[1, -6, 'sawtooth'], [1, 7, 'sawtooth'], [1.5, 0, 'square'], [.5, 0, 'sine']].map(([k, detune, type]) => {
+        const o = c.createOscillator(); o.type = type as OscillatorType; o.detune.value = detune as number; o.frequency.setValueAtTime(f0 * (k as number), t);
+        if (rev) { o.frequency.exponentialRampToValueAtTime(f0 * (k as number) * 2.7, t + .3); o.frequency.exponentialRampToValueAtTime(f0 * (k as number), t + 1.3); }
+        const g = c.createGain(); g.gain.value = k === .5 ? .7 : k === 1.5 ? .18 : .35; o.connect(g).connect(burble); o.start(t); o.stop(t + dur + .2); return o;
+      });
+      lfo.start(t); lfo.stop(t + dur + .2); oscs[0].onended = () => { out.disconnect(); lfo.disconnect(); };
+    },
+    /** K-2SO powering up his eyes: a short servo whine and a click. */
+    eyes() { if (!act()) return; tone(420, .5, .018, { type: 'sawtooth', glide: 2.2, attack: .05, dest: sfxBus }); tone(2600, .06, .02, { type: 'square', delay: .45, dest: sfxBus }); },
+    /** A light switch in the house model. */
+    lights(on: boolean) { if (!act()) return; burst({ f: on ? 2400 : 1800, dur: .05, level: .12, q: 3 }); tone(on ? 1760 : 1320, .3, .012, { dest: sfxBus, delay: .02 }); },
+    /** A hidden figurine found (n of 3); all three: a little fanfare. */
+    found(n: number, of: number) {
+      if (!act()) return;
+      const notes = [880, 1108.73, 1318.51, 1760];
+      if (n < of) notes.slice(0, 2 + n).forEach((f, i) => bell(f, .05, i * .08, sfxBus));
+      else { [659.25, 880, 1108.73, 1318.51, 1760, 2217.46].forEach((f, i) => bell(f, .055, i * .11, sfxBus)); burst({ f: 5000, to: 900, q: .5, dur: 2.4, level: .08, attack: .4 }); }
+    },
     dispose() { muteDrone(false); removeEventListener('pointerdown', warm, { capture: true }); removeEventListener('keydown', warm, { capture: true }); if (ctx) { music.gain.value = 0; hum.gain.value = 0; } },
   };
 }

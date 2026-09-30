@@ -101,6 +101,8 @@ export function createGuide(o: {
   scene: THREE.Scene; astro: Astro; camera: THREE.Camera; reduced: boolean;
   from: THREE.Vector3; shown: (id: string) => boolean; seat: () => { at: THREE.Vector3; stand: THREE.Vector3; via: THREE.Vector3; face: number } | null;
   chirp?: (kind: Emote) => void;
+  /** Seconds the visitor has stood still, and whether a point on the floor is free to walk through. */
+  idle?: () => number; clear?: (x: number, z: number) => boolean;
 }) {
   const { astro, camera } = o, root = astro.root;
   const textures = new Map<Emote, THREE.CanvasTexture>();
@@ -115,13 +117,33 @@ export function createGuide(o: {
   }
 
   // Where he is in his visit.
-  type Phase = 'idle' | 'walk' | 'stop' | 'sofa-walk' | 'sit-down' | 'wait';
+  type Phase = 'idle' | 'walk' | 'stop' | 'sofa-walk' | 'sit-down' | 'wait' | 'stand-up' | 'visit-walk' | 'greet';
   let phase: Phase = 'idle', stopIndex = 0, path: THREE.Vector3[] = [], stopAt = 0, beatIndex = 0, phaseAt = 0, startedAt = -1;
   let approached = false, walk = 0, astroPhase = 0, sit = 0, waitNext = 0, greetedAt = -1e9, blockedSince = -1;
   const pose: Required<Pose> = { yaw: 0, pitch: -.08, wave: 0, sit: 0, tablet: 0, reach: 0 };
   const goal: Required<Pose> = { ...pose };
   let lookAt: THREE.Vector3 | null = null, holdUntil = 0, stepBack = 0;
   const head = new THREE.Vector3(), tmp = new THREE.Vector3(), seatAt = new THREE.Vector3(), standAt = new THREE.Vector3();
+  // A visit: when you stand still for a long while, he gets up, comes over to wave, and goes back to his seat.
+  let visitedAt = -1e9, route: THREE.Vector3[] = [];
+  const HUB = V(.3, 0, 8.6);
+  function walkable(a: THREE.Vector3, b: THREE.Vector3) {
+    if (!o.clear) return false;
+    const n = Math.ceil(a.distanceTo(b) / .2);
+    for (let i = 1; i <= n; i++) { const k = i / n; if (!o.clear(a.x + (b.x - a.x) * k, a.z + (b.z - a.z) * k)) return false; }
+    return true;
+  }
+  /** A way from the seat's approach to a spot beside the visitor: straight, or through the open floor by the door. */
+  function planVisit(from: THREE.Vector3) {
+    const cam = camera.position, dir = tmp.set(root.position.x - cam.x, 0, root.position.z - cam.z).normalize();
+    for (const reach of [1.5, 1.9, 1.2]) {
+      const spot = V(cam.x + dir.x * reach, 0, cam.z + dir.z * reach);
+      if (!o.clear?.(spot.x, spot.z)) continue;
+      if (walkable(from, spot)) return [spot];
+      if (walkable(from, HUB) && walkable(HUB, spot)) return [HUB.clone(), spot];
+    }
+    return null;
+  }
 
   function begin(t: number) { startedAt = t; phase = 'walk'; stopIndex = 0; path = STOPS[0].path.map(p => p.clone()); root.position.copy(o.from); root.visible = !o.reduced; }
   function goToSofa(t: number) { phase = 'sofa-walk'; path = TO_SOFA.map(p => p.clone()); emote('tired', t); }
@@ -145,12 +167,14 @@ export function createGuide(o: {
     goal.wave = goal.tablet = goal.reach = 0; goal.sit = 0;
     let moving = false;
 
-    if (phase === 'walk' || phase === 'sofa-walk') {
+    if (phase === 'walk' || phase === 'sofa-walk' || phase === 'visit-walk') {
       const target = path[0];
-      if (target) {
+      // Visiting, he stops once he is beside you.
+      if (phase === 'visit-walk' && Math.hypot(cam.x - root.position.x, cam.z - root.position.z) < 1.35) path.length = 0;
+      if (target && path.length) {
         tmp.subVectors(target, root.position).setY(0); const dist = tmp.length();
         // Polite: if you stand right in his way, he waits a moment (not in the first seconds, when he walks past you on purpose).
-        const inWay = t - startedAt > 5 && Math.hypot(cam.x - root.position.x, cam.z - root.position.z) < 1 && tmp.dot(new THREE.Vector3(cam.x - root.position.x, 0, cam.z - root.position.z)) > 0;
+        const inWay = phase !== 'visit-walk' && t - startedAt > 5 && Math.hypot(cam.x - root.position.x, cam.z - root.position.z) < 1 && tmp.dot(new THREE.Vector3(cam.x - root.position.x, 0, cam.z - root.position.z)) > 0;
         if (inWay) { if (blockedSince < 0) { blockedSince = t; emote('dots', t); } } else blockedSince = -1;
         if (!inWay || t - blockedSince > 4) {
           const speed = phase === 'sofa-walk' ? .8 : 1.05;
@@ -161,6 +185,7 @@ export function createGuide(o: {
         // Strolling, he looks around the room: up at the ring of light, across to the pieces.
         goal.yaw = .45 * Math.sin(t * .6) + .2 * Math.sin(t * 1.7); goal.pitch = -.12 - .12 * Math.sin(t * .37);
       } else if (phase === 'walk') { phase = 'stop'; stopAt = t; beatIndex = 0; lookAt = STOPS[stopIndex].look; holdUntil = 0; }
+      else if (phase === 'visit-walk') { phase = 'greet'; phaseAt = t; emote('hi', t); holdUntil = t + 2.6; pending.wave = 1; }
       else { const s = o.seat(); if (s && !approached) { approached = true; path.push(s.via.clone(), s.stand.clone()); } else if (s) { phase = 'sit-down'; phaseAt = t; seatAt.copy(s.at); standAt.copy(root.position); } }
     }
 
@@ -198,8 +223,36 @@ export function createGuide(o: {
       goal.sit = e; if (k >= 1) { phase = 'wait'; phaseAt = t; waitNext = t + 3; emote('tired', t); }
     }
 
+    if (phase === 'stand-up') {
+      // Getting up: forward off the seat to where he sat down from, then off he goes.
+      const k = THREE.MathUtils.clamp((t - phaseAt) / 1.2, 0, 1), e = k * k * (3 - 2 * k);
+      root.position.x = THREE.MathUtils.lerp(seatAt.x, standAt.x, e); root.position.z = THREE.MathUtils.lerp(seatAt.z, standAt.z, e);
+      goal.sit = 1 - e; tmp.set(cam.x, cam.y, cam.z); gaze(tmp);
+      if (k >= 1) { phase = 'visit-walk'; path = route.map(p => p.clone()); }
+    }
+
+    if (phase === 'greet') {
+      // Beside you: he faces you, waves, and is pleased to have company. Then back to the sofa.
+      tmp.set(cam.x, 0, cam.z); faceTowards(tmp, dt, 4); tmp.set(cam.x, cam.y, cam.z); gaze(tmp);
+      if (t < holdUntil) Object.assign(goal, pending); else delete pending.wave;
+      if (t - phaseAt > 1.4 && emoteKind === 'hi' && t - emoteAt > 1.3) emote('happy', t);
+      if (t - phaseAt > 4.2) {
+        const s = o.seat();
+        if (s) { phase = 'sofa-walk'; approached = true; path = [...route.slice(0, -1).reverse().map(p => p.clone()), s.via.clone(), s.stand.clone()]; }
+      }
+    }
+
     if (phase === 'wait') {
       goal.sit = 1;
+      // You have stood still for a long while, away from him: he comes over to see you.
+      if (o.idle && o.idle() > 15 && t - visitedAt > 45 && t - phaseAt > 6 && Math.hypot(cam.x - root.position.x, cam.z - root.position.z) > 3.6) {
+        const s = o.seat(); visitedAt = t;
+        const plan = s && planVisit(s.via);
+        if (s && plan) { route = [s.via.clone(), ...plan]; phase = 'stand-up'; phaseAt = t; seatAt.copy(root.position).setY(0); standAt.copy(s.stand); emote('curious', t); }
+        else { emote('hi', t); holdUntil = t + 2.4; pending.wave = 1; }
+      }
+    }
+    if (phase === 'wait') {
       const near = Math.hypot(cam.x - root.position.x, cam.z - root.position.z) < 3.4;
       // You came back: he lights up and waves from the sofa.
       if (near && t - greetedAt > 9) { greetedAt = t; emote(Math.random() < .5 ? 'happy' : 'hi', t); holdUntil = t + 2.4; pending.wave = 1; }
@@ -224,7 +277,7 @@ export function createGuide(o: {
     for (const k of Object.keys(pose) as (keyof Pose)[]) pose[k] += (goal[k] - pose[k]) * Math.min(1, dt * (k === 'yaw' || k === 'pitch' ? 3 : 4));
     sit = pose.sit;
     // Sitting on the sofa rather than the floor: the seat carries him.
-    root.position.y = phase === 'wait' || phase === 'sit-down' ? sit * (root.userData.seatLift ?? .72) : 0;
+    root.position.y = phase === 'wait' || phase === 'sit-down' || phase === 'stand-up' ? sit * (root.userData.seatLift ?? .72) : 0;
     if (phase === 'wait') root.position.y += Math.max(0, Math.sin(t * 7.5)) * .006 * (emoteKind === 'clock' ? 1 : .3);   // a tapping foot
     astroPhase += dt * (1 + walk * 5);
     astro.animate(astroPhase, walk, 0, dt, 0, { yaw: pose.yaw, pitch: pose.pitch, wave: pose.wave, sit: pose.sit, tablet: pose.tablet, reach: pose.reach });

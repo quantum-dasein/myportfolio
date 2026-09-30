@@ -63,3 +63,15 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .mr-kiosk-actions{display:flex;flex-wrap:wrap;gap:12px}
 .mr-kiosk-cta{display:inline-flex;gap:10px;align-items:center;padding:14px 22px;border-radius:999px;background:#9fffd0;color:#04130d;font-weight:500;text-decoration:none}
 .mr-kiosk-actions button{padding:14px 22px;border:1px solid rgba(238,247,242,.25);border-radius:999px;background:none;color:#eef7f2;font:inherit;cursor:pointer}
+
+/* The hidden mini astronauts: a quiet line at the bottom of the room when one is found. */
+.mr-toast {
+  position: fixed; left: 50%; bottom: clamp(88px, 14vh, 150px); z-index: 6; margin: 0; padding: .7em 1.2em;
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none; white-space: nowrap;
+  font: 500 13px/1.2 var(--font-body, system-ui, sans-serif); letter-spacing: .02em; color: #f3ecd9;
+  background: rgba(14, 16, 14, .72); border: 1px solid rgba(217, 168, 70, .55); border-radius: 999px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: opacity .4s ease, transform .4s cubic-bezier(.2, .8, .2, 1);
+}
+.mr-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 600px) { .mr-toast { font-size: 12px; white-space: normal; width: max-content; max-width: calc(100vw - 32px); text-align: center; } }

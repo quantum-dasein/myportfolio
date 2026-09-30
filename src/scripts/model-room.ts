@@ -14,6 +14,7 @@ import { createRoomSound } from './model-room-sound';
 import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits';
 import { createGuide } from './model-room-guide';
 import { createKiosk } from './model-room-kiosk';
+import { createSecrets } from './model-room-secrets';
 
 // Names for the parts you can pick out on each exhibit (by mesh material).
 const PARTS: Record<string, Record<string, [string, string]>> = {
@@ -58,6 +59,9 @@ export async function mountModelRoom(root: HTMLElement) {
   const sound = createRoomSound(); let stepping = 0;
   let exhibits: ReturnType<typeof createExhibits> | undefined;
   let kiosk: ReturnType<typeof createKiosk> | undefined;
+  let secrets: ReturnType<typeof createSecrets> | undefined;
+  // When the visitor last moved or looked around (the astronaut comes over if you stand still for long).
+  let stillSince = 0, hoverAt = 0; const lastPose = new THREE.Vector4();
   const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
   const gltfLoader = new GLTFLoader().setDRACOLoader(draco);
   // The exhibit the caption describes: the one you look at while walking, the one you picked while inspecting.
@@ -108,7 +112,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;keys.clear();touchKeys.clear();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();guide?.dispose();kiosk?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();guide?.dispose();kiosk?.dispose();secrets?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -175,9 +179,13 @@ export async function mountModelRoom(root: HTMLElement) {
     // The archive terminal answers a click with its panel rather than an inspection orbit.
     const terminal = kiosk ? raycaster.intersectObjects(kiosk.targets, false)[0] : undefined;
     const hit = raycaster.intersectObjects(exhibits ? [...meshes, ...exhibits.meshes] : meshes, false)[0];
+    // A hidden mini astronaut in front of whatever else is there: collected, nothing else happens.
+    const mini = secrets ? raycaster.intersectObjects(secrets.targets, false)[0] : undefined;
+    if (mini && (!hit || mini.distance < hit.distance + .05) && (!terminal || mini.distance < terminal.distance)) { secrets!.find(mini.object); return; }
     if (terminal && (!hit || terminal.distance < hit.distance)) { kiosk!.open(); return; }
     if (!hit) { selected = '';selection.visible = false;labelSelection();return; }
     const info = exhibits?.info(hit.object.userData.exhibit ?? 'kitchen') ?? KITCHEN;
+    exhibits?.poke(info.id);
     selected = hit.object.name;selectedMaterial = ((hit.object as THREE.Mesh).material as THREE.Material).name ?? '';
     // Picking another piece while inspecting flies the orbit over to it.
     const moved = inspecting && info !== current; caption(info);
@@ -185,12 +193,12 @@ export async function mountModelRoom(root: HTMLElement) {
     sound.select();
     selection.box.setFromObject(hit.object);selection.visible = true;labelSelection();
   }
-  function blocked(x: number, z: number) {
+  function blocked(x: number, z: number, self = true) {
     // The rear frame is open: you may walk into it (and that takes you back to the archive).
     if (Math.abs(x) > 8.5 || z < -7.05 || z > (Math.abs(x) < 1.3 ? 11.3 : 10.9)) return true;
-    if (astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
+    if (self && astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
     // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
-    return [...colliders, ...(exhibits?.colliders ?? []), ...(kiosk ? [kiosk.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
+    return [...colliders, ...(exhibits?.colliders ?? []), ...(kiosk ? [kiosk.collider] : []), ...(secrets ? [secrets.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
   }
   function tick(time: number) {
     frame = 0;if (disposed || failed || document.hidden) return;
@@ -217,7 +225,14 @@ export async function mountModelRoom(root: HTMLElement) {
     }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
-    fx?.update(t, dt);exhibits?.update(t, dt);kiosk?.update(t, dt);
+    fx?.update(t, dt);exhibits?.update(t, dt);kiosk?.update(t, dt);secrets?.update(t, dt);
+    if (Math.abs(lastPose.x - camera.position.x) + Math.abs(lastPose.y - camera.position.z) + Math.abs(lastPose.z - yaw) + Math.abs(lastPose.w - pitch) > 1e-3 || inspecting) { stillSince = t; lastPose.set(camera.position.x, camera.position.z, yaw, pitch); }
+    // What the crosshair rests on (captured pointer) or, on touch, the piece you stand in front of.
+    if (ready && exhibits && time - hoverAt > 150) {
+      hoverAt = time;
+      if (locked) { raycaster.setFromCamera(pointer.set(0, 0), camera); exhibits.hover(raycaster.intersectObjects(exhibits.meshes, false)[0]?.object.userData.exhibit ?? null); }
+      else if (coarse.matches) exhibits.hover(current.id === 'ebike' && camera.position.distanceTo(current.focus) < 5 ? 'ebike' : null);
+    }
     // Walking, the caption follows what you look at.
     if (ready && exhibits && !inspecting && time - captionAt > 250) {
       captionAt = time; caption(exhibits.inView(camera.position, camera.getWorldDirection(new THREE.Vector3())));
@@ -241,12 +256,20 @@ export async function mountModelRoom(root: HTMLElement) {
     environment = pmrem.fromScene(room, .04);scene.environment = environment.texture;scene.environmentIntensity = .45;room.dispose();pmrem.dispose();
     design=createModelRoomDesign(scene,coarse.matches);home();
     fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches });
-    exhibits = createExhibits({ scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal(), target: () => composer?.readBuffer ?? null });
+    exhibits = createExhibits({
+      scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal(), target: () => composer?.readBuffer ?? null,
+      onCue: cue => cue === 'engine' || cue === 'rev' ? sound.engine(cue === 'rev') : cue === 'eyes' ? sound.eyes() : sound.lights(cue === 'lights-on'),
+    });
     kiosk = createKiosk({
       scene, camera, root, de, coarse: coarse.matches, at: new THREE.Vector3(1.25, 0, 6.6), face: -.48,
       onOpen: () => { keys.clear(); touchKeys.clear(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
     });
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, renderer, kiosk, select: (x: number, y: number) => select(x, y) };
+    secrets = createSecrets({
+      scene, root, de, mobile: coarse.matches,
+      onFound: (n, of) => { sound.found(n, of); if (n === of) guide?.emote('wow', performance.now() / 1000); },
+      onAll: () => setTimeout(() => guide?.emote('love', performance.now() / 1000), 2600),
+    });
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, renderer, kiosk, secrets, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
@@ -279,6 +302,11 @@ export async function mountModelRoom(root: HTMLElement) {
       canvas.setPointerCapture(event.pointerId);
     }, { signal });
     canvas.addEventListener('pointermove', event => {
+      if (!gesture && event.pointerType === 'mouse' && exhibits && performance.now() - hoverAt > 120) {
+        hoverAt = performance.now(); const r = canvas.getBoundingClientRect();
+        raycaster.setFromCamera(pointer.set((event.clientX - r.left) / r.width * 2 - 1, 1 - (event.clientY - r.top) / r.height * 2), camera);
+        exhibits.hover(raycaster.intersectObjects(exhibits.meshes, false)[0]?.object.userData.exhibit ?? null);
+      }
       if (!gesture || gesture.id !== event.pointerId) return;
       const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y;gesture.distance += Math.hypot(dx, dy);
       gesture.x = event.clientX;gesture.y = event.clientY;
@@ -352,6 +380,8 @@ export async function mountModelRoom(root: HTMLElement) {
         return { at: new THREE.Vector3(x, 0, front + .32), stand: new THREE.Vector3(x, 0, front - .32), via: new THREE.Vector3(s.max.x + .35, 0, front - .32), face: Math.PI };
       },
       chirp: kind => sound.chirp(kind),
+      idle: () => performance.now() / 1000 - stillSince,
+      clear: (x, z) => !blocked(x, z, false),
     });
     guide.begin(performance.now() / 1000);
     if (location.search.includes('mrdebug')) (window as unknown as { __mr: Record<string, unknown> }).__mr.guide = guide;

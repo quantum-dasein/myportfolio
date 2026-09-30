@@ -88,6 +88,21 @@ Then he sits on the sofa and waits impatiently: checks his tablet, looks for
 you, dozes, and waves when you come close. Reactions show as a hologram bubble
 over his helmet and in his visor colour. He stops if you stand in his way.
 
+**Small reactions** (`model-room-exhibits.ts`, sounds in `model-room-sound.ts`):
+
+- the SVJ idles with a low V12 growl as you walk up; clicked, it flashes its headlamps and indicators and blips the throttle;
+- K-2SO's eyes come on, with a flicker and a servo whine, when you stand close;
+- the e-bike's wheels turn while you point at it (or stand in front of it on touch). They are cut out of
+  the welded mesh at load time: every triangle inside a tyre's radius and width goes to its own axle;
+- a click on the house model lights its windows, and puts them out again.
+
+If you stand still for 15 s while the astronaut waits on the sofa, he gets up, walks over (only along floor
+the colliders leave free), waves, and goes back to his seat.
+
+`model-room-secrets.ts` hides three golden mini astronauts: on the e-bike's wall mount, inside the house
+vitrine and behind K-2SO's feet. A click collects one; with all three, the wall safe by the lounge slides
+open onto a golden trophy and confetti falls.
+
 `scripts/model-room/fbx6.py` reads FBX 6.1 files (3ds Max, around 2010), which
 Blender's importer refuses. It reuses Blender's low-level FBX reader to rebuild
 meshes, UVs, materials and 3ds Max transforms. `prepare-exhibits.py` falls back

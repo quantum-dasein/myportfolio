@@ -120,7 +120,10 @@ const ringFragment = /* glsl */`uniform float uR, uWidth, uGain, uFill; uniform 
 void main(){ float d = length(vUv - .5) * 2.; float ring = exp(-pow((d - uR) / uWidth, 2.)); float fill = exp(-d * d / (uR * uR * .6)) * uFill;
   gl_FragColor = vec4(uColor * (ring + fill) * uGain * smoothstep(1., .9, d), 1.); }`;
 
-export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRenderer; camera: THREE.Camera; mobile: boolean; loader: GLTFLoader; onReveal?: (id: string) => void; target?: () => THREE.WebGLRenderTarget | null }) {
+/** Little reactions of the pieces, for the room's sound. */
+export type ExhibitCue = 'engine' | 'rev' | 'eyes' | 'lights-on' | 'lights-off';
+
+export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRenderer; camera: THREE.Camera; mobile: boolean; loader: GLTFLoader; onReveal?: (id: string) => void; onCue?: (cue: ExhibitCue) => void; target?: () => THREE.WebGLRenderTarget | null }) {
   const { scene, renderer, camera, mobile, loader } = o;
   renderer.localClippingEnabled = true;
   const disposables: { dispose: () => void }[] = [];
@@ -239,6 +242,111 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
     slots.push({ stage, spinner, clip: { value: -1 }, scan, reveal: 0, state: 'waiting', paused: false, angle: stage.yaw });
   }
 
+  // What the pieces do when you come close, point at them or click them.
+  const lamps: { m: THREE.MeshPhysicalMaterial; base: THREE.Color; kind: 'head' | 'turn' | 'tail' }[] = [];
+  const windows: THREE.MeshPhysicalMaterial[] = [];
+  const wheels: THREE.Object3D[] = [], wheelAxis = new THREE.Vector3(1, 0, 0);
+  let flashAt = -1e9, engineNear = false, lightsOn = false, lightsK = 0, wheelSpeed = 0, hovered: string | null = null, now = 0;
+  const eyes = { group: null as THREE.Group | null, glow: null as THREE.MeshBasicMaterial | null, halo: null as THREE.SpriteMaterial | null, k: 0, on: false, at: new THREE.Vector3(), flicker: 0 };
+
+  /**
+   * The e-bike was exported as one mesh per material, wheels welded to the frame. Cut every triangle that lies
+   * inside a wheel (within its radius and the width of the tyre) out into its own piece around the axle, so the
+   * wheels can turn. The wheels are found from the tyre material: two rings along the bike.
+   */
+  function freeWheels(root: THREE.Object3D) {
+    root.updateMatrixWorld(true);
+    const toRoot = root.matrixWorld.clone().invert(), world = new THREE.Vector3();
+    let tyre: THREE.Mesh | undefined; root.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh && (m.material as THREE.Material).name === 'tyre') tyre = m; });
+    if (!tyre) return;
+    // The two tyres, in the root's own space: split along the bike's length.
+    const tb = new THREE.Box3(), tp = tyre.geometry.attributes.position, pts: THREE.Vector3[] = [];
+    for (let i = 0; i < tp.count; i++) pts.push(world.fromBufferAttribute(tp, i).applyMatrix4(tyre.matrixWorld).applyMatrix4(toRoot).clone());
+    pts.forEach(p => tb.expandByPoint(p));
+    const size = tb.getSize(new THREE.Vector3()), long = size.x > size.z ? 'x' : 'z', side = long === 'x' ? 'z' : 'x';
+    const radius = size.y / 2, halfWidth = size[side] / 2 + .003;   // the tyre's width: brake callipers and fork stay put
+    const centres = [tb.min[long] + radius, tb.max[long] - radius].map(v => { const c = tb.getCenter(new THREE.Vector3()); c[long] = v; return c; });
+    wheelAxis.set(side === 'x' ? 1 : 0, 0, side === 'z' ? 1 : 0);
+    const pivots = centres.map(c => { const g = new THREE.Group(); g.position.copy(c); root.add(g); wheels.push(g); return g; });
+    const meshes: THREE.Mesh[] = []; root.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) meshes.push(m); });
+    for (const mesh of meshes) {
+      const g = mesh.geometry, pos = g.attributes.position, index = g.index; if (!index) continue;
+      const local = Array.from({ length: pos.count }, (_, i) => world.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld).applyMatrix4(toRoot).clone());
+      const whose = (p: THREE.Vector3) => centres.findIndex(c => Math.hypot(p[long] - c[long], p.y - c.y) < radius * 1.02 && Math.abs(p[side] - c[side]) < halfWidth);
+      const keep: number[] = [], taken: number[][] = [[], []];
+      for (let t = 0; t < index.count; t += 3) {
+        const a = index.getX(t), b = index.getX(t + 1), c = index.getX(t + 2), w = whose(local[a]);
+        if (w >= 0 && whose(local[b]) === w && whose(local[c]) === w) taken[w].push(a, b, c); else keep.push(a, b, c);
+      }
+      if (!taken[0].length && !taken[1].length) continue;
+      g.setIndex(keep);
+      taken.forEach((tris, w) => {
+        if (!tris.length) return;
+        // The wheel's own copy: its vertices moved into the axle's frame.
+        const part = g.clone(); part.setIndex(tris);
+        const p = part.attributes.position.clone(), inv = new THREE.Matrix4().makeTranslation(-centres[w].x, -centres[w].y, -centres[w].z).multiply(toRoot).multiply(mesh.matrixWorld);
+        p.applyMatrix4(inv); part.setAttribute('position', p);
+        if (part.attributes.normal) { const n = part.attributes.normal.clone(); n.applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(inv)); part.setAttribute('normal', n); }
+        const wheel = new THREE.Mesh(part, mesh.material); wheel.userData.exhibit = 'ebike'; wheel.receiveShadow = true; pivots[w].add(wheel);
+      });
+    }
+  }
+
+  /**
+   * The SVJ's headlamps: a soft flare over each, lit when it flashes (the lamp units are mostly chrome). The white
+   * lamp glass is at the back of this model, so the nose is the other end of the car; the lamps sit a little in
+   * from it, towards the corners.
+   */
+  const flares: THREE.SpriteMaterial[] = [];
+  function giveFlares(root: THREE.Object3D) {
+    root.updateMatrixWorld(true);
+    const toRoot = root.matrixWorld.clone().invert(), v = new THREE.Vector3(), car = new THREE.Box3(), rear = new THREE.Box3();
+    root.traverse(n => {
+      const m = n as THREE.Mesh; if (!m.isMesh) return; const p = m.geometry.attributes.position, white = (m.material as THREE.Material).name === 'glass_white';
+      for (let i = 0; i < p.count; i += 7) { v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld).applyMatrix4(toRoot); car.expandByPoint(v); if (white) rear.expandByPoint(v); }
+    });
+    if (car.isEmpty() || rear.isEmpty()) return;
+    const size = car.getSize(new THREE.Vector3()), c = car.getCenter(new THREE.Vector3());
+    const long = size.x > size.z ? 'x' : 'z', lat = long === 'x' ? 'z' : 'x';
+    const back = Math.sign(rear.getCenter(new THREE.Vector3())[long] - c[long]) || 1;
+    const tex = own(glowTexture());
+    for (const sgn of [-1, 1]) {
+      const at = c.clone(); at[long] = c[long] - back * (size[long] / 2 - .4); at[lat] = c[lat] + sgn * size[lat] * .29; at.y = car.min.y + .68;
+      const m = own(new THREE.SpriteMaterial({ map: tex, color: new THREE.Color(2.4, 2.5, 2.7), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+      const sprite = new THREE.Sprite(m); sprite.position.copy(at); sprite.scale.setScalar(.3); root.add(sprite); flares.push(m);
+    }
+  }
+
+  /** K-2SO's eyes: two lenses on the front of his head, dark until you come close. */
+  function giveEyes(root: THREE.Object3D, stage: Stage) {
+    root.updateMatrixWorld(true);
+    // His head is the part at the top: measure it in the world, along the way he faces.
+    const head = new THREE.Box3(); const pts: THREE.Vector3[] = []; const v = new THREE.Vector3();
+    root.traverse(n => { const m = n as THREE.Mesh; if (!m.isMesh) return; const b = new THREE.Box3().setFromObject(m); if (b.min.y > stage.lift + stage.height * .62 && b.max.y - b.min.y > .2) { head.union(b); const p = m.geometry.attributes.position; for (let i = 0; i < p.count; i += 3) pts.push(v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld).clone()); } });
+    if (head.isEmpty() || !pts.length) return;
+    const fwd = new THREE.Vector3(Math.cos(stage.yaw), 0, -Math.sin(stage.yaw)), lat = new THREE.Vector3(-fwd.z, 0, fwd.x), c = head.getCenter(new THREE.Vector3());
+    const y = c.y - (head.max.y - head.min.y) * .02;
+    // The face: the furthest forward points around eye height.
+    let front = 0; for (const p of pts) if (Math.abs(p.y - y) < .05) front = Math.max(front, v.subVectors(p, c).dot(fwd));
+    // Placed in the world, then carried by the piece (so it is compiled and printed with it).
+    const group = new THREE.Group(); group.position.copy(c).addScaledVector(fwd, front - .012).setY(y);
+    group.rotation.y = Math.atan2(fwd.x, fwd.z); group.updateMatrix();
+    group.applyMatrix4(root.matrixWorld.clone().invert());
+    eyes.glow = own(new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 0, 0), toneMapped: false }));
+    eyes.halo = own(new THREE.SpriteMaterial({ color: new THREE.Color(.75, .9, 1), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, map: own(glowTexture()) }));
+    const lens = own(new THREE.SphereGeometry(.017, 14, 10));
+    for (const s of [-1, 1]) {
+      const eye = new THREE.Mesh(lens, eyes.glow); eye.position.set(s * .052, 0, 0); eye.scale.set(1, 1, .45); eye.userData.exhibit = 'k2so'; group.add(eye);
+      const halo = new THREE.Sprite(eyes.halo); halo.position.set(s * .052, 0, .02); halo.scale.setScalar(.085); group.add(halo);
+    }
+    root.add(group); eyes.group = group; group.getWorldPosition(eyes.at);
+  }
+  function glowTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!;
+    const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.25, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); return t;
+  }
+
   /** Finishes the source files could not carry: the export marks every e-bike part fully metallic. */
   function dress(id: string, root: THREE.Object3D) {
     root.traverse(node => {
@@ -249,12 +357,21 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
         // His own paint: deep blue metallic under a clear coat; glass that reflects; lamps that are lit.
         const coat = (color: string, metalness = .55, roughness = .3) => own(new THREE.MeshPhysicalMaterial({ name, color, metalness, roughness, clearcoat: 1, clearcoatRoughness: .03, envMapIntensity: 1.4 }));
         const glass = (color: string, opacity: number, glowRGB?: [number, number, number]) => { const g = own(new THREE.MeshPhysicalMaterial({ name, color, metalness: 0, roughness: .02, transparent: true, opacity, depthWrite: false, envMapIntensity: 1.8 })); if (glowRGB) g.emissive.setRGB(...glowRGB); return g; };
+        // The roof, sills, mirrors, splitter and window frames are carbon on the real car: glossy black
+        // under clear coat, not the grey a plain rough plastic gave them. The cabin is black leather.
         const swap: Record<string, () => THREE.Material> = {
           carpaint: () => coat('#0c2552'), blackpaint: () => coat('#0a0a0b', .3, .25), paint_red: () => coat('#b8141a', .3, .3), paint_white: () => coat('#e9ebec', .1, .3), paint_green: () => coat('#1f8a3e', .3, .3),
+          plastic_reflect: () => coat('#08090b', .35, .28), blackpaint_matte: () => coat('#0b0c0e', .2, .45),
+          plastic_matte_black: () => coat('#0b0c0d', .1, .55), plastic_matte_midblack: () => coat('#101113', .1, .5),
+          leather: () => own(new THREE.MeshPhysicalMaterial({ name, color: '#121317', roughness: .62, sheen: .6, sheenColor: new THREE.Color('#3a4a6a'), sheenRoughness: .5 })),
           glass_window: () => glass('#07090b', .42), glass_clear: () => glass('#0c0f11', .25), glass_white: () => glass('#e8eef2', .7, [.55, .6, .66]),
           glass_orange: () => glass('#ff9a3c', .8, [.9, .42, .08]), glass_red: () => glass('#d8121a', .85, [.8, .04, .03]),
         };
-        if (swap[name]) mesh.material = swap[name]();
+        if (swap[name]) {
+          mesh.material = swap[name]();
+          // The lamps it flashes when you click it.
+          if (/glass_white|glass_orange|glass_red/.test(name)) { const lamp = mesh.material as THREE.MeshPhysicalMaterial; lamps.push({ m: lamp, base: lamp.emissive.clone(), kind: name === 'glass_white' ? 'head' : name === 'glass_orange' ? 'turn' : 'tail' }); }
+        }
         else if (/chrome|mirror/.test(name)) Object.assign(m, { metalness: 1, roughness: name === 'mirror' ? .04 : .12 }), m.color.set(name === 'chrome_grey' ? '#7c8085' : '#d4d8dc');
         else if (/rim|brakedisk|metal/.test(name)) Object.assign(m, { metalness: .85, roughness: .35 }), m.color.set('#8d9197');
         else if (name === 'rubber') Object.assign(m, { metalness: 0, roughness: .92 }), m.color.set('#121212');
@@ -266,7 +383,7 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
       }
       else if (id === 'house') {
         // A white architectural model: one white, dark glass, the house's own green accent, dark steel.
-        if (/Arch_Glass/.test(name)) mesh.material = own(new THREE.MeshPhysicalMaterial({ name, color: '#14302a', roughness: .05, metalness: .1, transparent: true, opacity: .6, depthWrite: false, envMapIntensity: 1.5 }));
+        if (/Arch_Glass/.test(name)) { mesh.material = own(new THREE.MeshPhysicalMaterial({ name, color: '#14302a', emissive: '#ffb869', emissiveIntensity: 0, roughness: .05, metalness: .1, transparent: true, opacity: .6, depthWrite: false, envMapIntensity: 1.5 })); windows.push(mesh.material as THREE.MeshPhysicalMaterial); }
         else if (/Material #192/.test(name)) Object.assign(m, { metalness: 0, roughness: .6 }), m.color.set('#3f9e72');
         else if (/steel2|Exposed 910/.test(name)) Object.assign(m, { metalness: .2, roughness: .6 }), m.color.set('#2b2e2d');
         else Object.assign(m, { metalness: 0, roughness: .88 }), m.color.set('#eeebe4');
@@ -293,6 +410,7 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
     });
   }
 
+  function shown(id: string) { return slots.find(s => s.stage.info.id === id)?.state === 'shown'; }
   const frame = () => new Promise<void>(r => requestAnimationFrame(() => r()));
   let disposed = false;
   const lounge: { sofa?: THREE.Box3; table?: THREE.Box3 } = {};
@@ -305,6 +423,12 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
         const gltf = await loader.loadAsync(mobile ? slot.stage.url.replace(/\.glb$/, '.mobile.glb') : slot.stage.url); if (disposed) return;
         const root = gltf.scene; dress(slot.stage.info.id, root);
         root.position.y = slot.stage.lift;
+        // Parts that move on their own are cut out while the piece stands in place (not yet drawn).
+        if (['ebike', 'k2so', 'svj'].includes(slot.stage.info.id)) {
+          slot.spinner.rotation.y = slot.angle; slot.spinner.add(root); slot.spinner.updateMatrixWorld(true);
+          try { const id = slot.stage.info.id; if (id === 'ebike') freeWheels(root); else if (id === 'k2so') giveEyes(root, slot.stage); else giveFlares(root); } catch (error) { console.warn('Exhibit parts', error); }
+          slot.spinner.remove(root);
+        }
         const textures = new Set<THREE.Texture>();
         root.traverse(node => {
           const mesh = node as THREE.Mesh; if (!mesh.isMesh) return;
@@ -345,7 +469,32 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
     }
   }
 
+  const svjAt = STAGES[0].at, cue = (c: ExhibitCue) => o.onCue?.(c);
   updates.push((t, dt) => {
+    now = t; const cam = o.camera.position;
+    // The SVJ: its engine wakes with a low growl as you walk up; clicked, it flashes its lamps.
+    const toCar = Math.hypot(cam.x - svjAt.x, cam.z - svjAt.z);
+    if (!engineNear && toCar < 4.4 && shown('svj')) { engineNear = true; cue('engine'); } else if (engineNear && toCar > 6.2) engineNear = false;
+    const f = t - flashAt;
+    if (lamps.length && f < 2) {
+      const head = f < .22 || (f > .4 && f < .62) ? 12 : 1, turn = f < 1.6 && (f % .5) < .26 ? 10 : 1, tail = f < .8 ? 4 : 1;
+      for (const l of lamps) l.m.emissive.copy(l.base).multiplyScalar(l.kind === 'head' ? head : l.kind === 'turn' ? turn : tail);
+      for (const m of flares) m.opacity = head > 1 ? .95 : 0;
+    }
+    // K-2SO: his eyes come on, with a flicker, when you stand close; they go dark when you leave.
+    if (eyes.glow && eyes.halo) {
+      const d = cam.distanceTo(eyes.at);
+      if (!eyes.on && d < 3.7 && shown('k2so')) { eyes.on = true; eyes.flicker = t; cue('eyes'); } else if (eyes.on && d > 4.8) eyes.on = false;
+      eyes.k += ((eyes.on ? 1 : 0) - eyes.k) * Math.min(1, dt * (eyes.on ? 3 : 1.2));
+      const warm = t - eyes.flicker < .55 && eyes.on ? (Math.sin(t * 90) > .1 ? 1 : .15) : 1, k = eyes.k * warm;
+      eyes.glow.color.setRGB(.05 + 2.2 * k, .07 + 2.7 * k, .09 + 3.2 * k); eyes.halo.opacity = .7 * k;
+    }
+    // The e-bike's wheels turn while you point at it.
+    wheelSpeed += ((hovered === 'ebike' ? 1 : 0) - wheelSpeed) * Math.min(1, dt * 1.6);
+    if (wheelSpeed > .001) for (const w of wheels) w.rotateOnAxis(wheelAxis, -wheelSpeed * 6 * dt);
+    // The house model's windows, lit and put out by a click.
+    lightsK += ((lightsOn ? 1 : 0) - lightsK) * Math.min(1, dt * 2.5);
+    for (const m of windows) { m.emissiveIntensity = 2.6 * lightsK; m.opacity = .6 + .32 * lightsK; }
     for (const slot of slots) {
       if (slot.stage.spin && !slot.paused) slot.angle += slot.stage.spin * dt;
       slot.spinner.rotation.y = slot.angle;
@@ -363,7 +512,14 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
     colliders, meshes, lounge,
     load,
     /** Whether a piece has been printed into the room yet. */
-    shown(id: string) { return slots.find(s => s.stage.info.id === id)?.state === 'shown'; },
+    shown,
+    /** A click on a piece: the SVJ flashes its lamps and revs, the house model's windows light up (or go out). */
+    poke(id: string) {
+      if (id === 'svj' && shown('svj')) { flashAt = now; cue('rev'); }
+      else if (id === 'house' && windows.length) { lightsOn = !lightsOn; cue(lightsOn ? 'lights-on' : 'lights-off'); }
+    },
+    /** The piece under the pointer (or the crosshair), if any. */
+    hover(id: string | null) { hovered = id; },
     update(t: number, dt: number) { for (const u of updates) u(t, dt); },
     /** Hold a piece still while it is being inspected. */
     hold(id: string | null) { for (const slot of slots) slot.paused = slot.stage.info.id === id; },
