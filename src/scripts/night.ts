@@ -10,26 +10,27 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createAstronaut } from './observatory-astronaut';
 import { bubble, TINT, type Emote } from './model-room-guide';
 import { createPerson, LIDA, RODION, type Pose } from './night-people';
 import { createNightSound } from './night-sound';
+import { createWorld, glowTexture } from './night-world';
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-// Where things stand: the house's south glass front is at z ≈ 11.4; he waits in front of its door.
-const HIM = V(0, 0, 13.4), HER_STOP = V(0, 1.62, 17.4), PATH_START = V(0, 1.62, 38);
+// Where things stand: the house's glass front is at z ≈ 8.9 under a roof reaching to 11.4; he waits on the
+// terrace in front of it. The camera is her eyes: she is 1.55 m tall.
+const EYE = 1.45;
+const HIM = V(0, 0, 13.4), HER_STOP = V(0, EYE, 16.9), PATH_START = V(0, EYE, 38.5);
 const LINES = {
   future: 'Это наша будущая жизнь.',
   believe: 'Ты только верь в нас, любимая Лида!',
   ask: 'Лида, ты выйдешь за меня?',
 };
 
-function glowTexture(inner = 'rgba(255,255,255,1)', mid = 'rgba(255,255,255,.35)') {
-  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d')!;
-  const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, inner); g.addColorStop(.3, mid); g.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = g; x.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c);
-}
 function heartTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!;
   x.fillStyle = '#fff'; x.beginPath(); x.moveTo(32, 56);
@@ -37,132 +38,130 @@ function heartTexture() {
   return new THREE.CanvasTexture(c);
 }
 
+// The finish: a gentle grade (cool shadows, warm light), vignette, a fine film grain, a touch of lens fringing.
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFade: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uFade; varying vec2 vUv;
+    float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){ vec2 q = vUv - .5; float r = dot(q, q);
+      vec2 off = q * r * .012;
+      vec3 c = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+      float l = dot(c, vec3(.2126, .7152, .0722));
+      c = mix(c * vec3(.92, .98, 1.08), c * vec3(1.06, 1., .9), smoothstep(.05, .6, l));
+      c *= 1. - .5 * smoothstep(.12, .75, r * 1.7);
+      c += (h(vUv * 900. + fract(uTime) * 91.) - .5) * .022;
+      gl_FragColor = vec4(c * (1. - uFade), 1.); }`,
+};
+
 export async function mountNight(root: HTMLElement) {
   const $ = <T extends HTMLElement = HTMLElement>(name: string) => root.querySelector<T>(`[data-n-${name}]`)!;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobile = matchMedia('(pointer: coarse), (max-width: 760px)').matches;
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2('#0a0d1b', .011);
-  const camera = new THREE.PerspectiveCamera(50, 1, .05, 400);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.75));
-  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .95;
-  renderer.shadowMap.enabled = !mobile; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  scene.fog = new THREE.FogExp2('#0a0d1b', .0085);
+  const camera = new THREE.PerspectiveCamera(42, 1, .05, 500);
+  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $('stage').append(renderer.domElement);
-  const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .4, .5, .9); composer.addPass(bloom); composer.addPass(new OutputPass());
+  // Post: multisampled HDR buffer → ambient occlusion → bloom → depth of field → grade → output.
+  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: mobile ? 0 : 4 });
+  const composer = new EffectComposer(renderer, target); composer.addPass(new RenderPass(scene, camera));
+  let ao: GTAOPass | null = null, dof: BokehPass | null = null;
+  if (!mobile) {
+    ao = new GTAOPass(scene, camera, 1, 1);
+    ao.updateGtaoMaterial({ radius: .35, distanceExponent: 1.5, thickness: 1, scale: 1, samples: 12 }); ao.blendIntensity = .9;
+    const pass = ao as unknown as { _overrideVisibility: () => void; _visibilityCache: THREE.Object3D[]; scene: THREE.Scene };
+    const hideLines = pass._overrideVisibility.bind(pass);
+    pass._overrideVisibility = () => {
+      hideLines();
+      pass.scene.traverse(object => {
+        if (!object.visible) return;
+        const mat = (object as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        const seeThrough = (object as THREE.Sprite).isSprite || (object as THREE.Points).isPoints || (mat && (Array.isArray(mat) ? mat.some(m => m.transparent || m.alphaTest > 0) : mat.transparent || mat.alphaTest > 0));
+        if (seeThrough) { object.visible = false; pass._visibilityCache.push(object); }
+      });
+    };
+    composer.addPass(ao);
+  }
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .55, .55, .88); composer.addPass(bloom);
+  if (!mobile) { dof = new BokehPass(scene, camera, { focus: 20, aperture: .0006, maxblur: .0045 }); composer.addPass(dof); }
+  const grade = new ShaderPass(GradeShader); composer.addPass(grade);
+  composer.addPass(new OutputPass());
+  const forced = new URLSearchParams(location.search).get('q');
+  let quality = forced ? +forced : mobile ? 2 : 0, frames = 0, frameTime = -1;   // the first second is warm-up
+  function applyQuality(level: number) {
+    quality = level;
+    if (ao) ao.enabled = level === 0;
+    if (dof) dof.enabled = level === 0;
+    // Below the top level: no multisampling (the grade's grain hides the edges), no moon shadows.
+    if (level > 0) for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples) { rt.samples = 0; rt.dispose(); }
+    world.moonLight.castShadow = level < 2;
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, [2, 1.25, 1][level])); resize();
+    world.setQuality(level);
+  }
   function resize() {
-    const w = root.clientWidth, h = root.clientHeight; renderer.setSize(w, h); composer.setSize(w, h);
-    camera.aspect = w / Math.max(1, h); camera.fov = w / h < .8 ? 66 : 50; camera.updateProjectionMatrix();
+    const w = root.clientWidth, h = root.clientHeight; renderer.setSize(w, h); composer.setSize(w, h); ao?.setSize(w, h);
+    camera.aspect = w / Math.max(1, h); camera.fov = w / h < .8 ? 60 : 42; camera.updateProjectionMatrix();
   }
   resize(); const ro = new ResizeObserver(resize); ro.observe(root);
 
-  // ── The night: a dusky sky with stars and a moon ────────────────────────────────────────────────────
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 32, 16), new THREE.ShaderMaterial({
-    side: THREE.BackSide, depthWrite: false, fog: false,
-    vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
-    fragmentShader: `varying vec3 vP; void main(){ float h = clamp(vP.y, -.1, 1.);
-      vec3 horizon = vec3(.23,.13,.25), glow = vec3(.45,.24,.3), zenith = vec3(.015,.025,.07);
-      vec3 c = mix(horizon, zenith, pow(max(h, 0.), .45)); c += glow * exp(-abs(h) * 14.) * .55; gl_FragColor = vec4(c, 1.); }`,
-  })); scene.add(sky);
-  const STARS = mobile ? 900 : 1800, sp = new Float32Array(STARS * 3), sz = new Float32Array(STARS);
-  for (let i = 0; i < STARS; i++) { const u = Math.random() * Math.PI * 2, v = Math.acos(1 - Math.random() * .95); sp.set([Math.sin(v) * Math.cos(u) * 250, Math.cos(v) * 250, Math.sin(v) * Math.sin(u) * 250], i * 3); sz[i] = Math.random(); }
-  const starGeo = new THREE.BufferGeometry(); starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3)); starGeo.setAttribute('seed', new THREE.BufferAttribute(sz, 1));
-  const starMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 } }, transparent: true, depthWrite: false, fog: false,
-    vertexShader: `attribute float seed; uniform float uTime; varying float vA; void main(){ vA = .35 + .65 * (.5 + .5 * sin(uTime * (1. + seed * 2.) + seed * 40.)); vec4 mv = modelViewMatrix * vec4(position, 1.); gl_PointSize = 1. + seed * 2.2; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - .5); gl_FragColor = vec4(vec3(1., .97, .92), vA * smoothstep(.5, .1, d)); }`,
-  });
-  scene.add(new THREE.Points(starGeo, starMat));
-  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,250,235,1)', 'rgba(210,220,255,.25)'), fog: false, depthWrite: false, color: new THREE.Color(1.6, 1.6, 1.5), toneMapped: false }));
-  moon.position.set(-70, 62, -140); moon.scale.setScalar(26); scene.add(moon);
+  const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
+  const loader = new GLTFLoader().setDRACOLoader(draco);
+  const world = createWorld({ scene, renderer, loader, mobile });
+  applyQuality(quality);
 
-  scene.add(new THREE.HemisphereLight('#3a4a7a', '#120c08', .55));
-  const moonLight = new THREE.DirectionalLight('#b8c6ff', .5); moonLight.position.set(-14, 26, 22); moonLight.target.position.copy(HIM);
-  moonLight.castShadow = !mobile; moonLight.shadow.mapSize.set(1024, 1024); Object.assign(moonLight.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 5, far: 60 }); moonLight.shadow.bias = -.0005;
-  scene.add(moonLight, moonLight.target);
-
-  // ── The ground and the path of lanterns ─────────────────────────────────────────────────────────────
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(160, 64), new THREE.MeshStandardMaterial({ color: '#141a14', roughness: .95 }));
-  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-  const path = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 27), new THREE.MeshStandardMaterial({ color: '#3a3833', roughness: .8 }));
-  path.rotation.x = -Math.PI / 2; path.position.set(0, .005, 25.5); path.receiveShadow = true; scene.add(path);
-  const terrace = new THREE.Mesh(new THREE.PlaneGeometry(14, 4.5), new THREE.MeshStandardMaterial({ color: '#403c36', roughness: .75 }));
-  terrace.rotation.x = -Math.PI / 2; terrace.position.set(0, .006, 13.6); terrace.receiveShadow = true; scene.add(terrace);
-  const post = new THREE.MeshStandardMaterial({ color: '#15130f', roughness: .5, metalness: .6 });
-  const lanternGlass = new THREE.MeshStandardMaterial({ color: '#2a1f14', emissive: '#ffb45e', emissiveIntensity: 0 });
-  const lanterns: { mat: THREE.MeshStandardMaterial; z: number }[] = [];
-  const postGeo = new THREE.CylinderGeometry(.022, .03, .6, 8), headGeo = new THREE.BoxGeometry(.09, .13, .09);
-  for (let z = 36; z >= 16; z -= 2.5) for (const x of [-1.55, 1.55]) {
-    const p = new THREE.Mesh(postGeo, post); p.position.set(x, .3, z); scene.add(p);
-    const m = lanternGlass.clone(); lanterns.push({ mat: m, z });
-    const h = new THREE.Mesh(headGeo, m); h.position.set(x, .665, z); scene.add(h);
-  }
-  // Fireflies drifting over the grass.
-  const FLIES = mobile ? 60 : 140, fp = new Float32Array(FLIES * 3), fseed = Array.from({ length: FLIES }, () => Math.random() * 100);
+  // Fireflies drifting over the grass and the water.
+  const FLIES = mobile ? 70 : 180, fp = new Float32Array(FLIES * 3), fseed = Array.from({ length: FLIES }, () => Math.random() * 100);
   const flyGeo = new THREE.BufferGeometry(); flyGeo.setAttribute('position', new THREE.BufferAttribute(fp, 3));
-  const flies = new THREE.Points(flyGeo, new THREE.PointsMaterial({ size: .07, color: new THREE.Color(2.4, 1.9, .8), map: glowTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  const flies = new THREE.Points(flyGeo, new THREE.PointsMaterial({ size: .06, color: new THREE.Color(2.6, 2, .8), map: glowTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
   scene.add(flies);
 
   // ── The heart of petals and candles where he waits ──────────────────────────────────────────────────
-  const PETALS = mobile ? 180 : 320;
-  const petals = new THREE.InstancedMesh(new THREE.PlaneGeometry(.06, .045), new THREE.MeshStandardMaterial({ color: '#b3122c', roughness: .6, side: THREE.DoubleSide, emissive: '#3a0008' }), PETALS);
+  const PETALS = mobile ? 220 : 420;
+  const petalGeo = new THREE.SphereGeometry(.03, 8, 4, 0, Math.PI * 2, 0, Math.PI * .35); petalGeo.scale(1, .35, .75);
+  const petals = new THREE.InstancedMesh(petalGeo, new THREE.MeshPhysicalMaterial({ color: '#9c0f25', roughness: .55, side: THREE.DoubleSide, sheen: 1, sheenColor: new THREE.Color('#ff4f6d'), sheenRoughness: .4 }), PETALS);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
   for (let i = 0; i < PETALS; i++) {
-    const t = (i / PETALS) * Math.PI * 2, jitter = (Math.random() - .5) * .12;
+    const t = (i / PETALS) * Math.PI * 2, jitter = (Math.random() - .5) * .14;
     // The heart curve, about 2.6 m across, pointing towards her.
     const hx = 16 * Math.pow(Math.sin(t), 3), hz = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
     const x = HIM.x + hx * .08 + jitter, z = HIM.z + .3 - hz * .08 + jitter;
-    e.set(-Math.PI / 2 + (Math.random() - .5) * .5, Math.random() * Math.PI * 2, 0); q.setFromEuler(e);
-    m4.compose(V(x, .012 + Math.random() * .01, z), q, V(1, 1, 1).multiplyScalar(.8 + Math.random() * .6)); petals.setMatrixAt(i, m4);
+    e.set((Math.random() - .5) * .6, Math.random() * Math.PI * 2, (Math.random() - .5) * .6); q.setFromEuler(e);
+    m4.compose(V(x, .005 + Math.random() * .012, z), q, V(1, 1, 1).multiplyScalar(.8 + Math.random() * .7)); petals.setMatrixAt(i, m4);
   }
-  scene.add(petals);
-  const wax = new THREE.MeshStandardMaterial({ color: '#f1e7d6', roughness: .6, emissive: '#3a2410' });
-  const flameMat = new THREE.SpriteMaterial({ map: glowTexture('rgba(255,236,190,1)', 'rgba(255,150,60,.5)'), color: new THREE.Color(2.4, 1.6, .7), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+  petals.receiveShadow = true; scene.add(petals);
+  const wax = new THREE.MeshPhysicalMaterial({ color: '#f3e9d8', roughness: .45, sheen: .5, sheenColor: new THREE.Color('#ffd9a8'), emissive: '#5a3312', emissiveIntensity: 0 });
+  const flameMat = new THREE.SpriteMaterial({ map: glowTexture('rgba(255,236,190,1)', 'rgba(255,150,60,.5)'), color: new THREE.Color(2.6, 1.7, .7), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
   const flames: THREE.Sprite[] = [];
-  for (let i = 0; i < 16; i++) {
-    const t = (i / 16) * Math.PI * 2, hx = 16 * Math.pow(Math.sin(t), 3), hz = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+  for (let i = 0; i < 18; i++) {
+    const t = (i / 18) * Math.PI * 2, hx = 16 * Math.pow(Math.sin(t), 3), hz = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
     const x = HIM.x + hx * .1, z = HIM.z + .3 - hz * .1, h = .08 + (i % 3) * .05;
-    const c = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, h, 12), wax); c.position.set(x, h / 2, z); scene.add(c);
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, h, 16), wax); c.position.set(x, h / 2, z); c.castShadow = true; scene.add(c);
     const f = new THREE.Sprite(flameMat); f.position.set(x, h + .035, z); f.scale.set(.09, .14, 1); scene.add(f); flames.push(f);
   }
-  const candleLight = new THREE.PointLight('#ffae5c', 0, 7, 2); candleLight.position.set(HIM.x, .5, HIM.z + .6); scene.add(candleLight);
-  const keyLight = new THREE.SpotLight('#ffe2c0', 0, 16, .5, .7, 1.6); keyLight.position.set(1.5, 5.5, HIM.z + 5); keyLight.target.position.set(HIM.x, 1, HIM.z); keyLight.castShadow = !mobile; scene.add(keyLight, keyLight.target);
-
-  // ── The house ───────────────────────────────────────────────────────────────────────────────────────
-  const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
-  const loader = new GLTFLoader().setDRACOLoader(draco);
-  const houseLights: { m: THREE.MeshStandardMaterial; at: number; gain: number }[] = [];
-  const inside: THREE.PointLight[] = [];
-  const houseReady = loader.loadAsync(mobile ? '/models/night/pavilion.mobile.glb' : '/models/night/pavilion.glb').then(gltf => {
-    const house = gltf.scene;
-    house.traverse(n => {
-      const mesh = n as THREE.Mesh; if (!mesh.isMesh) return;
-      const m = mesh.material as THREE.MeshStandardMaterial, name = m.name;
-      mesh.receiveShadow = true; mesh.castShadow = !/Glass/.test(name);
-      if (name === 'Glass') mesh.material = new THREE.MeshPhysicalMaterial({ color: '#cfe0e6', metalness: .1, roughness: .04, transparent: true, opacity: .2, depthWrite: false, envMapIntensity: 1.2 });
-      else if (/Backlight|Light/.test(name)) {
-        const lit = new THREE.MeshStandardMaterial({ color: '#221a12', emissive: '#ffc27a', emissiveIntensity: 0, name });
-        mesh.material = lit; // The back wall is one big lit panel: only a glow, or it blinds everything in front of it.
-        houseLights.push({ m: lit, at: { BacklightCeilingPerimeter: 4, CeilingSpotLights: 6, BacklightBackWall: 8, FloorLight: 10 }[name] ?? 7, gain: { BacklightCeilingPerimeter: 1.1, CeilingSpotLights: 1.5, BacklightBackWall: .06, FloorLight: .9 }[name] ?? 1 });
-      } else if (name === 'Matte') m.color.set('#d9d4ca');
-    });
-    scene.add(house);
-    for (const [x, z] of [[-8, 4], [0, 1], [8, 4]]) { const l = new THREE.PointLight('#ffc987', 0, 16, 1.6); l.position.set(x, 3.8, z); scene.add(l); inside.push(l); }
-  });
+  const candleLight = new THREE.PointLight('#ffa552', 0, 6, 2); candleLight.position.set(HIM.x, .45, HIM.z + .5); scene.add(candleLight);
+  const keyLight = new THREE.SpotLight('#ffe0bd', 0, 18, .38, .75, 1.4); keyLight.position.set(2.2, 5.2, HIM.z + 5.5); keyLight.target.position.set(HIM.x, 1.1, HIM.z); keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048); keyLight.shadow.bias = -.0002; keyLight.shadow.normalBias = .015; scene.add(keyLight, keyLight.target);
 
   // ── The people ──────────────────────────────────────────────────────────────────────────────────────
-  const [him, her] = await Promise.all([createPerson(loader, '/models/night/rodion.glb', RODION, true), createPerson(loader, '/models/night/lida.glb', LIDA)]);
+  const [him, her] = await Promise.all([
+    createPerson(loader, mobile ? '/models/night/rodion.mobile.glb' : '/models/night/rodion.glb', RODION, true),
+    createPerson(loader, mobile ? '/models/night/lida.mobile.glb' : '/models/night/lida.glb', LIDA),
+  ]);
   him.root.position.copy(HIM); scene.add(him.root);
   her.root.position.set(HIM.x - .5, 0, HIM.z + .2); her.root.visible = false; scene.add(her.root);
   const himPose: Partial<Pose> = {}, herPose: Partial<Pose> = {};
+  const houseReady = world.ready;
 
   // ── The astronaut ───────────────────────────────────────────────────────────────────────────────────
   const astro = createAstronaut();
   const astroReady = Promise.race([astro.load().catch(() => {}), new Promise(r => setTimeout(r, 6000))]).then(() => {
     astro.root.updateMatrixWorld(true);
     const hb = new THREE.Box3().setFromObject(astro.root), h = hb.max.y - hb.min.y; if (h > .5) astro.root.scale.multiplyScalar(1.8 / h);
-    astro.root.position.set(1.6, 0, PATH_START.z - 1.5); astro.root.rotation.y = Math.PI; scene.add(astro.root);
+    astro.root.position.set(.75, 0, PATH_START.z - 1.6); astro.root.rotation.y = Math.PI; scene.add(astro.root);
   });
   const bubbles = new Map<Emote, THREE.CanvasTexture>();
   const bubbleSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, opacity: 0 })); bubbleSprite.renderOrder = 5; scene.add(bubbleSprite);
@@ -205,7 +204,7 @@ export async function mountNight(root: HTMLElement) {
     intro: [], end: [],
     walk: [
       { at: 1, run: () => { emote('hi'); astroGoal = { wave: 1 }; setTimeout(() => (astroGoal = {}), 1800); } },
-      { at: 3.5, run: () => { astroTarget = V(mobile ? .5 : 1.25, 0, 14.4); } },   // beside him, where she can see him
+      { at: 3.5, run: () => { astroTarget = V(mobile ? .55 : 1.35, 0, 14.5); } },   // beside him, where she can see him
       { at: 7, run: () => emote('wow') },
       { at: 11.5, run: () => emote('love') },
     ],
@@ -238,12 +237,12 @@ export async function mountNight(root: HTMLElement) {
     photo: [
       { at: .1, run: () => { viewfinder.hidden = false; requestAnimationFrame(() => viewfinder.classList.add('is-on')); } },
       { at: 1.2, run: () => countdown(() => shoot('smile')) },
-      { at: 6.2, run: () => { Object.assign(himPose, { lean: 1 }); Object.assign(herPose, { lean: 1, tiptoe: 1 }); } },
+      { at: 6.2, run: () => { Object.assign(himPose, { lean: 1, hold: 0 }); Object.assign(herPose, { lean: .7, tiptoe: 1, hold: 0 }); kissing = true; } },
       { at: 7.4, run: () => countdown(() => shoot('kiss'), 2) },
       { at: 11, run: () => go('end') },
     ],
   };
-  let ringOpenAt = -1, heartsAt = -1, capture: ((url: string) => void) | null = null;
+  let ringOpenAt = -1, heartsAt = -1, capture: ((url: string) => void) | null = null, kissing = false;
   function go(next: Phase) { phase = next; phaseAt = clock; beatIndex = 0; root.dataset.phase = next; if (next === 'photo') setupPhoto(); if (next === 'end') showEnd(); }
   function countdown(done: () => void, from = 3) {
     let n = from; count.textContent = String(n); count.classList.add('is-on');
@@ -257,8 +256,9 @@ export async function mountNight(root: HTMLElement) {
   // The photos: the couple side by side in front of the glowing house, seen through the astronaut's camera.
   function setupPhoto() {
     her.root.visible = true;
-    him.root.position.set(HIM.x + .34, 0, HIM.z + .4); her.root.position.set(HIM.x - .34, 0, HIM.z + .4);
-    him.root.rotation.y = her.root.rotation.y = 0;
+    him.root.position.set(HIM.x + .3, 0, HIM.z + .4); her.root.position.set(HIM.x - .3, 0, HIM.z + .4);
+    him.root.rotation.y = -.12; her.root.rotation.y = .12;
+    Object.assign(himPose, { kneel: 0, offer: 0, hold: 1 }); Object.assign(herPose, { hold: 1 });
     astro.root.visible = false; bubbleSprite.material.opacity = 0;
   }
   function seedHearts(from = V(HIM.x, .6, HIM.z + .4), spread = 1.4) {
@@ -298,7 +298,7 @@ export async function mountNight(root: HTMLElement) {
   }
 
   // ── Every frame ─────────────────────────────────────────────────────────────────────────────────────
-  const tmp = new THREE.Vector3();
+  const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
   function astroUpdate(dt: number) {
     if (!astro.root.parent || !astro.root.visible) return;
     const r = astro.root; let moving = false;
@@ -336,47 +336,57 @@ export async function mountNight(root: HTMLElement) {
 
   function tick(now: number) {
     frame = 0; if (disposed) return;
-    const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt;
+    const dt = Math.min(.1, (now - last) / 1000); last = now; clock += dt;
+    // Quality: measured while the intro card is up (and early in the walk); stepped down until it runs smoothly.
+    if (!forced && quality < 2 && (phase === 'intro' || (phase === 'walk' && clock - phaseAt < 4))) {
+      frames++; frameTime += dt;
+      if (frameTime > 1.6) { const fps = frames / frameTime; frames = 0; frameTime = 0; if (fps < 42) applyQuality(quality + 1); }
+    }
     // A beat may start the next phase: its own beats then count from that moment, not this one.
     while (beatIndex < beats[phase].length && clock - phaseAt >= beats[phase][beatIndex].at) beats[phase][beatIndex++].run();
     const local = clock - phaseAt;
     if (say && clock > sayUntil) { sub.classList.remove('is-on'); say = ''; }
 
     // Her walk up the path (the camera), then her eyes on him; for the photos, the astronaut's camera.
-    if (phase === 'intro') { camPos.set(Math.sin(clock * .05) * 3, 3.2, 44); lookGoal.set(0, 3, 10); }
+    if (phase === 'intro') { camPos.set(Math.sin(clock * .05) * 4, 4.2, 47); lookGoal.set(0, 2.4, 10); }
     else if (phase === 'walk') {
       const k = Math.min(1, local / 14), e = k * k * (3 - 2 * k);
-      camPos.lerpVectors(PATH_START, HER_STOP, e); camPos.y = 1.62 + Math.sin(local * 5.2) * .012 * (1 - k);   // a gentle step
-      lookGoal.set(0, THREE.MathUtils.lerp(2.6, 1.55, e), THREE.MathUtils.lerp(8, HIM.z, e));
+      camPos.lerpVectors(PATH_START, HER_STOP, e); camPos.y = EYE + Math.sin(local * 5.2) * .012 * (1 - k);   // a gentle step
+      lookGoal.set(0, THREE.MathUtils.lerp(2.4, 1.6, e), THREE.MathUtils.lerp(8, HIM.z, e));
       if (k >= 1) go('speak');
-    } else if (phase === 'speak') { camPos.lerp(HER_STOP, dt); lookGoal.set(HIM.x, 1.55, HIM.z); }
+    } else if (phase === 'speak') { camPos.lerp(HER_STOP, dt); lookGoal.set(HIM.x, 1.62, HIM.z); }
     else if (phase === 'ask' || phase === 'yes') {
       const down = phase === 'ask' ? Math.min(1, local / 2) : Math.max(0, 1 - local / 1.5);
-      camPos.lerp(V(0, 1.55 - down * .12, HER_STOP.z - .6 * down), Math.min(1, dt * 1.5)); lookGoal.set(HIM.x, 1.55 - down * .5, HIM.z);
+      camPos.lerp(V(0, EYE - down * .08, HER_STOP.z - .8 * down), Math.min(1, dt * 1.5)); lookGoal.set(HIM.x, 1.62 - down * .55, HIM.z);
       if (phase === 'yes' && local > 5) lookGoal.set(astro.root.position.x, 1.5, astro.root.position.z);
-    } else if (phase === 'photo' || phase === 'end') { camPos.lerp(V(0, 1.45, HIM.z + 3.6), Math.min(1, dt * 3)); lookGoal.set(0, 1.35, HIM.z + .3); }
+    } else if (phase === 'photo' || phase === 'end') { camPos.lerp(V(0, 1.5, HIM.z + 3.3), Math.min(1, dt * 3)); lookGoal.set(0, 1.42, HIM.z + .4); }
     camera.position.copy(camPos); camLook.lerp(lookGoal, Math.min(1, dt * 2.2)); camera.lookAt(camLook);
 
     // The house wakes up as she comes near; lanterns light behind and ahead of her.
     const glowT = phase === 'intro' ? 0 : phase === 'walk' ? local : 99;
-    for (const l of houseLights) l.m.emissiveIntensity = THREE.MathUtils.smoothstep(glowT, l.at, l.at + 1.2) * l.gain;
-    inside.forEach((l, i) => (l.intensity = THREE.MathUtils.smoothstep(glowT, 5 + i * 1.5, 7 + i * 1.5) * 8));
-    for (const l of lanterns) l.mat.emissiveIntensity = phase === 'intro' ? .15 : THREE.MathUtils.smoothstep(camPos.z - l.z, -9, -4) * 1.8;
+    world.update(clock, glowT, camPos.z, phase === 'intro');
     const warm = phase === 'intro' ? 0 : THREE.MathUtils.smoothstep(glowT, 6, 11);
-    candleLight.intensity = warm * 2.4; keyLight.intensity = warm * 16;
+    candleLight.intensity = warm * 2.6; keyLight.intensity = warm * 26; wax.emissiveIntensity = warm * .5;
     flames.forEach((f, i) => { const k = warm * (.85 + .15 * Math.sin(clock * 13 + i * 2.1) * Math.sin(clock * 7.3 + i)); f.scale.set(.09 * k, .14 * k, 1); });
-    for (let i = 0; i < FLIES; i++) { const s = fseed[i]; fp.set([Math.sin(clock * .3 + s) * (4 + (s % 7)), .4 + (s % 1.4) + Math.sin(clock * .8 + s * 3) * .25, 14 + (s % 20) + Math.cos(clock * .25 + s) * 2], i * 3); }
+    for (let i = 0; i < FLIES; i++) { const s = fseed[i]; fp.set([Math.sin(clock * .3 + s) * (4 + (s % 9)), .3 + (s % 1.6) + Math.sin(clock * .8 + s * 3) * .25, 15 + (s % 22) + Math.cos(clock * .25 + s) * 2], i * 3); }
     flyGeo.attributes.position.needsUpdate = true;
-    starMat.uniforms.uTime.value = clock;
 
     if (ringOpenAt >= 0) him.ring?.open(Math.min(1, (clock - ringOpenAt) / .8));
+    // Where they look: he at her (the camera) while he speaks and asks; both into the lens for the photo;
+    // at each other for the kiss.
+    if (kissing) { him.look?.(her.head?.(tmp) ?? null); her.look?.(him.head?.(tmp2) ?? null); }
+    else if (phase === 'photo' || phase === 'end') { him.look?.(camera.position); her.look?.(camera.position); }
+    else if (phase !== 'intro') him.look?.(camera.position);
     him.pose(himPose, dt); her.pose(herPose, dt);
-    if (phase === 'photo' && (himPose.lean ?? 0) > 0) {
+    if (kissing) {
       // Turning to each other for the kiss.
-      him.root.rotation.y += (-Math.PI / 2 * .8 - him.root.rotation.y) * Math.min(1, dt * 2.5);
-      her.root.rotation.y += (Math.PI / 2 * .8 - her.root.rotation.y) * Math.min(1, dt * 2.5);
-      him.root.position.x += (HIM.x + .2 - him.root.position.x) * Math.min(1, dt * 2); her.root.position.x += (HIM.x - .2 - her.root.position.x) * Math.min(1, dt * 2);
+      him.root.rotation.y += (-Math.PI / 2 * .78 - him.root.rotation.y) * Math.min(1, dt * 2.5);
+      her.root.rotation.y += (Math.PI / 2 * .78 - her.root.rotation.y) * Math.min(1, dt * 2.5);
+      him.root.position.x += (HIM.x + .17 - him.root.position.x) * Math.min(1, dt * 2); her.root.position.x += (HIM.x - .17 - her.root.position.x) * Math.min(1, dt * 2);
     }
+    // Focus: on him, on the two of them for the photos.
+    if (dof) { const u = dof.uniforms as Record<string, { value: number }>; const d = camera.position.distanceTo(tmp.set(HIM.x, 1.4, HIM.z + (phase === 'photo' || phase === 'end' ? .4 : 0))); u.focus.value += (d - u.focus.value) * Math.min(1, dt * 3); }
+    grade.uniforms.uTime.value = clock;
     astroUpdate(dt);
 
     if (heartsAt >= 0) {
@@ -396,7 +406,7 @@ export async function mountNight(root: HTMLElement) {
   }
 
   // ── Start ───────────────────────────────────────────────────────────────────────────────────────────
-  await Promise.all([houseReady, astroReady]);
+  await Promise.all([houseReady.catch(() => {}), astroReady]);
   if (disposed) return () => {};
   // Compile everything while the intro card is up.
   renderer.setRenderTarget(composer.readBuffer); const compiling = renderer.compileAsync(scene, camera).catch(() => {}); renderer.setRenderTarget(null); await compiling;
@@ -410,11 +420,12 @@ export async function mountNight(root: HTMLElement) {
     answer.classList.remove('is-on'); setTimeout(() => (answer.hidden = true), 500); go('yes');
   }));
   $('replay').addEventListener('click', () => location.reload());
+  if (location.search.includes('ndebug')) (window as unknown as { __night: unknown }).__night = { scene, camera, him, her, himPose, herPose, go, renderer, composer, kiss: () => { Object.assign(himPose, { lean: 1, hold: 0 }); Object.assign(herPose, { lean: .7, tiptoe: 1, hold: 0 }); kissing = true; } };
   frame = requestAnimationFrame(tick);
   if (reduced) { /* the story plays as it is: it is short and calm; no parallax, no shake */ }
 
   return () => {
     disposed = true; cancelAnimationFrame(frame); ro.disconnect(); sound.dispose(); draco.dispose(); astro.dispose(); him.dispose(); her.dispose();
-    composer.dispose(); renderer.dispose(); renderer.domElement.remove();
+    world.dispose(); target.dispose(); composer.dispose(); renderer.dispose(); renderer.domElement.remove();
   };
 }
