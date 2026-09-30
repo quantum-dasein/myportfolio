@@ -10,19 +10,16 @@ const isDe = lang === "de";
 ---
 
 <!--
-  The observatory opens. The first visit of a session begins inside a closed dome: a slit of night
-  sky with a green glow, widening as the page's own assets arrive (the slit is the progress bar),
-  then the two shutters slide apart onto the site. No library and no images: a small star canvas
-  and two transformed panels, so it costs almost nothing and runs on the compositor.
+  First visit of a session: the site's own night. Black, a few white stars like the home hero,
+  the studio's name rising letter by letter, a hairline that fills as the page's assets arrive,
+  then the curtain lifts onto the page. Monochrome, no library, no images.
 -->
 <rb-studio-loader aria-hidden="true" data-lang={lang}>
-  <canvas class="dome-sky" data-dome-sky></canvas>
-  <div class="dome-glow"></div>
-  <div class="dome-shutter dome-left"><i></i></div>
-  <div class="dome-shutter dome-right"><i></i></div>
-  <div class="dome-hud">
-    <span>Rodion Belousov <em>·</em> {isDe ? "Wien" : "Vienna"}</span>
-    <span class="dome-status"><span>{isDe ? "Die Sternwarte öffnet" : "The observatory opens"}</span><b data-dome-count>000</b></span>
+  <canvas class="ld-sky" data-ld-sky></canvas>
+  <div class="ld-center">
+    <p class="ld-name" data-ld-name>Rodion Belousov<span>.studio</span></p>
+    <div class="ld-line"><i data-ld-line></i></div>
+    <div class="ld-meta"><span>{isDe ? "Websites · Video · 3D · Wien" : "Websites · Video · 3D · Vienna"}</span><b data-ld-count>000</b></div>
   </div>
 </rb-studio-loader>
 
@@ -31,83 +28,54 @@ const isDe = lang === "de";
   rb-studio-loader:not(.is-playing) { display: none; }
 
   rb-studio-loader {
-    --slit: 4px;
     position: fixed;
     inset: 0;
     z-index: 1000;
+    display: grid;
+    place-items: center;
     overflow: hidden;
-    background: #020504;
-    color: #eaf6ef;
-  }
-  rb-studio-loader.is-hidden { pointer-events: none; }
-
-  .dome-sky, .dome-glow { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .9s ease; }
-  /* The green of the site's portals, rising in the slit like the glow over a city at night. */
-  .dome-glow {
-    background:
-      radial-gradient(ellipse 22vw 60vh at 50% 40%, rgba(79, 220, 156, .2), transparent 70%),
-      radial-gradient(ellipse 8vw 30vh at 50% 34%, rgba(170, 255, 214, .16), transparent 70%);
-    pointer-events: none;
-  }
-
-  .dome-shutter {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: calc(50% + 1px);
-    background:
-      repeating-linear-gradient(180deg, transparent 0 calc(12.5vh - 1px), rgba(160, 255, 210, .045) calc(12.5vh - 1px) 12.5vh),
-      linear-gradient(180deg, #0b100e, #060a09 60%, #040706);
+    background: #000;
+    color: #f2f2f2;
     will-change: transform;
   }
-  .dome-left { left: 0; transform: translateX(calc(var(--slit) / -2)); }
-  .dome-right { right: 0; transform: translateX(calc(var(--slit) / 2)); }
-  /* The lit edges of the slit. */
-  .dome-shutter i {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, rgba(160, 255, 210, .1), rgba(160, 255, 210, .75) 40%, rgba(160, 255, 210, .15));
-    box-shadow: 0 0 18px rgba(110, 240, 180, .45);
-  }
-  .dome-left i { right: 0; }
-  .dome-right i { left: 0; }
+  rb-studio-loader.is-hidden { pointer-events: none; }
+  .ld-sky { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-  .dome-hud {
-    position: absolute;
-    left: clamp(1.2rem, 3vw, 2.5rem);
-    right: clamp(1.2rem, 3vw, 2.5rem);
-    bottom: clamp(1.2rem, 3vw, 2.2rem);
+  .ld-center { position: relative; width: fit-content; max-width: 90vw; }
+  .ld-name {
+    margin: 0 0 1.4rem;
+    font: 400 clamp(2rem, 5.2vw, 3.6rem)/1 var(--font-display);
+    letter-spacing: -.02em;
+    white-space: nowrap;
+  }
+  .ld-name span { color: rgba(242, 242, 242, .45); }
+  /* Each letter rises out of a mask, one after another. */
+  .ld-name :global(.ld-ch) { display: inline-block; transform: translateY(105%); opacity: 0; transition: transform .5s cubic-bezier(.2, .8, .2, 1), opacity .45s ease; }
+  .ld-name :global(.ld-mask) { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .08em; }
+  rb-studio-loader.is-in .ld-name :global(.ld-ch) { transform: none; opacity: 1; }
+
+  .ld-line { position: relative; height: 1px; background: rgba(255, 255, 255, .14); overflow: hidden; }
+  .ld-line i { position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(0); }
+
+  .ld-meta {
     display: flex;
     justify-content: space-between;
-    align-items: end;
-    gap: 1rem;
+    margin-top: .9rem;
     font: 400 clamp(.6rem, .85vw, .72rem)/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    letter-spacing: .18em;
+    letter-spacing: .16em;
     text-transform: uppercase;
-    color: rgba(234, 246, 239, .55);
-    transition: opacity .35s ease, transform .35s ease;
+    color: rgba(242, 242, 242, .5);
   }
-  .dome-hud em { font-style: normal; color: #6fe8a8; }
-  .dome-status { display: flex; gap: 1.2rem; align-items: baseline; }
-  .dome-status b { font-weight: 400; font-variant-numeric: tabular-nums; color: #eaf6ef; letter-spacing: .1em; }
+  .ld-meta b { font-weight: 400; color: #f2f2f2; font-variant-numeric: tabular-nums; }
 
-  /* The dome opens: the shutters part, the sky gives way to the page. */
-  rb-studio-loader.is-opening .dome-shutter { transition: transform 1.15s cubic-bezier(.72, 0, .18, 1); }
-  rb-studio-loader.is-opening .dome-left { transform: translateX(-101%); }
-  rb-studio-loader.is-opening .dome-right { transform: translateX(101%); }
-  rb-studio-loader.is-opening .dome-sky,
-  rb-studio-loader.is-opening .dome-glow { opacity: 0; }
-  rb-studio-loader.is-opening .dome-hud { opacity: 0; transform: translateY(8px); }
-  rb-studio-loader.is-opening { background: transparent; transition: background .6s ease .35s; }
+  /* Out: the words fade, the curtain lifts onto the page. */
+  .ld-center { transition: opacity .4s ease, transform .5s cubic-bezier(.6, 0, .4, 1); }
+  rb-studio-loader.is-opening .ld-center { opacity: 0; transform: translateY(-14px); }
+  rb-studio-loader.is-opening { transform: translateY(-100%); transition: transform 1s cubic-bezier(.76, 0, .24, 1) .28s; }
 
-  @media (max-width: 760px) {
-    .dome-hud > span:first-child { display: none; }
-  }
   @media (prefers-reduced-motion: reduce) {
-    rb-studio-loader.is-opening .dome-shutter { transition: none; }
-    rb-studio-loader.is-opening { opacity: 0; transition: opacity .4s ease; }
+    .ld-name :global(.ld-ch) { transition: opacity .3s ease; transform: none; }
+    rb-studio-loader.is-opening { transform: none; opacity: 0; transition: opacity .4s ease; }
   }
 </style>
 
@@ -134,24 +102,43 @@ const isDe = lang === "de";
       document.documentElement.classList.add("is-preloading");
       document.body.classList.add("is-preloading");
 
-      // The scroll lock must never outlive the intro, whatever happens to the frame loop:
-      // this timer releases it even if no frame is ever served.
+      // The scroll lock must never outlive the intro, whatever happens to the frame loop.
       this.deadline = window.setTimeout(() => this.dismiss(), 5000);
       try { this.play(); } catch { this.dismiss(); }
     }
 
     private play() {
-      const count = this.querySelector<HTMLElement>("[data-dome-count]")!;
-      const canvas = this.querySelector<HTMLCanvasElement>("[data-dome-sky]")!;
+      const count = this.querySelector<HTMLElement>("[data-ld-count]")!;
+      const line = this.querySelector<HTMLElement>("[data-ld-line]")!;
+      const name = this.querySelector<HTMLElement>("[data-ld-name]")!;
+      const canvas = this.querySelector<HTMLCanvasElement>("[data-ld-sky]")!;
       const ctx = canvas.getContext("2d");
-      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      // Progress follows what is really loading (fonts, the document, eager images), is walked to
-      // the end by the budget so a slow asset can never hold the visitor, and is held back by a
-      // short minimum so a warm cache still gets its moment.
+      // Split the name into masked letters that rise one after another.
+      let i = 0;
+      const wrap = (node: Node) => {
+        for (const child of [...node.childNodes]) {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const frag = document.createDocumentFragment();
+            for (const ch of child.textContent ?? "") {
+              const mask = document.createElement("span"); mask.className = "ld-mask";
+              const inner = document.createElement("span"); inner.className = "ld-ch";
+              inner.textContent = ch === " " ? " " : ch; inner.style.transitionDelay = `${i++ * 16}ms`;
+              mask.append(inner); frag.append(mask);
+            }
+            child.replaceWith(frag);
+          } else wrap(child);
+        }
+      };
+      wrap(name);
+      requestAnimationFrame(() => this.classList.add("is-in"));
+
+      // Progress follows what really loads (fonts, document, eager images), is walked to the end
+      // by the budget so a slow asset never holds the visitor, and has a short minimum run.
       const touch = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
-      const BUDGET = touch ? 1.6 : 2.4;
-      const MIN_RUN = reduced ? 0.2 : touch ? 0.6 : 0.9;
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const BUDGET = touch ? 1.6 : 2.2;
+      const MIN_RUN = reduced ? 0.2 : touch ? 0.8 : 1.1;
       let fontsDone = 0, domDone = document.readyState === "complete" ? 1 : 0;
       document.fonts?.ready.then(() => (fontsDone = 1));
       if (!domDone) addEventListener("load", () => (domDone = 1), { once: true });
@@ -168,13 +155,12 @@ const isDe = lang === "de";
       const real = () => fontsDone * 0.3 + domDone * 0.25 + imagesDone * 0.45;
       const ceiling = (s: number) => (s >= MIN_RUN ? 1 : 1 - Math.pow(1 - s / MIN_RUN, 1.7));
 
-      // The sky in the slit: slow stars, a few of them mint.
+      // A few faint white stars, drifting, like the home page's sky.
       const dpr = Math.min(devicePixelRatio || 1, 1.5);
-      const size = () => { canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr; };
-      size();
+      canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
       let seed = 7;
       const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-      const stars = Array.from({ length: 160 }, () => ({ x: 0.36 + rnd() * 0.28, y: rnd(), s: rnd(), p: rnd() * 6 }));
+      const stars = Array.from({ length: 110 }, () => ({ x: rnd(), y: rnd(), s: rnd(), p: rnd() * 6 }));
 
       const start = performance.now();
       let shown = 0;
@@ -186,16 +172,14 @@ const isDe = lang === "de";
         if (elapsed > BUDGET) shown = 1;
         const value = Math.min(1, shown);
         count.textContent = String(Math.round(value * 100)).padStart(3, "0");
-        // The slit is the progress bar: a hairline at first, a fifth of the screen when ready.
-        this.style.setProperty("--slit", `${4 + value * innerWidth * 0.18}px`);
+        line.style.transform = `scaleX(${value})`;
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#fff";
           for (const st of stars) {
-            const y = ((st.y + elapsed * 0.006 * (0.4 + st.s)) % 1) * canvas.height;
-            ctx.globalAlpha = (0.25 + 0.75 * st.s) * (0.55 + 0.45 * Math.sin(elapsed * 2 + st.p));
-            ctx.fillStyle = st.s > 0.9 ? "#9fffd0" : "#ffffff";
-            const r = (0.6 + st.s * 1.3) * dpr;
-            ctx.fillRect(st.x * canvas.width, y, r, r);
+            ctx.globalAlpha = (0.08 + 0.32 * st.s) * (0.6 + 0.4 * Math.sin(elapsed * 1.6 + st.p));
+            const r = (0.6 + st.s * 1.1) * dpr;
+            ctx.fillRect(st.x * canvas.width, ((st.y - elapsed * 0.004 * (0.3 + st.s)) % 1 + 1) % 1 * canvas.height, r, r);
           }
           ctx.globalAlpha = 1;
         }
@@ -212,13 +196,11 @@ const isDe = lang === "de";
       cancelAnimationFrame(this.raf);
       this.classList.add("is-hidden", "is-opening");
       document.body.classList.add("is-loaded");
-      // Unlock at once: the loader no longer takes pointer events, and a stalled frame loop
-      // must never leave the page unscrollable.
       document.documentElement.classList.remove("is-preloading");
       document.body.classList.remove("is-preloading");
       window.__rbLenis?.resize();
       window.dispatchEvent(new CustomEvent("rb:loaded"));
-      window.setTimeout(() => this.remove(), 1400);
+      window.setTimeout(() => this.remove(), 1500);
     }
   }
 
