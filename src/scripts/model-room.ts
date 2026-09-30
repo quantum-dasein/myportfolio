@@ -13,6 +13,7 @@ import { createAstronaut } from './observatory-astronaut';
 import { createRoomSound } from './model-room-sound';
 import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits';
 import { createGuide } from './model-room-guide';
+import { createKiosk } from './model-room-kiosk';
 
 // Names for the parts you can pick out on each exhibit (by mesh material).
 const PARTS: Record<string, Record<string, [string, string]>> = {
@@ -56,6 +57,7 @@ export async function mountModelRoom(root: HTMLElement) {
   let guide: ReturnType<typeof createGuide> | undefined;
   const sound = createRoomSound(); let stepping = 0;
   let exhibits: ReturnType<typeof createExhibits> | undefined;
+  let kiosk: ReturnType<typeof createKiosk> | undefined;
   const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
   const gltfLoader = new GLTFLoader().setDRACOLoader(draco);
   // The exhibit the caption describes: the one you look at while walking, the one you picked while inspecting.
@@ -106,7 +108,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;keys.clear();touchKeys.clear();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();guide?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();guide?.dispose();kiosk?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -170,7 +172,10 @@ export async function mountModelRoom(root: HTMLElement) {
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2);
     raycaster.setFromCamera(pointer, camera);
+    // The archive terminal answers a click with its panel rather than an inspection orbit.
+    const terminal = kiosk ? raycaster.intersectObjects(kiosk.targets, false)[0] : undefined;
     const hit = raycaster.intersectObjects(exhibits ? [...meshes, ...exhibits.meshes] : meshes, false)[0];
+    if (terminal && (!hit || terminal.distance < hit.distance)) { kiosk!.open(); return; }
     if (!hit) { selected = '';selection.visible = false;labelSelection();return; }
     const info = exhibits?.info(hit.object.userData.exhibit ?? 'kitchen') ?? KITCHEN;
     selected = hit.object.name;selectedMaterial = ((hit.object as THREE.Mesh).material as THREE.Material).name ?? '';
@@ -185,7 +190,7 @@ export async function mountModelRoom(root: HTMLElement) {
     if (Math.abs(x) > 8.5 || z < -7.05 || z > (Math.abs(x) < 1.3 ? 11.3 : 10.9)) return true;
     if (astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
     // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
-    return [...colliders, ...(exhibits?.colliders ?? [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
+    return [...colliders, ...(exhibits?.colliders ?? []), ...(kiosk ? [kiosk.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
   }
   function tick(time: number) {
     frame = 0;if (disposed || failed || document.hidden) return;
@@ -212,7 +217,7 @@ export async function mountModelRoom(root: HTMLElement) {
     }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
-    fx?.update(t, dt);exhibits?.update(t, dt);
+    fx?.update(t, dt);exhibits?.update(t, dt);kiosk?.update(t, dt);
     // Walking, the caption follows what you look at.
     if (ready && exhibits && !inspecting && time - captionAt > 250) {
       captionAt = time; caption(exhibits.inView(camera.position, camera.getWorldDirection(new THREE.Vector3())));
@@ -237,7 +242,11 @@ export async function mountModelRoom(root: HTMLElement) {
     design=createModelRoomDesign(scene,coarse.matches);home();
     fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches });
     exhibits = createExhibits({ scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal(), target: () => composer?.readBuffer ?? null });
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, renderer, select: (x: number, y: number) => select(x, y) };
+    kiosk = createKiosk({
+      scene, camera, root, de, coarse: coarse.matches, at: new THREE.Vector3(1.25, 0, 6.6), face: -.48,
+      onOpen: () => { keys.clear(); touchKeys.clear(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
+    });
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, astro, renderer, kiosk, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));

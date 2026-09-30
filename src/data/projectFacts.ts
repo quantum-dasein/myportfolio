@@ -75,6 +75,11 @@ export const projectFacts: Record<string, ProjectFact> = {
     value: "3",
     note: "RU / EN / UZ on both Bridge Consult projects.",
   },
+  modelsBuilt: {
+    value: "1,000+",
+    de: "1.000+",
+    note: "Rodion's own count of 3D models built over the years (stated 2026-09-30); the Model Room shows seven.",
+  },
 };
 
 /** Strings that must never appear again. Each one was wrong or went stale. */

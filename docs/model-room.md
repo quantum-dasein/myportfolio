@@ -49,6 +49,33 @@ is shown the way its kind is shown in the world:
 - **Exhibit 005, the lounge:** the Vavicci Sofa C set by the entrance, dressed
   in the room's palette because its textures were not in the archive.
 
+Since 2026-09-30 the collection is:
+
+1. the kitchen (001);
+2. Rodion's Aventador SVJ Roadster on the showroom turntable (002);
+3. K-2SO, facing the door (003);
+4. the e-bike on a wall mount (004);
+5. the ABS House model (005);
+6. the lounge (006);
+7. the hanging planter over it (007).
+
+The archive terminal by the entrance (`src/scripts/model-room-kiosk.ts`)
+wakes as you approach. It counts up to the 1,000+ models of
+`projectFacts.modelsBuilt` and opens a panel about the rest of the archive.
+
+**Performance.** The room compiles every shader while the loading glow covers
+it. The target must be `composer.readBuffer`, not the canvas, or the work is
+wasted. Exhibits are compiled before they join the scene. The printing reveal
+is a shader uniform, because `compileAsync` does not see per-material clipping
+planes. Exhibits cast no real-time shadows.
+
+Phones load `<name>.mobile.glb`, built with `prepare-exhibits.py … mobile`:
+
+- textures at most 1024 px;
+- about half the triangles;
+- sparser foliage;
+- fewer lamps.
+
 `src/scripts/model-room-guide.ts` makes the astronaut a visitor. He tours the
 pieces along fixed paths and reacts to each one:
 
