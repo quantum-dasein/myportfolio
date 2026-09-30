@@ -11,6 +11,16 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createRoomFx } from './model-room-fx';
 import { createAstronaut } from './observatory-astronaut';
 import { createRoomSound } from './model-room-sound';
+import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits';
+
+// Names for the parts you can pick out on each exhibit (by mesh material).
+const PARTS: Record<string, Record<string, [string, string]>> = {
+  ebike: {
+    Mat_Color: ['Carbon frame', 'Carbonrahmen'], tyre: ['Tyres', 'Reifen'], bicycles_Decal: ['Decals', 'Dekor'], Copper: ['Drivetrain', 'Antrieb'],
+    bicycles_Color: ['Frame detail', 'Rahmendetail'], helmet: ['Wheels', 'Laufräder'], 'Unreal 4 Template': ['Hardware', 'Beschläge'],
+  },
+};
+const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br />');
 
 /** A separate scene: it is only downloaded after entering the archive's portal. */
 export async function mountModelRoom(root: HTMLElement) {
@@ -43,12 +53,32 @@ export async function mountModelRoom(root: HTMLElement) {
   addEventListener('pageshow', event => { if (event.persisted) { leaving = false; root.querySelectorAll('.mr-exit-veil').forEach(v => v.remove()); if (ready) home(); } });
   const astro = createAstronaut(); let astroPhase = 0, astroWalk = 0;
   const sound = createRoomSound(); let stepping = 0;
-  const astroFrom = new THREE.Vector3(1.1, 0, 10.9), astroTo = new THREE.Vector3(2.3, 0, .3), astroVia = new THREE.Vector3(3.2, 0, 6);
+  let exhibits: ReturnType<typeof createExhibits> | undefined;
+  const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
+  const gltfLoader = new GLTFLoader().setDRACOLoader(draco);
+  // The exhibit the caption describes: the one you look at while walking, the one you picked while inspecting.
+  let current: ExhibitInfo = KITCHEN, captionAt = 0;
+  function caption(info: ExhibitInfo) {
+    if (info === current && root.dataset.exhibit === info.id) return;
+    current = info; root.dataset.exhibit = info.id;
+    const box = root.querySelector<HTMLElement>('[data-mr-caption]'); if (!box) return;
+    const both = (l: { en: string; de: string }) => `<span class="mr-en">${escape(l.en)}</span><span class="mr-de">${escape(l.de)}</span>`;
+    const fill = () => {
+      $('cap-kind').innerHTML = `EXHIBIT ${info.no} / ${both({ en: info.kind.en.toUpperCase(), de: info.kind.de.toUpperCase() })}`;
+      $('cap-title').innerHTML = `${escape(info.title)}<span>${both(info.sub)}</span>`;
+      $('cap-text').innerHTML = both(info.text);
+    };
+    if (reduced) { fill(); return; }
+    box.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(6px)' }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).finished.then(() => {
+      fill(); box.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' });
+    }, fill);
+  }
+  const astroFrom = new THREE.Vector3(1.1, 0, 10.9), astroTo = new THREE.Vector3(3.3, 0, .75), astroVia = new THREE.Vector3(3.2, 0, 6);
   let composer: EffectComposer | undefined, bloom: UnrealBloomPass | undefined;
   let studioLight = false;
   let frame = 0, last = 0, disposed = false, ready = false, failed = false;
   let inspecting = false, wireframe = false, yaw = 0, pitch = 0;
-  let selected = '';
+  let selected = '', selectedMaterial = '';
   const keys = new Set<string>();
   const touchKeys = new Map<number, string>();
   const colliders: THREE.Box3[] = [];
@@ -74,7 +104,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;keys.clear();touchKeys.clear();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();exhibits?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -84,7 +114,8 @@ export async function mountModelRoom(root: HTMLElement) {
   }
   function look() { camera.rotation.set(pitch, yaw, 0, 'YXZ'); }
   function home() {
-    camera.position.set(0, 1.7, coarse.matches ? 8.4 : 7);yaw = 0;pitch = 0;look();
+    // Far enough back to take in the whole collection: the car on the left, the droid and the bike on the right.
+    camera.position.set(0, 1.7, coarse.matches ? 9.6 : 9);yaw = 0;pitch = 0;look();
   }
   function labelSelection() {
     const groups: [RegExp, string, string][] = [
@@ -94,7 +125,8 @@ export async function mountModelRoom(root: HTMLElement) {
       [/Backplate/, 'Splashback', 'Rückwand'], [/TopSheet/, 'Worktop', 'Arbeitsplatte'], [/Coocktop/, 'Cooktop', 'Kochfeld'], [/Hood|Ex_ilor/, 'Extractor', 'Dunstabzug'],
     ];
     const label = groups.find(([pattern]) => pattern.test(selected));
-    $('selection').textContent = selected ? `${de() ? 'Ausgewählt' : 'Selected'} / ${label ? label[de() ? 2 : 1] : selected}` : '';
+    const part = current.id === 'kitchen' ? (label ? label[de() ? 2 : 1] : selected) : current.id === 'k2so' ? 'K-2SO' : (PARTS[current.id]?.[selectedMaterial]?.[de() ? 1 : 0] ?? 'Detail');
+    $('selection').textContent = selected ? `${de() ? 'Ausgewählt' : 'Selected'} / ${part}` : '';
   }
   function labels() {
     $('walk').setAttribute('aria-pressed', String(!inspecting));$('inspect').setAttribute('aria-pressed', String(inspecting));
@@ -109,17 +141,26 @@ export async function mountModelRoom(root: HTMLElement) {
   }
   function inspectionHome() {
     if (!orbit) return;
-    const distance = coarse.matches ? 12 : 9;
-    camera.position.set(distance * .65, 4.3, target.z + distance);
+    target.copy(current.focus);
+    if (current.id === 'kitchen') {
+      const distance = coarse.matches ? 12 : 9;
+      camera.position.set(distance * .65, 4.3, target.z + distance);
+    } else {
+      // A three-quarter view from the room's side of the piece, a little above it.
+      const d = current.distance * (coarse.matches ? 1.25 : 1);
+      // (K-2SO opens from the wall side: the astronaut stands on the other.)
+      const out = new THREE.Vector3(-target.x, 0, 8 - target.z).normalize(), side = new THREE.Vector3(-out.z, 0, out.x).multiplyScalar(current.id === 'k2so' ? -1 : 1);
+      camera.position.copy(target).addScaledVector(out, d * .88).addScaledVector(side, d * .42); camera.position.y = target.y + d * .3;
+    }
     orbit.target.copy(target);orbit.update();
   }
   function mode(next: boolean) {
     if (!ready || !orbit || inspecting === next) return;
     keys.clear();touchKeys.clear();gesture = undefined;
     if (next) { savedWalk.position.copy(camera.position);savedWalk.yaw = yaw;savedWalk.pitch = pitch; }
-    inspecting = next;orbit.enabled = next;selection.visible = next && Boolean(selected);
+    inspecting = next;orbit.enabled = next;selection.visible = next && Boolean(selected);exhibits?.hold(next ? current.id : null);
     if (next) inspectionHome();
-    else { camera.position.copy(savedWalk.position);yaw = savedWalk.yaw;pitch = savedWalk.pitch;look(); }
+    else { camera.position.copy(savedWalk.position);yaw = savedWalk.yaw;pitch = savedWalk.pitch;look();selected = ''; }
     root.dataset.mode = next ? 'inspect' : 'walk';labels();
   }
   function select(clientX: number, clientY: number) {
@@ -127,9 +168,14 @@ export async function mountModelRoom(root: HTMLElement) {
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(meshes, false)[0];
+    const hit = raycaster.intersectObjects(exhibits ? [...meshes, ...exhibits.meshes] : meshes, false)[0];
     if (!hit) { selected = '';selection.visible = false;labelSelection();return; }
-    selected = hit.object.name;mode(true);sound.select();
+    const info = exhibits?.info(hit.object.userData.exhibit ?? 'kitchen') ?? KITCHEN;
+    selected = hit.object.name;selectedMaterial = ((hit.object as THREE.Mesh).material as THREE.Material).name ?? '';
+    // Picking another piece while inspecting flies the orbit over to it.
+    const moved = inspecting && info !== current; caption(info);
+    if (moved) { exhibits?.hold(info.id); inspectionHome(); } else mode(true);
+    sound.select();
     selection.box.setFromObject(hit.object);selection.visible = true;labelSelection();
   }
   function blocked(x: number, z: number) {
@@ -158,7 +204,7 @@ export async function mountModelRoom(root: HTMLElement) {
     // Arrival from the portal: a slow glide out of the rear frame to the first view.
     if (arriveAt >= 0) {
       const k = Math.min(1, (t - arriveAt) / 2.8), e = 1 - Math.pow(1 - k, 3);
-      camera.position.z = THREE.MathUtils.lerp(11.1, coarse.matches ? 8.4 : 7, e); fx?.setOpen(1);
+      camera.position.z = THREE.MathUtils.lerp(11.1, coarse.matches ? 9.6 : 9, e); fx?.setOpen(1);
       if (k >= 1) arriveAt = -1;
     }
     // The astronaut came through with you: he walks to the exhibit, then stands and looks at it.
@@ -169,11 +215,16 @@ export async function mountModelRoom(root: HTMLElement) {
       const walking = t - (arriveAtStart ?? t) > .6 && (goal === astroVia || dist > .08) ? 1 : 0;
       astroWalk += (walking - astroWalk) * Math.min(1, dt * 4);
       if (walking) { astro.root.position.addScaledVector(d.normalize(), Math.min(dist, 1.35 * dt)); astro.root.rotation.y = Math.atan2(d.x, d.z); }
-      else { const face = Math.atan2(-.3 - astro.root.position.x * .1, -1); astro.root.rotation.y += (face - astro.root.rotation.y) * Math.min(1, dt * 2); }
+      // Arrived, he stands with K-2SO and looks up at it, one visitor from space to one from a galaxy far away.
+      else { const face = Math.atan2(4.8 - astro.root.position.x, .4 - astro.root.position.z); astro.root.rotation.y += Math.atan2(Math.sin(face - astro.root.rotation.y), Math.cos(face - astro.root.rotation.y)) * Math.min(1, dt * 2); }
       astroPhase += dt * (1 + astroWalk * 5);
-      astro.animate(astroPhase, astroWalk, 0, dt, 0, { yaw: .25 * Math.sin(t * .23), pitch: -.08 });
+      astro.animate(astroPhase, astroWalk, 0, dt, 0, { yaw: .18 * Math.sin(t * .23), pitch: -.08 - .3 * (1 - astroWalk) });
     }
-    fx?.update(t, dt);
+    fx?.update(t, dt);exhibits?.update(t, dt);
+    // Walking, the caption follows what you look at.
+    if (ready && exhibits && !inspecting && time - captionAt > 250) {
+      captionAt = time; caption(exhibits.inView(camera.position, camera.getWorldDirection(new THREE.Vector3())));
+    }
     sound.frame(stepping, THREE.MathUtils.clamp(1 - (11.3 - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4));
     // The way back only opens once you have stepped clear of it (you arrive standing in it).
     if (arriveAt < 0 && camera.position.z < 10.2) portalArmed = true;
@@ -193,8 +244,10 @@ export async function mountModelRoom(root: HTMLElement) {
     environment = pmrem.fromScene(room, .04);scene.environment = environment.texture;scene.environmentIntensity = .45;room.dispose();pmrem.dispose();
     design=createModelRoomDesign(scene,coarse.matches);home();
     fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches });
+    exhibits = createExhibits({ scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal() });
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
-    colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
+    colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)),...exhibits.colliders);
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
     bloom=new UnrealBloomPass(new THREE.Vector2(1,1),.32,.5,1.05);composer.addPass(bloom);composer.addPass(new OutputPass());
     { const r = $('stage').getBoundingClientRect(); fx.extendComposer(composer, Math.max(1, r.width), Math.max(1, r.height)); }
@@ -241,7 +294,7 @@ export async function mountModelRoom(root: HTMLElement) {
     $('inspect').addEventListener('click', () => mode(true), { signal });$('walk').addEventListener('click', () => mode(false), { signal });
     $('reset').addEventListener('click', () => { selected = '';selection.visible = false;keys.clear();touchKeys.clear();inspecting ? inspectionHome() : home();labelSelection(); }, { signal });
     $('wire').addEventListener('click', () => {
-      wireframe = !wireframe;meshes.forEach(mesh => {
+      wireframe = !wireframe;[...meshes, ...(exhibits?.meshes ?? [])].forEach(mesh => {
         (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(m => { (m as THREE.MeshStandardMaterial).wireframe = wireframe; });
       });labels();
     }, { signal });
@@ -268,14 +321,13 @@ export async function mountModelRoom(root: HTMLElement) {
     if (!response.ok) throw new Error(`Exhibit response: ${response.status}`);
     const data = await response.arrayBuffer();
     if (disposed) return;
-    const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
-    const gltf = await new GLTFLoader().setDRACOLoader(draco).parseAsync(data, '/models/exhibits/');draco.dispose();
+    const gltf = await gltfLoader.parseAsync(data, '/models/exhibits/');
     if (disposed) { disposeTree(gltf.scene);return; }
     model = gltf.scene;model.position.y += .165;model.position.z -= 3.5;scene.add(model);model.updateMatrixWorld(true);
     await design.dressModel(model);if(disposed)return;
     model.traverse(node => {
       const mesh = node as THREE.Mesh;if (!mesh.isMesh) return;
-      mesh.castShadow = true;mesh.receiveShadow = true;meshes.push(mesh);
+      mesh.castShadow = true;mesh.receiveShadow = true;mesh.userData.exhibit = 'kitchen';meshes.push(mesh);
       const bound = new THREE.Box3().setFromObject(mesh);
       // Full-height cabinets and island/table volumes keep the walking camera out of furniture.
       if (/Cabinets|Island|Table_Legs|TopSheet/.test(mesh.name)) colliders.push(bound);
@@ -288,6 +340,8 @@ export async function mountModelRoom(root: HTMLElement) {
     astro.root.position.copy(astroFrom); astro.root.rotation.y = Math.PI; astro.root.visible = !reduced;
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
+    // The rest of the collection streams in once you are standing in the room.
+    setTimeout(() => { if (!disposed) void exhibits?.load(); }, reduced ? 0 : 2600);
     resume();
   } catch (error) {
     if (!disposed) { console.warn('Model Room could not open', error);fail(); }

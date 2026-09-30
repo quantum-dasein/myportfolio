@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import { archiveRooms } from '../../data/observatory';
 import '../../styles/model-room.css';
 ---
-<Layout mode="deck" title="The Model Room | Interactive 3D Gallery — Rodion Belousov" description="Enter the Model Room: walk through an intimate 3D exhibition, orbit the first kitchen installation and inspect its individual objects and geometry." image="/portfolio/model-portal.webp">
+<Layout mode="deck" title="The Model Room | Interactive 3D Gallery — Rodion Belousov" description="Enter the Model Room: walk through a 3D exhibition of Rodion Belousov's models (a kitchen installation, an Audi e-bike and K-2SO), orbit each piece and inspect its parts." image="/portfolio/model-portal.webp">
   <section class="model-room" data-model-room aria-label="The Model Room">
     <div class="mr-stage" data-mr-stage></div>
     <header class="mr-header">
@@ -26,9 +26,9 @@ import '../../styles/model-room.css';
       <button type="button" data-mr-light aria-pressed="false"><span class="mr-en">Studio light</span><span class="mr-de">Studiolicht</span></button>
       <div class="mr-zoom" data-mr-zoom hidden><button type="button" data-mr-closer aria-label="Zoom in">+</button><button type="button" data-mr-farther aria-label="Zoom out">−</button></div>
     </div>
-    <aside class="mr-caption">
-      <div><span class="mr-eyebrow">EXHIBIT 001 / <span class="mr-en">MATERIAL STUDY</span><span class="mr-de">MATERIALSTUDIE</span></span><h2>White &amp; Wood<span>Kitchen Modern 25</span></h2></div>
-      <div class="mr-caption-detail"><p><span class="mr-en">Oak, stone and brushed metal.<br />A study in light, proportion and construction.</span><span class="mr-de">Eiche, Stein und gebürstetes Metall.<br />Eine Studie über Licht, Proportion und Konstruktion.</span></p><p class="mr-selection" data-mr-selection aria-live="polite"></p></div>
+    <aside class="mr-caption" data-mr-caption aria-live="polite">
+      <div><span class="mr-eyebrow" data-mr-cap-kind>EXHIBIT 001 / <span class="mr-en">MATERIAL STUDY</span><span class="mr-de">MATERIALSTUDIE</span></span><h2 data-mr-cap-title>White &amp; Wood<span>Kitchen Modern 25</span></h2></div>
+      <div class="mr-caption-detail"><p data-mr-cap-text><span class="mr-en">Oak, stone and brushed metal.<br />A study in light, proportion and construction.</span><span class="mr-de">Eiche, Stein und gebürstetes Metall.<br />Eine Studie über Licht, Proportion und Konstruktion.</span></p><p class="mr-selection" data-mr-selection aria-live="polite"></p></div>
     </aside>
     <p class="mr-hint" data-mr-hint><span class="mr-en">WASD / arrows to move · Drag to look · Click an object to inspect</span><span class="mr-de">WASD / Pfeile zum Gehen · Ziehen zum Umsehen · Objekt anklicken zum Untersuchen</span></p>
     <div class="mr-touch" data-mr-touch hidden role="group" aria-label="Move around the room">

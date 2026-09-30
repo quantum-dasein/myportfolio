@@ -35,6 +35,42 @@ The archive only downloads the entrance image. When a visitor opens the
 entrance painting, the archive prefetches the room page and exhibit during the
 jump. Source OBJ, MAX files and the RAR are not public assets.
 
+## The collection
+
+`src/scripts/model-room-exhibits.ts` holds the pieces beyond the kitchen. Each
+is shown the way its kind is shown in the world:
+
+- **Exhibit 002, the Audi e-bike:** on a showroom turntable, under two light
+  boxes.
+- **Exhibit 003, K-2SO:** on a museum pedestal, with a spot from above and a
+  green rim light. The astronaut walks over and looks up at it.
+
+Every stand has a lit lectern, a green floor halo and a contact shadow.
+
+The pieces stream in after the arrival. Each one has its textures uploaded and
+shaders compiled first, then it is printed into the room by a rising green scan
+line (a clipping plane). While walking, the caption follows the piece you look
+at. Picking a part opens the inspection orbit around that piece and holds its
+turntable still.
+
+The exhibit files are built from the author's original model files with Blender:
+
+```powershell
+blender -b --factory-startup --python scripts/model-room/prepare-exhibits.py -- <sources> <out> [k2so] [audi-ebike]
+```
+
+The script:
+
+- keeps only meshes, dropping the re-upload's text and helper objects;
+- merges parts by material;
+- reduces triangles to a web budget;
+- scales each piece to real size and stands it on the floor;
+- wires K-2SO's PBR maps and packs the e-bike's decal alpha;
+- writes Draco GLB with WebP textures.
+
+Only models the site owner made belong here. Check new files for embedded
+copyright notices (plate textures, readmes, logos) before adding them.
+
 ## Atmosphere, arrival and return
 
 The archive entrance is a living painting (`src/scripts/model-portal-painting.ts`):
