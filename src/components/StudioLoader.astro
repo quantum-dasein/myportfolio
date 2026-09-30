@@ -9,29 +9,27 @@ const { lang = "en" } = Astro.props;
 ---
 
 <!--
-  The page builds itself. The first visit of a session opens on the page being made, in the
-  studio's four crafts at once: the layout is drafted as a grid and element outlines traced from
-  the real page underneath (web), the chrome sphere turns as a wireframe (3D), a timeline with
-  running timecode carries the real loading progress (video), and a search snippet for the page
-  is typed out and indexed (SEO). Then the drawing fades into the page it was drawing, in place.
-  One canvas, no library, no images.
+  First visit of a session: the page's own headline, set in the site's display face where it will
+  stand, drawn first as a hairline outline and filled with light from left to right as the page
+  really loads; the headline is the progress bar. Below it, the four crafts light one after another.
+  Then the black gives way and the outline hands over to the real headline in place.
+  One canvas, the site's own type, no library, no images.
 -->
 <rb-studio-loader aria-hidden="true" data-lang={lang}>
   <div class="ld-ground"></div>
-  <canvas class="ld-draft" data-ld-draft></canvas>
+  <canvas class="ld-type" data-ld-type></canvas>
 </rb-studio-loader>
 
 <style>
   :global(html.rb-loader-seen) rb-studio-loader { display: none; }
   rb-studio-loader:not(.is-playing) { display: none; }
 
-  rb-studio-loader { position: fixed; inset: 0; z-index: 1000; pointer-events: auto; }
+  rb-studio-loader { position: fixed; inset: 0; z-index: 1000; }
   rb-studio-loader.is-hidden { pointer-events: none; }
-  .ld-ground { position: absolute; inset: 0; background: #000; transition: opacity .8s cubic-bezier(.4, 0, .2, 1); }
-  .ld-draft { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity 1.1s ease .15s; }
-  /* Out: the black ground gives way first, so the real page appears under its own drawing; then the drawing fades. */
+  .ld-ground { position: absolute; inset: 0; background: #000; transition: opacity .9s cubic-bezier(.4, 0, .2, 1); }
+  .ld-type { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .7s ease .25s; }
   rb-studio-loader.is-opening .ld-ground { opacity: 0; }
-  rb-studio-loader.is-opening .ld-draft { opacity: 0; }
+  rb-studio-loader.is-opening .ld-type { opacity: 0; }
 </style>
 
 <script>
@@ -61,51 +59,59 @@ const { lang = "en" } = Astro.props;
     }
 
     private play() {
-      const canvas = this.querySelector<HTMLCanvasElement>("[data-ld-draft]")!;
+      const canvas = this.querySelector<HTMLCanvasElement>("[data-ld-type]")!;
       const x = canvas.getContext("2d");
       if (!x) { this.dismiss(); return; }
       const de = (this.dataset.lang || "en") === "de";
       const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const touch = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
-      const W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 1.5);
+      const W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 2);
       canvas.width = W * dpr; canvas.height = H * dpr; x.scale(dpr, dpr);
+      const display = getComputedStyle(document.documentElement).getPropertyValue("--font-display").trim() || "system-ui, sans-serif";
 
-      // ── What the page underneath really looks like, so the drawing lands on it ──────────
-      const onScreen = (r: DOMRect) => r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < H;
-      const boxes: { r: DOMRect; tag: string }[] = [];
-      const add = (el: Element | null, tag: string) => { if (!el) return; const r = el.getBoundingClientRect(); if (onScreen(r)) boxes.push({ r, tag }); };
-      add(document.querySelector("header"), "<header>");
-      const lines = document.querySelectorAll(".hero-title .line");
-      if (lines.length) lines.forEach((l) => add(l, "<h1>"));
-      else add(document.querySelector("main h1, h1"), "<h1>");
-      document.querySelectorAll("[data-hero] .eyebrow, [data-hero] .status, [data-hero] .hero-sub, [data-hero] .hero-actions a").forEach((el) => add(el, el.tagName === "A" ? "<a>" : el.classList.contains("hero-sub") ? "<p>" : "<span>"));
-      const container = document.querySelector(".u-container")?.getBoundingClientRect();
-      const colLeft = container && container.width > 200 ? container.left : W * .06, colWidth = container && container.width > 200 ? container.width : W * .88;
-      const cols = touch ? 4 : 12;
-      // The chrome sphere of the home page sits right of the headline (on phones, above it).
-      const home = Boolean(document.querySelector("[data-hero]"));
-      const sphere = { cx: touch ? W * .62 : W * .74, cy: touch ? H * .13 : H * .45, r: touch ? Math.min(W * .2, H * .08) : Math.min(W * .17, H * .3) };
+      // ── The headline to draw: the real one, where it will stand, in its own type ────────────
+      type Line = { text: string; left: number; top: number; height: number; font: string; spacing: string };
+      let lines: Line[] = [];
+      const measure = () => {
+      const next: Line[] = [];
+      const sources = [...document.querySelectorAll<HTMLElement>(".hero-title .line")];
+      const shift = (el: HTMLElement) => { const m = new DOMMatrixReadOnly(getComputedStyle(el).transform === "none" ? undefined : getComputedStyle(el).transform); return m.m42; };
+      for (const el of sources) {
+        const cs = getComputedStyle(el), font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const dy = shift(el), spacing = cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
+        // A line may wrap on narrow screens: take each word's own box and regroup them into the rows the page shows.
+        const rows: { words: string[]; left: number; top: number; height: number }[] = [];
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent || "";
+          for (const m of text.matchAll(/\S+/g)) {
+            const range = document.createRange(); range.setStart(node, m.index!); range.setEnd(node, m.index! + m[0].length);
+            const r = range.getBoundingClientRect(); if (r.width < 1) continue;
+            const row = rows.find((w) => Math.abs(w.top - r.top) < r.height * .5);
+            if (row) { row.words.push(m[0]); row.left = Math.min(row.left, r.left); }
+            else rows.push({ words: [m[0]], left: r.left, top: r.top, height: r.height });
+          }
+        }
+        rows.sort((a, b) => a.top - b.top).forEach((r) => next.push({ text: r.words.join(" "), left: r.left, top: r.top - dy, height: r.height, font, spacing }));
+      }
+      if (!next.length) {
+        // Elsewhere: the name, centred, in the same face.
+        const size = Math.min(W * .075, 64), font = `400 ${size}px ${display}`;
+        x.font = font; const w = x.measureText("Rodion Belousov").width;
+        next.push({ text: "Rodion Belousov", left: (W - w) / 2, top: H / 2 - size * .7, height: size * 1.2, font, spacing: "-0.02em" });
+      }
+      lines = next;
+      };
+      // The headline reflows once the display face arrives: follow it so the outline hands over in place.
+      measure();
+      document.fonts?.ready.then(measure);
+      addEventListener("load", measure, { once: true });
+      window.setTimeout(measure, 400);
+      const crafts = de ? ["Websites", "Video", "3D", "SEO"] : ["Websites", "Video", "3D", "SEO"];
 
-      // ── An icosphere for the wireframe ───────────────────────────────────────────────────
-      const t0 = (1 + Math.sqrt(5)) / 2;
-      let verts: number[][] = [[-1, t0, 0], [1, t0, 0], [-1, -t0, 0], [1, -t0, 0], [0, -1, t0], [0, 1, t0], [0, -1, -t0], [0, 1, -t0], [t0, 0, -1], [t0, 0, 1], [-t0, 0, -1], [-t0, 0, 1]];
-      let faces = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
-      const norm = (v: number[]) => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
-      verts = verts.map(norm);
-      const mids = new Map<string, number>();
-      const mid = (a: number, b: number) => { const k = a < b ? `${a}_${b}` : `${b}_${a}`; if (!mids.has(k)) { verts.push(norm([(verts[a][0] + verts[b][0]) / 2, (verts[a][1] + verts[b][1]) / 2, (verts[a][2] + verts[b][2]) / 2])); mids.set(k, verts.length - 1); } return mids.get(k)!; };
-      faces = faces.flatMap(([a, b, c]) => { const ab = mid(a, b), bc = mid(b, c), ca = mid(c, a); return [[a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]]; });
-      const edgeSet = new Set<string>(); const edges: [number, number][] = [];
-      for (const [a, b, c] of faces) for (const [p, q] of [[a, b], [b, c], [c, a]]) { const k = p < q ? `${p}_${q}` : `${q}_${p}`; if (!edgeSet.has(k)) { edgeSet.add(k); edges.push([p, q]); } }
-
-      // ── The search snippet, from the page's own title and description ──────────────────
-      const url = `${location.host}${location.pathname === "/" ? "" : location.pathname.replace(/\/$/, "")}`;
-      const title = document.title;
-      const desc = (document.querySelector('meta[name="description"]')?.getAttribute("content") || "").slice(0, 96);
-
-      // ── Real progress: fonts, document, eager images; walked to the end by the budget ──
-      const BUDGET = touch ? 1.7 : 2.3;
-      const MIN_RUN = reduced ? 0.2 : touch ? 1.3 : 1.6;
+      // ── Real progress: fonts, document, eager images; walked to the end by the budget ──────
+      const BUDGET = touch ? 1.7 : 2.2;
+      const MIN_RUN = reduced ? 0.2 : touch ? 1.2 : 1.5;
       let fontsDone = 0, domDone = document.readyState === "complete" ? 1 : 0;
       document.fonts?.ready.then(() => (fontsDone = 1));
       if (!domDone) addEventListener("load", () => (domDone = 1), { once: true });
@@ -117,85 +123,48 @@ const { lang = "en" } = Astro.props;
       pending.forEach((img) => { const bump = () => (imagesDone = ++loaded / total); img.addEventListener("load", bump, { once: true }); img.addEventListener("error", bump, { once: true }); });
       const real = () => fontsDone * 0.3 + domDone * 0.25 + imagesDone * 0.45;
       const ceiling = (s: number) => (s >= MIN_RUN ? 1 : 1 - Math.pow(1 - s / MIN_RUN, 1.6));
-
       const clamp = (v: number) => Math.max(0, Math.min(1, v));
-      const ease = (v: number) => 1 - Math.pow(1 - clamp(v), 3);
-      const mono = (size: number) => `400 ${size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+
       const start = performance.now();
       let shown = 0;
-
       const tick = () => {
         if (this.dismissed) return;
         const s = (performance.now() - start) / 1000;
         const target = Math.min(Math.max(real(), Math.min(1, s / BUDGET)), ceiling(s));
-        shown += (target - shown) * 0.14; if (s > BUDGET) shown = 1;
+        shown += (target - shown) * 0.12; if (s > BUDGET) shown = 1;
         const p = Math.min(1, shown);
         x.clearRect(0, 0, W, H);
+        const appear = clamp(s / .5);
 
-        // 1 · Web: the column grid draws itself down the page, then the element outlines.
-        const g = ease(s / .55);
-        x.strokeStyle = "rgba(255,255,255,.07)"; x.lineWidth = 1;
-        for (let i = 0; i <= cols; i++) { const cx = Math.round(colLeft + colWidth * i / cols) + .5; x.beginPath(); x.moveTo(cx, 0); x.lineTo(cx, H * g); x.stroke(); }
-        boxes.forEach((b, i) => {
-          // Leave the bottom band to the timeline and the search snippet.
-          if (b.r.top > H - (touch ? 170 : 190)) return;
-          const k = ease((s - .15 - i * .06) / .45); if (k <= 0) return;
-          const { left, top, width, height } = b.r;
-          x.setLineDash([4, 4]); x.strokeStyle = `rgba(255,255,255,${.34 * k})`;
-          x.strokeRect(Math.round(left) + .5, Math.round(top) + .5, Math.round(width * k), Math.round(height));
-          x.setLineDash([]);
-          x.fillStyle = `rgba(255,255,255,${.5 * k})`; x.font = mono(10); x.fillText(b.tag, left + 4, top - 5 > 10 ? top - 5 : top + 13);
-          // A few strokes of "code" inside text boxes before the words arrive.
-          if (b.tag !== "<header>") { x.fillStyle = `rgba(255,255,255,${.08 * k})`; const rows = Math.max(1, Math.floor(height / 18)); for (let r = 0; r < Math.min(rows, 4); r++) x.fillRect(left + 6, top + 8 + r * 18, (width - 12) * (.35 + ((i * 7 + r * 3) % 5) / 8) * k, 3); }
+        // The headline: a hairline outline, filled with light line by line as the page arrives.
+        lines.forEach((l, i) => {
+          x.font = l.font; (x as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = l.spacing;
+          x.textBaseline = "alphabetic";
+          const m = x.measureText(l.text), asc = m.actualBoundingBoxAscent || l.height * .72, desc = m.actualBoundingBoxDescent || 0;
+          const y = l.top + (l.height - (asc + desc)) / 2 + asc;
+          x.globalAlpha = appear;
+          x.lineWidth = 1; x.strokeStyle = "rgba(255,255,255,.28)"; x.strokeText(l.text, l.left, y);
+          const k = clamp(p * lines.length - i);
+          if (k > 0) {
+            x.save(); x.beginPath(); x.rect(l.left - 4, l.top - l.height, (m.width + 8) * k, l.height * 3); x.clip();
+            x.fillStyle = "#f4f4f2"; x.fillText(l.text, l.left, y); x.restore();
+          }
         });
 
-        // 2 · 3D: the sphere as a turning wireframe, where the real chrome sphere will appear.
-        if (home) {
-          const k = ease((s - .35) / .7);
-          if (k > 0) {
-            const ay = s * .55, ax = .35 + Math.sin(s * .4) * .1, ca = Math.cos(ay), sa = Math.sin(ay), cb = Math.cos(ax), sb = Math.sin(ax);
-            const r = sphere.r * (.85 + .15 * k);
-            const pts = verts.map(([vx, vy, vz]) => { const X = vx * ca + vz * sa, Z = -vx * sa + vz * ca, Y = vy * cb - Z * sb, Z2 = vy * sb + Z * cb; const f = 1 / (1 + Z2 * .25); return [sphere.cx + X * r * f, sphere.cy + Y * r * f, Z2]; });
-            for (const [a, b] of edges) {
-              const front = (pts[a][2] + pts[b][2]) / 2;   // back edges fainter
-              x.strokeStyle = `rgba(255,255,255,${(front < 0 ? .32 : .09) * k})`;
-              x.beginPath(); x.moveTo(pts[a][0], pts[a][1]); x.lineTo(pts[b][0], pts[b][1]); x.stroke();
-            }
-            x.fillStyle = `rgba(255,255,255,${(touch ? 0 : .5) * k})`; x.font = mono(10);
-            x.fillText(`MESH · ${verts.length} VERTS · ${edges.length} EDGES`, sphere.cx - r, sphere.cy + r + 22);
-          }
-        }
-
-        // 3 · Video: a timeline along the bottom, playhead at the real progress, running timecode.
-        const by = H - (touch ? 34 : 44), bl = colLeft, bw = colWidth;
-        x.strokeStyle = "rgba(255,255,255,.18)"; x.beginPath(); x.moveTo(bl, by + .5); x.lineTo(bl + bw, by + .5); x.stroke();
-        for (let i = 0; i <= 48; i++) { const tx = bl + bw * i / 48; x.beginPath(); x.moveTo(tx + .5, by); x.lineTo(tx + .5, by + (i % 6 ? 4 : 8)); x.stroke(); }
-        x.strokeStyle = "#fff"; x.beginPath(); x.moveTo(bl, by + .5); x.lineTo(bl + bw * p, by + .5); x.stroke();
-        x.fillStyle = "#fff"; x.fillRect(bl + bw * p - .5, by - 9, 1.5, 18);
-        const frames = Math.floor(s * 25), tc = `00:00:${String(Math.floor(frames / 25)).padStart(2, "0")}:${String(frames % 25).padStart(2, "0")}`;
-        x.font = mono(11); x.fillStyle = "rgba(255,255,255,.85)"; x.textAlign = "right"; x.fillText(`${tc}  ${String(Math.round(p * 100)).padStart(3, "0")}%`, bl + bw, by - 12); x.textAlign = "left";
-        if (Math.floor(s * 2.4) % 2 === 0) { x.fillStyle = "#e5484d"; x.beginPath(); x.arc(bl + 4, by - 16, 3.5, 0, 7); x.fill(); }
-        x.fillStyle = "rgba(255,255,255,.7)"; x.fillText("REC", bl + 12, by - 12);
-
-        // 4 · SEO: the page's own search snippet, typed out, then indexed.
-        if (!touch || H > 600) {
-          // On a desk it sits bottom right under the sphere, right-aligned; on a phone, bottom left.
-          const k = clamp((s - .7) / .9), sy = by - (touch ? 92 : 100);
-          if (k > 0) {
-            const typed = (str: string, from: number, len: number) => str.slice(0, Math.floor(str.length * clamp((k - from) / len)));
-            const sx = touch ? bl : bl + bw; x.textAlign = touch ? "left" : "right";
-            const clip = (str: string, max: number) => { x.font = x.font; let v = str; while (v.length > 4 && x.measureText(v).width > max) v = v.slice(0, -2); return v === str ? v : v + "…"; };
-            const room = touch ? bw : Math.min(560, bw * .45);
-            x.font = mono(11); x.fillStyle = "rgba(255,255,255,.45)";
-            x.fillText(typed(url, 0, .3), sx, sy);
-            x.font = `400 ${touch ? 15 : 18}px system-ui, sans-serif`; x.fillStyle = "rgba(255,255,255,.9)";
-            x.fillText(clip(typed(title, .15, .45), room), sx, sy + 24);
-            x.font = `400 ${touch ? 12 : 13}px system-ui, sans-serif`; x.fillStyle = "rgba(255,255,255,.5)";
-            x.fillText(clip(typed(desc, .45, .55), room), sx, sy + 46);
-            x.font = mono(10); x.fillStyle = "rgba(255,255,255,.6)";
-            x.fillText(k >= 1 ? (de ? "INDEXIERT ✓" : "INDEXED ✓") : (de ? "INDEXIERUNG…" : "INDEXING…"), sx, sy - 18); x.textAlign = "left";
-          }
-        }
+        // The four crafts, lit one after another along the bottom.
+        x.globalAlpha = appear; x.textBaseline = "alphabetic";
+        x.font = `400 ${touch ? 13 : 14}px ${display}`; (x as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0.02em";
+        const gap = touch ? 22 : 30; let cx = touch ? 24 : Math.max(24, lines[0].left);
+        // Along the bottom, unless the headline reaches down there; then along the top.
+        const last = lines[lines.length - 1], low = H - (touch ? 34 : 44);
+        const rowY = last.top + last.height > low - 30 ? (touch ? 48 : 56) : low;
+        crafts.forEach((word, i) => {
+          x.fillStyle = `rgba(244,244,242,${.22 + .68 * clamp((p - i * .22) / .18)})`;
+          x.fillText(word, cx, rowY); cx += x.measureText(word).width + gap;
+        });
+        x.textAlign = "right"; x.fillStyle = "rgba(244,244,242,.5)";
+        x.fillText(String(Math.round(p * 100)), W - (touch ? 24 : Math.max(24, lines[0].left)), rowY);
+        x.textAlign = "left"; x.globalAlpha = 1;
 
         if (p >= 0.999 && s > MIN_RUN) { this.dismiss(); return; }
         this.raf = requestAnimationFrame(tick);
@@ -214,7 +183,7 @@ const { lang = "en" } = Astro.props;
       document.body.classList.remove("is-preloading");
       window.__rbLenis?.resize();
       window.dispatchEvent(new CustomEvent("rb:loaded"));
-      window.setTimeout(() => this.remove(), 1500);
+      window.setTimeout(() => this.remove(), 1400);
     }
   }
 
