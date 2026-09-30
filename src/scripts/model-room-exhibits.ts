@@ -244,6 +244,10 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
         slot.clip.constant = -1; slot.spinner.add(root);
         if (slot.stage.stand === 'lounge') {
           // Walls you cannot walk through: the sofa itself and the coffee table, measured once they stand in the room.
+          // The coffee table stood 16 cm from the seat: pull it (and everything on it) half a metre into the
+          // room, so there is legroom and a way to the seat. The set is turned half round, so world -z is local +z.
+          const onTable = /CI_|Decanter|Elliot|#7022|Chrome|Nickel/;
+          root.traverse(node => { const mesh = node as THREE.Mesh; if (mesh.isMesh && onTable.test((mesh.material as THREE.Material).name)) mesh.position.z += .5; });
           root.updateMatrixWorld(true);
           const sofaBox = new THREE.Box3(), tableBox = new THREE.Box3();
           root.traverse(node => {

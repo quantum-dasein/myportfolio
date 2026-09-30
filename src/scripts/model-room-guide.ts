@@ -90,7 +90,7 @@ function bubble(kind: Emote) {
 
 export function createGuide(o: {
   scene: THREE.Scene; astro: Astro; camera: THREE.Camera; reduced: boolean;
-  from: THREE.Vector3; shown: (id: string) => boolean; seat: () => { at: THREE.Vector3; approach: THREE.Vector3; face: number } | null;
+  from: THREE.Vector3; shown: (id: string) => boolean; seat: () => { at: THREE.Vector3; stand: THREE.Vector3; via: THREE.Vector3; face: number } | null;
   chirp?: (kind: Emote) => void;
 }) {
   const { astro, camera } = o, root = astro.root;
@@ -112,7 +112,7 @@ export function createGuide(o: {
   const pose: Required<Pose> = { yaw: 0, pitch: -.08, wave: 0, sit: 0, tablet: 0, reach: 0 };
   const goal: Required<Pose> = { ...pose };
   let lookAt: THREE.Vector3 | null = null, holdUntil = 0, stepBack = 0;
-  const head = new THREE.Vector3(), tmp = new THREE.Vector3(), seatAt = new THREE.Vector3();
+  const head = new THREE.Vector3(), tmp = new THREE.Vector3(), seatAt = new THREE.Vector3(), standAt = new THREE.Vector3();
 
   function begin(t: number) { startedAt = t; phase = 'walk'; stopIndex = 0; path = STOPS[0].path.map(p => p.clone()); root.position.copy(o.from); root.visible = !o.reduced; }
   function goToSofa(t: number) { phase = 'sofa-walk'; path = TO_SOFA.map(p => p.clone()); emote('tired', t); }
@@ -152,7 +152,7 @@ export function createGuide(o: {
         // Strolling, he looks around the room: up at the ring of light, across to the pieces.
         goal.yaw = .45 * Math.sin(t * .6) + .2 * Math.sin(t * 1.7); goal.pitch = -.12 - .12 * Math.sin(t * .37);
       } else if (phase === 'walk') { phase = 'stop'; stopAt = t; beatIndex = 0; lookAt = STOPS[stopIndex].look; holdUntil = 0; }
-      else { const s = o.seat(); if (s && !approached) { approached = true; path.push(s.approach.clone()); } else if (s) { phase = 'sit-down'; phaseAt = t; seatAt.copy(s.at); } }
+      else { const s = o.seat(); if (s && !approached) { approached = true; path.push(s.via.clone(), s.stand.clone()); } else if (s) { phase = 'sit-down'; phaseAt = t; seatAt.copy(s.at); standAt.copy(root.position); } }
     }
 
     if (phase === 'stop') {
@@ -180,10 +180,12 @@ export function createGuide(o: {
     }
 
     if (phase === 'sit-down') {
-      // Up to the sofa, turn round, and down.
-      const k = Math.min(1, (t - phaseAt) / 1.6), e = k * k * (3 - 2 * k);
-      root.position.x += (seatAt.x - root.position.x) * Math.min(1, dt * 3); root.position.z += (seatAt.z - root.position.z) * Math.min(1, dt * 3);
-      const s = o.seat(); if (s) faceTowards(tmp.set(root.position.x + Math.sin(s.face), 0, root.position.z + Math.cos(s.face)), dt, 4);
+      // Standing in front of the seat: turn his back to the sofa first, then lower himself back onto it,
+      // the way people sit down, so he never walks through the cushions.
+      const local = t - phaseAt, turn = .8, down = 1.5;
+      const s = o.seat(); if (s) faceTowards(tmp.set(root.position.x + Math.sin(s.face), 0, root.position.z + Math.cos(s.face)), dt, 5);
+      const k = THREE.MathUtils.clamp((local - turn) / down, 0, 1), e = k * k * (3 - 2 * k);
+      root.position.x = THREE.MathUtils.lerp(standAt.x, seatAt.x, e); root.position.z = THREE.MathUtils.lerp(standAt.z, seatAt.z, e);
       goal.sit = e; if (k >= 1) { phase = 'wait'; phaseAt = t; waitNext = t + 3; emote('tired', t); }
     }
 
@@ -231,7 +233,7 @@ export function createGuide(o: {
   const pending: Pose = {};
 
   return {
-    begin, update,
+    begin, update, emote,
     dispose() { textures.forEach(t => t.dispose()); sprite.material.dispose(); o.scene.remove(sprite); },
   };
 }

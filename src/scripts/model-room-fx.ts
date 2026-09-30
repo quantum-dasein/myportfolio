@@ -125,6 +125,19 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
       ao = new GTAOPass(scene, camera, width, height);
       ao.updateGtaoMaterial({ radius: .45, distanceExponent: 1.6, thickness: 1.2, scale: 1.1, samples: 8 });
       ao.blendIntensity = .85;
+      // GTAO draws everything but points and lines into its normal pass as solid surfaces, so a sprite or
+      // a glass/halo plane leaves a dark occlusion square behind it. Leave all see-through things out.
+      const pass = ao as unknown as { _overrideVisibility: () => void; _visibilityCache: THREE.Object3D[]; scene: THREE.Scene };
+      const hideLines = pass._overrideVisibility.bind(pass);
+      pass._overrideVisibility = () => {
+        hideLines();
+        pass.scene.traverse(object => {
+          if (!object.visible) return;
+          const mat = (object as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+          const seeThrough = (object as THREE.Sprite).isSprite || (mat && (Array.isArray(mat) ? mat.some(m => m.transparent) : mat.transparent));
+          if (seeThrough) { object.visible = false; pass._visibilityCache.push(object); }
+        });
+      };
       composer.insertPass(ao, 1);
     }
     const finish = new ShaderPass({

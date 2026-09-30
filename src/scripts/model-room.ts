@@ -336,12 +336,16 @@ export async function mountModelRoom(root: HTMLElement) {
       // His seat: on the sofa's long side, a little in from its back, facing into the room.
       seat: () => {
         const s = exhibits?.lounge.sofa; if (!s) return null;
-        // The left seat by the cushions, reached from in front, beside the coffee table rather than through it.
-        return { at: new THREE.Vector3(s.min.x + .95, 0, s.max.z - .78), approach: new THREE.Vector3(s.min.x + 1.25, 0, s.min.z - .5), face: Math.PI };
+        // The middle of the main seat (its front edge is 1.13 m in from the sofa's back; the chaise sticks out
+        // further on the other side). He comes round the arm, along the legroom behind the coffee table,
+        // stops in front of the seat and sits down backwards onto it.
+        const front = s.max.z - 1.13, x = s.max.x - .8;
+        return { at: new THREE.Vector3(x, 0, front + .32), stand: new THREE.Vector3(x, 0, front - .32), via: new THREE.Vector3(s.max.x + .35, 0, front - .32), face: Math.PI };
       },
       chirp: kind => sound.chirp(kind),
     });
     guide.begin(performance.now() / 1000);
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: Record<string, unknown> }).__mr.guide = guide;
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.
