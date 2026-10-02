@@ -41,6 +41,15 @@ export const modelArchive: ArchiveModel[] = [{
   preview: '/models/archive/waterfall-fountains.webp',
   src: '/models/archive/waterfall-fountains.glb', mobileSrc: '/models/archive/waterfall-fountains.mobile.glb',
   dimensions: 'Architectural miniature', height: .449, distance: 5.2, lift: .64, elevation: .7,
+}, {
+  id: 'winter-sports', no: '012', title: 'Winter sports rack', category: 'equipment',
+  description: {
+    en: 'A wall rack with three pairs of skis, two snowboards and their bindings, each with its own graphics.',
+    de: 'Eine Wandhalterung mit drei Paar Ski, zwei Snowboards und ihren Bindungen, jedes mit eigener Grafik.',
+  },
+  preview: '/models/archive/winter-sports.webp',
+  src: '/models/archive/winter-sports.glb', mobileSrc: '/models/archive/winter-sports.mobile.glb',
+  dimensions: '2.00 × 0.39 × 1.89 m', height: 1.89, distance: 5.2,
 }];
 
 export function archiveDimensions(entry: ArchiveModel, de: boolean) {

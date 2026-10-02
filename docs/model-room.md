@@ -328,3 +328,16 @@ kicker (`model-room-archive.ts`). Water glows. Previews come from
 **The archive tablet.** `model-room-catalog.ts` and the `.mr-catalog` block in `model-room.css`: a
 glass sheet over the blurred room, category chips, glass cards, and "liquid glass" buttons whose
 highlight follows the pointer (`--mx` / `--my`). The enquiry button is the mint accent.
+
+### Winter sports rack and the tablet's purpose (2026-10-02)
+
+`scripts/model-room/prepare-winter.py -- SOURCE` converts "Winter sports equipment" (an FBX 6.1 file, read
+with `fbx6.py`): three pairs of skis, two snowboards, bindings and a wall rail. The V-Ray materials do not
+survive the export, so the textures in `maps/` are reconnected by material name and the rest is rebuilt as
+web PBR; a plain display wall is added so the wall rack can stand on the stage. 83,056 triangles /
+1,633,812 bytes on desktop, 39,558 / 1,228,900 on mobile, at real size (2.00 × 0.39 × 1.89 m).
+
+The tablet shows examples (a few dozen at most) and takes orders. Its sheet is solid: the room does not
+show through the text. The way to the contact form with custom 3D modeling preselected
+(`?project=modeling`) is always on screen: the commission panel on the left and "Order your own model"
+in the footer (the sticky footer on phones). The grid is denser, so 20 to 30 works stay easy to scan.

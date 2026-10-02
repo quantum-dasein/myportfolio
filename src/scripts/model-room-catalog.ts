@@ -1,4 +1,5 @@
 import { archiveDimensions, type ArchiveModel } from '../data/model-archive';
+import { projectFacts } from '../data/projectFacts';
 
 export type ArchiveCatalogOptions = {
   entries: ArchiveModel[]; activeId: () => string | null;
@@ -11,9 +12,11 @@ const CATEGORY: Record<ArchiveModel['category'], [string, string]> = {
 };
 
 /**
- * The archive tablet: a sheet of glass over the (blurred) room. Works on the right as cards with a large
- * preview; on the left what the archive is and the way to commission a model. Buttons are "liquid glass":
- * translucent, with a highlight that follows the pointer.
+ * The archive tablet: examples of Rodion's models (a few dozen at most, out of the thousand he has built),
+ * each one a card that can be put on the stage in the room. Its second job is to take orders: the way to
+ * the contact form (with custom 3D modeling preselected) is on screen at all times, in the left panel and
+ * in the footer. The sheet is solid, so the room never shows through the text; the glass is in the cards
+ * and the "liquid glass" buttons, whose highlight follows the pointer.
  */
 export function createArchiveCatalog(o: ArchiveCatalogOptions & {
   root: HTMLElement; de: () => boolean; onOpen?: () => void; onClose?: () => void;
@@ -34,6 +37,8 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
     panel = document.createElement('dialog'); panel.className = 'mr-kiosk mr-catalog';
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'mr-catalog-title');
     const categories = [...new Set(o.entries.map(e => e.category))];
+    const built = de ? projectFacts.modelsBuilt.de ?? projectFacts.modelsBuilt.value : projectFacts.modelsBuilt.value;
+    const contact = `${de ? '/de/kontakt/' : '/contact/'}?project=modeling`;
     panel.innerHTML = `<div class="mr-catalog-shell">
       <header class="mr-catalog-header">
         <span class="mr-catalog-brand"><i aria-hidden="true"></i>THE OBSERVATORY <b>/</b> ${t('ARCHIVE', 'ARCHIV')}</span>
@@ -41,15 +46,14 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
       </header>
       <div class="mr-catalog-layout">
         <aside class="mr-catalog-intro">
-          <span class="mr-catalog-index">${String(o.entries.length).padStart(3, '0')} / ${t('WORKS ON CALL', 'ARBEITEN AUF ABRUF')}</span>
-          <h2 id="mr-catalog-title">${t('What shall we <br>show next?', 'Was zeigen <br>wir als Nächstes?')}</h2>
-          <p>${t('Choose a work. A green scan builds it on the stage at the centre of the room, and you can walk around it.', 'Wähle eine Arbeit. Ein grüner Scan baut sie auf der Bühne in der Raummitte auf, und du kannst um sie herumgehen.')}</p>
-          <ol class="mr-catalog-steps"><li>${t('Choose', 'Auswählen')}</li><li>${t('Watch it appear', 'Entstehen sehen')}</li><li>${t('Explore', 'Erkunden')}</li></ol>
+          <span class="mr-catalog-index">${String(o.entries.length).padStart(3, '0')} / ${t('EXAMPLES', 'BEISPIELE')}</span>
+          <h2 id="mr-catalog-title">${t('Examples from <br>my archive.', 'Beispiele aus <br>meinem Archiv.')}</h2>
+          <p>${t(`A selection from the ${built} models I have built. Choose one: a green scan builds it on the stage in the room, and you can walk around it.`, `Eine Auswahl aus ${built} Modellen, die ich gebaut habe. Wähle eines: Ein grüner Scan baut es auf der Bühne im Raum auf, und du kannst darum herumgehen.`)}</p>
           <div class="mr-catalog-commission mr-glass">
             <span class="mr-catalog-index">${t('COMMISSIONS', 'AUFTRÄGE')}</span>
             <h3>${t('Your model. Made to order.', 'Dein Modell. Nach Maß.')}</h3>
-            <p>${t('Custom 3D models for products, spaces and visualizations. Tell me about your project.', 'Individuelle 3D-Modelle für Produkte, Räume und Visualisierungen. Erzähl mir von deinem Projekt.')}</p>
-            <a class="mr-liquid mr-liquid--accent" href="${de ? '/de/kontakt/' : '/contact/'}?project=modeling" data-catalog-enquire><span>${t('Enquire', 'Anfrage')}</span><span class="mr-liquid-arrow" aria-hidden="true">↗</span></a>
+            <p>${t('Products, interiors, architecture, characters: I build custom 3D models to your brief. Tell me what you need.', 'Produkte, Interieurs, Architektur, Figuren: Ich baue individuelle 3D-Modelle nach deinem Briefing. Erzähl mir, was du brauchst.')}</p>
+            <a class="mr-liquid mr-liquid--accent" href="${contact}" data-catalog-enquire><span>${t('Enquire', 'Anfrage')}</span><span class="mr-liquid-arrow" aria-hidden="true">↗</span></a>
           </div>
         </aside>
         <section class="mr-catalog-library" aria-label="${t('Models', 'Modelle')}">
@@ -60,11 +64,13 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
               ${categories.map(c => `<button type="button" class="mr-chip" data-catalog-filter="${c}" aria-pressed="false">${CATEGORY[c][de ? 1 : 0]}</button>`).join('')}
             </div>
           </div>
-          <div class="mr-catalog-meta"><span data-catalog-count aria-live="polite"></span><span>${t('READY IN THE ROOM', 'IM RAUM BEREIT')}</span></div>
+          <div class="mr-catalog-meta"><span data-catalog-count aria-live="polite"></span><span>${t('EACH ONE OPENS IN 3D', 'JEDES ÖFFNET SICH IN 3D')}</span></div>
           <div class="mr-catalog-grid" data-catalog-grid></div>
         </section>
       </div>
-      <footer class="mr-catalog-footer"><p data-catalog-status role="status" aria-live="polite">${t('Choose a work for the archive stage.', 'Wähle eine Arbeit für die Archivbühne.')}</p><button type="button" class="mr-liquid mr-liquid--quiet" data-catalog-clear ${o.activeId() ? '' : 'hidden'}>${t('Clear stage', 'Bühne leeren')}</button></footer>
+      <footer class="mr-catalog-footer"><p data-catalog-status role="status" aria-live="polite">${t('Choose a work for the archive stage.', 'Wähle eine Arbeit für die Archivbühne.')}</p>
+        <div class="mr-catalog-footer-actions"><button type="button" class="mr-liquid mr-liquid--quiet" data-catalog-clear ${o.activeId() ? '' : 'hidden'}>${t('Clear stage', 'Bühne leeren')}</button>
+        <a class="mr-liquid mr-liquid--accent mr-catalog-order" href="${contact}" data-catalog-order><span>${t('Order your own model', 'Eigenes Modell anfragen')}</span><span class="mr-liquid-arrow" aria-hidden="true">↗</span></a></div></footer>
     </div>`;
     const currentPanel = panel;
     const status = panel.querySelector<HTMLElement>('[data-catalog-status]')!;

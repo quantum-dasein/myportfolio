@@ -18,7 +18,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 ids = args or sorted(p.name[:-4] for p in SRC.glob('*.glb') if not p.name.endswith('.mobile.glb'))
 # Where the camera stands, per work (azimuth from the front, elevation), and how tightly it frames.
-VIEW = {'bronze-woman': (28, 8, 1.02), 'gym-equipment-03': (-32, 14, 1.0), 'pool-18': (-38, 34, .9), 'waterfall-fountains': (-18, 30, .86)}
+VIEW = {'winter-sports': (24, 10, .98), 'bronze-woman': (28, 8, 1.02), 'gym-equipment-03': (-32, 14, 1.0), 'pool-18': (-38, 34, .9), 'waterfall-fountains': (-18, 30, .86)}
 
 for name in ids:
     bpy.ops.wm.read_factory_settings(use_empty=True)

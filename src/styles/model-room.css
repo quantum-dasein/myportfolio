@@ -77,19 +77,18 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 @media (max-width: 600px) { .mr-toast { font-size: 12px; white-space: normal; width: max-content; max-width: calc(100vw - 32px); text-align: center; } }
 
 /* ── The archive tablet ─────────────────────────────────────────────────────────────────────────────────
-   A sheet of glass over the room (which stays visible, blurred, behind it). Cards and buttons are
-   "liquid glass": translucent, lit from above, with a highlight that follows the pointer (--mx / --my
-   are set from model-room-catalog.ts). Everything is scoped under .model-room .mr-catalog so the room's
+   A solid dark sheet over the dimmed room: nothing of the room shows through the text (a see-through
+   sheet turned to mush over a busy scene). The glass lives in the cards and buttons: lit from above,
+   with a highlight that follows the pointer (--mx / --my are set from model-room-catalog.ts). Everything is scoped under .model-room .mr-catalog so the room's
    own button styles do not leak in. */
-.mr-catalog{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;margin:0;border:0;width:100%;height:100%;max-width:none;max-height:none;box-sizing:border-box;padding:clamp(10px,2.6vw,36px);font-family:var(--font-display);color:#eef6f0;background:radial-gradient(120% 90% at 50% 0%,#0d2a2066,#02080699 70%);backdrop-filter:blur(10px) saturate(120%);-webkit-backdrop-filter:blur(10px) saturate(120%)}
+.mr-catalog{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;margin:0;border:0;width:100%;height:100%;max-width:none;max-height:none;box-sizing:border-box;padding:clamp(10px,2.6vw,36px);font-family:var(--font-display);color:#eef6f0;background:radial-gradient(120% 90% at 50% 0%,rgba(9,28,21,.86),rgba(2,7,5,.93) 70%);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .mr-catalog::backdrop{background:transparent}
 .mr-catalog[open]{animation:mr-cat-in .5s cubic-bezier(.2,.8,.2,1) both}
 @keyframes mr-cat-in{from{opacity:0}to{opacity:1}}
 .mr-catalog .mr-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 
-.mr-catalog-shell{position:relative;display:flex;flex-direction:column;width:min(1180px,100%);max-height:calc(100svh - clamp(20px,5.2vw,72px));overflow:hidden;border-radius:28px;color:#eef6f0;
-  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.025) 30%,rgba(10,26,20,.34));
-  backdrop-filter:blur(34px) saturate(170%);-webkit-backdrop-filter:blur(34px) saturate(170%);
+.mr-catalog-shell{position:relative;display:flex;flex-direction:column;width:min(1360px,100%);max-height:calc(100svh - clamp(20px,5.2vw,72px));overflow:hidden;border-radius:28px;color:#eef6f0;
+  background:linear-gradient(180deg,#1a2a23,#111d18 22%,#0b1511);
   border:1px solid rgba(255,255,255,.14);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 0 0 1px rgba(255,255,255,.03),0 50px 120px -30px rgba(0,0,0,.75),0 0 90px -30px rgba(120,255,190,.25)}
 .mr-catalog[open] .mr-catalog-shell{animation:mr-shell-in .65s cubic-bezier(.2,.8,.2,1) both}
@@ -103,15 +102,12 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .mr-catalog-brand b{font-weight:400;opacity:.45}
 @keyframes mr-pulse{50%{box-shadow:0 0 0 7px rgba(141,255,198,.05),0 0 22px #8dffc6}}
 
-.mr-catalog-layout{display:grid;grid-template-columns:minmax(260px,.62fr) 1.38fr;min-height:0;flex:1}
-.mr-catalog-intro{display:flex;flex-direction:column;padding:34px 30px 30px;border-right:1px solid rgba(255,255,255,.08);overflow:auto;scrollbar-width:none}
+.mr-catalog-layout{display:grid;grid-template-columns:clamp(270px,25vw,340px) 1fr;min-height:0;flex:1}
+.mr-catalog-intro{display:flex;flex-direction:column;padding:28px 26px 24px;border-right:1px solid rgba(255,255,255,.08);overflow:auto;scrollbar-width:none}
 .mr-catalog-intro::-webkit-scrollbar{display:none}
 .mr-catalog-index{font:500 10px/1.5 var(--font-display);letter-spacing:.22em;color:#8fc9aa}
-.mr-catalog-intro h2{margin:22px 0 18px;font:400 clamp(30px,3.1vw,44px)/1.04 var(--font-display);letter-spacing:-.035em;color:#f6fbf7}
+.mr-catalog-intro h2{margin:16px 0 14px;font:400 clamp(28px,2.6vw,38px)/1.05 var(--font-display);letter-spacing:-.035em;color:#f6fbf7}
 .mr-catalog-intro>p{margin:0;max-width:300px;font-size:13.5px;line-height:1.7;color:#a9bcb0}
-.mr-catalog-steps{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0;padding:0;list-style:none;counter-reset:step}
-.mr-catalog-steps li{counter-increment:step;display:flex;align-items:center;gap:8px;padding:8px 13px 8px 9px;border-radius:999px;font-size:11px;letter-spacing:.02em;color:#d5e6db;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
-.mr-catalog-steps li::before{content:counter(step);display:grid;place-items:center;width:19px;height:19px;border-radius:50%;font-size:10px;color:#06150e;background:#a6f5cb}
 
 /* Glass surfaces: cards and the commission panel. */
 .mr-catalog .mr-glass{position:relative;isolation:isolate;overflow:hidden;border-radius:22px;
@@ -122,9 +118,9 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .mr-catalog .mr-glass::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .4s;
   background:radial-gradient(340px circle at var(--mx,50%) var(--my,0%),rgba(190,255,225,.2),transparent 62%)}
 .mr-catalog .mr-glass:hover::before{opacity:1}
-.mr-catalog-commission{margin-top:auto;padding:22px}
-.mr-catalog-intro .mr-catalog-commission{margin-top:34px}
-@media(min-height:760px){.mr-catalog-intro .mr-catalog-commission{margin-top:auto}}
+/* The commission panel sits at the foot of the column and is never pushed out of view. */
+.mr-catalog-commission{flex:none;margin-top:auto;padding:20px}
+.mr-catalog-intro>p{margin-bottom:22px}
 .mr-catalog-commission h3{margin:12px 0 8px;font:500 19px/1.2 var(--font-display);letter-spacing:-.015em;color:#f6fbf7}
 .mr-catalog-commission p{margin:0 0 18px;font-size:13px;line-height:1.6;color:#b3c5b9}
 
@@ -173,7 +169,7 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .model-room .mr-catalog .mr-chip[aria-pressed="true"]{color:#04160d;background:linear-gradient(180deg,#e6fff2,#a6f5cb);border-color:#e6fff2;box-shadow:inset 0 1px 0 #fff,0 6px 18px -8px rgba(110,255,185,.7)}
 .mr-catalog-meta{display:flex;justify-content:space-between;margin:18px 2px 12px;font:500 9.5px/1.5 var(--font-display);letter-spacing:.16em;color:#8fb09e;flex:none}
 
-.mr-catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:18px;grid-auto-rows:max-content;align-content:start;overflow:auto;min-height:0;padding:4px 10px 26px 2px;margin-right:-12px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(190,255,225,.35) transparent;
+.mr-catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,228px),1fr));gap:16px;grid-auto-rows:max-content;align-content:start;overflow:auto;min-height:0;padding:4px 10px 26px 2px;margin-right:-12px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(190,255,225,.35) transparent;
   -webkit-mask-image:linear-gradient(#000 calc(100% - 28px),transparent);mask-image:linear-gradient(#000 calc(100% - 28px),transparent)}
 .mr-catalog-grid::-webkit-scrollbar{width:8px}.mr-catalog-grid::-webkit-scrollbar-thumb{border-radius:8px;background:rgba(190,255,225,.28);border:2px solid transparent;background-clip:padding-box}.mr-catalog-grid::-webkit-scrollbar-track{background:transparent}
 .mr-catalog-work{display:flex;flex-direction:column;animation:mr-card-in .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 70ms + 120ms)}
@@ -189,11 +185,11 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .mr-catalog-no{position:absolute;z-index:1;left:16px;top:14px;font:500 10px/1 var(--font-display);letter-spacing:.2em;color:rgba(235,255,244,.7)}
 .mr-catalog-tag{position:absolute;z-index:1;right:12px;top:10px;padding:7px 11px;border-radius:999px;font:500 8.5px/1 var(--font-display);letter-spacing:.16em;color:#dcffec;background:rgba(6,18,12,.5);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mr-catalog-work.is-active .mr-catalog-tag{color:#04160d;background:#a6f5cb;border-color:#e6fff2}
-.mr-catalog-work-body{display:flex;flex-direction:column;flex:1;padding:18px 18px 18px}
-.mr-catalog-work-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.mr-catalog-work-title h3{margin:0;font:400 20px/1.15 var(--font-display);letter-spacing:-.02em;color:#f6fbf7}
-.mr-catalog-work-title>span{flex:none;font:500 9.5px/1.4 var(--font-display);letter-spacing:.06em;color:#9cb5a7;text-align:right}
-.mr-catalog-work-body p{margin:10px 0 18px;font-size:12.5px;line-height:1.65;color:#a9bcb0}
+.mr-catalog-work-body{display:flex;flex-direction:column;flex:1;padding:15px 15px 15px}
+.mr-catalog-work-title{display:flex;flex-direction:column;gap:5px}
+.mr-catalog-work-title h3{margin:0;font:400 18px/1.15 var(--font-display);letter-spacing:-.02em;color:#f6fbf7}
+.mr-catalog-work-title>span{font:500 9.5px/1.4 var(--font-display);letter-spacing:.08em;color:#8fb09e;text-transform:uppercase}
+.mr-catalog-work-body p{margin:9px 0 15px;font-size:12px;line-height:1.6;color:#a9bcb0;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .mr-catalog-work-body .mr-liquid{margin-top:auto;width:100%}
 /* Loading: the card's button breathes while the work is fetched. */
 .mr-catalog-work.is-loading .mr-liquid{animation:mr-breathe 1.2s ease-in-out infinite}
@@ -202,7 +198,9 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .mr-catalog[aria-busy="true"] .mr-catalog-work:not(.is-loading){opacity:.6;transition:opacity .4s}
 .mr-catalog-empty{grid-column:1/-1;padding:44px 0;font-size:13px;line-height:1.8;color:#a9bcb0}
 
-.mr-catalog-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:42px;padding:12px 26px;border-top:1px solid rgba(255,255,255,.08);flex:none}
+.mr-catalog-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:12px 26px;border-top:1px solid rgba(255,255,255,.08);flex:none;background:rgba(0,0,0,.18)}
+.mr-catalog-footer-actions{display:flex;align-items:center;gap:10px;flex:none}
+.model-room .mr-catalog .mr-catalog-order{min-height:46px;padding:0 20px;font-size:13.5px}
 .mr-catalog-footer p{margin:0;font-size:11.5px;line-height:1.5;color:#8fb09e}
 .mr-catalog[aria-busy="true"] [data-catalog-status]{color:#c4ffdd}
 .mr-catalog-footer p::before{content:"";display:inline-block;width:6px;height:6px;margin-right:10px;border-radius:50%;background:#5f7a6c;vertical-align:1px}
@@ -212,20 +210,26 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
   .mr-catalog{padding:8px;place-items:stretch}
   .mr-catalog-shell{display:block;max-height:calc(100svh - 16px);border-radius:22px;overflow:auto;overscroll-behavior:contain;scrollbar-width:none}
   .mr-catalog-shell::-webkit-scrollbar{display:none}
-  .mr-catalog-header{position:sticky;top:0;z-index:3;padding:12px 14px;background:rgba(10,22,17,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .mr-catalog-header{position:sticky;top:0;z-index:3;padding:12px 14px;background:#15231d}
   .mr-catalog-brand{font-size:8px;letter-spacing:.12em;gap:8px;white-space:nowrap}
   .mr-catalog-layout{display:block;min-height:auto}
   .model-room .mr-catalog .mr-liquid--quiet{min-height:38px;padding:0 13px;font-size:11px}
   .mr-catalog-intro{padding:22px 18px 18px;border-right:0;border-bottom:1px solid rgba(255,255,255,.08);overflow:visible}
   .mr-catalog-intro h2{font-size:31px;margin:12px 0 10px}.mr-catalog-intro h2 br{display:none}
   .mr-catalog-intro>p{max-width:none;font-size:12.5px}
-  .mr-catalog-steps{display:none}
-  .mr-catalog-intro .mr-catalog-commission{margin-top:18px;padding:16px}
-  .mr-catalog-commission p{display:none}.mr-catalog-commission h3{margin:8px 0 14px;font-size:17px}
+  /* On a phone the order button is the sticky footer; the panel would only repeat it. */
+  .mr-catalog-intro .mr-catalog-commission{display:none}
+  .mr-catalog-intro>p{margin-bottom:0}
+  .mr-catalog-no{display:none}
   .mr-catalog-library{padding:16px 14px 0}
   .mr-catalog-grid{overflow:visible;margin-right:0;padding:2px 0 18px;-webkit-mask-image:none;mask-image:none}
-  .mr-catalog-footer{position:sticky;bottom:0;z-index:3;padding:10px 14px;background:rgba(10,22,17,.8);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .mr-catalog-footer{position:sticky;bottom:0;z-index:3;padding:10px 14px;background:#0d1813;box-shadow:0 -14px 24px -14px #000}
+  .mr-catalog-footer p{display:none}
+  .mr-catalog-footer-actions{flex:1}.mr-catalog-footer .mr-catalog-order{flex:1}
+  .mr-catalog-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:10px}
+  .mr-catalog-work-body p{display:none}.mr-catalog-work-title{margin-bottom:12px}.mr-catalog-work-title h3{font-size:15px}
+  .model-room .mr-catalog .mr-catalog-work .mr-liquid{min-height:40px;padding:0 12px;font-size:11.5px}.mr-catalog-work .mr-liquid-arrow{width:22px;height:22px;margin-right:-5px}
 }
 @media(prefers-reduced-motion:reduce){.mr-catalog[open],.mr-catalog[open] .mr-catalog-shell,.mr-catalog-work,.mr-catalog-brand i{animation:none}.mr-catalog .mr-liquid::after{display:none}.mr-catalog .mr-glass,.mr-catalog .mr-liquid,.mr-catalog-image img{transition:none}}
 /* Without backdrop-filter the glass would be see-through text on a busy room: give it a solid ground. */
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.mr-catalog{background:#020806e6}.mr-catalog-shell{background:#0b1813}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.mr-catalog{background:#020705f2}}

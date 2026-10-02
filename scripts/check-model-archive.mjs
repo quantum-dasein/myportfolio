@@ -21,7 +21,7 @@ try{
  await p.getByRole('dialog').waitFor();
  assert(await p.locator('.mr-catalog').evaluate(e=>e.matches(':modal')),'Archive must sit above the site navigation and make the background inert');
  await p.keyboard.press('Shift+Tab');
- assert(await p.locator('[data-catalog-show]').last().evaluate(e=>e===document.activeElement),'Keyboard focus stays inside the catalogue');
+ assert(await p.locator('[data-catalog-order]').evaluate(e=>e===document.activeElement),'Keyboard focus stays inside the catalogue');
  await p.keyboard.press('Tab');
  assert(await p.locator('[data-catalog-close]').evaluate(e=>e===document.activeElement));
  await p.screenshot({path:out+'/catalog-desktop.png'});
@@ -40,7 +40,7 @@ try{
  await p.getByRole('button',{name:'Wireframe',exact:true}).click();
  await p.waitForFunction(()=>window.__mr.exhibits.shown('plant'),{timeout:90000});
  await p.getByRole('button',{name:'Model archive',exact:true}).click();
- assert.equal(await p.locator('[data-catalog-show]').count(),4);
+ assert.equal(await p.locator('[data-catalog-show]').count(),5);
  assert.equal(await p.locator('.mr-catalog').evaluate(e=>getComputedStyle(e).fontFamily),await p.locator('[data-model-room]').evaluate(e=>getComputedStyle(e).fontFamily));
  await pool.click();await p.waitForFunction(()=>window.__mr.archive.activeId()==='pool-18');await p.getByRole('dialog').waitFor({state:'hidden'});
  assert(await p.evaluate(()=>{const b=window.__mr.archive.colliders[0];return b.min.x<0&&b.max.x>0&&b.min.z<8&&b.max.z>8}),'The selected work occupies the central portal');
@@ -80,7 +80,7 @@ try{
  await p.close();
  const phone=await room({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});const urls=[];phone.on('request',r=>urls.push(r.url()));
  await phone.getByRole('button',{name:'Model archive',exact:true}).click();await phone.screenshot({path:out+'/catalog-mobile.png'});
- assert((await phone.locator('#mr-catalog-title').innerText()).includes('we show'),'Mobile heading preserves word spacing');
+ assert((await phone.locator('#mr-catalog-title').innerText()).includes('from my'),'Mobile heading preserves word spacing');
  assert(await phone.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await phone.locator('[data-catalog-show="pool-18"]').click();await phone.waitForFunction(()=>window.__mr.archive.activeId()!==null,{timeout:30000});
  assert(urls.some(u=>u.endsWith('pool-18.mobile.glb')));assert(!urls.some(u=>u.endsWith('/pool-18.glb')));

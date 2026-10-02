@@ -1,0 +1,26 @@
+{
+  "desktop": {
+    "sourceTriangles": 83044,
+    "triangles": 83056,
+    "drawMeshes": 24,
+    "bytes": 1633812,
+    "dimensionsMetres": [
+      1.9949204206466675,
+      0.38937495946884154,
+      1.8879437971115112
+    ],
+    "materialNote": "Web PBR rebuilt from the V-Ray scene; the supplied textures are reconnected by material name. The display wall is added."
+  },
+  "mobile": {
+    "sourceTriangles": 83044,
+    "triangles": 39558,
+    "drawMeshes": 24,
+    "bytes": 1228900,
+    "dimensionsMetres": [
+      1.9949204206466675,
+      0.38937495946884154,
+      1.8879437971115112
+    ],
+    "materialNote": "Web PBR rebuilt from the V-Ray scene; the supplied textures are reconnected by material name. The display wall is added."
+  }
+}
