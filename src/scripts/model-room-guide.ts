@@ -22,18 +22,19 @@ export const TINT: Record<Emote, string> = {
 type Beat = { at: number; emote?: Emote; pose?: Pose; hold?: number; look?: THREE.Vector3; step?: number };
 type Stop = { id: string; path: THREE.Vector3[]; look: THREE.Vector3; beats: Beat[]; leave: number };
 
+// The tour, laid out for the 28 m hall: he keeps clear of the archive stage in the middle of the floor.
 const STOPS: Stop[] = [
   {
     // The SVJ on its turntable: he stops in awe, gets down to the wheel, then declares his love.
-    id: 'svj', path: [V(-3.1, 0, 9.1), V(-3.1, 0, 7.1), V(-1.8, 0, 5.5)], look: V(-4.4, .6, 2.6), leave: 7.2,
+    id: 'svj', path: [V(-4.2, 0, 13.2), V(-5.2, 0, 8.6), V(-5, 0, 4.9)], look: V(-8.5, .6, 4.5), leave: 7.2,
     beats: [
       { at: .2, emote: 'wow' },
-      { at: 1.1, pose: { sit: .42 }, hold: 2.8, look: V(-2.6, .35, 3.4) },         // down to look at a wheel as it comes round
+      { at: 1.1, pose: { sit: .42 }, hold: 2.8, look: V(-6.7, .35, 5.3) },         // down to look at a wheel as it comes round
       { at: 4.3, pose: { reach: .85 }, hold: 1.6, emote: 'love' },                // and points at the car
     ],
   },
   {
-    id: 'kitchen', path: [V(-1.3, 0, 3.6), V(.8, 0, 2.5), V(.8, 0, .35)], look: V(0, 1.4, -3.4), leave: 6.4,
+    id: 'kitchen', path: [V(-2.6, 0, 3.2), V(.8, 0, .35)], look: V(0, 1.4, -3.4), leave: 6.4,
     beats: [
       { at: .2, emote: 'curious', look: V(-.6, 2.3, -3.8) },                     // up at the cabinets
       { at: 1.8, pose: { tablet: 1 }, hold: 2.2, look: V(0, 1.3, -3.4) },         // a photo for later
@@ -42,7 +43,7 @@ const STOPS: Stop[] = [
     ],
   },
   {
-    id: 'k2so', path: [V(3.25, 0, .95)], look: V(4.8, 2.45, .4), leave: 7,
+    id: 'k2so', path: [V(5.95, 0, 2.05)], look: V(7.5, 2.45, 1.5), leave: 7,
     beats: [
       { at: .2, emote: 'curious' },
       { at: 1.6, emote: 'wow', step: -.35 },                                     // startled by how tall it is
@@ -52,24 +53,24 @@ const STOPS: Stop[] = [
   },
   {
     // The e-bike on the wall: he looks it over from wheel to wheel and points up at it.
-    id: 'ebike', path: [V(6.95, 0, 3.1)], look: V(8.4, 1.45, 3.1), leave: 5.6,
+    id: 'ebike', path: [V(9.6, 0, 4.2), V(11.95, 0, 6)], look: V(13.4, 1.45, 6), leave: 5.6,
     beats: [
-      { at: .2, emote: 'curious', look: V(8.4, 1.3, 2.3) },
-      { at: 1.4, look: V(8.4, 1.3, 3.9) },
-      { at: 2.6, pose: { reach: .9 }, hold: 1.6, emote: 'spark', look: V(8.4, 1.5, 3.1) },
+      { at: .2, emote: 'curious', look: V(13.4, 1.3, 5.2) },
+      { at: 1.4, look: V(13.4, 1.3, 6.8) },
+      { at: 2.6, pose: { reach: .9 }, hold: 1.6, emote: 'spark', look: V(13.4, 1.5, 6) },
     ],
   },
   {
-    id: 'house', path: [V(4.4, 0, 3.7), V(4.2, 0, 5.2)], look: V(5.5, .95, 5.2), leave: 6.6,
+    id: 'house', path: [V(9.6, 0, 7.2), V(6.9, 0, 8.2), V(6.9, 0, 9.2)], look: V(8.2, .95, 9.2), leave: 6.6,
     beats: [
       { at: .2, emote: 'think' },
-      { at: 1, pose: { sit: .22 }, hold: 3, look: V(5.5, .95, 4.7) },            // bends to the model's eye level
-      { at: 2.4, look: V(5.5, .95, 5.7) },                                        // along the three variants
+      { at: 1, pose: { sit: .22 }, hold: 3, look: V(8.2, .95, 8.7) },            // bends to the model's eye level
+      { at: 2.4, look: V(8.2, .95, 9.7) },                                        // along the three variants
       { at: 4.3, pose: { reach: .7 }, hold: 1.4, emote: 'spark' },
     ],
   },
 ];
-const TO_SOFA = [V(4.2, 0, 8.9), V(-1.4, 0, 9.2)];
+const TO_SOFA = [V(4.2, 0, 12.2), V(-3.6, 0, 12.7)];
 export function bubble(kind: Emote) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d')!;
   // A hologram speech bubble: dark glass, a mint outline, a little tail.
@@ -126,7 +127,7 @@ export function createGuide(o: {
   const head = new THREE.Vector3(), tmp = new THREE.Vector3(), seatAt = new THREE.Vector3(), standAt = new THREE.Vector3();
   // A visit: when you stand still for a long while, he gets up, comes over to wave, and goes back to his seat.
   let visitedAt = -1e9, route: THREE.Vector3[] = [];
-  const HUB = V(.3, 0, 8.6);
+  const HUB = V(0, 0, 13);
   function walkable(a: THREE.Vector3, b: THREE.Vector3) {
     if (!o.clear) return false;
     const n = Math.ceil(a.distanceTo(b) / .2);

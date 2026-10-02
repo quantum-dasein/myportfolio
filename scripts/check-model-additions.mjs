@@ -6,7 +6,7 @@ const browser=await chromium.launch({channel:'msedge',headless:true,args:['--ena
 const errors=[],report=[];
 try {
  for(const mobile of [false,true]){
-  const p=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1440,height:1000},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
+  const p=await browser.newPage({locale:'en-US',viewport:mobile?{width:390,height:844}:{width:1440,height:1000},isMobile:mobile,hasTouch:mobile,reducedMotion:'reduce'});
   p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error'&&/shader|WebGLProgram/.test(m.text()))errors.push(m.text())});
   const requests=[];p.on('request',r=>requests.push(r.url()));
   await p.goto(base+'/gallery/models/?mrdebug');await p.waitForSelector('[data-model-room][data-state="ready"]',{timeout:90000});await p.waitForSelector('rb-studio-loader',{state:'hidden',timeout:30000});
@@ -14,8 +14,8 @@ try {
   assert(!requests.some(u=>u.includes('/models/night/')));assert(await p.evaluate(()=>!('secrets' in window.__mr)));
   if(!mobile){
    await p.screenshot({path:'artifacts/new-models/room-entry.png'});
-   const placement=await p.evaluate(()=>{const m=window.__mr,c=m.camera;const portal=m.scene.getObjectByName('Central archive portal');c.position.set(0,3.9,10.3);c.lookAt(0,0,4);return {x:portal.position.x,z:portal.position.z,svjGap:Math.hypot(portal.position.x+4.4,portal.position.z-2.6)-2.34-2.75}});
-   assert(placement.svjGap>1.2);report.push(placement);await p.waitForTimeout(200);await p.screenshot({path:'artifacts/new-models/room-plan.png'});
+   const placement=await p.evaluate(()=>{const m=window.__mr,c=m.camera;const portal=m.scene.getObjectByName('Central archive portal');c.position.set(2.5,6.2,16.4);c.lookAt(0,0,5);return {x:portal.position.x,z:portal.position.z,svjGap:Math.hypot(portal.position.x+8.5,portal.position.z-4.5)-2.34-2.75}});
+   assert(placement.svjGap>3.5);report.push(placement);await p.waitForTimeout(200);await p.screenshot({path:'artifacts/new-models/room-plan.png'});
   }
   for(const id of ['bronze-woman','waterfall-fountains']){
    await p.getByRole('button',{name:'Model archive',exact:true}).click();assert.equal(await p.locator('[data-catalog-show]').count(),4);

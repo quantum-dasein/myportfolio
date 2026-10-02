@@ -5,6 +5,7 @@
 // "printed" into the room by a rising green scan line.
 import * as THREE from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ROOM } from './model-room-layout';
 
 type Lang = { en: string; de: string };
 export type ExhibitInfo = {
@@ -21,9 +22,10 @@ export const KITCHEN: ExhibitInfo = {
 };
 
 /** K-2SO stands facing the door you come in through, and meets you with his gaze. */
-// His face points along the model's +x; from his pedestal (4.8, 0.4) the entrance is at (0, 10.5).
+// His face points along the model's +x; he looks from his pedestal to the entrance.
 // Turning by y sends local +x to world (cos y, -sin y), so y = atan2(-dz, dx) toward the door: about -2.01.
-const K2SO_YAW = Math.atan2(-(10.5 - .4), 0 - 4.8);
+const K2SO_AT = new THREE.Vector3(7.5, 0, 1.5);
+const K2SO_YAW = Math.atan2(-(10.5 + ROOM.shift - K2SO_AT.z), 0 - K2SO_AT.x);
 
 type Stage = {
   info: ExhibitInfo; url: string; stand: 'turntable' | 'pedestal' | 'table' | 'lounge' | 'wall' | 'hanging';
@@ -37,59 +39,59 @@ const STAGES: Stage[] = [
       id: 'svj', no: '002', kind: { en: 'Automotive', de: 'Automobil' }, title: 'Aventador SVJ',
       sub: { en: 'Lamborghini Aventador SVJ Roadster, 2021', de: 'Lamborghini Aventador SVJ Roadster, 2021' },
       text: { en: 'Modelled in 2021, every vent and wing strut.\nIt turns slowly, the way cars are shown.', de: 'Modelliert 2021, jede Lüftung, jede Flügelstrebe.\nEr dreht sich langsam, wie Autos gezeigt werden.' },
-      focus: new THREE.Vector3(-4.4, .7, 2.6), distance: 7,
+      focus: new THREE.Vector3(-8.5, .7, 4.5), distance: 7,
     },
-    url: '/models/exhibits/svj.glb', stand: 'turntable', at: new THREE.Vector3(-4.4, 0, 2.6), lift: .14, spin: .09, yaw: 0, reach: 2.75, height: 1.25,
-    lectern: { x: -2.35, z: -.55, face: .6, title: 'SVJ ROADSTER', line: 'EXHIBIT 002  ·  LAMBORGHINI  ·  2021' },
+    url: '/models/exhibits/svj.glb', stand: 'turntable', at: new THREE.Vector3(-8.5, 0, 4.5), lift: .14, spin: .09, yaw: 0, reach: 2.75, height: 1.25,
+    lectern: { x: -6.3, z: 8, face: .85, title: 'SVJ ROADSTER', line: 'EXHIBIT 002  ·  LAMBORGHINI  ·  2021' },
   },
   {
     info: {
       id: 'k2so', no: '003', kind: { en: 'Character', de: 'Figur' }, title: 'K-2SO',
       sub: { en: 'Star Wars droid, fan study', de: 'Star-Wars-Droide, Fan-Studie' },
       text: { en: 'Hard-surface detail, textured for close inspection.\nIt watches the door, and whoever comes through it.', de: 'Hard-Surface-Details, für die Nahansicht texturiert.\nEr beobachtet die Tür und jeden, der hindurchkommt.' },
-      focus: new THREE.Vector3(4.8, 1.6, .4), distance: 4.4,
+      focus: new THREE.Vector3(K2SO_AT.x, 1.6, K2SO_AT.z), distance: 4.4,
     },
-    url: '/models/exhibits/k2so.glb', stand: 'pedestal', at: new THREE.Vector3(4.8, 0, .4), lift: .5, spin: 0, yaw: K2SO_YAW, reach: .75, height: 2.8,
-    lectern: { x: 6.1, z: 1.25, face: -.45, title: 'K-2SO', line: 'EXHIBIT 003  ·  CHARACTER  ·  FAN STUDY' },
+    url: '/models/exhibits/k2so.glb', stand: 'pedestal', at: K2SO_AT, lift: .5, spin: 0, yaw: K2SO_YAW, reach: .75, height: 2.8,
+    lectern: { x: 8.85, z: 2.4, face: -.6, title: 'K-2SO', line: 'EXHIBIT 003  ·  CHARACTER  ·  FAN STUDY' },
   },
   {
     info: {
       id: 'ebike', no: '004', kind: { en: 'Product', de: 'Produkt' }, title: 'e-bike',
       sub: { en: 'Audi e-bike, low poly', de: 'Audi e-bike, Low Poly' },
       text: { en: 'A real-time study: the whole bike\nin fewer than nine thousand triangles.', de: 'Eine Echtzeitstudie: das ganze Rad\nin weniger als neuntausend Dreiecken.' },
-      focus: new THREE.Vector3(8.35, 1.5, 3.1), distance: 3.4,
+      focus: new THREE.Vector3(ROOM.halfW - .65, 1.5, 6), distance: 3.4,
     },
-    url: '/models/exhibits/audi-ebike.glb', stand: 'wall', at: new THREE.Vector3(8.4, 0, 3.1), lift: .98, spin: 0, yaw: Math.PI / 2, reach: 1, height: 1.1,
-    lectern: { x: 7.45, z: 1.55, face: -1.25, title: 'E-BIKE', line: 'EXHIBIT 004  ·  AUDI  ·  LOW POLY' },
+    url: '/models/exhibits/audi-ebike.glb', stand: 'wall', at: new THREE.Vector3(ROOM.halfW - .6, 0, 6), lift: .98, spin: 0, yaw: Math.PI / 2, reach: 1, height: 1.1,
+    lectern: { x: ROOM.halfW - 1.55, z: 4.45, face: -1.25, title: 'E-BIKE', line: 'EXHIBIT 004  ·  AUDI  ·  LOW POLY' },
   },
   {
     info: {
       id: 'house', no: '005', kind: { en: 'Architecture', de: 'Architektur' }, title: 'ABS House',
       sub: { en: 'V176, three variants', de: 'V176, drei Varianten' },
       text: { en: 'A two-storey house in three variants,\nshown as a white architectural model.', de: 'Ein zweigeschossiges Haus in drei Varianten,\nals weißes Architekturmodell.' },
-      focus: new THREE.Vector3(5.5, .95, 5.2), distance: 2.6,
+      focus: new THREE.Vector3(8.2, .95, 9.2), distance: 2.6,
     },
-    url: '/models/exhibits/abs-house.glb', stand: 'table', at: new THREE.Vector3(5.5, 0, 5.2), lift: .845, spin: 0, yaw: Math.PI / 2, reach: .9, height: .3,
-    lectern: { x: 4.25, z: 6.75, face: -.7, title: 'ABS HOUSE', line: 'EXHIBIT 005  ·  ARCHITECTURE  ·  1:15' },
+    url: '/models/exhibits/abs-house.glb', stand: 'table', at: new THREE.Vector3(8.2, 0, 9.2), lift: .845, spin: 0, yaw: Math.PI / 2, reach: .9, height: .3,
+    lectern: { x: 7, z: 11, face: -.9, title: 'ABS HOUSE', line: 'EXHIBIT 005  ·  ARCHITECTURE  ·  1:15' },
   },
   {
     info: {
       id: 'sofa', no: '006', kind: { en: 'Furniture', de: 'Möbel' }, title: 'Lounge',
       sub: { en: 'Vavicci Sofa C and its set', de: 'Vavicci Sofa C mit Ensemble' },
       text: { en: 'Velvet, linen and a knitted throw.\nThe astronaut rests here and waits for you.', de: 'Samt, Leinen und ein Strickplaid.\nHier ruht der Astronaut und wartet auf Sie.' },
-      focus: new THREE.Vector3(-5.3, .6, 9.55), distance: 4.6,
+      focus: new THREE.Vector3(-8.5, .6, 13.2), distance: 4.6,
     },
-    url: '/models/exhibits/sofa.glb', stand: 'lounge', at: new THREE.Vector3(-5.3, 0, 9.55), lift: 0, spin: 0, yaw: Math.PI, reach: 1.9, height: 1,
-    lectern: { x: -3.05, z: 7.55, face: .8, title: 'LOUNGE', line: 'EXHIBIT 006  ·  FURNITURE  ·  VAVICCI' },
+    url: '/models/exhibits/sofa.glb', stand: 'lounge', at: new THREE.Vector3(-8.5, 0, 13.2), lift: 0, spin: 0, yaw: Math.PI, reach: 1.9, height: 1,
+    lectern: { x: -6.25, z: 11.2, face: .8, title: 'LOUNGE', line: 'EXHIBIT 006  ·  FURNITURE  ·  VAVICCI' },
   },
   {
     info: {
       id: 'plant', no: '007', kind: { en: 'Lighting', de: 'Leuchte' }, title: 'Hanging garden',
       sub: { en: 'Pot light pendant 08', de: 'Pflanzenleuchte 08' },
       text: { en: 'A rack of pendant pots with trailing leaves,\nthe lamp over the lounge.', de: 'Ein Hängegestell mit Leuchten und rankenden Blättern,\ndie Lampe über der Lounge.' },
-      focus: new THREE.Vector3(-5.2, 3, 9.35), distance: 4,
+      focus: new THREE.Vector3(-8.4, 3, 13), distance: 4,
     },
-    url: '/models/exhibits/plant-pendant.glb', stand: 'hanging', at: new THREE.Vector3(-5.2, 0, 9.35), lift: 2.3, spin: 0, yaw: 0, reach: 1.1, height: 1.25,
+    url: '/models/exhibits/plant-pendant.glb', stand: 'hanging', at: new THREE.Vector3(-8.4, 0, 13), lift: 2.3, spin: 0, yaw: 0, reach: 1.1, height: 1.25,
   },
 ];export const EXHIBITS: ExhibitInfo[] = [KITCHEN, ...STAGES.map(s => s.info)];
 
@@ -192,8 +194,8 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
         const box = new THREE.Mesh(own(new THREE.BoxGeometry(.4, .05, reach * 1.25)), own(new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 1.45, 1.35), toneMapped: false }))); box.position.set(at.x + dx, 5.62, at.z); scene.add(box);
         const frame = new THREE.Mesh(own(new THREE.BoxGeometry(.48, .1, reach * 1.25 + .08)), bronze); frame.position.set(at.x + dx, 5.69, at.z); scene.add(frame);
         for (const dz of [-reach * .55, reach * .55]) { const rod = new THREE.Mesh(stem, bronze); rod.scale.y = .7; rod.position.set(at.x + dx, 6.05, at.z + dz); scene.add(rod); }
-        if (mobile && dx > 0) continue;   // one lamp over the turntable on phones
-        const spot = new THREE.SpotLight('#fff1e0', mobile ? 80 : 56, 13, mobile ? .7 : .5, .9, 2); spot.position.set(at.x + dx, 5.55, at.z); spot.target.position.set(at.x + dx * .3, .6, at.z); scene.add(spot, spot.target);
+        if (dx > 0) continue;   // both boxes glow, one lamp lights the car: each lamp costs every lit pixel
+        const spot = new THREE.SpotLight('#fff1e0', 86, 13, .72, .9, 2); spot.position.set(at.x, 5.55, at.z); spot.target.position.set(at.x, .6, at.z); scene.add(spot, spot.target);
       }
       halo(at.x, at.z, reach + .07, .55);
       colliders.push(new THREE.Box3(new THREE.Vector3(at.x - reach, 0, at.z - reach), new THREE.Vector3(at.x + reach, 1.2, at.z + reach)));
@@ -214,11 +216,11 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
       downlight(at.x - .8, at.z - 1.6, new THREE.Vector3(at.x, .4, at.z), 26, .6);
     } else if (stage.stand === 'wall') {
       // Design-museum wall mount: a dark slab on the wall, two bronze arms, a line of green light beneath.
-      const slab = new THREE.Mesh(own(new THREE.BoxGeometry(.06, 1.75, 2.7)), stone); slab.position.set(8.83, 1.55, at.z); slab.receiveShadow = true; scene.add(slab);
-      for (const y of [.66, 2.44]) { const line = new THREE.Mesh(own(new THREE.BoxGeometry(.012, .012, 2.7)), glow); line.position.set(8.79, y, at.z); scene.add(line); }
-      for (const dz of [-.42, .42]) { const arm = new THREE.Mesh(own(new THREE.BoxGeometry(.52, .035, .035)), bronze); arm.position.set(8.55, 1.46, at.z + dz); scene.add(arm); }
-      downlight(7.7, at.z, new THREE.Vector3(at.x, 1.45, at.z), 44, .4);
-      colliders.push(new THREE.Box3(new THREE.Vector3(7.95, 0, at.z - 1.05), new THREE.Vector3(8.9, 2.4, at.z + 1.05)));
+      const slab = new THREE.Mesh(own(new THREE.BoxGeometry(.06, 1.75, 2.7)), stone); slab.position.set(at.x + .43, 1.55, at.z); slab.receiveShadow = true; scene.add(slab);
+      for (const y of [.66, 2.44]) { const line = new THREE.Mesh(own(new THREE.BoxGeometry(.012, .012, 2.7)), glow); line.position.set(at.x + .39, y, at.z); scene.add(line); }
+      for (const dz of [-.42, .42]) { const arm = new THREE.Mesh(own(new THREE.BoxGeometry(.52, .035, .035)), bronze); arm.position.set(at.x + .15, 1.46, at.z + dz); scene.add(arm); }
+      downlight(at.x - .7, at.z, new THREE.Vector3(at.x, 1.45, at.z), 44, .4);
+      colliders.push(new THREE.Box3(new THREE.Vector3(at.x - .45, 0, at.z - 1.05), new THREE.Vector3(at.x + .5, 2.4, at.z + 1.05)));
     } else if (stage.stand === 'hanging') {
       // Hung from the ceiling on four steel cables; the pots glow warm over the lounge.
       const steel = own(new THREE.MeshStandardMaterial({ color: '#2a2d2c', metalness: .8, roughness: .35 }));
@@ -230,7 +232,6 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
       const cap = new THREE.Mesh(own(new THREE.BoxGeometry(1.16, .06, 1.16)), bronze); cap.position.set(at.x, .47, at.z); cap.receiveShadow = true; scene.add(cap);
       const line = new THREE.Mesh(own(new THREE.BoxGeometry(1.14, .012, 1.14)), glow); line.position.set(at.x, .015, at.z); scene.add(line);
       downlight(at.x - .9, at.z + 1.2, new THREE.Vector3(at.x, 1.7, at.z), 48, .34);
-      if (!mobile) { const rim = new THREE.PointLight('#7fe8b0', 7, 4.5, 2); rim.position.set(at.x + .9, 2.6, at.z - 1); scene.add(rim); }
       halo(at.x, at.z, .95, .45);
       colliders.push(new THREE.Box3(new THREE.Vector3(at.x - .58, 0, at.z - .58), new THREE.Vector3(at.x + .58, 2.5, at.z + .58)));
     }

@@ -8,6 +8,8 @@ from pathlib import Path
 from mathutils import Vector
 
 BASE=Path(sys.argv[sys.argv.index('--')+1])
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from bake_ao import bake_ao
 PROJECT=Path(__file__).resolve().parents[2]
 OUT=PROJECT/'public/models/archive';OUT.mkdir(parents=True,exist_ok=True)
 ART=PROJECT/'artifacts/gym-equipment';ART.mkdir(parents=True,exist_ok=True)
@@ -55,7 +57,7 @@ def build(mobile):
    slot.material=mats[key]
   n=sum(len(p.vertices)-2 for p in o.data.polygons)
   if n>1800:
-   dec=o.modifiers.new('Web triangle budget','DECIMATE');dec.ratio=.115 if mobile else .265;dec.use_collapse_triangulate=True
+   dec=o.modifiers.new('Web triangle budget','DECIMATE');dec.ratio=.115 if mobile else .45;dec.use_collapse_triangulate=True
    bpy.context.view_layer.objects.active=o;bpy.ops.object.modifier_apply(modifier=dec.name)
   bpy.ops.object.select_all(action='DESELECT');o.select_set(True);bpy.context.view_layer.objects.active=o
   bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35))
@@ -72,9 +74,11 @@ def build(mobile):
   material_name=o.data.materials[0].name if o.data.materials else 'part'
   fresh=bpy.data.objects.new('Gym | '+material_name,o.data);bpy.context.collection.objects.link(fresh);bpy.data.objects.remove(o,do_unlink=True)
  bpy.context.scene.unit_settings.scale_length=1
+ # Occlusion baked into vertex colours: depth in the shelves and between the weights, free at run time.
+ bake_ao([o for o in bpy.context.scene.objects if o.type=='MESH'])
  bpy.ops.object.select_all(action='SELECT')
  filename='gym-equipment-03'+('.mobile' if mobile else '')+'.glb'
- bpy.ops.export_scene.gltf(filepath=str(OUT/filename),export_format='GLB',export_yup=True,export_apply=True,export_image_format='WEBP',export_image_quality=80,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6,export_draco_position_quantization=14,export_extras=True)
+ bpy.ops.export_scene.gltf(filepath=str(OUT/filename),export_vertex_color='ACTIVE',export_all_vertex_colors=False,export_format='GLB',export_yup=True,export_apply=True,export_image_format='WEBP',export_image_quality=80,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6,export_draco_position_quantization=14,export_extras=True)
  meshes=[o for o in bpy.context.scene.objects if o.type=='MESH']
  stats['mobile' if mobile else 'desktop']={'sourceTriangles':source_triangles,'triangles':sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in meshes),'drawMeshes':len(meshes),'dimensionsMetres':list(hi-lo),'bytes':(OUT/filename).stat().st_size,'materialNote':'PBR interpretation; source FBX contains no texture links. Original wood image reconnected; other surfaces use semantic PBR materials.'}
  if not mobile:

@@ -7,6 +7,7 @@ import { Reflector } from 'three/addons/objects/Reflector.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { ROOM } from './model-room-layout';
 
 const floorShader = {
   name: 'ModelRoomFloor',
@@ -24,7 +25,7 @@ const floorShader = {
       float speck = step(.985, h(floor(q * 38.))) * .6 + h(floor(q * 9.)) * .08;
       vec3 base = vec3(.045, .055, .055) * (1. + speck) * (1. - seam * .5);
       vec2 uv = vUvR.xy / vUvR.w; vec3 r = vec3(0.); float tot = 0.;
-      for (int i = -2; i <= 2; i++) for (int j = -2; j <= 2; j++) { float w = 1. / (1. + float(i * i + j * j)); r += texture2D(tDiffuse, uv + vec2(i, j) * .0024).rgb * w; tot += w; }
+      for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { float w = 1. / (1. + float(i * i + j * j)); r += texture2D(tDiffuse, uv + vec2(i, j) * .0042).rgb * w; tot += w; }
       r /= tot;
       vec3 V = normalize(cameraPosition - vWorld);
       float fres = .1 + .7 * pow(1. - max(V.y, 0.), 4.);
@@ -48,18 +49,24 @@ void main(){
   gl_FragColor = vec4(col * edge * uOpen * .5, 1.);
 }`;
 
-export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; mobile: boolean }) {
+export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; mobile: boolean; onPixelRatio?: (ratio: number) => void }) {
   const { scene, camera, renderer, mobile } = o;
   const updates: ((t: number, dt: number) => void)[] = [];
   const disposables: { dispose: () => void }[] = [];
+  let frameNo = 0;
 
   // Mirror floor (desktop): the whole room doubles in it, softly.
   let floor: Reflector | null = null;
   if (!mobile) {
     const size = renderer.getSize(new THREE.Vector2());
-    floor = new Reflector(new THREE.PlaneGeometry(17.9, 23.9), { clipBias: .003, textureWidth: size.x * .5, textureHeight: size.y * .5, shader: floorShader, multisample: 0 });
-    floor.rotation.x = -Math.PI / 2; floor.position.set(0, -.035, 1);
+    floor = new Reflector(new THREE.PlaneGeometry(ROOM.halfW * 2 - .1, ROOM.front - ROOM.back - .1), { clipBias: .003, textureWidth: size.x * .5, textureHeight: size.y * .5, shader: floorShader, multisample: 0 });
+    floor.rotation.x = -Math.PI / 2; floor.position.set(0, -.035, (ROOM.front + ROOM.back) / 2);
     scene.add(floor); disposables.push(floor);
+    // The mirror draws the whole room a second time. Once every other frame is enough for a blurred
+    // reflection (it keeps its own projection, so it stays in place while you move), and never twice in
+    // one frame (the occlusion pass also draws the floor).
+    const mirrorFloor = floor, draw = floor.onBeforeRender; let drawnAt = -2;
+    floor.onBeforeRender = (...args) => { if (frameNo - drawnAt >= 2) { drawnAt = frameNo; draw.apply(mirrorFloor, args); } };
   }
 
   // Three hanging downlights over the exhibit: a real fixture, a glowing lens and a soft spot pool,
@@ -72,9 +79,9 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
     const body = new THREE.Mesh(can, bronze); body.position.set(x, 5.72, z); scene.add(body);
     const rod = new THREE.Mesh(stem, bronze); rod.scale.y = .55; rod.position.set(x, 6.12, z); scene.add(rod);
     const glass = new THREE.Mesh(disc, lens); glass.rotation.x = Math.PI / 2; glass.position.set(x, 5.585, z); scene.add(glass);
-    // Phones light every pixel against every lamp: keep only the middle one there, the fixtures still glow.
-    if (mobile && x !== 0) continue;
-    const spot = new THREE.SpotLight('#ffe1bd', mobile ? 40 : 32, 12, mobile ? .75 : .5, .85, 2); spot.position.set(x, 5.55, z);
+    // Every pixel is lit against every lamp: the middle one lights the kitchen, the other fixtures only glow.
+    if (x !== 0) continue;
+    const spot = new THREE.SpotLight('#ffe1bd', 46, 12, .78, .85, 2); spot.position.set(x, 5.55, z);
     spot.target.position.set(x * .85, .9, z - .2); scene.add(spot, spot.target);
   }  const N = mobile ? 180 : 420, P = new Float32Array(N * 3), S = new Float32Array(N);
   for (let i = 0; i < N; i++) { P.set([(Math.random() - .5) * 8, Math.random() * 5.6, -3.4 + (Math.random() - .5) * 4.4], i * 3); S[i] = Math.random(); }
@@ -94,27 +101,31 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
 
   // The rear frame holds a living portal: step into it to go back to the archive.
   const pm = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uOpen: { value: 1 }, uNear: { value: 0 } }, vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`, fragmentShader: portalFragment, depthWrite: false });
-  const membrane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.9), pm); membrane.position.set(0, 2.16, 11.39); membrane.rotation.y = Math.PI; scene.add(membrane);
+  const membrane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.9), pm); membrane.position.set(0, 2.16, 11.39 + ROOM.shift); membrane.rotation.y = Math.PI; scene.add(membrane);
   disposables.push(membrane.geometry, pm);
-  const portalLight = new THREE.PointLight('#6fe8a8', 5, 9, 1.8); portalLight.position.set(0, 2.2, 10.6); scene.add(portalLight);
+  const portalLight = new THREE.PointLight('#6fe8a8', 9, 10, 1.9); portalLight.position.set(0, 2.2, 10.6 + ROOM.shift); scene.add(portalLight);
 
   updates.push((t) => {
     dm.uniforms.uTime.value = t; dm.uniforms.uPx.value = renderer.getPixelRatio();
-    const near = THREE.MathUtils.clamp(1 - (11.2 - camera.position.z) / 4, 0, 1) * (Math.abs(camera.position.x) < 2 ? 1 : 0);
+    const near = THREE.MathUtils.clamp(1 - (11.2 + ROOM.shift - camera.position.z) / 4, 0, 1) * (Math.abs(camera.position.x) < 2 ? 1 : 0);
     pm.uniforms.uTime.value = t; pm.uniforms.uNear.value += (near - pm.uniforms.uNear.value) * .08;
-    portalLight.intensity = 5 * (1 + .12 * Math.sin(t * 1.3) + pm.uniforms.uNear.value);
+    portalLight.intensity = 9 * (1 + .12 * Math.sin(t * 1.3) + .6 * pm.uniforms.uNear.value);
     if (floor) (floor.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
   });
 
-  // Quality guard: if frames run long, drop the occlusion first, then halve the mirror again.
-  let ao: GTAOPass | null = null, mirror = .5, slow = 0, watched = 0;
+  // Quality guard: if frames run long, drop the occlusion first, then halve the mirror again, then step
+  // the resolution down towards one pixel per CSS pixel.
+  let ao: GTAOPass | null = null, mirror = .5, slow = 0, watched = 0, exhausted = false;
   updates.push((_t, dt) => {
-    if (dt <= 0 || dt > .25 || (!ao?.enabled && mirror < .5)) return;
+    frameNo++;
+    if (dt <= 0 || dt > .25 || exhausted) return;
     watched += dt; slow += dt > 1 / 40 ? dt : 0;
     if (watched < 2.5) return;
     if (slow / watched > .5) {
       if (ao?.enabled) ao.enabled = false;
-      else if (floor) { mirror = .3; const s = renderer.getSize(new THREE.Vector2()); resizeMirror(s.x, s.y); }
+      else if (floor && mirror >= .5) { mirror = .3; const s = renderer.getSize(new THREE.Vector2()); resizeMirror(s.x, s.y); }
+      else if (renderer.getPixelRatio() > 1.01 && o.onPixelRatio) o.onPixelRatio(Math.max(1, renderer.getPixelRatio() - .25));
+      else exhausted = true;
     }
     watched = slow = 0;
   });
@@ -161,7 +172,7 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
     extendComposer,
     resize: resizeMirror,
     /** Walked into the rear frame. */
-    inPortal: (p: THREE.Vector3) => p.z > 10.75 && Math.abs(p.x) < 1.3,
+    inPortal: (p: THREE.Vector3) => p.z > 10.75 + ROOM.shift && Math.abs(p.x) < 1.3,
     setOpen(v: number) { pm.uniforms.uOpen.value = v; },
     dispose() { disposables.forEach(d => d.dispose()); },
   };

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { ROOM } from './model-room-layout';
 
 /** The exhibition architecture and finishes are kept out of the movement controller. */
 export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
@@ -27,27 +28,34 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
   ctx.putImageData(pixels, 0, 0);ctx.strokeStyle = '#4b5654';ctx.lineWidth = 1;
   ctx.strokeRect(.5, .5, 511, 511);
   const floorMap = new THREE.CanvasTexture(canvas);floorMap.colorSpace = THREE.SRGBColorSpace;
-  floorMap.wrapS = floorMap.wrapT = THREE.RepeatWrapping;floorMap.repeat.set(6, 8);
+  // The hall: 28 m wide, 24.6 m deep (see model-room-layout.ts).
+  const W = ROOM.halfW * 2, D = ROOM.front - ROOM.back + .4, midZ = (ROOM.front + ROOM.back) / 2, S = ROOM.shift;
+  floorMap.wrapS = floorMap.wrapT = THREE.RepeatWrapping;floorMap.repeat.set(W / 3, D / 3);
   const floor = new THREE.MeshStandardMaterial({ color: '#7e8987', map: floorMap, roughness: .38, metalness: .24, bumpMap: floorMap, bumpScale: .007 });
-  box(18, .2, 24, 0, -.14, 1, floor);
-  box(18, 6.5, .25, 0, 3.2, -7.6, charcoal);
-  box(.25, 6.5, 24, -9, 3.2, 1, charcoal);box(.25, 6.5, 24, 9, 3.2, 1, charcoal);
-  box(18, 6.5, .25, 0, 3.2, 12, charcoal);box(18, .18, 24, 0, 6.45, 1, charcoal);
+  box(W, .2, D, 0, -.14, midZ, floor);
+  box(W, 6.5, .25, 0, 3.2, ROOM.back, charcoal);
+  box(.25, 6.5, D, -ROOM.halfW, 3.2, midZ, charcoal);box(.25, 6.5, D, ROOM.halfW, 3.2, midZ, charcoal);
+  box(W, 6.5, .25, 0, 3.2, ROOM.front, charcoal);box(W, .18, D, 0, 6.45, midZ, charcoal);
 
   // Layered stone niche, shadow reveals, and a bronze surround behind the installation.
   box(10.6, 5.1, .2, 0, 2.72, -7.36, bronze, .08);
   box(10.38, 4.94, .16, 0, 2.72, -7.2, limestone, .07);
   for (const x of [-5.12, 5.12]) box(.025, 4.65, .028, x, 2.76, -7.08, warm);
   box(10.25, .025, .028, 0, 5.08, -7.08, warm);
+  // The slatted wall either side of the niche, out to the corners: one instanced mesh, not a mesh per slat.
+  const slatsPerSide = Math.floor((ROOM.halfW - .3 - 5.7) / .18) + 1;
+  const slats = new THREE.InstancedMesh(new RoundedBoxGeometry(.085, 5.2, .19, 2, .018), bronze, slatsPerSide * 2);
+  const slatAt = new THREE.Matrix4(); let slat = 0;
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 17; i++) box(.085, 5.2, .19, side * (5.7 + i * .18), 2.72, -7.25, bronze, .018);
-    box(.035, .03, 18, side * 8.82, .18, 1, jade);
+    for (let i = 0; i < slatsPerSide; i++) slats.setMatrixAt(slat++, slatAt.makeTranslation(side * (5.7 + i * .18), 2.72, -7.25));
+    box(.035, .03, D - 1, side * (ROOM.halfW - .18), .18, midZ, jade);
     // Tapered light slots down the side walls give the room depth when walking.
-    for (const z of [-4, 1, 6, 10]) {
-      box(.16, 4.8, .14, side * 8.82, 2.5, z, bronze, .025);
-      box(.022, 4.55, .025, side * 8.71, 2.5, z, warm);
+    for (const z of [-4, 1, 6, 11, 15]) {
+      box(.16, 4.8, .14, side * (ROOM.halfW - .18), 2.5, z, bronze, .025);
+      box(.022, 4.55, .025, side * (ROOM.halfW - .29), 2.5, z, warm);
     }
   }
+  slats.receiveShadow = true;scene.add(slats);
   const base = standard('#424c48', .54, .08);
   box(8.6, .11, 4.7, 0, .015, -3.5, graphite, .05);
   box(8.38, .035, 4.48, 0, .07, -3.5, jade, .015);
@@ -59,8 +67,8 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
     ring.rotation.x = Math.PI / 2;ring.scale.y = .74;ring.position.set(0, y, -2);scene.add(ring);
   }
   for (const x of [-3.25, 3.25]) for (const z of [-4.4, .4]) box(.012, .58, .012, x, 6.15, z, bronze);
-  for (const z of [-5.6, -1, 5]) {
-    box(10, .12, .16, 0, 6.27, z, bronze);box(9.8, .016, .09, 0, 6.2, z, warm);
+  for (const z of [-5.6, -1, 3.6, 8.2, 12.8]) {
+    box(18, .12, .16, 0, 6.27, z, bronze);box(17.8, .016, .09, 0, 6.2, z, warm);
   }
 
   function lettering(text: string, subtitle: string, x: number, y: number, z: number, width: number, rotation = 0) {
@@ -92,16 +100,18 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
   const plate = lettering('KITCHEN MODERN 25', 'EXHIBIT 001', -3.25, .21, -1.34, .94);plate.rotation.x = -Math.PI / 2 + .16;
 
   // The return portal is built into the rear wall. Its light ties both spaces together.
-  box(3.5, 4.35, .13, 0, 2.18, 11.74, bronze, .09);
-  box(3.25, 4.13, .15, 0, 2.18, 11.61, jade, .08);
-  box(3.09, 4, .17, 0, 2.16, 11.49, graphite, .07);
-  lettering('THE ARCHIVE', 'RETURN THROUGH THE FRAME', 0, 4.95, 11.8, 2.9, Math.PI);
-  const exit = new THREE.PointLight('#7fe0ae', 18, 9, 2);exit.position.set(0, 2.5, 10.5);scene.add(exit);
+  box(3.5, 4.35, .13, 0, 2.18, 11.74 + S, bronze, .09);
+  box(3.25, 4.13, .15, 0, 2.18, 11.61 + S, jade, .08);
+  box(3.09, 4, .17, 0, 2.16, 11.49 + S, graphite, .07);
+  lettering('THE ARCHIVE', 'RETURN THROUGH THE FRAME', 0, 4.95, 11.8 + S, 2.9, Math.PI);
+  // (The portal's own light in model-room-fx.ts lights the doorway.)
 
   const key = new THREE.DirectionalLight('#ffe7c5', 2.5);key.position.set(-3.5, 7, 3);
   key.castShadow = true;key.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
   Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: .1, far: 23 });
   key.shadow.normalBias = .022;key.shadow.bias = -.00015;key.shadow.radius = 3;
+  // Its shadows fall on a still kitchen; the controller refreshes the map a few times a second for the astronaut.
+  key.shadow.autoUpdate = false;key.shadow.needsUpdate = true;
   key.target.position.set(0, 1.4, -3.5);scene.add(key, key.target);
   const fill = new THREE.DirectionalLight('#bfdae0', 1.05);fill.position.set(5, 3.5, 2);scene.add(fill);
   // Kept low: the downlights (model-room-fx.ts) carry the exhibit, so the niche no longer burns white.
@@ -130,5 +140,5 @@ export function createModelRoomDesign(scene: THREE.Scene, mobile: boolean) {
     });
     old.forEach(mat => mat.dispose());swatches[0].material = oak;swatches[1].material = marble;
   }
-  return { dressModel, dispose: () => { disposed = true;extraTextures.forEach(texture => texture.dispose()); } };
+  return { dressModel, key, dispose: () => { disposed = true;extraTextures.forEach(texture => texture.dispose()); } };
 }

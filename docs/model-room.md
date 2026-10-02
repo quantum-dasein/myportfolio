@@ -180,7 +180,7 @@ is used in the gallery.
 
 The entrance terminal and the **Model archive** button open a searchable EN/DE
 catalogue. Available works are Gym equipment 03 and Pool 18. Selecting one downloads
-one GLB and reveals it inside the central portal at (1, 0, 5.9),
+one GLB and reveals it inside the central portal at (0, 0, 8),
 and switches to orbit inspection. Reduced-motion visitors see it immediately.
 **Clear stage** removes it. The seven permanent exhibits keep their positions.
 
@@ -208,8 +208,8 @@ and the pool’s subtle water ripples.
 | Gym equipment 03 | Triangles | GLB bytes | Meshes |
 | --- | ---: | ---: | ---: |
 | Source FBX | 508,570 | — | 31 |
-| Desktop | 134,754 | 814,336 | 8 |
-| Mobile | 58,456 | 463,204 | 8 |
+| Desktop | 228,833 | 961,620 | 8 |
+| Mobile | 58,456 | 464,324 | 8 |
 
 The FBX contains no usable Corona texture links. Its wood image was reconnected,
 and rubber, metal, fabric and the other surfaces were rebuilt as web PBR
@@ -226,8 +226,8 @@ python -c "from PIL import Image; Image.open('artifacts/gym-equipment/gym-previe
 Pool 18 is converted from the supplied OBJ (1,693,305 triangles). Its MTL
 contains only a black wire material, so surfaces were reconstructed using the
 supplied textures and named objects. OBJ units are unspecified; no real-world
-site dimensions are claimed. The current exports are 236,862 triangles /
-2,731,396 bytes on desktop and 113,764 triangles / 1,428,816 bytes on mobile.
+site dimensions are claimed. The current exports are 418,843 triangles /
+3,668,272 bytes on desktop and 113,764 triangles / 1,438,144 bytes on mobile.
 
 ```powershell
 blender --background --factory-startup --python scripts/model-room/prepare-pool.py -- 'path/to/Pool 18'
@@ -270,18 +270,61 @@ to overwrite later work. No deployment is part of these scripts.
 
 ### Additional archive models and contact
 
-Bronze woman: 112,698 triangles / 1,189,460 bytes desktop; 47,128 / 438,944 mobile.
-Three waterfall fountains: 202,761 triangles / 1,393,632 bytes desktop; 82,854 / 678,884 mobile.
+Bronze woman: 194,660 triangles / 1,972,072 bytes desktop; 47,128 / 439,096 mobile.
+Three waterfall fountains: 309,851 triangles / 1,880,644 bytes desktop; 82,854 / 679,280 mobile.
 The fountains OBJ contains the three fountains and water geometry, not the Corona Scatter
 vegetation shown in source settings. Both models use reconstructed web PBR materials.
 `prepare-additions.py -- bronze|fountains SOURCE` produces GLBs and PNG previews; encode
 those previews as WebP in `public/models/archive/`.
 
 The portal's outer hardware has a 2.34 m conservative radius. It clears the SVJ's
-2.75 m turntable by 1.24 m. The kiosk is at (-2.15, 0, 8.15), outside both display
+2.75 m turntable by 4.1 m. The kiosk is at (-3, 0, 10.9), outside both display
 areas. The suspended scanner fades after the reveal to keep the work visible.
 
 The catalogue links to `/contact/?project=modeling` or `/de/kontakt/?project=modeling`.
 The form offers custom 3D modeling in both languages and reads the existing project parameter.
 Run `node scripts/check-model-additions.mjs` against port 4337 (or `TEST_SITE_URL`) for
 new-model desktop/mobile loading, clearance, form preselection and removal of the private route.
+
+## The larger hall (2026-10-02)
+
+`src/scripts/model-room-layout.ts` holds the footprint. The hall grew from 18 × 19.6 m to
+28 × 24.6 m: the side walls moved out 5 m each and the entrance wall forward 5 m. The kitchen
+niche stayed in place. Everything that belongs to the door (return portal, arrival, first view)
+moved with `ROOM.shift`. The pieces were spread out:
+
+| Piece | Position (x, z) |
+| --- | --- |
+| Archive stage | (0, 8) |
+| SVJ turntable | (-8.5, 4.5) |
+| K-2SO | (7.5, 1.5) |
+| E-bike wall mount | (13.4, 6), on the right wall |
+| ABS House table | (8.2, 9.2) |
+| Lounge and hanging garden | (-8.5, 13.2) |
+| Archive terminal | (-3, 10.9) |
+
+The guide's tour (`model-room-guide.ts`) was re-laid for these positions; `artifacts/mr-tour.mjs`
+follows him and reports how close he comes to every obstacle.
+
+**Performance.** Measured on integrated graphics at 1600 × 900: 17.2 ms → 14.4 ms per frame (58 → 70 fps), stage lights included.
+
+- Lamps: 9 spots and 6 point lights became 7 and 5, including the two new stage lights. Every lamp is
+  paid for by every lit pixel, so each group of fixtures now has one real lamp; the other fixtures only glow.
+- The mirror floor redraws every other frame and never twice in one frame; its blur takes 9 taps, not 25.
+- The kitchen's shadow map updates every fourth frame (only the astronaut moves through it); the stage's
+  shadow map is drawn once per work.
+- The rear-wall slats are one instanced mesh.
+- The quality guard has a third step: after dropping occlusion and the mirror's resolution, it lowers the
+  pixel ratio towards 1.
+- Behind the open archive tablet the room renders a third of the frames.
+
+**Archive works.** `scripts/model-room/bake_ao.py` bakes ambient occlusion into vertex colours
+(COLOR_0) in every `prepare-*.py`; desktop exports keep more triangles (figures above). On the stage
+each work stands on a stone base cut to its footprint, under a key spot with a shadow map and a cool
+kicker (`model-room-archive.ts`). Water glows. Previews come from
+`scripts/model-room/render-previews.py` (Cycles, transparent ground) and
+`scripts/model-room/encode-previews.py` (trim, 4:3, WebP).
+
+**The archive tablet.** `model-room-catalog.ts` and the `.mr-catalog` block in `model-room.css`: a
+glass sheet over the blurred room, category chips, glass cards, and "liquid glass" buttons whose
+highlight follows the pointer (`--mx` / `--my`). The enquiry button is the mint accent.

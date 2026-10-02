@@ -7,6 +7,8 @@ from pathlib import Path
 from mathutils import Vector
 KIND,source=sys.argv[sys.argv.index('--')+1:];BASE=Path(source);ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'public/models/archive';ART=ROOT/'artifacts/new-models';ART.mkdir(parents=True,exist_ok=True)
 ID='bronze-woman' if KIND=='bronze' else 'waterfall-fountains';STATS={}
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from bake_ao import bake_ao
 def material(name,color,rough=.6,metal=0):
  m=bpy.data.materials.new(name);m.use_nodes=True;p=m.node_tree.nodes.get('Principled BSDF');rgb=[int(color[i:i+2],16)/255 for i in (1,3,5)];rgb=[v/12.92 if v<.04045 else ((v+.055)/1.055)**2.4 for v in rgb];p.inputs['Base Color'].default_value=(*rgb,1);p.inputs['Roughness'].default_value=rough;p.inputs['Metallic'].default_value=metal;return m
 
@@ -43,16 +45,18 @@ def build(mobile):
   bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.mesh.remove_doubles(threshold=.00001 if KIND=='bronze' else .001);bpy.ops.object.mode_set(mode='OBJECT')
   count=sum(len(p.vertices)-2 for p in o.data.polygons)
   if count>2000:
-   dec=o.modifiers.new('Web budget','DECIMATE');dec.ratio=(.23 if mobile else .55) if KIND=='bronze' else ((.018 if mobile else .045) if old=='wire_056056242' else (.22 if mobile else .5));dec.use_collapse_triangulate=True;bpy.ops.object.modifier_apply(modifier=dec.name)
+   dec=o.modifiers.new('Web budget','DECIMATE');dec.ratio=(.23 if mobile else .95) if KIND=='bronze' else ((.018 if mobile else .07) if old=='wire_056056242' else (.22 if mobile else .72));dec.use_collapse_triangulate=True;bpy.ops.object.modifier_apply(modifier=dec.name)
   bpy.ops.object.transform_apply(location=True,rotation=True,scale=True)
   for v in o.data.vertices:v.co=(v.co-offset)*scale
   bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35));o.name=ID+' | '+m.name
   # Drop FBX custom metadata after applying the object transform.
   for key in list(o.keys()):del o[key]
+ # Occlusion baked into vertex colours: the folds of the drapery, the bowls' rims.
+ bake_ao([o for o in objs if o.data.materials[0].name!='Pool water'])
  bpy.ops.object.select_all(action='DESELECT')
  for o in objs:o.select_set(True)
  filename=ID+('.mobile' if mobile else '')+'.glb'
- bpy.ops.export_scene.gltf(filepath=str(OUT/filename),use_selection=True,export_format='GLB',export_yup=True,export_apply=True,export_image_format='WEBP',export_image_quality=82,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6,export_draco_position_quantization=14)
+ bpy.ops.export_scene.gltf(filepath=str(OUT/filename),use_selection=True,export_vertex_color='ACTIVE',export_all_vertex_colors=False,export_format='GLB',export_yup=True,export_apply=True,export_image_format='WEBP',export_image_quality=82,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6,export_draco_position_quantization=14)
  STATS['mobile' if mobile else 'desktop']={'sourceTriangles':source_tris,'triangles':sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in objs),'bytes':(OUT/filename).stat().st_size,'displayDimensions':list((hi-lo)*scale),'materialNote':'PBR reconstruction from supplied geometry and textures. Corona scatter is not present in OBJ.' if KIND=='fountains' else 'Bronze PBR reconstruction using the supplied surface texture.'}
  if not mobile:render()
 def render():

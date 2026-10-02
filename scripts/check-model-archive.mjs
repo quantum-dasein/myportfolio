@@ -6,7 +6,7 @@ const out='artifacts/model-archive-check';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({channel:'msedge',headless:true,args:['--enable-unsafe-swiftshader']});
 const report=[], errors=[];
 async function room(options={}){
- const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce',...options});
+ const page=await browser.newPage({locale:'en-US',viewport:{width:1440,height:1000},reducedMotion:'reduce',...options});
  page.on('pageerror',e=>errors.push(e.message));
  page.on('console',m=>{if(m.type()==='error'&&/shader|WebGLProgram/i.test(m.text()))errors.push(m.text())});
  await page.goto(base+'/gallery/models/?mrdebug');
@@ -43,7 +43,7 @@ try{
  assert.equal(await p.locator('[data-catalog-show]').count(),4);
  assert.equal(await p.locator('.mr-catalog').evaluate(e=>getComputedStyle(e).fontFamily),await p.locator('[data-model-room]').evaluate(e=>getComputedStyle(e).fontFamily));
  await pool.click();await p.waitForFunction(()=>window.__mr.archive.activeId()==='pool-18');await p.getByRole('dialog').waitFor({state:'hidden'});
- assert(await p.evaluate(()=>{const b=window.__mr.archive.colliders[0];return b.min.x<1&&b.max.x>1&&b.min.z<5.9&&b.max.z>5.9}),'The selected work occupies the central portal');
+ assert(await p.evaluate(()=>{const b=window.__mr.archive.colliders[0];return b.min.x<0&&b.max.x>0&&b.min.z<8&&b.max.z>8}),'The selected work occupies the central portal');
  await p.screenshot({path:out+'/pool-desktop.png'});
  await p.getByRole('button',{name:'Model archive',exact:true}).click();await gym.click();await p.getByRole('dialog').waitFor({state:'hidden'});
 

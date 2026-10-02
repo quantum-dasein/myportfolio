@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import { ROOM } from './model-room-layout';
 
 /** A floor aperture and a suspended scanner, shared by every archive exhibit. */
 export function createArchivePortal(scene: THREE.Scene, reduced: boolean) {
-  const root = new THREE.Group(); root.position.set(1, 0, 5.9); root.name = 'Central archive portal'; scene.add(root);
+  const root = new THREE.Group(); root.position.set(ROOM.stage.x, 0, ROOM.stage.z); root.name = 'Central archive portal'; scene.add(root);
   const resources: { dispose(): void }[] = [];
   const own = <T extends { dispose(): void }>(v: T): T => { resources.push(v); return v; };
   const metal = own(new THREE.MeshStandardMaterial({ color: '#101c1a', metalness: .7, roughness: .32 }));

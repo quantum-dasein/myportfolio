@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { archiveDimensions, type ArchiveModel } from '../data/model-archive';
 import type { ExhibitInfo } from './model-room-exhibits';
@@ -21,6 +22,33 @@ export function createArchiveBay(o: {
   let generation = 0, disposed = false, state: 'empty' | 'revealing' | 'shown' | 'removing' = 'empty', progress = 0;
   let finishRemoval: (() => void) | undefined;
 
+  // The stage's own light: a warm key from high on the left, a little behind the work, so its shadows fall
+  // towards the visitor (the pergola onto the terrace, the dumbbells into their shelves), and a cool kicker
+  // from the entrance side to open the front. Both are dark
+  // while the stage is empty. The shadow map is drawn once per work, not every frame.
+  const key = new THREE.SpotLight('#ffe9cf', 0, 16, .46, .75, 1.6); key.position.set(at.x - 4, 6.2, at.z - 1.2); key.target.position.set(at.x, .9, at.z);
+  key.castShadow = !o.mobile; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -.0003; key.shadow.normalBias = .012; key.shadow.radius = 4;
+  key.shadow.camera.near = 3; key.shadow.camera.far = 14; key.shadow.autoUpdate = false; key.shadow.intensity = 0;
+  const kicker = new THREE.PointLight('#9fd8ff', 0, 9, 1.8); kicker.position.set(at.x + 2.8, 3, at.z + 3.2);
+  o.scene.add(key, key.target, kicker);
+  let lit = 0, shadowAt = -1;
+  // What the work stands on: a dark stone base cut to its footprint, with a line of light round the top.
+  const baseStone = new THREE.MeshStandardMaterial({ color: '#27302d', roughness: .62, metalness: .1 });
+  const baseGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(.25, 1.5, .8), toneMapped: false });
+  let base: THREE.Group | undefined;
+  function buildBase(root: THREE.Object3D, height: number) {
+    const box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+    const w = size.x + .16, d = size.z + .16, group = new THREE.Group();
+    const slab = new THREE.Mesh(new RoundedBoxGeometry(w, height, d, 2, Math.min(.03, height / 3)), baseStone); slab.position.y = height / 2; slab.castShadow = slab.receiveShadow = true; group.add(slab);
+    const line = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w + .004, .002, d + .004)), new THREE.LineBasicMaterial({ color: baseGlow.color, toneMapped: false })); line.position.y = height - .012; group.add(line);
+    group.position.set(mid.x - at.x, 0, mid.z - at.z); group.scale.y = .001; return group;
+  }
+  function dropBase() {
+    if (!base) return;
+    base.removeFromParent(); base.traverse(n => { const m = n as THREE.Mesh; if (m.geometry) m.geometry.dispose(); if ((n as THREE.LineSegments).isLineSegments) (m.material as THREE.Material).dispose(); });
+    base = undefined;
+  }
+
   function release(root: THREE.Object3D) {
     root.removeFromParent();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -34,6 +62,11 @@ export function createArchiveBay(o: {
   function shader(material: THREE.Material) {
     const m = material as THREE.MeshStandardMaterial;
     m.wireframe = o.wireframe();
+    // A little more of the room in every surface; water that glows like a lit pool at dusk.
+    m.envMapIntensity = 1.5;
+    if (m.name === 'Pool water') { m.roughness = .05; m.metalness = .15; m.color.set('#1f9fb0'); m.emissive.set('#0b6f80'); m.emissiveIntensity = .55; m.envMapIntensity = 2.2; }
+    else if (/bronze/i.test(m.name)) { m.envMapIntensity = 2; m.roughness = Math.min(m.roughness, .38); }
+    else if (/steel|metal/i.test(m.name)) m.envMapIntensity = 2;
     m.onBeforeCompile = s => {
       s.uniforms.uArchiveY = clip;
       if (m.name === 'Pool water') {
@@ -49,7 +82,7 @@ export function createArchiveBay(o: {
   function cancel() { generation++; controller?.abort(); controller = undefined; }
   function erase() {
     if (current) release(current.root);
-    current = undefined; meshes.length = 0; state = 'empty'; colliders.length = 0; clip.value = -1;
+    current = undefined; meshes.length = 0; state = 'empty'; colliders.length = 0; clip.value = -1; dropBase();
     finishRemoval?.(); finishRemoval = undefined;
   }
   function remove() {
@@ -79,7 +112,7 @@ export function createArchiveBay(o: {
       const textures = new Set<THREE.Texture>();
       incoming.traverse(n => {
         const m = n as THREE.Mesh; if (!m.isMesh) return;
-        m.userData.exhibit = entry.id; m.receiveShadow = true; m.castShadow = false;
+        m.userData.exhibit = entry.id; m.receiveShadow = true; m.castShadow = true;
         for (const mat of Array.isArray(m.material) ? m.material : [m.material]) {
           shader(mat); for (const v of Object.values(mat)) if (v instanceof THREE.Texture) textures.add(v);
         }
@@ -99,7 +132,8 @@ export function createArchiveBay(o: {
         sub: { en: archiveDimensions(entry, false), de: archiveDimensions(entry, true) }, text: entry.description,
         focus: at.clone().add(new THREE.Vector3(0, lift + entry.height / 2, 0)), distance: entry.distance, elevation: entry.elevation,
       };
-      current = { root: incoming, entry, info }; station.add(incoming); station.updateMatrixWorld(true); colliders.push(new THREE.Box3().setFromObject(incoming)); incoming = undefined;
+      current = { root: incoming, entry, info }; station.add(incoming); station.updateMatrixWorld(true); colliders.push(new THREE.Box3().setFromObject(incoming));
+      base = buildBase(incoming, lift - .012); station.add(base); incoming = undefined;
       current.root.traverse(n => { if ((n as THREE.Mesh).isMesh) meshes.push(n as THREE.Mesh); });
       progress = 0; state = o.reduced ? 'shown' : 'revealing'; clip.value = o.reduced ? 1e4 : lift - .05;
       o.onReveal?.(); return info;
@@ -121,6 +155,13 @@ export function createArchiveBay(o: {
     async clear() { cancel(); await remove(); },
     update(t: number, dt: number) {
       waterTime.value = o.reduced ? 0 : t;
+      // The stage lights come up with the work and go down when it leaves; its shadows fade in once it stands.
+      const want = current && state !== 'removing' ? 1 : 0;
+      lit += (want - lit) * Math.min(1, dt * 2.2); key.intensity = 120 * lit; kicker.intensity = 9 * lit;
+      if (base) base.scale.y += ((state === 'removing' ? .001 : 1) - base.scale.y) * Math.min(1, dt * 5);
+      if (state === 'shown' && shadowAt < 0) { shadowAt = t; key.shadow.needsUpdate = true; }
+      if (state !== 'shown') { shadowAt = -1; key.shadow.intensity = Math.max(0, key.shadow.intensity - dt * 4); }
+      else { key.shadow.intensity = Math.min(1, (t - shadowAt) / .9); if (t - shadowAt < 1.2) key.shadow.needsUpdate = true; }
       portal.update(t, state === 'revealing' || state === 'removing', clip.value, Boolean(current));
       if (!current || state === 'shown' || state === 'empty') return;
       progress = Math.min(1, progress + dt / (state === 'removing' ? .65 : 1.7));
@@ -128,6 +169,6 @@ export function createArchiveBay(o: {
       clip.value = lift - .05 + k * (current.entry.height + .12);
       if (progress >= 1) { if (state === 'removing') erase(); else { state = 'shown'; clip.value = 1e4; } }
     },
-    dispose() { disposed = true; cancel(); erase(); portal.dispose(); },
+    dispose() { disposed = true; cancel(); erase(); portal.dispose(); o.scene.remove(key, key.target, kicker); key.dispose(); kicker.dispose(); baseStone.dispose(); baseGlow.dispose(); },
   };
 }

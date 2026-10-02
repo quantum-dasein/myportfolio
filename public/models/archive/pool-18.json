@@ -1,8 +1,8 @@
 {
   "desktop": {
     "sourceTriangles": 1693305,
-    "triangles": 236862,
-    "bytes": 2731396,
+    "triangles": 418843,
+    "bytes": 3668272,
     "displayDimensions": [
       2.321728467941284,
       3.5999999046325684,
@@ -18,7 +18,7 @@
   "mobile": {
     "sourceTriangles": 1693305,
     "triangles": 113764,
-    "bytes": 1428816,
+    "bytes": 1438144,
     "displayDimensions": [
       2.321728467941284,
       3.5999999046325684,

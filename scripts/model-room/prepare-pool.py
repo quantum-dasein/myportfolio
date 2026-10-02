@@ -7,6 +7,8 @@ import bpy, sys, json, math
 from pathlib import Path
 from mathutils import Vector
 BASE=Path(sys.argv[sys.argv.index('--')+1]);ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from bake_ao import bake_ao
 OUT=ROOT/'public/models/archive';OUT.mkdir(parents=True,exist_ok=True)
 ART=ROOT/'artifacts/pool-18';ART.mkdir(parents=True,exist_ok=True)
 STATS={}
@@ -53,7 +55,7 @@ def build(mobile):
   bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.mesh.remove_doubles(threshold=.001);bpy.ops.object.mode_set(mode='OBJECT')
   count=sum(len(p.vertices)-2 for p in o.data.polygons)
   if count>1500:
-   dec=o.modifiers.new('Web budget','DECIMATE');dec.ratio=(.035 if mobile else .09) if n=='Sample_Palm' else (.075 if mobile else .17);dec.use_collapse_triangulate=True;bpy.ops.object.modifier_apply(modifier=dec.name)
+   dec=o.modifiers.new('Web budget','DECIMATE');dec.ratio=(.035 if mobile else .16) if n=='Sample_Palm' else (.075 if mobile else .32);dec.use_collapse_triangulate=True;bpy.ops.object.modifier_apply(modifier=dec.name)
   bpy.ops.object.transform_apply(location=True,rotation=True,scale=True)
   for v in o.data.vertices:v.co=(v.co-offset)*scale
   bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35))
@@ -61,8 +63,11 @@ def build(mobile):
  bpy.ops.object.select_all(action='SELECT');bpy.context.view_layer.objects.active=objs[0];bpy.ops.object.join();bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.mesh.separate(type='MATERIAL');bpy.ops.object.mode_set(mode='OBJECT')
  for o in bpy.context.scene.objects:
   if o.type=='MESH':o.name='Pool | '+o.data.materials[0].name
+ # Occlusion baked into vertex colours (not for the water or the alpha-cut leaves, which stay clean).
+ bake_ao([o for o in bpy.context.scene.objects if o.type=='MESH' and o.data.materials[0].name not in ('Pool water','Garden foliage')])
+ bpy.ops.object.select_all(action='SELECT')
  filename='pool-18'+('.mobile' if mobile else '')+'.glb'
- bpy.ops.export_scene.gltf(filepath=str(OUT/filename),export_format='GLB',export_yup=True,export_apply=True,export_image_format='WEBP',export_image_quality=78,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6,export_draco_position_quantization=14)
+ bpy.ops.export_scene.gltf(filepath=str(OUT/filename),export_vertex_color='ACTIVE',export_all_vertex_colors=False,export_format='GLB',export_yup=True,export_apply=True,export_image_format='WEBP',export_image_quality=78,export_draco_mesh_compression_enable=True,export_draco_mesh_compression_level=6,export_draco_position_quantization=14)
  STATS['mobile' if mobile else 'desktop']={'sourceTriangles':source,'triangles':sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in bpy.context.scene.objects if o.type=='MESH'),'bytes':(OUT/filename).stat().st_size,'displayDimensions':list((hi-lo)*scale),'sourceBounds':list(hi-lo),'materialNote':'PBR reconstruction from one black OBJ material; source texture assignments were not preserved.'}
  if not mobile:
   bpy.ops.wm.save_as_mainfile(filepath=str(ART/'pool-web.blend'));render()

@@ -16,6 +16,7 @@ import { createGuide } from './model-room-guide';
 import { createKiosk } from './model-room-kiosk';
 import { createArchiveBay } from './model-room-archive';
 import { modelArchive } from '../data/model-archive';
+import { ROOM, WALK } from './model-room-layout';
 
 // Names for the parts you can pick out on each exhibit (by mesh material).
 const PARTS: Record<string, Record<string, [string, string]>> = {
@@ -34,8 +35,8 @@ export async function mountModelRoom(root: HTMLElement) {
   const { signal } = events;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b1113');
-  scene.fog = new THREE.Fog('#0b1113', 19, 42);
-  const camera = new THREE.PerspectiveCamera(52, 1, .08, 70);
+  scene.fog = new THREE.Fog('#0b1113', 26, 62);
+  const camera = new THREE.PerspectiveCamera(52, 1, .08, 90);
   let renderer: THREE.WebGLRenderer | undefined;
   let orbit: OrbitControls | undefined;
   let environment: THREE.WebGLRenderTarget | undefined;
@@ -82,7 +83,7 @@ export async function mountModelRoom(root: HTMLElement) {
       fill(); box.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' });
     }, fill);
   }
-  const astroFrom = new THREE.Vector3(1.1, 0, 10.9);
+  const astroFrom = new THREE.Vector3(1.1, 0, 10.9 + ROOM.shift);
   let composer: EffectComposer | undefined, bloom: UnrealBloomPass | undefined;
   let studioLight = false;
   let frame = 0, last = 0, disposed = false, ready = false, failed = false;
@@ -122,9 +123,11 @@ export async function mountModelRoom(root: HTMLElement) {
     $('retry').hidden = false;
   }
   function look() { camera.rotation.set(pitch, yaw, 0, 'YXZ'); }
+  // The first view: a few steps inside the door, the whole hall ahead.
+  const HOME_Z = () => (coarse.matches ? 9.6 : 9) + ROOM.shift, ARRIVE_Z = 11.1 + ROOM.shift;
   function home() {
     // Far enough back to take in the whole collection: the car on the left, the droid and the bike on the right.
-    camera.position.set(0, 1.7, coarse.matches ? 9.6 : 9);yaw = 0;pitch = 0;look();
+    camera.position.set(0, 1.7, HOME_Z());yaw = 0;pitch = 0;look();
   }
   function labelSelection() {
     const groups: [RegExp, string, string][] = [
@@ -158,7 +161,7 @@ export async function mountModelRoom(root: HTMLElement) {
       // A three-quarter view from the room's side of the piece, a little above it.
       const d = current.distance * (coarse.matches ? 1.25 : 1);
       // (K-2SO opens from the wall side: the astronaut stands on the other.)
-      const out = new THREE.Vector3(-target.x, 0, 8 - target.z).normalize(), side = new THREE.Vector3(-out.z, 0, out.x).multiplyScalar(current.id === 'k2so' ? -1 : 1);
+      const out = new THREE.Vector3(-target.x, 0, 10 - target.z).normalize(), side = new THREE.Vector3(-out.z, 0, out.x).multiplyScalar(current.id === 'k2so' ? -1 : 1);
       camera.position.copy(target).addScaledVector(out, d * .88).addScaledVector(side, d * .42); camera.position.y = target.y + d * (current.elevation ?? .3);
     }
     orbit.target.copy(target);orbit.update();
@@ -194,7 +197,7 @@ export async function mountModelRoom(root: HTMLElement) {
   }
   function blocked(x: number, z: number, self = true) {
     // The rear frame is open: you may walk into it (and that takes you back to the archive).
-    if (Math.abs(x) > 8.5 || z < -7.05 || z > (Math.abs(x) < 1.3 ? 11.3 : 10.9)) return true;
+    if (Math.abs(x) > WALK.x || z < WALK.back || z > (Math.abs(x) < WALK.doorHalf ? WALK.door : WALK.front)) return true;
     if (self && astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
     // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
     return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(kiosk ? [kiosk.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
@@ -219,12 +222,14 @@ export async function mountModelRoom(root: HTMLElement) {
     // Arrival from the portal: a slow glide out of the rear frame to the first view.
     if (arriveAt >= 0) {
       const k = Math.min(1, (t - arriveAt) / 2.8), e = 1 - Math.pow(1 - k, 3);
-      camera.position.z = THREE.MathUtils.lerp(11.1, coarse.matches ? 9.6 : 9, e); fx?.setOpen(1);
+      camera.position.z = THREE.MathUtils.lerp(ARRIVE_Z, HOME_Z(), e); fx?.setOpen(1);
       if (k >= 1) arriveAt = -1;
     }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
     fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);kiosk?.update(t, dt);
+    // The kitchen's shadows are static; only the astronaut moves through them, so a few updates a second are enough.
+    if (design && ++frames % 4 === 0) design.key.shadow.needsUpdate = true;
     if (Math.abs(lastPose.x - camera.position.x) + Math.abs(lastPose.y - camera.position.z) + Math.abs(lastPose.z - yaw) + Math.abs(lastPose.w - pitch) > 1e-3 || inspecting) { stillSince = t; lastPose.set(camera.position.x, camera.position.z, yaw, pitch); }
     // What the crosshair rests on (captured pointer) or, on touch, the piece you stand in front of.
     if (ready && exhibits && time - hoverAt > 150) {
@@ -236,12 +241,19 @@ export async function mountModelRoom(root: HTMLElement) {
     if (ready && exhibits && !inspecting && time - captionAt > 250) {
       captionAt = time; const forward = camera.getWorldDirection(new THREE.Vector3()); caption(archive?.inView(camera.position, forward) ?? exhibits.inView(camera.position, forward));
     }
-    sound.frame(stepping, THREE.MathUtils.clamp(1 - (11.3 - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4));
+    sound.frame(stepping, THREE.MathUtils.clamp(1 - (WALK.door - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4));
     // The way back only opens once you have stepped clear of it (you arrive standing in it).
-    if (arriveAt < 0 && camera.position.z < 10.2) portalArmed = true;
+    if (arriveAt < 0 && camera.position.z < 10.2 + ROOM.shift) portalArmed = true;
     if (ready && portalArmed && !leaving && !inspecting && fx?.inPortal(camera.position)) leave();
-    if(composer)composer.render();else renderer!.render(scene, camera);frame = requestAnimationFrame(tick);
+    // Behind the open archive tablet the room is only a blur: a third of the frames is plenty there.
+    if (!(kiosk?.isOpen() && frames % 3)) { if(composer)composer.render();else renderer!.render(scene, camera); }
+    frame = requestAnimationFrame(tick);
   }
+  function fit() {
+    if (!renderer) return;const rect = $('stage').getBoundingClientRect();
+    renderer.setSize(rect.width, rect.height);composer?.setPixelRatio(renderer.getPixelRatio());composer?.setSize(rect.width, rect.height);fx?.resize(rect.width, rect.height);camera.aspect = rect.width / Math.max(1, rect.height);camera.fov = rect.width < 600 ? 62 : 52;camera.updateProjectionMatrix();
+  }
+  let frames = 0;
   function resume() { if (!frame && !disposed && !failed && !document.hidden) { last = performance.now();frame = requestAnimationFrame(tick); } }
   const timeout = setTimeout(() => download.abort(), 45000);
   try {
@@ -254,7 +266,7 @@ export async function mountModelRoom(root: HTMLElement) {
     const pmrem = new THREE.PMREMGenerator(renderer), room = new RoomEnvironment();
     environment = pmrem.fromScene(room, .04);scene.environment = environment.texture;scene.environmentIntensity = .45;room.dispose();pmrem.dispose();
     design=createModelRoomDesign(scene,coarse.matches);home();
-    fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches });
+    fx = createRoomFx({ scene, camera, renderer, mobile: coarse.matches, onPixelRatio: ratio => { renderer!.setPixelRatio(ratio); fit(); } });
     exhibits = createExhibits({
       scene, renderer, camera, mobile: coarse.matches, loader: gltfLoader, onReveal: () => sound.reveal(), target: () => composer?.readBuffer ?? null,
       onCue: cue => cue === 'engine' || cue === 'rev' ? sound.engine(cue === 'rev') : cue === 'eyes' ? sound.eyes() : sound.lights(cue === 'lights-on'),
@@ -265,7 +277,7 @@ export async function mountModelRoom(root: HTMLElement) {
       onReveal: () => { sound.reveal(); guide?.emote('curious', performance.now() / 1000); },
     });
     kiosk = createKiosk({
-      scene, camera, root, de, coarse: coarse.matches, at: new THREE.Vector3(-2.15, 0, 8.15), face: .35,
+      scene, camera, root, de, coarse: coarse.matches, at: new THREE.Vector3(-3, 0, 10.9), face: .5,
       onOpen: () => { keys.clear(); touchKeys.clear(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
       archive: {
         entries: modelArchive, activeId: () => archive?.activeId() ?? null,
@@ -282,7 +294,7 @@ export async function mountModelRoom(root: HTMLElement) {
         },
       },
     });
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, kiosk, select: (x: number, y: number) => select(x, y) };
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, kiosk, fx, get composer() { return composer; }, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
@@ -292,10 +304,7 @@ export async function mountModelRoom(root: HTMLElement) {
     orbit.minDistance = 1.2;orbit.maxDistance = 18;orbit.maxPolarAngle = Math.PI * .49;orbit.target.copy(target);
     // Reset the orientation after constructing OrbitControls, which calls update().
     look();
-    resize = new ResizeObserver(() => {
-      if (!renderer) return;const rect = $('stage').getBoundingClientRect();
-      renderer.setSize(rect.width, rect.height);composer?.setSize(rect.width, rect.height);fx?.resize(rect.width, rect.height);camera.aspect = rect.width / Math.max(1, rect.height);camera.fov = rect.width < 600 ? 62 : 52;camera.updateProjectionMatrix();
-    });resize.observe($('stage'));
+    resize = new ResizeObserver(fit);resize.observe($('stage'));
     canvas.addEventListener('webglcontextlost', event => { event.preventDefault();fail(); }, { signal });
     // Walking on a desk works like a game: a click captures the pointer, the mouse turns the head,
     // a further click inspects whatever the crosshair is on; Esc gives the pointer back.
@@ -410,7 +419,7 @@ export async function mountModelRoom(root: HTMLElement) {
       composer.render();
     }
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
-    if (!reduced) { camera.position.z = 11.1; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
+    if (!reduced) { camera.position.z = ARRIVE_Z; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.
     setTimeout(() => { if (!disposed) void exhibits?.load(); }, reduced ? 0 : 2600);
     resume();
