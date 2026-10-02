@@ -1,0 +1,34 @@
+{
+  "desktop": {
+    "sourceTriangles": 1693305,
+    "triangles": 236862,
+    "bytes": 2731396,
+    "displayDimensions": [
+      2.321728467941284,
+      3.5999999046325684,
+      1.1421563625335693
+    ],
+    "sourceBounds": [
+      1413.109619140625,
+      2191.123779296875,
+      695.1683349609375
+    ],
+    "materialNote": "PBR reconstruction from one black OBJ material; source texture assignments were not preserved."
+  },
+  "mobile": {
+    "sourceTriangles": 1693305,
+    "triangles": 113764,
+    "bytes": 1428816,
+    "displayDimensions": [
+      2.321728467941284,
+      3.5999999046325684,
+      1.1421563625335693
+    ],
+    "sourceBounds": [
+      1413.109619140625,
+      2191.123779296875,
+      695.1683349609375
+    ],
+    "materialNote": "PBR reconstruction from one black OBJ material; source texture assignments were not preserved."
+  }
+}

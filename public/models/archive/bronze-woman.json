@@ -1,0 +1,24 @@
+{
+  "desktop": {
+    "sourceTriangles": 204921,
+    "triangles": 112698,
+    "bytes": 1189460,
+    "displayDimensions": [
+      0.9119529724121094,
+      0.9361064434051514,
+      2.1500000953674316
+    ],
+    "materialNote": "Bronze PBR reconstruction using the supplied surface texture."
+  },
+  "mobile": {
+    "sourceTriangles": 204921,
+    "triangles": 47128,
+    "bytes": 438944,
+    "displayDimensions": [
+      0.9119529724121094,
+      0.9361064434051514,
+      2.1500000953674316
+    ],
+    "materialNote": "Bronze PBR reconstruction using the supplied surface texture."
+  }
+}

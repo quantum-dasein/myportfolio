@@ -99,9 +99,9 @@ over his helmet and in his visor colour. He stops if you stand in his way.
 If you stand still for 15 s while the astronaut waits on the sofa, he gets up, walks over (only along floor
 the colliders leave free), waves, and goes back to his seat.
 
-`model-room-secrets.ts` hides three golden mini astronauts: on the e-bike's wall mount, inside the house
-vitrine and behind K-2SO's feet. A click collects one; with all three, the wall safe by the lounge slides
-open onto a golden trophy and confetti falls.
+The personal gift has been retired: the mini astronauts, safe and secret portal are no longer
+mounted. The private `/gallery/night/` route and `public/models/night/` assets were moved to
+`artifacts/retired-gift/`, outside the build. The main museum guide remains.
 
 `scripts/model-room/fbx6.py` reads FBX 6.1 files (3ds Max, around 2010), which
 Blender's importer refuses. It reuses Blender's low-level FBX reader to rebuild
@@ -176,6 +176,80 @@ is used in the gallery.
 
 ## Verification
 
+### Selectable model archive
+
+The entrance terminal and the **Model archive** button open a searchable EN/DE
+catalogue. Available works are Gym equipment 03 and Pool 18. Selecting one downloads
+one GLB and reveals it inside the central portal at (1, 0, 5.9),
+and switches to orbit inspection. Reduced-motion visitors see it immediately.
+**Clear stage** removes it. The seven permanent exhibits keep their positions.
+
+- `src/data/model-archive.ts` holds catalogue metadata and desktop/mobile URLs.
+- `src/scripts/model-room-catalog.ts` owns the native modal, search, status,
+  cancellation and keyboard focus.
+- `src/scripts/model-room-archive.ts` owns the display, reveal, selection and
+  resource disposal. It keeps one current model and, during replacement, one
+  incoming model. A newer selection aborts the previous download; stale parsed
+  results are disposed before they can enter the scene.
+- `public/models/archive/` contains the prepared assets and conversion statistics.
+
+The catalogue loads image previews, not the whole 3D collection. Adding more
+entries requires preparing their assets first. The portal has a 4 m aperture.
+Large scenes are normalized to miniature scale before export; the pool measures
+2.32 × 3.60 × 1.14 m in display space. Colliders follow the active object.
+The astronaut takes the east aisle to avoid walking through the portal.
+
+`model-room-portal.ts` builds the floor rings, suspended scanner, instanced
+markers and reveal curtain. The cabinet floats 22 cm above the floor; the pool
+is raised 62 cm for a model-table view. The catalogue and tablet both use the
+room’s RB Space typeface. Reduced-motion mode stops scanner rotation, particles
+and the pool’s subtle water ripples.
+
+| Gym equipment 03 | Triangles | GLB bytes | Meshes |
+| --- | ---: | ---: | ---: |
+| Source FBX | 508,570 | — | 31 |
+| Desktop | 134,754 | 814,336 | 8 |
+| Mobile | 58,456 | 463,204 | 8 |
+
+The FBX contains no usable Corona texture links. Its wood image was reconnected,
+and rubber, metal, fabric and the other surfaces were rebuilt as web PBR
+materials. This is an interpretation of the supplied model's materials.
+Source files remain outside the public website.
+
+Rebuild with Blender (the source directory must contain `export/` and `maps/`):
+
+```powershell
+blender --background --factory-startup --python scripts/model-room/prepare-gym.py -- 'path/to/Gym equipment 03 - 3D Model'
+python -c "from PIL import Image; Image.open('artifacts/gym-equipment/gym-preview.png').resize((800,800), Image.Resampling.LANCZOS).save('public/models/archive/gym-equipment-03.webp', quality=86)"
+```
+
+Pool 18 is converted from the supplied OBJ (1,693,305 triangles). Its MTL
+contains only a black wire material, so surfaces were reconstructed using the
+supplied textures and named objects. OBJ units are unspecified; no real-world
+site dimensions are claimed. The current exports are 236,862 triangles /
+2,731,396 bytes on desktop and 113,764 triangles / 1,428,816 bytes on mobile.
+
+```powershell
+blender --background --factory-startup --python scripts/model-room/prepare-pool.py -- 'path/to/Pool 18'
+python -c "from PIL import Image; Image.open('artifacts/pool-18/pool-preview.png').resize((800,800), Image.Resampling.LANCZOS).save('public/models/archive/pool-18.webp', quality=86)"
+```
+
+Run the archive browser check against a running local site (installed Edge):
+
+```powershell
+$env:TEST_SITE_URL='http://127.0.0.1:4344'
+node scripts/check-model-archive.mjs
+```
+
+It covers lazy loading, search, modal focus, inspection, wireframe, repeated
+load/dispose, failed downloads and retry, cancellation, the mobile asset, and
+the animated reveal. Screenshots and results go to
+`artifacts/model-archive-check/`. GPU geometry and texture counts are checked
+after three load/remove cycles; this is not a performance benchmark for a
+fully populated archive.
+
+### Full site and original room checks
+
 ```powershell
 $env:ASTRO_TELEMETRY_DISABLED='1'
 npm run verify
@@ -193,3 +267,21 @@ model download. Screenshots and a report are written to
 Before this change, existing edited sources and a Git diff were copied into
 `artifacts/model-portal-backup/`. These are inspection snapshots, not a command
 to overwrite later work. No deployment is part of these scripts.
+
+### Additional archive models and contact
+
+Bronze woman: 112,698 triangles / 1,189,460 bytes desktop; 47,128 / 438,944 mobile.
+Three waterfall fountains: 202,761 triangles / 1,393,632 bytes desktop; 82,854 / 678,884 mobile.
+The fountains OBJ contains the three fountains and water geometry, not the Corona Scatter
+vegetation shown in source settings. Both models use reconstructed web PBR materials.
+`prepare-additions.py -- bronze|fountains SOURCE` produces GLBs and PNG previews; encode
+those previews as WebP in `public/models/archive/`.
+
+The portal's outer hardware has a 2.34 m conservative radius. It clears the SVJ's
+2.75 m turntable by 1.24 m. The kiosk is at (-2.15, 0, 8.15), outside both display
+areas. The suspended scanner fades after the reveal to keep the work visible.
+
+The catalogue links to `/contact/?project=modeling` or `/de/kontakt/?project=modeling`.
+The form offers custom 3D modeling in both languages and reads the existing project parameter.
+Run `node scripts/check-model-additions.mjs` against port 4337 (or `TEST_SITE_URL`) for
+new-model desktop/mobile loading, clearance, form preselection and removal of the private route.

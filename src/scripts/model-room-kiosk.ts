@@ -1,9 +1,10 @@
 // The archive terminal by the entrance: a waist-high screen on a post, like the info points in games.
 // It wakes as you come close, counts up to the number of models Rodion has built, and draws them as a
 // field of a thousand dots in which the seven standing in this room glow. Clicked (or tapped), it opens
-// a panel about the rest of the archive with a way to ask for any of it.
+// the searchable archive, where a selected work appears on the room's display stage.
 import * as THREE from 'three';
 import { projectFacts } from '../data/projectFacts';
+import { createArchiveCatalog, type ArchiveCatalogOptions } from './model-room-catalog';
 
 const CATEGORIES = {
   en: ['INTERIORS', 'VEHICLES', 'CHARACTERS', 'ARCHITECTURE', 'FURNITURE', 'PRODUCT', 'LIGHTING'],
@@ -11,8 +12,9 @@ const CATEGORIES = {
 };
 const HERE = 7;   // pieces in the room: kitchen, SVJ, K-2SO, e-bike, house, lounge, hanging garden
 
-export function createKiosk(o: { scene: THREE.Scene; camera: THREE.Camera; root: HTMLElement; de: () => boolean; coarse: boolean; at: THREE.Vector3; face: number; onOpen?: () => void; onClose?: () => void }) {
+export function createKiosk(o: { scene: THREE.Scene; camera: THREE.Camera; root: HTMLElement; de: () => boolean; coarse: boolean; at: THREE.Vector3; face: number; onOpen?: () => void; onClose?: () => void; archive: ArchiveCatalogOptions }) {
   const { scene, camera } = o;
+  const font = getComputedStyle(o.root).fontFamily;
   const disposables: { dispose: () => void }[] = [];
   const own = <T extends { dispose: () => void }>(x: T) => { disposables.push(x); return x; };
   const group = new THREE.Group(); group.position.copy(o.at); group.rotation.y = o.face; scene.add(group);
@@ -45,11 +47,11 @@ export function createKiosk(o: { scene: THREE.Scene; camera: THREE.Camera; root:
     const de = o.de(), lit = count / 1000;
     x.fillStyle = '#050e0b'; x.fillRect(0, 0, 512, 512);
     x.strokeStyle = `rgba(120,255,190,${.25 + .35 * wake})`; x.lineWidth = 3; x.strokeRect(10, 10, 492, 492);
-    x.fillStyle = `rgba(150,255,205,${.5 + .4 * wake})`; x.font = '500 19px ui-monospace, monospace'; x.textAlign = 'left';
+    x.fillStyle = `rgba(150,255,205,${.5 + .4 * wake})`; x.font = `500 19px ${font}`; x.textAlign = 'left';
     x.fillText(de ? 'DAS ARCHIV HINTER DEM RAUM' : 'THE ARCHIVE BEHIND THE ROOM', 34, 52);
     const done = count >= 1000, figure = done ? (de ? projectFacts.modelsBuilt.de ?? projectFacts.modelsBuilt.value : projectFacts.modelsBuilt.value) : String(Math.floor(count));
-    x.fillStyle = '#f2fff8'; x.font = '500 104px system-ui, sans-serif'; x.fillText(figure, 30, 158);
-    x.fillStyle = 'rgba(220,245,232,.8)'; x.font = '400 24px system-ui, sans-serif';
+    x.fillStyle = '#f2fff8'; x.font = `500 104px ${font}`; x.fillText(figure, 30, 158);
+    x.fillStyle = 'rgba(220,245,232,.8)'; x.font = `400 24px ${font}`;
     x.fillText(de ? 'Modelle, von Hand gebaut' : 'models, built by hand', 34, 196);
     // The field.
     const cols = 50, gx = 40, gy = 232, step = 8.8;
@@ -65,49 +67,21 @@ export function createKiosk(o: { scene: THREE.Scene; camera: THREE.Camera; root:
     }
     // The categories, one after another.
     const cats = CATEGORIES[de ? 'de' : 'en'], k = Math.floor(t / 1.6) % cats.length;
-    x.fillStyle = 'rgba(150,255,205,.85)'; x.font = '500 19px ui-monospace, monospace';
+    x.fillStyle = 'rgba(150,255,205,.85)'; x.font = `500 19px ${font}`;
     x.fillText(`${String(k + 1).padStart(2, '0')} / ${cats[k]}`, 34, 438);
-    x.fillStyle = `rgba(242,255,248,${.55 + .45 * Math.sin(t * 2.4) ** 2})`; x.font = '500 21px system-ui, sans-serif';
-    x.fillText(`${HERE} ${de ? 'hier' : 'here'}  ·  ${o.coarse ? (de ? 'antippen' : 'tap') : (de ? 'anklicken' : 'click')} ${de ? 'für den Rest' : 'for the rest'} →`, 34, 478);
+    x.fillStyle = `rgba(242,255,248,${.55 + .45 * Math.sin(t * 2.4) ** 2})`; x.font = `500 21px ${font}`;
+    x.fillText(de ? 'Beispiele & Modelle nach Maß →' : 'Examples & custom 3D models →', 34, 478);
     tex.needsUpdate = true;
   }
 
-  // The panel about the rest of the archive.
-  let panel: HTMLElement | null = null;
-  function close() {
-    if (!panel) return; const p = panel; panel = null;
-    p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in' }).finished.then(() => p.remove(), () => p.remove());
-    o.onClose?.();
-  }
-  function open() {
-    if (panel) return;
-    const de = o.de();
-    panel = document.createElement('div'); panel.className = 'mr-kiosk'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true');
-    const figure = de ? projectFacts.modelsBuilt.de ?? projectFacts.modelsBuilt.value : projectFacts.modelsBuilt.value;
-    panel.innerHTML = `<div class="mr-kiosk-card">
-      <p class="mr-kiosk-kicker">${de ? 'Das Archiv hinter dem Raum' : 'The archive behind the room'}</p>
-      <h2>${figure} ${de ? 'Modelle' : 'models'}</h2>
-      <p>${de
-        ? 'Küchen und Interieurs, Autos, Figuren, Häuser, Möbel und Produkte, über die Jahre von Hand gebaut. Sieben davon stehen in diesem Raum; alle hier zu zeigen, würde jede Website in die Knie zwingen. Wenn Sie eines davon brauchen oder ein neues, fragen Sie.'
-        : 'Kitchens and interiors, cars, characters, houses, furniture and products, built by hand over the years. Seven of them stand in this room; showing them all would bring any website to its knees. If you need one of them, or a new one, ask.'}</p>
-      <ul>${CATEGORIES[de ? 'de' : 'en'].map(c => `<li>${c.charAt(0) + c.slice(1).toLowerCase()}</li>`).join('')}</ul>
-      <div class="mr-kiosk-actions"><a class="mr-kiosk-cta" href="${de ? '/de/kontakt/' : '/contact/'}">${de ? 'Modell anfragen' : 'Ask for a model'} <span aria-hidden="true">↗</span></a><button type="button" data-kiosk-close>${de ? 'Zurück in den Raum' : 'Back to the room'}</button></div>
-    </div>`;
-    panel.addEventListener('click', event => { if (event.target === panel || (event.target as HTMLElement).closest('[data-kiosk-close]')) close(); });
-    panel.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
-    o.root.append(panel);
-    panel.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' });
-    panel.querySelector<HTMLElement>('.mr-kiosk-cta')?.focus({ preventScroll: true });
-    o.onOpen?.();
-  }
+  const catalog = createArchiveCatalog({ ...o.archive, root: o.root, de: o.de, onOpen: o.onOpen, onClose: o.onClose });
 
-  const tmp = new THREE.Vector3();
   return {
     targets: [head, screen] as THREE.Object3D[],
     collider: new THREE.Box3(new THREE.Vector3(o.at.x - .32, 0, o.at.z - .32), new THREE.Vector3(o.at.x + .32, 1.4, o.at.z + .32)),
-    open, close, isOpen: () => Boolean(panel),
+    open: catalog.open, close: catalog.close, isOpen: catalog.isOpen,
     update(t: number, dt: number) {
-      const d = tmp.copy(camera.position).setY(0).distanceTo(tmp.set(o.at.x, 0, o.at.z));
+      const d = Math.hypot(camera.position.x - o.at.x, camera.position.z - o.at.z);
       const near = d < 3.2, far = d > 7;
       wake += ((near ? 1 : .25) - wake) * Math.min(1, dt * 2.5);
       // Close by, the count runs up (once per approach); far away the screen sleeps and resets.
@@ -118,6 +92,6 @@ export function createKiosk(o: { scene: THREE.Scene; camera: THREE.Camera; root:
       // Redraw at ~15 fps: the screen is text and dots, not a video.
       if (t - drawnAt > 1 / 15) { drawnAt = t; draw(t); }
     },
-    dispose() { panel?.remove(); disposables.forEach(d => d.dispose()); scene.remove(group); },
+    dispose() { catalog.dispose(); disposables.forEach(d => d.dispose()); scene.remove(group); },
   };
 }

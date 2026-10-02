@@ -1,0 +1,24 @@
+{
+  "desktop": {
+    "sourceTriangles": 3475267,
+    "triangles": 202761,
+    "bytes": 1393632,
+    "displayDimensions": [
+      3.6499998569488525,
+      1.1548899412155151,
+      0.4484858214855194
+    ],
+    "materialNote": "PBR reconstruction from supplied geometry and textures. Corona scatter is not present in OBJ."
+  },
+  "mobile": {
+    "sourceTriangles": 3475267,
+    "triangles": 82854,
+    "bytes": 678884,
+    "displayDimensions": [
+      3.6499998569488525,
+      1.1548899412155151,
+      0.4484858214855194
+    ],
+    "materialNote": "PBR reconstruction from supplied geometry and textures. Corona scatter is not present in OBJ."
+  }
+}

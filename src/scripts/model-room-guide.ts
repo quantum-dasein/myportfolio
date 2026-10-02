@@ -25,7 +25,7 @@ type Stop = { id: string; path: THREE.Vector3[]; look: THREE.Vector3; beats: Bea
 const STOPS: Stop[] = [
   {
     // The SVJ on its turntable: he stops in awe, gets down to the wheel, then declares his love.
-    id: 'svj', path: [V(.7, 0, 7.4), V(-1.15, 0, 4.9)], look: V(-4.4, .6, 2.6), leave: 7.2,
+    id: 'svj', path: [V(-3.1, 0, 9.1), V(-3.1, 0, 7.1), V(-1.8, 0, 5.5)], look: V(-4.4, .6, 2.6), leave: 7.2,
     beats: [
       { at: .2, emote: 'wow' },
       { at: 1.1, pose: { sit: .42 }, hold: 2.8, look: V(-2.6, .35, 3.4) },         // down to look at a wheel as it comes round
@@ -33,7 +33,7 @@ const STOPS: Stop[] = [
     ],
   },
   {
-    id: 'kitchen', path: [V(.8, 0, .35)], look: V(0, 1.4, -3.4), leave: 6.4,
+    id: 'kitchen', path: [V(-1.3, 0, 3.6), V(.8, 0, 2.5), V(.8, 0, .35)], look: V(0, 1.4, -3.4), leave: 6.4,
     beats: [
       { at: .2, emote: 'curious', look: V(-.6, 2.3, -3.8) },                     // up at the cabinets
       { at: 1.8, pose: { tablet: 1 }, hold: 2.2, look: V(0, 1.3, -3.4) },         // a photo for later
@@ -69,7 +69,7 @@ const STOPS: Stop[] = [
     ],
   },
 ];
-const TO_SOFA = [V(2.4, 0, 7.3), V(-1.4, 0, 8.1)];
+const TO_SOFA = [V(4.2, 0, 8.9), V(-1.4, 0, 9.2)];
 export function bubble(kind: Emote) {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d')!;
   // A hologram speech bubble: dark glass, a mint outline, a little tail.

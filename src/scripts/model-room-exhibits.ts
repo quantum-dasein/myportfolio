@@ -10,7 +10,7 @@ type Lang = { en: string; de: string };
 export type ExhibitInfo = {
   id: string; no: string; kind: Lang; title: string; sub: Lang; text: Lang;
   /** What the inspection orbit looks at, and from how far. */
-  focus: THREE.Vector3; distance: number;
+  focus: THREE.Vector3; distance: number; elevation?: number;
 };
 
 export const KITCHEN: ExhibitInfo = {

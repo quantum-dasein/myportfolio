@@ -1,0 +1,26 @@
+{
+  "desktop": {
+    "sourceTriangles": 508570,
+    "triangles": 134754,
+    "drawMeshes": 8,
+    "dimensionsMetres": [
+      2.0000014305114746,
+      0.7427332997322083,
+      2.0000014305114746
+    ],
+    "bytes": 814336,
+    "materialNote": "PBR interpretation; source FBX contains no texture links. Original wood image reconnected; other surfaces use semantic PBR materials."
+  },
+  "mobile": {
+    "sourceTriangles": 508570,
+    "triangles": 58456,
+    "drawMeshes": 8,
+    "dimensionsMetres": [
+      2.000000476837158,
+      0.7427454590797424,
+      2.0000014305114746
+    ],
+    "bytes": 463204,
+    "materialNote": "PBR interpretation; source FBX contains no texture links. Original wood image reconnected; other surfaces use semantic PBR materials."
+  }
+}
