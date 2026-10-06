@@ -1,0 +1,24 @@
+{
+  "desktop": {
+    "sourceTriangles": 100381,
+    "triangles": 94519,
+    "bytes": 689968,
+    "dimensionsMetres": [
+      2.81394100189209,
+      0.5101071000099182,
+      3.0000038146972656
+    ],
+    "materialNote": "MTL colours kept; plush rebuilt with sheen, lacquers with clear coat; books and posters keep their images."
+  },
+  "mobile": {
+    "sourceTriangles": 100381,
+    "triangles": 63181,
+    "bytes": 519120,
+    "dimensionsMetres": [
+      2.81394100189209,
+      0.5101071000099182,
+      3.0000038146972656
+    ],
+    "materialNote": "MTL colours kept; plush rebuilt with sheen, lacquers with clear coat; books and posters keep their images."
+  }
+}

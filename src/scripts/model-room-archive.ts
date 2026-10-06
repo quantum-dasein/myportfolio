@@ -29,7 +29,7 @@ export function createArchiveBay(o: {
   const key = new THREE.SpotLight('#ffe9cf', 0, 16, .46, .75, 1.6); key.position.set(at.x - 4, 6.2, at.z - 1.2); key.target.position.set(at.x, .9, at.z);
   key.castShadow = !o.mobile; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -.0003; key.shadow.normalBias = .012; key.shadow.radius = 4;
   key.shadow.camera.near = 3; key.shadow.camera.far = 14; key.shadow.autoUpdate = false; key.shadow.intensity = 0;
-  const kicker = new THREE.PointLight('#9fd8ff', 0, 9, 1.8); kicker.position.set(at.x + 2.8, 3, at.z + 3.2);
+  const kicker = new THREE.PointLight('#cfe6ff', 0, 11, 1.6); kicker.position.set(at.x + 2.8, 3, at.z + 3.2);
   o.scene.add(key, key.target, kicker);
   let lit = 0, shadowAt = -1;
   // What the work stands on: a dark stone base cut to its footprint, with a line of light round the top.
@@ -187,7 +187,7 @@ export function createArchiveBay(o: {
       waterTime.value = o.reduced ? 0 : t;
       // The stage lights come up with the work and go down when it leaves; its shadows fade in once it stands.
       const want = current && state !== 'removing' ? 1 : 0;
-      lit += (want - lit) * Math.min(1, dt * 2.2); key.intensity = 120 * lit; kicker.intensity = 9 * lit;
+      lit += (want - lit) * Math.min(1, dt * 2.2); key.intensity = 120 * lit; kicker.intensity = 16 * lit;
       if (base) base.scale.y += ((state === 'removing' ? .001 : 1) - base.scale.y) * Math.min(1, dt * 5);
       if (state === 'shown' && shadowAt < 0) { shadowAt = t; key.shadow.needsUpdate = true; }
       if (state !== 'shown') { shadowAt = -1; key.shadow.intensity = Math.max(0, key.shadow.intensity - dt * 4); }

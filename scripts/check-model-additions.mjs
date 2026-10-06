@@ -18,7 +18,7 @@ try {
    assert(placement.svjGap>3.5);report.push(placement);await p.waitForTimeout(200);await p.screenshot({path:'artifacts/new-models/room-plan.png'});
   }
   for(const id of ['bronze-woman','waterfall-fountains']){
-   await p.getByRole('button',{name:'Model archive',exact:true}).click();assert.equal(await p.locator('[data-catalog-show]').count(),8);
+   await p.getByRole('button',{name:'Model archive',exact:true}).click();assert.equal(await p.locator('[data-catalog-show]').count(),9);
    assert.equal(await p.locator('[data-catalog-enquire]').getAttribute('href'),'/contact/?project=modeling');
    await p.locator(`[data-catalog-show="${id}"]`).click();await p.waitForFunction(id=>window.__mr.archive.activeId()===id,id,{timeout:30000});await p.getByRole('dialog').waitFor({state:'hidden'});
    assert(await p.evaluate(()=>window.__mr.archive.meshes.every(m=>m.geometry.attributes.position.count>0)));

@@ -77,6 +77,15 @@ export const modelArchive: ArchiveModel[] = [{
   preview: '/models/archive/bedroom-wardrobe-3.webp',
   src: '/models/archive/bedroom-wardrobe-3.glb', mobileSrc: '/models/archive/bedroom-wardrobe-3.mobile.glb',
   dimensions: 'Architectural miniature', height: 2.35, distance: 5.5,
+}, {
+  id: 'kids-room-8', no: '017', title: "Children's room wall", category: 'objects',
+  description: {
+    en: 'A built-in wardrobe for a children’s room with a lit shelf of plush toys, books and posters: a unicorn, giraffes, an elephant, a penguin, a sloth and a monkey.',
+    de: 'Ein Einbauschrank fürs Kinderzimmer mit beleuchtetem Regal voller Plüschtiere, Bücher und Poster: Einhorn, Giraffen, Elefant, Pinguin, Faultier und Affe.',
+  },
+  preview: '/models/archive/kids-room-8.webp',
+  src: '/models/archive/kids-room-8.glb', mobileSrc: '/models/archive/kids-room-8.mobile.glb',
+  dimensions: '2.81 × 0.51 × 3.00 m', height: 3, distance: 6.2,
 }];
 
 export function archiveDimensions(entry: ArchiveModel, de: boolean) {
