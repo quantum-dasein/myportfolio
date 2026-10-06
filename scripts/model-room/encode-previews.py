@@ -1,12 +1,15 @@
 """Trim each rendered preview to its subject, centre it on a 4:3 transparent canvas and write WebP.
 
-    python scripts/model-room/encode-previews.py
+    python scripts/model-room/encode-previews.py [id ...]
 """
 from pathlib import Path
+import sys
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 for png in sorted((ROOT / 'artifacts/archive-previews').glob('*.png')):
+    if sys.argv[1:] and png.stem not in sys.argv[1:]:
+        continue
     im = Image.open(png).convert('RGBA')
     # The subject (not its soft shadow) decides the crop: alpha above a third.
     box = im.getchannel('A').point(lambda a: 255 if a > 90 else 0).getbbox()

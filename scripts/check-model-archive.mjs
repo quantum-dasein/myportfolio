@@ -40,7 +40,7 @@ try{
  await p.getByRole('button',{name:'Wireframe',exact:true}).click();
  await p.waitForFunction(()=>window.__mr.exhibits.shown('plant'),{timeout:90000});
  await p.getByRole('button',{name:'Model archive',exact:true}).click();
- assert.equal(await p.locator('[data-catalog-show]').count(),5);
+ assert.equal(await p.locator('[data-catalog-show]').count(),8);
  assert.equal(await p.locator('.mr-catalog').evaluate(e=>getComputedStyle(e).fontFamily),await p.locator('[data-model-room]').evaluate(e=>getComputedStyle(e).fontFamily));
  await pool.click();await p.waitForFunction(()=>window.__mr.archive.activeId()==='pool-18');await p.getByRole('dialog').waitFor({state:'hidden'});
  assert(await p.evaluate(()=>{const b=window.__mr.archive.colliders[0];return b.min.x<0&&b.max.x>0&&b.min.z<8&&b.max.z>8}),'The selected work occupies the central portal');

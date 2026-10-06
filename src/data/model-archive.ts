@@ -1,6 +1,6 @@
 /** Only publish entries whose web assets have been prepared and checked. GLBs are fetched on selection. */
 export type ArchiveModel = {
-  id: string; no: string; title: string; category: 'equipment' | 'architecture' | 'sculpture';
+  id: string; no: string; title: string; category: 'equipment' | 'architecture' | 'sculpture' | 'people' | 'objects';
   description: { en: string; de: string }; preview: string; src: string; mobileSrc: string;
   dimensions: string; height: number; distance: number; lift?: number; elevation?: number; yaw?: number;
 };
@@ -50,8 +50,35 @@ export const modelArchive: ArchiveModel[] = [{
   preview: '/models/archive/winter-sports.webp',
   src: '/models/archive/winter-sports.glb', mobileSrc: '/models/archive/winter-sports.mobile.glb',
   dimensions: '2.00 × 0.39 × 1.89 m', height: 1.89, distance: 5.2,
+}, {
+  id: 'soft-toys-2', no: '014', title: 'Soft toys 2', category: 'objects',
+  description: {
+    en: 'A plush panda, horse and hippopotamus, each in two poses, with fabric surfaces and stitched details.',
+    de: 'Panda, Pferd und Nilpferd aus Plüsch, jeweils in zwei Posen, mit Stoffoberflächen und Nahtdetails.',
+  },
+  preview: '/models/archive/soft-toys-2.webp',
+  src: '/models/archive/soft-toys-2.glb', mobileSrc: '/models/archive/soft-toys-2.mobile.glb',
+  dimensions: 'Toy collection', height: 1.3124, distance: 5.6, elevation: .65,
+}, {
+  id: 'citizen-eco-drive', no: '015', title: 'Citizen Eco-Drive', category: 'objects',
+  description: {
+    en: 'A detailed wristwatch with a blue chronograph dial, a linked metal bracelet and a transparent crystal, enlarged for inspection.',
+    de: 'Eine detaillierte Armbanduhr mit blauem Chronographenzifferblatt, Metallgliederarmband und transparentem Uhrglas, zur Betrachtung vergrößert.',
+  },
+  preview: '/models/archive/citizen-eco-drive.webp',
+  src: '/models/archive/citizen-eco-drive.glb', mobileSrc: '/models/archive/citizen-eco-drive.mobile.glb',
+  dimensions: 'Enlarged watch study', height: 2.2, distance: 5.5, elevation: .5,
+}, {
+  id: 'bedroom-wardrobe-3', no: '016', title: 'Bedroom wardrobe 3', category: 'architecture',
+  description: {
+    en: 'A bedroom wardrobe with hanging clothes, shelves, drawers, handbags and small accessories, presented as an interior miniature.',
+    de: 'Ein Schlafzimmerschrank mit hängender Kleidung, Regalböden, Schubladen, Handtaschen und kleinen Accessoires als Interieurminiatur.',
+  },
+  preview: '/models/archive/bedroom-wardrobe-3.webp',
+  src: '/models/archive/bedroom-wardrobe-3.glb', mobileSrc: '/models/archive/bedroom-wardrobe-3.mobile.glb',
+  dimensions: 'Architectural miniature', height: 2.35, distance: 5.5,
 }];
 
 export function archiveDimensions(entry: ArchiveModel, de: boolean) {
-  return de ? ({ 'Architectural miniature': 'Architekturminiatur', 'Sculpture study': 'Skulpturenstudie' }[entry.dimensions] ?? entry.dimensions) : entry.dimensions;
+  return de ? ({ 'Architectural miniature': 'Architekturminiatur', 'Sculpture study': 'Skulpturenstudie', 'Toy collection': 'Plüschtierkollektion', 'Enlarged watch study': 'Vergrößerte Uhrenstudie' }[entry.dimensions] ?? entry.dimensions) : entry.dimensions;
 }

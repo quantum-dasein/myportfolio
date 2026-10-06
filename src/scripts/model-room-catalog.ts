@@ -9,6 +9,7 @@ export type ArchiveCatalogOptions = {
 
 const CATEGORY: Record<ArchiveModel['category'], [string, string]> = {
   architecture: ['Architecture', 'Architektur'], equipment: ['Equipment', 'Ausstattung'], sculpture: ['Sculpture', 'Skulptur'],
+  people: ['People', 'Menschen'], objects: ['Objects', 'Objekte'],
 };
 
 /**

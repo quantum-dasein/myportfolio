@@ -1,0 +1,24 @@
+{
+  "desktop": {
+    "sourceTriangles": 2089642,
+    "triangles": 463025,
+    "bytes": 5805532,
+    "displayDimensions": [
+      2.164402484893799,
+      1.6326881647109985,
+      2.3500001430511475
+    ],
+    "materialNote": "Web PBR reconstruction using supplied material names, UVs and texture maps."
+  },
+  "mobile": {
+    "sourceTriangles": 2089642,
+    "triangles": 242148,
+    "bytes": 4260036,
+    "displayDimensions": [
+      2.164402484893799,
+      1.6326881647109985,
+      2.3500001430511475
+    ],
+    "materialNote": "Web PBR reconstruction using supplied material names, UVs and texture maps."
+  }
+}

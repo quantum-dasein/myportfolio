@@ -297,7 +297,9 @@ export async function mountModelRoom(root: HTMLElement) {
     if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, kiosk, fx, get composer() { return composer; }, select: (x: number, y: number) => select(x, y) };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
-    composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
+    // The composer's own buffer is multisampled: without it the post chain throws away the canvas's antialiasing
+    // and every edge stairs (worst on phones, which also render below their screen's resolution).
+    composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:4}));composer.addPass(new RenderPass(scene,camera));
     bloom=new UnrealBloomPass(new THREE.Vector2(1,1),.32,.5,1.05);composer.addPass(bloom);composer.addPass(new OutputPass());
     { const r = $('stage').getBoundingClientRect(); fx.extendComposer(composer, Math.max(1, r.width), Math.max(1, r.height)); }
     orbit = new OrbitControls(camera, canvas);orbit.enabled = false;orbit.enableDamping = false;orbit.enablePan = false;
@@ -305,7 +307,15 @@ export async function mountModelRoom(root: HTMLElement) {
     // Reset the orientation after constructing OrbitControls, which calls update().
     look();
     resize = new ResizeObserver(fit);resize.observe($('stage'));
-    canvas.addEventListener('webglcontextlost', event => { event.preventDefault();fail(); }, { signal });
+    // Phones drop the GPU context when memory runs short or the tab sleeps. Ask for it back and rebuild
+    // the room from scratch (a reload keeps every resource consistent); only give up if it never returns.
+    let restoreTimer = 0;
+    canvas.addEventListener('webglcontextlost', event => {
+      event.preventDefault(); stop();
+      $('loading').hidden = false; $('status').textContent = de() ? 'Der Raum wird wiederhergestellt…' : 'Restoring the room…';
+      restoreTimer = window.setTimeout(fail, 6000);
+    }, { signal });
+    canvas.addEventListener('webglcontextrestored', () => { clearTimeout(restoreTimer); location.reload(); }, { signal });
     // Walking on a desk works like a game: a click captures the pointer, the mouse turns the head,
     // a further click inspects whatever the crosshair is on; Esc gives the pointer back.
     const cross = document.createElement('div'); cross.className = 'mr-cross'; root.append(cross);

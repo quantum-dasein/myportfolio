@@ -18,7 +18,7 @@ try {
    assert(placement.svjGap>3.5);report.push(placement);await p.waitForTimeout(200);await p.screenshot({path:'artifacts/new-models/room-plan.png'});
   }
   for(const id of ['bronze-woman','waterfall-fountains']){
-   await p.getByRole('button',{name:'Model archive',exact:true}).click();assert.equal(await p.locator('[data-catalog-show]').count(),5);
+   await p.getByRole('button',{name:'Model archive',exact:true}).click();assert.equal(await p.locator('[data-catalog-show]').count(),8);
    assert.equal(await p.locator('[data-catalog-enquire]').getAttribute('href'),'/contact/?project=modeling');
    await p.locator(`[data-catalog-show="${id}"]`).click();await p.waitForFunction(id=>window.__mr.archive.activeId()===id,id,{timeout:30000});await p.getByRole('dialog').waitFor({state:'hidden'});
    assert(await p.evaluate(()=>window.__mr.archive.meshes.every(m=>m.geometry.attributes.position.count>0)));
@@ -34,6 +34,6 @@ try {
  }
  const res=await p.goto(base+'/gallery/night/');assert.equal(res.status(),404);
  const asset=await p.request.get(base+'/models/night/lida.glb');assert.equal(asset.status(),404);
- assert.deepEqual(errors,[]);await writeFile('artifacts/new-models/additions-report.json',JSON.stringify({report,errors,checks:'Both new models on desktop/mobile; 4 entries; EN/DE contact preselection; removed gift route/assets; portal gap'},null,2));
+ assert.deepEqual(errors,[]);await writeFile('artifacts/new-models/additions-report.json',JSON.stringify({report,errors,checks:'Both new models on desktop/mobile; 9 entries; EN/DE contact preselection; removed gift route/assets; portal gap'},null,2));
  console.log('ADDITIONS PASSED',JSON.stringify(report));
 }finally{await browser.close()}

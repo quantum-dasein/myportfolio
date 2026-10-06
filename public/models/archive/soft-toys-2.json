@@ -1,0 +1,24 @@
+{
+  "desktop": {
+    "sourceTriangles": 164592,
+    "triangles": 164592,
+    "bytes": 686680,
+    "displayDimensions": [
+      2.662398099899292,
+      3.0999999046325684,
+      1.3123793601989746
+    ],
+    "materials": "Plush PBR reconstruction from supplied fabric maps; OBJ omits source multi-material assignments"
+  },
+  "mobile": {
+    "sourceTriangles": 164592,
+    "triangles": 103569,
+    "bytes": 467016,
+    "displayDimensions": [
+      2.662398099899292,
+      3.0999999046325684,
+      1.3123793601989746
+    ],
+    "materials": "Plush PBR reconstruction from supplied fabric maps; OBJ omits source multi-material assignments"
+  }
+}

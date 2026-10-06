@@ -52,6 +52,46 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .model-room.is-locked .mr-stage canvas{cursor:none}
 .model-room.is-locked .mr-controls{opacity:.35;transition:opacity .3s}
 
+/* ── Touch and phones ──────────────────────────────────────────────────────────────────────────────────
+   The room is an app, not a document: pressing and holding a control must not select or copy its label,
+   show the callout or zoom the page (double-tap). Only the search field takes text. */
+.model-room,.mr-catalog{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.model-room input,.mr-catalog input{-webkit-user-select:text;user-select:text}
+.model-room button,.model-room a,.mr-catalog button,.mr-catalog a{touch-action:manipulation}
+.model-room img{-webkit-user-drag:none;pointer-events:none}
+/* The model archive is the room's front door to commissions: it reads as the primary control. */
+.model-room .mr-controls [data-mr-archive]{order:-1;color:#04160d;background:linear-gradient(180deg,#dcfbe9,#9ff0c4);border-color:#dcfbe9;box-shadow:0 8px 22px -10px #6fe8a8}
+.model-room .mr-controls [data-mr-archive]:hover{background:linear-gradient(180deg,#fff,#b8f7d4)}
+.model-room .mr-controls .mr-mode{order:-2}
+@media(max-width:600px){
+  /* One slim strip of controls under the site header that scrolls sideways, the title out of the way,
+     the caption and the walking pad at the bottom: the middle of the screen belongs to the model. */
+  .model-room .mr-header{top:70px}
+  .model-room .mr-back{font-size:11px;gap:8px}.model-room .mr-back>span:first-child{font-size:18px}
+  .model-room[data-state="ready"] .mr-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .model-room .mr-controls{top:100px;left:0;right:0;max-width:none;padding:2px 5.5% 8px;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 92%,transparent)}
+  .model-room .mr-controls::-webkit-scrollbar{display:none}
+  .model-room .mr-controls>*{flex:none}
+  .model-room .mr-controls button{min-height:36px;padding:8px 13px;font-size:11.5px;white-space:nowrap}
+  .model-room .mr-mode button{min-height:32px}
+  .model-room .mr-zoom button{min-width:36px;padding:0}
+  .model-room .mr-caption{bottom:calc(env(safe-area-inset-bottom) + 62px);padding-top:12px;display:block}
+  .model-room .mr-caption h2{font-size:22px;margin:6px 0 0}.model-room .mr-caption h2>span{margin-top:5px}
+  .model-room .mr-caption-detail{display:none}
+  .model-room .mr-hint{display:none}
+  .model-room .mr-touch{left:auto;right:5.5%;bottom:calc(env(safe-area-inset-bottom) + 168px);grid-template-columns:repeat(3,42px);gap:4px}
+  .model-room .mr-touch button{width:42px;min-height:42px;font-size:19px;background:#0b151bcc}
+}
+@media(max-width:600px) and (max-height:700px){.model-room .mr-caption h2{font-size:19px}.model-room .mr-touch{bottom:calc(env(safe-area-inset-bottom) + 140px)}}
+/* Landscape phones: everything tighter still. */
+@media(max-height:500px) and (pointer:coarse){
+  .model-room .mr-header{top:52px}.model-room[data-state="ready"] .mr-title{display:none}
+  .model-room .mr-controls{top:78px;left:5%;right:5%;max-width:none;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
+  .model-room .mr-controls>*{flex:none}.model-room .mr-controls button{min-height:34px;padding:7px 12px;font-size:11px;white-space:nowrap}
+  .model-room .mr-caption{bottom:14px}.model-room .mr-caption h2{font-size:18px}.model-room .mr-caption-detail,.model-room .mr-hint{display:none}
+  .model-room .mr-touch{left:auto;right:5%;bottom:16px}
+}
+
 /* The archive terminal's panel: dark glass, a mint hairline, one clear way forward. */
 .mr-kiosk{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:24px;background:rgba(2,8,6,.62)}
 .mr-kiosk-card{width:min(560px,100%);padding:clamp(24px,4vw,40px);border:1px solid rgba(130,255,195,.32);border-radius:20px;background:#08110e;color:#eef7f2;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 60px rgba(80,220,150,.08)}

@@ -64,20 +64,50 @@ export function createArchiveBay(o: {
     m.wireframe = o.wireframe();
     // A little more of the room in every surface; water that glows like a lit pool at dusk.
     m.envMapIntensity = 1.5;
-    if (m.name === 'Pool water') { m.roughness = .05; m.metalness = .15; m.color.set('#1f9fb0'); m.emissive.set('#0b6f80'); m.emissiveIntensity = .55; m.envMapIntensity = 2.2; }
+    if (m.name === 'Pool water') { m.roughness = .04; m.metalness = 0; m.color.set('#1b8ea2'); m.emissive.set('#063f4a'); m.emissiveIntensity = .55; m.envMapIntensity = 2.6; }
     else if (/bronze/i.test(m.name)) { m.envMapIntensity = 2; m.roughness = Math.min(m.roughness, .38); }
     else if (/steel|metal/i.test(m.name)) m.envMapIntensity = 2;
     m.onBeforeCompile = s => {
       s.uniforms.uArchiveY = clip;
       if (m.name === 'Pool water') {
+        // Living water. Still surfaces ripple (three layers of drifting noise, turned into a normal), with
+        // caustic glints; steep surfaces (the cascades and spillways) run downwards in streaks, with foam.
+        // The works are miniatures, so the wavelengths are a few centimetres.
         s.uniforms.uArchiveTime = waterTime;
-        s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vArchiveXZ;').replace('#include <project_vertex>', '#include <project_vertex>\nvArchiveXZ = (modelMatrix * vec4(transformed, 1.)).xz;');
-        s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uArchiveTime; varying vec2 vArchiveXZ;').replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(normal + vec3((sin(dot(vArchiveXZ, vec2(23., 17.)) + uArchiveTime * .8) + .45 * sin(dot(vArchiveXZ, vec2(53., -31.)) - uArchiveTime * 1.1)) * .018, (cos(dot(vArchiveXZ, vec2(-11., 29.)) - uArchiveTime * .6) + .4 * cos(dot(vArchiveXZ, vec2(47., 37.)) + uArchiveTime * .9)) * .018, 0.));');
+        s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vArchiveW; varying vec3 vArchiveN;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvArchiveW = (modelMatrix * vec4(transformed, 1.)).xyz; vArchiveN = normalize(mat3(modelMatrix) * objectNormal);');
+        s.fragmentShader = s.fragmentShader.replace('#include <common>', `#include <common>
+          uniform float uArchiveTime; varying vec3 vArchiveW; varying vec3 vArchiveN;
+          float wHash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          float wNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+            return mix(mix(wHash(i), wHash(i + vec2(1., 0.)), f.x), mix(wHash(i + vec2(0., 1.)), wHash(i + vec2(1., 1.)), f.x), f.y); }
+          float wWaves(vec2 p, float t){ return wNoise(p * 9. + vec2(t * .35, t * .21)) * .6 + wNoise(p * 21. - vec2(t * .5, -t * .33)) * .3 + wNoise(p * 47. + vec2(-t * .8, t * .6)) * .1; }
+          float wFoam = 0., wCaustic = 0.;`)
+          .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+          {
+            vec3 wN = normalize(vArchiveN); float t = uArchiveTime;
+            float still = smoothstep(.5, .85, wN.y);
+            vec2 q = vArchiveW.xz; float e = .004;
+            float h0 = wWaves(q, t), hx = wWaves(q + vec2(e, 0.), t), hz = wWaves(q + vec2(0., e), t);
+            vec3 ripple = normalize(vec3(-(hx - h0) / e * .014, 1., -(hz - h0) / e * .014));
+            vec3 side = normalize(cross(wN, vec3(0., 1., 0.)) + vec3(1e-4));
+            float along = dot(vArchiveW, side);
+            float fall = wNoise(vec2(along * 60., vArchiveW.y * 7. + t * 3.4)) * .7 + wNoise(vec2(along * 140., vArchiveW.y * 16. + t * 5.2)) * .3;
+            vec3 falling = normalize(wN + side * (fall - .5) * .9);
+            vec3 w = normalize(mix(falling, ripple, still));
+            normal = normalize((viewMatrix * vec4(w, 0.)).xyz);
+            wFoam = (1. - still) * smoothstep(.5, .85, fall);
+            float c = wWaves(q * 1.6 + 3.1, t * 1.3);
+            wCaustic = still * pow(1. - abs(sin(c * 14.)), 8.);
+          }`)
+          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.86, .95, .97), wFoam * .65);
+          totalEmissiveRadiance += vec3(.8, .95, 1.) * wFoam * .35 + vec3(.55, .95, 1.) * wCaustic * .3;`);
       }
       s.vertexShader = s.vertexShader.replace('#include <common>', '#include <common>\nvarying float vArchiveY;').replace('#include <project_vertex>', '#include <project_vertex>\nvArchiveY = (modelMatrix * vec4(transformed, 1.)).y;');
       s.fragmentShader = s.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uArchiveY; varying float vArchiveY;').replace('void main() {', 'void main() {\nif(vArchiveY > uArchiveY) discard;').replace('#include <opaque_fragment>', 'float archiveBand = 1. - smoothstep(0., .09, uArchiveY - vArchiveY);\noutgoingLight = mix(outgoingLight, vec3(.14, 2.8, .95), archiveBand * .88);\n#include <opaque_fragment>');
     };
-    m.customProgramCacheKey = () => m.name === 'Pool water' ? 'archive-water-v1' : 'archive-scan-v1'; m.needsUpdate = true;
+    m.customProgramCacheKey = () => m.name === 'Pool water' ? 'archive-water-v2' : 'archive-scan-v1'; m.needsUpdate = true;
   }
   function cancel() { generation++; controller?.abort(); controller = undefined; }
   function erase() {
@@ -128,7 +158,7 @@ export function createArchiveBay(o: {
       if (stale()) { release(incoming); return null; }
       lift = entry.lift ?? .22;
       const info: ExhibitInfo = {
-        id: entry.id, no: entry.no, title: entry.title, kind: { en: 'Archive / ' + (entry.category === 'architecture' ? 'Architecture' : entry.category === 'sculpture' ? 'Sculpture' : 'Equipment'), de: 'Archiv / ' + (entry.category === 'architecture' ? 'Architektur' : entry.category === 'sculpture' ? 'Skulptur' : 'Ausstattung') },
+        id: entry.id, no: entry.no, title: entry.title, kind: { en: 'Archive / ' + (entry.category === 'architecture' ? 'Architecture' : entry.category === 'sculpture' ? 'Sculpture' : entry.category === 'people' ? 'People' : entry.category === 'objects' ? 'Objects' : 'Equipment'), de: 'Archiv / ' + (entry.category === 'architecture' ? 'Architektur' : entry.category === 'sculpture' ? 'Skulptur' : entry.category === 'people' ? 'Menschen' : entry.category === 'objects' ? 'Objekte' : 'Ausstattung') },
         sub: { en: archiveDimensions(entry, false), de: archiveDimensions(entry, true) }, text: entry.description,
         focus: at.clone().add(new THREE.Vector3(0, lift + entry.height / 2, 0)), distance: entry.distance, elevation: entry.elevation,
       };

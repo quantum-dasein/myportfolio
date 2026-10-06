@@ -341,3 +341,55 @@ The tablet shows examples (a few dozen at most) and takes orders. Its sheet is s
 show through the text. The way to the contact form with custom 3D modeling preselected
 (`?project=modeling`) is always on screen: the commission panel on the left and "Order your own model"
 in the footer (the sticky footer on phones). The grid is denser, so 20 to 30 works stay easy to scan.
+
+### Humano workers and soft toys (2026-10-02)
+
+The tablet includes `soft-toys-2` (panda, horse and hippopotamus, each in two poses). Codex also
+prepared `humano-workers` (Humano 3D People 2506 / 024); it is a commercial Humano product, not
+Rodion's own work, so it is held back from the site: its files are in `artifacts/held-back/`. Their categories and
+descriptions are available in English and German. Both use the existing stage and load on selection.
+
+`scripts/model-room/prepare-catalog-pair.py -- workers|toys SOURCE` prepares the assets.
+Workers retain the supplied PBR textures and 47,074 triangles; the mobile version uses smaller maps.
+The toy OBJ preserves UVs but omits the original multi-material assignments, so fabric colours,
+eyes and plush details are reconstructed with web PBR materials and baked vertex occlusion.
+Desktop and mobile exports have 164,592 and 103,569 triangles respectively. Export statistics
+are in `public/models/archive/{humano-workers,soft-toys-2}.json`.
+
+Generate previews with `render-previews.py -- humano-workers soft-toys-2`, then
+`python scripts/model-room/encode-previews.py humano-workers soft-toys-2`.
+`node scripts/check-catalog-pair.mjs` checks selection, lazy loading, textures and the correct
+desktop/mobile assets, and captures the two models in the room.
+
+### Citizen Eco-Drive and bedroom wardrobe (2026-10-03)
+
+The tablet now also includes `citizen-eco-drive` and `bedroom-wardrobe-3`, with English/German
+descriptions, transparent previews and desktop/mobile assets. The watch is enlarged and oriented
+with its dial facing the visitor; the wardrobe is displayed as an interior miniature.
+
+`scripts/model-room/prepare-watch-wardrobe.py -- watch|wardrobe SOURCE_FBX` imports their FBX
+files and reconstructs web PBR materials from the supplied maps. The watch keeps its original
+41,035 triangles and four materials. The wardrobe is reduced from 2,089,642 triangles to
+463,025 on desktop and 242,148 on mobile, with baked vertex occlusion and transparent cabinet glass.
+All textures are embedded in the GLBs. Original archives are left unchanged.
+
+Run `render-previews.py -- citizen-eco-drive bedroom-wardrobe-3` and
+`python scripts/model-room/encode-previews.py citizen-eco-drive bedroom-wardrobe-3` for the cards.
+`node scripts/check-watch-wardrobe.mjs` checks both variants in the room, lazy loading, textures
+and console errors, and saves screenshots under `artifacts/watch-wardrobe`.
+
+### Phones, water and the held-back work (2026-10-06)
+
+- **Water.** `Pool water` (pool, fountains) is shaded live in `model-room-archive.ts`: still surfaces
+  ripple (three layers of drifting noise turned into a normal) with caustic glints; steep surfaces (the
+  cascades, spillways) run downwards in streaks with foam. Wavelengths are centimetres: the works are miniatures.
+- **Antialiasing.** The composer renders into a 4x multisampled half-float target; before, the post chain
+  dropped the canvas's antialiasing and every edge stepped.
+- **Phones.** One sideways-scrolling strip of controls under the site header (the archive first, in mint),
+  the title out of the way, caption and walking pad at the bottom. Pressing and holding a control no
+  longer selects or copies its text and double-tap no longer zooms the page. A lost GPU context
+  (memory, sleeping tab) shows "Restoring the room…" and reloads the room once the context returns.
+- **Mobile assets.** `scripts/model-room/slim-mobile.mjs` (gltf-transform via npx) caps mobile textures,
+  can simplify meshes and recompresses with WebP + Draco. Run on winter-sports, citizen-eco-drive,
+  pool-18 (1024 px) and bedroom-wardrobe-3 (512 px, half the triangles): the wardrobe went from
+  4.3 MB / ~47 MB of textures in GPU memory to 1.6 MB / ~17 MB.
