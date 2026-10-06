@@ -11,6 +11,9 @@ from mathutils import Vector, Matrix
 args = sys.argv[sys.argv.index('--') + 1:]
 OUT, WHO = os.path.abspath(args[0]), args[1]
 MOBILE = 'mobile' in args[2:]
+# For the film: the sculpt's finer level, no triangle budget, denser and finer hair, baked occlusion.
+VIDEO = 'video' in args[2:]
+DENSE = 1.7 if VIDEO else 1
 random.seed(7 if WHO == 'rodion' else 11)
 
 CFG = {
@@ -37,7 +40,7 @@ for e in eyes:
 bpy.context.view_layer.objects.active = body
 for m in list(body.modifiers):
     if m.type == 'MULTIRES':
-        lv = 0 if MOBILE else 1
+        lv = 0 if MOBILE else 2 if VIDEO else 1
         m.levels = m.sculpt_levels = m.render_levels = lv
         with bpy.context.temp_override(object=body): bpy.ops.object.modifier_apply(modifier=m.name)
     else: body.modifiers.remove(m)
@@ -176,7 +179,7 @@ def shell(name, keep_fn, offset, colour, solid=.003, rough=.8, loose=False, legs
     dead = [v for v in bm.verts if not keep_fn(v.co)]
     bmesh.ops.delete(bm, geom=dead, context='VERTS')
     # Hems: relax the cut edge so it runs smooth instead of stepping along the body's faces.
-    for _ in range(12):
+    for _ in range(40 if VIDEO else 12):
         moves = {}
         for v in bm.verts:
             if not v.is_boundary: continue
@@ -306,7 +309,7 @@ from mathutils.bvhtree import BVHTree
 TW, TH = 256, 1024
 tex = np.zeros((TH, TW, 4), np.float32); rng = np.random.default_rng(5)
 vv = np.arange(TH) / TH; idx = np.arange(TH)
-for _ in range(900):
+for _ in range(1500 if VIDEO else 900):
     x0 = rng.uniform(0, TW); w = rng.uniform(.6, 1.8); wob = rng.uniform(0, 6); fq = rng.uniform(1, 4); end_ = rng.uniform(.72, 1.0); tone = rng.uniform(.62, 1.0)
     xs = x0 + wob * np.sin(vv * fq * 6.28 + rng.uniform(0, 6))
     for dx in range(-2, 3):
@@ -329,6 +332,8 @@ def on_scalp(p, lift):
     return (hit[0] if hit[0] else p) + d * lift
 cards = bmesh.new(); uvl = cards.loops.layers.uv.new('UVMap')
 def card(points, width):
+    # Never across the face: a lock that dips in front of the face below the hairline is dropped.
+    if any((p - headC).y < -.06 * H / 1.8 and p.z < eyeC.z + .045 * H / 1.8 for p in points): return
     n = len(points); u0 = random.random() * .5
     rows = []
     for i, p in enumerate(points):
@@ -344,7 +349,7 @@ crown = Vector((0, headC.y + .035 * H / 1.8, headTop))
 if WHO == 'rodion':
     # Wavy, messy locks from the crown outwards: forward over the forehead, down the sides and the back.
     for count, lift0, lift1 in ((260, .004, .012), (240, .012, .026), (160, .022, .038)):
-        for _ in range(count // (2 if MOBILE else 1)):
+        for _ in range(int(count * DENSE) // (2 if MOBILE else 1)):
             base = random.choice(capVerts); p = on_scalp(base, lift0)
             flow = (p - crown); flow.z *= .35
             if (p - headC).y < -.02: flow += Vector((0, -.6, -.2))                     # the fringe falls forward
@@ -361,11 +366,11 @@ if WHO == 'rodion':
                 if j > 1 and (not scalp(surf, (.01 if front_ else .03) * H / 1.8) or surf.z < eyeC.z - .05 * H / 1.8): break  # hair stops at the hairline; the fringe falls a little onto the brow
                 pts.append(on_scalp(q, lift0 + (lift1 - lift0) * t) + side * math.sin(phase + t * freq * 6.28) * amp)
                 q = q + tang * (length / (n - 1)); flow = (flow + Vector((0, 0, -.07))).normalized()
-            if len(pts) >= 3: card(pts, random.uniform(.016, .026))
+            if len(pts) >= 3: card(pts, random.uniform(.016, .026) * (.72 if VIDEO else 1))
 else:
     # Drawn back sleek from a centre parting to a low ponytail.
     tie = Vector((0, headC.y + .092 * H / 1.8, eyeC.z - .058 * H / 1.8))
-    for _ in range(300 // (2 if MOBILE else 1)):
+    for _ in range(int(300 * DENSE) // (2 if MOBILE else 1)):
         base = random.choice(capVerts)
         if (base - tie).length < .035: continue
         p = on_scalp(base, .006); n = 10; pts = []
@@ -375,14 +380,14 @@ else:
             t = j / (n - 1); up = Vector((0, .35, 1)).normalized()
             d = (d0.slerp(up, t * 2) if t < .5 else up.slerp(d1, t * 2 - 1)) if d0.y < .3 else d0.slerp(d1, t)   # over the crown
             pts.append(on_scalp(headC + d * .05, .006 + .004 * t) if t < .93 else tie)
-        card(pts, random.uniform(.014, .02))
-    for i in range(70 // (2 if MOBILE else 1)):
+        card(pts, random.uniform(.014, .02) * (.75 if VIDEO else 1))
+    for i in range(int(70 * DENSE) // (2 if MOBILE else 1)):
         # The tail: cards around its axis, falling to the shoulder blades, fuller in the middle.
         ang = random.uniform(0, 6.28); r0 = .008; length = random.uniform(.25, .32) * H / 1.55; n = 9; pts = []
         for j in range(n):
             t = j / (n - 1); r = r0 + .014 * math.sin(t * math.pi) + .004
             pts.append(tie + Vector((math.cos(ang) * r, .02 * t + math.sin(ang) * r * .6 + .015 * math.sin(t * 2.2), -length * t)))
-        card(pts, random.uniform(.012, .018))
+        card(pts, random.uniform(.012, .018) * (.75 if VIDEO else 1))
     bpy.ops.mesh.primitive_torus_add(major_radius=.021, minor_radius=.0085, location=tie, rotation=(math.pi / 2 - .35, 0, 0))
     scr = bpy.context.active_object; scr.name = 'Scrunchie'
     m = bpy.data.materials.new('Scrunchie'); m.use_nodes = True; m.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = .7; scr.data.materials.append(m)
@@ -474,6 +479,28 @@ for o in [body, shirt, pants, shoes, *rigid]:
             if m.type == 'ARMATURE': m.object = rig
     for p in o.data.polygons: p.use_smooth = True
 
+# Occlusion (film build): the neck under the jaw, armpits, the folds where the T-shirt meets the trousers.
+# Baked with Cycles into a temporary attribute and multiplied into each part's vertex colour.
+if VIDEO:
+    sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 32
+    sc.render.bake.target = 'VERTEX_COLORS'
+    if sc.world is None: sc.world = bpy.data.worlds.new('AO')
+    for o in [body, shirt, pants, shoes]:
+        me = o.data
+        base = me.color_attributes.get('Col')
+        prev = [tuple(d.color) for d in base.data] if base else None
+        ao = me.color_attributes.new('AO', 'FLOAT_COLOR', 'POINT'); me.color_attributes.active_color = ao
+        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+        bpy.ops.object.bake(type='AO', target='VERTEX_COLORS')
+        vals = [min(1., .3 + .7 * min(1., d.color[0] * 1.1)) for d in ao.data]
+        me.color_attributes.remove(me.color_attributes['AO'])
+        if base is None: base = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+        for i, d in enumerate(base.data):
+            c = prev[i] if prev else (1, 1, 1, 1)
+            d.color = (c[0] * vals[i], c[1] * vals[i], c[2] * vals[i], 1)
+        me.color_attributes.active_color = base
+    print('PEOPLE_AO_BAKED')
+
 # Weight budget: four influences per vertex, normalised, as the web wants them.
 for o in [body, shirt, pants]:
     bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
@@ -481,7 +508,7 @@ for o in [body, shirt, pants]:
 
 # A web budget for the body.
 tris = sum(len(p.vertices) - 2 for p in body.data.polygons)
-target = 16000 if MOBILE else 42000
+target = 16000 if MOBILE else 10**9 if VIDEO else 42000
 if tris > target:
     m = body.modifiers.new('reduce', 'DECIMATE'); m.ratio = target / tris
     body.modifiers.move(len(body.modifiers) - 1, 0)
