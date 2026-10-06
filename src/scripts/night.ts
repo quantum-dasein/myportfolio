@@ -260,6 +260,8 @@ export async function mountNight(root: HTMLElement) {
     her.root.visible = true;
     him.root.position.set(HIM.x + .26, 0, HIM.z + .4); her.root.position.set(HIM.x - .26, 0, HIM.z + .4);
     him.root.rotation.y = -.12; her.root.rotation.y = .12;
+    // The candles' light was at their knees where they now stand: move it out in front, lower and softer.
+    candleLight.position.set(HIM.x, .3, HIM.z + 1.7); candleLight.distance = 4;
     Object.assign(himPose, { kneel: 0, offer: 0, hold: 1 }); Object.assign(herPose, { hold: 1 });
     astro.root.visible = false; bubbleSprite.material.opacity = 0;
   }
