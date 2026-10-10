@@ -8,24 +8,31 @@ interface Props {
 const { lang = "en" } = Astro.props;
 const isDe = lang === "de";
 
-// The wordmark is split on the server so the letters can rise from the first
-// paint, before any script has run. `--i` staggers them.
+// The wordmark is split on the server so the letters are in the first paint,
+// waiting under their mask. `--i` staggers the rise.
 const words = ["Rodion", "Belousov"].map((word, w) =>
   [...word].map((ch, i) => ({ ch, i: w * 6 + i })),
 );
+
+// The counter is an odometer: one strip of digits per column, moved by a
+// transform. Every strip only ever rolls forward, so each holds one cell per
+// position it can reach — units 0…100, tens 0…10, hundreds 0…1.
+const strip = (cells: number) => Array.from({ length: cells }, (_, i) => i % 10).join("\n");
 ---
 
 <!--
   "Seam" — the first-visit intro.
 
-  The name sits on a hairline; the hairline fills with what is actually
-  loading; then the screen parts along it, like a shutter, onto the page.
+  The name rises onto a hairline; the hairline fills with what is actually
+  loading; the name catches the light, and the screen parts along the line
+  onto the page.
 
-  It is painted by HTML and CSS alone. The previous intro lived in a bundled
-  module, so it could only appear once that module ran (~3s on a throttled
-  phone) — over a page that was already readable. This one is on screen from
-  the first frame, is driven by the small inline script below rather than by a
-  module, and only ever animates transform and opacity.
+  It is painted by HTML and CSS and driven by the small inline script below,
+  so it is on screen from the first frame instead of waiting for a bundled
+  module. Everything that moves is a transform or an opacity, the counter
+  included: the script only hands the compositor a new position every
+  150 ms, so a busy main thread (three.js compiling, a slow phone parsing)
+  makes the roll slower, never frozen.
 
   Visibility hangs off `html.rb-intro`, which the boot script in Layout sets
   before first paint on the first page of a session. Without it (a returning
@@ -50,11 +57,20 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
   </div>
 
   <div class="seam-half seam-bottom">
-    <div class="seam-line"><span data-loader-line></span></div>
+    <div class="seam-line">
+      <span class="seam-fill" data-loader-line></span>
+      <span class="seam-spark" data-loader-spark></span>
+    </div>
+
     <div class="seam-inner">
       <div class="seam-readout">
         <span class="seam-phase" data-loader-phase>{isDe ? "RENDER INITIALISIEREN" : "INITIALISING RENDER"}</span>
-        <span class="seam-count"><span data-loader-count>000</span><small>%</small></span>
+        <span class="seam-count">
+          <span class="seam-odo"><span data-odo="2">{strip(2)}</span></span>
+          <span class="seam-odo"><span data-odo="1">{strip(11)}</span></span>
+          <span class="seam-odo"><span data-odo="0">{strip(101)}</span></span>
+          <small>%</small>
+        </span>
       </div>
 
       <div class="seam-meta">
@@ -91,17 +107,25 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
       : ["INITIALISING RENDER", "TRACING GEOMETRY", "RESOLVING TYPOGRAPHY", "OPENING CASE ARCHIVE"];
 
     var line = el.querySelector("[data-loader-line]");
-    var count = el.querySelector("[data-loader-count]");
+    var spark = el.querySelector("[data-loader-spark]");
     var phase = el.querySelector("[data-loader-phase]");
     var pass = el.querySelector("[data-loader-pass]");
+    var odo = [
+      el.querySelector('[data-odo="2"]'),
+      el.querySelector('[data-odo="1"]'),
+      el.querySelector('[data-odo="0"]'),
+    ];
 
-    // The clock runs from navigation start, not from this script: the curtain
-    // has been on screen since the first frame, so that is what the visitor has
-    // waited. MIN_RUN lets the name finish rising; BUDGET is the hard ceiling,
-    // after which the bar walks to full whatever is still loading.
-    var MIN_RUN = calm ? 0.6 : touch ? 1.05 : 1.35;
+    // MIN_RUN runs from the moment the name starts to rise, so the parting can
+    // never cut the rise short however late the first frame came. BUDGET runs
+    // from navigation start — it is what the visitor has waited — and is the
+    // ceiling after which the bar walks to full whatever is still loading.
+    // HOLD is the beat at 100 where the line flares and the name catches the
+    // light; EXIT is the parting itself.
+    var MIN_RUN = calm ? 0.6 : touch ? 1.0 : 1.25;
     var BUDGET = touch ? 1.8 : 2.6;
-    var EXIT_MS = calm ? 500 : 1350;
+    var HOLD = calm ? 120 : 420;
+    var EXIT = calm ? 500 : 1300;
 
     // Real progress: the display face (30%), the parsed document (20%) and the
     // load event, which covers the eager images (50%).
@@ -113,6 +137,24 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     if (document.readyState === "complete") load = 1;
     else addEventListener("load", function () { load = 1; }, { once: true });
 
+    // The name rises in its own face or not at all: the face is preloaded and
+    // usually here already, and if it is not, the letters wait under their
+    // mask for it — 450 ms at most — instead of rising in Arial and swapping.
+    var t0 = 0;
+    function rise() {
+      if (t0) return;
+      t0 = performance.now();
+      el.classList.add("is-rising");
+    }
+    try {
+      var face = '500 1em "RB Space"';
+      if (!document.fonts || document.fonts.check(face)) rise();
+      else {
+        document.fonts.load(face).then(rise, rise);
+        setTimeout(rise, 450);
+      }
+    } catch (e) { rise(); }
+
     // The studio's decode, inlined (utils/decode.ts is a module, and modules
     // arrive too late to be any use here). Each phase resolves out of noise.
     var GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789/#*<>·";
@@ -120,22 +162,26 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     function decode(text) {
       var run = ++decodeRun;
       if (calm) { phase.textContent = text; return; }
-      var t0 = performance.now();
+      var start = performance.now();
       (function step(now) {
         if (run !== decodeRun) return;
-        var t = Math.min((now - t0) / 420, 1), solid = Math.floor(t * text.length), out = "";
+        var t = Math.min((now - start) / 420, 1), solid = Math.floor(t * text.length), out = "";
         for (var i = 0; i < text.length; i++) {
           out += i < solid || text[i] === " " ? text[i] : GLYPHS[(Math.random() * GLYPHS.length) | 0];
         }
         phase.textContent = out;
         if (t < 1) requestAnimationFrame(step);
-      })(t0);
+      })(start);
     }
 
-    var shown = 0, lastPhase = 0, dismissed = false;
-    function render(value) {
+    var painted = 0, lastPaint = 0, lastPhase = 0, done = false;
+    function paint(value) {
+      painted = value;
       line.style.transform = "scaleX(" + value / 100 + ")";
-      count.textContent = String(value).padStart(3, "0");
+      spark.style.transform = "translate3d(" + value + "%,0,0)";
+      odo[0].style.transform = "translate3d(0," + -Math.floor(value / 100) + "em,0)";
+      odo[1].style.transform = "translate3d(0," + -Math.floor(value / 10) + "em,0)";
+      odo[2].style.transform = "translate3d(0," + -value + "em,0)";
       var p = Math.min(3, Math.floor(value / 25.1));
       if (p !== lastPhase) {
         lastPhase = p;
@@ -145,18 +191,23 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     }
 
     function tick() {
-      if (dismissed) return;
-      var elapsed = performance.now() / 1000;
+      if (done) return;
+      var now = performance.now();
+      var since = t0 ? (now - t0) / 1000 : 0;
+      var end = t0 ? Math.max(BUDGET, t0 / 1000 + MIN_RUN) : Infinity;
       var real = fonts * 0.3 + dom * 0.2 + load * 0.5;
       // The clock caps a warm cache (so the name always gets its run-up) and
       // the floor caps a slow asset (so it can stall the bar, not the visitor).
-      var ceiling = elapsed >= MIN_RUN ? 1 : 1 - Math.pow(1 - elapsed / MIN_RUN, 1.7);
-      var target = Math.min(Math.max(real, elapsed / BUDGET), ceiling) * 100;
-      shown += (target - shown) * 0.18;
-      if (elapsed > BUDGET) shown = 100;
-      var value = Math.min(100, Math.round(shown));
-      render(value);
-      if (value >= 100 && elapsed >= MIN_RUN) return dismiss();
+      var ceiling = since >= MIN_RUN ? 1 : 1 - Math.pow(1 - since / MIN_RUN, 1.7);
+      var floor = t0 ? Math.min(1, since / (end - t0 / 1000)) : 0;
+      var value = now / 1000 >= end ? 100 : Math.round(Math.min(Math.max(real, floor), ceiling) * 100);
+      // Paint in strides, not every frame: each paint hands the compositor a
+      // glide to the new value, so the digits roll rather than flicker.
+      if (value !== painted && (value === 100 || now - lastPaint > 150)) {
+        lastPaint = now;
+        paint(value);
+      }
+      if (painted === 100 && since >= MIN_RUN) return complete();
       requestAnimationFrame(tick);
     }
 
@@ -165,11 +216,16 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
       body.classList.remove("is-preloading");
     }
 
-    function dismiss() {
-      if (dismissed) return;
-      dismissed = true;
+    function complete() {
+      if (done) return;
+      done = true;
       clearTimeout(deadline);
-      render(100);
+      paint(100);
+      el.classList.add("is-complete");
+      setTimeout(leave, HOLD);
+    }
+
+    function leave() {
       el.classList.add("is-leaving");
       // The scroll lock goes now, not when the curtain has finished: the
       // element is pointer-events:none from here on, so nothing can hit it.
@@ -180,12 +236,12 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
       setTimeout(function () {
         el.remove();
         root.classList.remove("rb-intro");
-      }, EXIT_MS);
+      }, EXIT);
     }
 
     // Timers fire whether or not a frame is ever served (background tab,
     // throttled rAF), so the lock can never outlive the intro.
-    var deadline = setTimeout(dismiss, 4200);
+    var deadline = setTimeout(complete, 4200);
     requestAnimationFrame(tick);
   })();
 </script>
@@ -216,7 +272,7 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     overflow: hidden;
     background-color: var(--color-bg);
     will-change: transform;
-    transition: transform 1.05s var(--ease-in-out-quart) 0.16s;
+    transition: transform 1.1s var(--ease-in-out-quart);
   }
 
   /* One glow, split down the middle: each half carries its own side of it, so
@@ -238,7 +294,7 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     flex-direction: column;
     justify-content: space-between;
     padding: clamp(1.1rem, 2.6vw, 2.4rem) var(--container-offset);
-    transition: transform 1.05s var(--ease-in-out-quart) 0.16s, opacity 0.5s ease 0.16s;
+    transition: transform 1.1s var(--ease-in-out-quart), opacity 0.55s ease;
   }
 
   .seam-top .seam-inner { padding-bottom: 0; }
@@ -253,8 +309,7 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
 
   /* ── Small print ────────────────────────────────────────────────────────── */
   .seam-meta,
-  .seam-phase,
-  .seam-count small {
+  .seam-phase {
     font: 400 clamp(0.58rem, 0.8vw, 0.7rem) / 1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -294,15 +349,33 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     padding: 0.06em 0.02em 0.1em 0;
   }
 
+  /* Chrome type with a highlight parked off to the right of every letter;
+     at 100 it sweeps across them in turn, so the name catches the light just
+     before the screen parts. */
   .seam-ch {
     display: inline-block;
     color: transparent;
-    background: var(--chrome);
+    background-image:
+      linear-gradient(105deg, transparent 36%, rgba(96, 106, 118, 0.85) 44%, #fff 50%, rgba(96, 106, 118, 0.85) 56%, transparent 64%),
+      var(--chrome);
+    background-size: 320% 100%, 100% 100%;
+    background-position: 100% 0, 0 0;
+    background-repeat: no-repeat;
     background-clip: text;
     -webkit-background-clip: text;
     transform: translate3d(0, 112%, 0);
+  }
+
+  .is-rising .seam-ch {
     animation: seam-rise 1.15s var(--ease-out-expo) forwards;
-    animation-delay: calc(0.12s + var(--i) * 0.036s);
+    animation-delay: calc(0.04s + var(--i) * 0.034s);
+  }
+
+  .is-complete .seam-ch {
+    animation:
+      seam-rise 1.15s var(--ease-out-expo) forwards,
+      seam-glint 0.8s var(--ease-in-out-quad) forwards;
+    animation-delay: calc(0.04s + var(--i) * 0.034s), calc(var(--i) * 0.022s);
   }
 
   /* ── The seam itself ────────────────────────────────────────────────────── */
@@ -316,17 +389,51 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
     background: rgba(var(--rgb-line), 0.14);
   }
 
-  .seam-line span {
+  /* Fill and spark glide to each new value on the compositor, on the same
+     curve, so they stay together however unevenly the values arrive. */
+  .seam-fill,
+  .seam-spark {
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), #fff);
-    box-shadow: 0 0 14px rgba(255, 255, 255, 0.55);
+    transition: transform 0.6s cubic-bezier(0.16, 0.84, 0.24, 1);
+  }
+
+  .seam-fill {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), #fff);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
     transform: scaleX(0);
     transform-origin: left;
   }
 
-  /* the moment it opens: the line flares, then goes with the halves */
-  .is-leaving .seam-line { animation: seam-flare 0.5s ease-out forwards; }
+  /* the bright head of the fill, with a short comet tail behind it */
+  .seam-spark::before,
+  .seam-spark::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    border-radius: 999px;
+  }
+
+  .seam-spark::before {
+    width: clamp(4rem, 12vw, 10rem);
+    height: 1px;
+    margin-left: calc(-1 * clamp(4rem, 12vw, 10rem));
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9));
+  }
+
+  .seam-spark::after {
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 -2.5px;
+    background: #fff;
+    box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8), 0 0 36px 8px rgba(205, 225, 235, 0.3);
+  }
+
+  /* the moment it completes: the line flares and the spark spends itself;
+     then line and spark go with the halves */
+  .is-complete .seam-fill { animation: seam-flare 0.7s ease-out forwards; }
+  .is-complete .seam-spark { animation: seam-spent 0.5s ease-out forwards; }
 
   /* ── Readout under the line ─────────────────────────────────────────────── */
   .seam-readout {
@@ -342,28 +449,51 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
   .seam-count {
     display: inline-flex;
     align-items: flex-start;
-    gap: 0.4em;
     font-family: var(--font-display);
     font-size: clamp(2.6rem, 6.4vw, 6.5rem);
     font-variant-numeric: tabular-nums;
     font-weight: 400;
     letter-spacing: -0.03em;
-    line-height: 0.82;
+    line-height: 1;
+  }
+
+  /* one window per column, one digit tall */
+  .seam-odo {
+    display: block;
+    height: 1em;
+    overflow: hidden;
+  }
+
+  .seam-odo > span {
+    display: block;
+    white-space: pre;
+    transition: transform 0.6s cubic-bezier(0.16, 0.84, 0.24, 1);
   }
 
   .seam-count small {
-    margin-top: 0.4rem;
+    margin: 0.04em 0 0 0.12em;
     color: rgba(var(--rgb-text), 0.5);
-    letter-spacing: 0.1em;
+    font-size: 0.3em;
+    letter-spacing: 0;
+    line-height: 1;
   }
 
   @keyframes seam-rise {
     to { transform: translate3d(0, 0, 0); }
   }
 
+  @keyframes seam-glint {
+    to { background-position: -10% 0, 0 0; }
+  }
+
   @keyframes seam-flare {
-    0% { opacity: 1; box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
-    35% { opacity: 1; box-shadow: 0 0 36px 2px rgba(255, 255, 255, 0.5); }
+    0% { opacity: 1; box-shadow: 0 0 14px rgba(255, 255, 255, 0.5); }
+    30% { opacity: 1; box-shadow: 0 0 40px 3px rgba(255, 255, 255, 0.6); }
+    100% { opacity: 0.25; box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+  }
+
+  @keyframes seam-spent {
+    30% { opacity: 1; }
     100% { opacity: 0; }
   }
 
@@ -387,15 +517,18 @@ const words = ["Rodion", "Belousov"].map((word, w) =>
      Nothing travels. The name fades in, the bar still reports, and the
      curtain dissolves instead of parting. */
   @media (prefers-reduced-motion: reduce) {
-    .seam-ch { transform: none; opacity: 0; animation: seam-fade 0.5s ease forwards; animation-delay: 0.05s; }
-    .seam-half, .seam-inner { transition: none; }
+    .is-rising .seam-ch,
+    .is-complete .seam-ch { transform: none; opacity: 0; animation: seam-fade 0.5s ease forwards; animation-delay: 0.05s; }
+    .seam-half, .seam-inner, .seam-odo > span { transition: none; }
     .is-leaving .seam-half, .is-leaving .seam-inner { transform: none; opacity: 1; }
     :global(html.rb-intro) rb-studio-loader.is-leaving { opacity: 0; transition: opacity 0.45s ease; }
   }
 
-  :global(html.rb-calm) .seam-ch { transform: none; opacity: 0; animation: seam-fade 0.5s ease forwards; animation-delay: 0.05s; }
+  :global(html.rb-calm) .is-rising .seam-ch,
+  :global(html.rb-calm) .is-complete .seam-ch { transform: none; opacity: 0; animation: seam-fade 0.5s ease forwards; animation-delay: 0.05s; }
   :global(html.rb-calm) .seam-half,
-  :global(html.rb-calm) .seam-inner { transition: none; }
+  :global(html.rb-calm) .seam-inner,
+  :global(html.rb-calm) .seam-odo > span { transition: none; }
   :global(html.rb-calm) .is-leaving .seam-half,
   :global(html.rb-calm) .is-leaving .seam-inner { transform: none; opacity: 1; }
   :global(html.rb-calm.rb-intro) rb-studio-loader.is-leaving { opacity: 0; transition: opacity 0.45s ease; }
