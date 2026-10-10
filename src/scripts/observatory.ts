@@ -456,9 +456,7 @@ export async function mountObservatory(root:HTMLElement){
       await animation.finished.catch(()=>{});
       if(token!==openToken){veil.remove();return;}
       addEventListener('pageshow',()=>veil.remove(),{once:true});
-      // (A film being recorded of the site takes the step itself: artifacts/capture/record.mjs.)
-      const film=(window as any).__captureNavigate as ((url:string)=>void)|undefined;
-      if(film)film(work.portalHref);else location.assign(work.portalHref);return;
+      location.assign(work.portalHref);return;
     }
     const decoded=loadViewer();
     await Promise.all([world?.focusWork(),decoded]);

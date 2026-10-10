@@ -177,13 +177,6 @@ export function createRoomSound() {
     eyes() { if (!act()) return; tone(420, .5, .018, { type: 'sawtooth', glide: 2.2, attack: .05, dest: sfxBus }); tone(2600, .06, .02, { type: 'square', delay: .45, dest: sfxBus }); },
     /** A light switch in the house model. */
     lights(on: boolean) { if (!act()) return; burst({ f: on ? 2400 : 1800, dur: .05, level: .12, q: 3 }); tone(on ? 1760 : 1320, .3, .012, { dest: sfxBus, delay: .02 }); },
-    /** A hidden figurine found (n of 3); all three: a little fanfare. */
-    found(n: number, of: number) {
-      if (!act()) return;
-      const notes = [880, 1108.73, 1318.51, 1760];
-      if (n < of) notes.slice(0, 2 + n).forEach((f, i) => bell(f, .05, i * .08, sfxBus));
-      else { [659.25, 880, 1108.73, 1318.51, 1760, 2217.46].forEach((f, i) => bell(f, .055, i * .11, sfxBus)); burst({ f: 5000, to: 900, q: .5, dur: 2.4, level: .08, attack: .4 }); }
-    },
     dispose() { muteDrone(false); removeEventListener('pointerdown', warm, { capture: true }); removeEventListener('keydown', warm, { capture: true }); if (ctx) { music.gain.value = 0; hum.gain.value = 0; } },
   };
 }

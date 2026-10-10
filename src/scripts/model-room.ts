@@ -15,7 +15,6 @@ import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits
 import { createGuide } from './model-room-guide';
 import { createKiosk } from './model-room-kiosk';
 import { createArchiveBay } from './model-room-archive';
-import { createSecrets } from './model-room-secrets';
 import { modelArchive } from '../data/model-archive';
 import { ROOM, WALK } from './model-room-layout';
 
@@ -63,7 +62,6 @@ export async function mountModelRoom(root: HTMLElement) {
   const sound = createRoomSound(); let stepping = 0;
   let exhibits: ReturnType<typeof createExhibits> | undefined;
   let kiosk: ReturnType<typeof createKiosk> | undefined;
-  let secrets: ReturnType<typeof createSecrets> | undefined;
   // When the visitor last moved or looked around (the astronaut comes over if you stand still for long).
   let stillSince = 0, hoverAt = 0; const lastPose = new THREE.Vector4();
   const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
@@ -92,8 +90,13 @@ export async function mountModelRoom(root: HTMLElement) {
   let inspecting = false, wireframe = false, yaw = 0, pitch = 0;
   let selected = '', selectedMaterial = '';
   const keys = new Set<string>();
-  const touchKeys = new Map<number, string>();
-  const colliders: THREE.Box3[] = [], doomColliders: THREE.Box3[] = [];
+  // Held directions on the walking pad: `t<id>` for a finger, `p<id>` for a mouse or pen.
+  const touchKeys = new Map<string, string>();
+  const padButtons = [...root.querySelectorAll<HTMLElement>('[data-mr-move]')];
+  /** Light the arrows that are held (a touch that cancels its default never shows :active). */
+  const padShow = () => { const held = new Set(touchKeys.values()); padButtons.forEach(b => b.classList.toggle('is-held', held.has(b.dataset.mrMove!))); };
+  const release = () => { keys.clear(); touchKeys.clear(); padShow(); };
+  const colliders: THREE.Box3[] = [];
   const target = new THREE.Vector3(0, 1.65, -3.5);
   const savedWalk = { position: new THREE.Vector3(), yaw: 0, pitch: 0 };
   const pointer = new THREE.Vector2(), raycaster = new THREE.Raycaster();
@@ -113,10 +116,10 @@ export async function mountModelRoom(root: HTMLElement) {
     materials.forEach(m => Object.values(m).forEach(value => { if(value instanceof THREE.Texture)textures.add(value); }));
     geometries.forEach(g => g.dispose());materials.forEach(m => m.dispose());textures.forEach(t => t.dispose());
   }
-  function stop() { cancelAnimationFrame(frame);frame = 0;keys.clear();touchKeys.clear();gesture = undefined; }
+  function stop() { cancelAnimationFrame(frame);frame = 0;release();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();archive?.dispose();exhibits?.dispose();guide?.dispose();kiosk?.dispose();secrets?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();archive?.dispose();exhibits?.dispose();guide?.dispose();kiosk?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -170,7 +173,7 @@ export async function mountModelRoom(root: HTMLElement) {
   }
   function mode(next: boolean) {
     if (!ready || !orbit || inspecting === next) return;
-    keys.clear();touchKeys.clear();gesture = undefined;
+    release();gesture = undefined;
     if (next) { savedWalk.position.copy(camera.position);savedWalk.yaw = yaw;savedWalk.pitch = pitch; }
     inspecting = next;orbit.enabled = next;selection.visible = next && Boolean(selected);exhibits?.hold(next ? current.id : null);
     if (next) inspectionHome();
@@ -185,9 +188,6 @@ export async function mountModelRoom(root: HTMLElement) {
     // The archive terminal answers a click with its panel rather than an inspection orbit.
     const terminal = kiosk ? raycaster.intersectObjects(kiosk.targets, false)[0] : undefined;
     const hit = raycaster.intersectObjects([...meshes, ...(exhibits?.meshes ?? []), ...(archive?.meshes ?? [])], false)[0];
-    // A hidden mini astronaut in front of whatever else is there: collected, nothing else happens.
-    const mini = secrets ? raycaster.intersectObjects(secrets.targets, false)[0] : undefined;
-    if (mini && (!hit || mini.distance < hit.distance + .05) && (!terminal || mini.distance < terminal.distance)) { secrets!.find(mini.object); return; }
     if (terminal && (!hit || terminal.distance < hit.distance)) { kiosk!.open(); return; }
     if (!hit) { selected = '';selection.visible = false;labelSelection();return; }
     const info = archive?.info(hit.object.userData.exhibit) ?? exhibits?.info(hit.object.userData.exhibit ?? 'kitchen') ?? KITCHEN;
@@ -204,7 +204,7 @@ export async function mountModelRoom(root: HTMLElement) {
     if (Math.abs(x) > WALK.x || z < WALK.back || z > (Math.abs(x) < WALK.doorHalf ? WALK.door : WALK.front)) return true;
     if (self && astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
     // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
-    return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(kiosk ? [kiosk.collider] : []), ...(secrets ? [secrets.collider, ...doomColliders] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
+    return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(kiosk ? [kiosk.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
   }
   function tick(time: number) {
     frame = 0;if (disposed || failed || document.hidden) return;
@@ -219,8 +219,8 @@ export async function mountModelRoom(root: HTMLElement) {
       const dz = (-Math.cos(yaw) * forward - Math.sin(yaw) * right) * speed;
       if (!blocked(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
       if (!blocked(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
-      stepping = forward || right ? 1 : filmStep;
-    } else stepping = filmStep;
+      stepping = forward || right ? 1 : 0;
+    } else stepping = 0;
     if (inspecting) orbit?.update();
     const t = time / 1000;
     // Arrival from the portal: a slow glide out of the rear frame to the first view.
@@ -231,7 +231,7 @@ export async function mountModelRoom(root: HTMLElement) {
     }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
-    fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);kiosk?.update(t, dt);secrets?.update(t, dt);
+    fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);kiosk?.update(t, dt);
     // The kitchen's shadows are static; only the astronaut moves through them, so a few updates a second are enough.
     if (design && ++frames % 4 === 0) design.key.shadow.needsUpdate = true;
     if (Math.abs(lastPose.x - camera.position.x) + Math.abs(lastPose.y - camera.position.z) + Math.abs(lastPose.z - yaw) + Math.abs(lastPose.w - pitch) > 1e-3 || inspecting) { stillSince = t; lastPose.set(camera.position.x, camera.position.z, yaw, pitch); }
@@ -257,7 +257,7 @@ export async function mountModelRoom(root: HTMLElement) {
     if (!renderer) return;const rect = $('stage').getBoundingClientRect();
     renderer.setSize(rect.width, rect.height);composer?.setPixelRatio(renderer.getPixelRatio());composer?.setSize(rect.width, rect.height);fx?.resize(rect.width, rect.height);camera.aspect = rect.width / Math.max(1, rect.height);camera.fov = rect.width < 600 ? 62 : 52;camera.updateProjectionMatrix();
   }
-  let frames = 0, filmStep = 0;
+  let frames = 0;
   function resume() { if (!frame && !disposed && !failed && !document.hidden) { last = performance.now();frame = requestAnimationFrame(tick); } }
   const timeout = setTimeout(() => download.abort(), 45000);
   try {
@@ -282,7 +282,7 @@ export async function mountModelRoom(root: HTMLElement) {
     });
     kiosk = createKiosk({
       scene, camera, root, de, coarse: coarse.matches, at: new THREE.Vector3(-3, 0, 10.9), face: .5,
-      onOpen: () => { keys.clear(); touchKeys.clear(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
+      onOpen: () => { release(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
       archive: {
         entries: modelArchive, activeId: () => archive?.activeId() ?? null,
         cancel: () => archive?.cancel(),
@@ -298,41 +298,7 @@ export async function mountModelRoom(root: HTMLElement) {
         },
       },
     });
-    secrets = createSecrets({
-      scene, root, de, mobile: coarse.matches, camera,
-      onPortal: () => { const l = document.createElement('link'); l.rel = 'prefetch'; l.href = '/gallery/night/'; document.head.append(l); sound.arrive(); },
-      onEnter: () => {
-        leaving = true; sound.leave(); if (document.pointerLockElement) document.exitPointerLock();
-        const veil = document.createElement('div'); veil.className = 'mr-exit-veil is-rose'; root.append(veil);
-        const film = (window as unknown as { __captureNavigate?: (url: string) => void }).__captureNavigate;
-        const go = () => film ? film('/gallery/night/') : location.assign('/gallery/night/');
-        if (reduced) go(); else veil.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 900, easing: 'ease-in', fill: 'forwards' }).finished.then(go, go);
-      },
-      onFound: (n, of) => { sound.found(n, of); if (n === of) guide?.emote('wow', performance.now() / 1000); },
-      onAll: () => setTimeout(() => guide?.emote('love', performance.now() / 1000), 2600),
-    });
-    // Doctor Doom, life size, arms crossed, guarding the safe (CC-BY-4.0, kingmoon3D on Sketchfab: credited on his plinth).
-    void gltfLoader.loadAsync('/models/gift/doom.glb').then(g => {
-      if (disposed) return;
-      const doom = g.scene, box = new THREE.Box3().setFromObject(doom), h = box.max.y - box.min.y;
-      doom.scale.setScalar(1.92 / h); doom.updateMatrixWorld(true);
-      const b2 = new THREE.Box3().setFromObject(doom), c = b2.getCenter(new THREE.Vector3());
-      const stand = new THREE.Group(); stand.position.set(-11.7, 0, 7.1); stand.rotation.y = 1.15; scene.add(stand);
-      doom.position.set(-c.x, .32 - b2.min.y, -c.z); stand.add(doom);
-      doom.traverse(n => { const m = n as THREE.Mesh; if (!m.isMesh) return; m.castShadow = true; m.receiveShadow = true; const mat = m.material as THREE.MeshStandardMaterial; mat.roughness = .55; mat.metalness = .35; mat.envMapIntensity = 1.6; m.userData.exhibit = 'kitchen'; });
-      const stone = new THREE.MeshStandardMaterial({ color: '#1a201e', roughness: .45, metalness: .2 });
-      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(.62, .68, .32, 48), stone); plinth.position.y = .16; plinth.castShadow = plinth.receiveShadow = true; stand.add(plinth);
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(.65, .006, 6, 96), new THREE.MeshBasicMaterial({ color: new THREE.Color(.35, 2.1, 1.1), toneMapped: false })); rim.rotation.x = Math.PI / 2; rim.position.y = .322; stand.add(rim);
-      const c2 = document.createElement('canvas'); c2.width = 1024; c2.height = 256; const x = c2.getContext('2d')!;
-      x.fillStyle = '#e9f2ec'; x.textAlign = 'center'; x.font = '500 86px sans-serif'; x.fillText('DOCTOR DOOM', 512, 112);
-      x.fillStyle = '#9fe6c0'; x.font = '500 30px monospace'; x.fillText('"DR DOOM" BY KINGMOON3D  ·  CC BY 4.0', 512, 190);
-      const plate = new THREE.Mesh(new THREE.PlaneGeometry(.9, .225), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c2), transparent: true, toneMapped: false, color: new THREE.Color(1.6, 1.6, 1.6) }));
-      (plate.material as THREE.MeshBasicMaterial).map!.colorSpace = THREE.SRGBColorSpace;
-      plate.position.set(0, .16, .69); stand.add(plate);
-      const spot = new THREE.SpotLight('#ffe4c4', 70, 9, .42, .8, 1.6); spot.position.set(-9.6, 5.4, 8.6); spot.target.position.set(-11.7, 1.1, 7.1); scene.add(spot, spot.target);
-      doomColliders.push(new THREE.Box3(new THREE.Vector3(-12.4, 0, 6.4), new THREE.Vector3(-11, 2.3, 7.8)));
-    }).catch(() => {});
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, kiosk, fx, secrets, sound, guide: () => guide, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; }, set step(v: number) { filmStep = v; } };
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, kiosk, fx, sound, guide: () => guide, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; } };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     // The composer's own buffer is multisampled: without it the post chain throws away the canvas's antialiasing
@@ -392,7 +358,7 @@ export async function mountModelRoom(root: HTMLElement) {
     $('light').addEventListener('click',()=>{studioLight=!studioLight;renderer!.toneMappingExposure=studioLight?1.4:.95;scene.environmentIntensity=studioLight?1.1:.45;if(bloom)bloom.strength=studioLight?.16:.32;labels();},{signal});
     $('inspect').addEventListener('click', () => mode(true), { signal });$('walk').addEventListener('click', () => mode(false), { signal });
     $('archive').addEventListener('click', () => kiosk?.open(), { signal });
-    $('reset').addEventListener('click', () => { selected = '';selection.visible = false;keys.clear();touchKeys.clear();inspecting ? inspectionHome() : home();labelSelection(); }, { signal });
+    $('reset').addEventListener('click', () => { selected = '';selection.visible = false;release();inspecting ? inspectionHome() : home();labelSelection(); }, { signal });
     $('wire').addEventListener('click', () => {
       wireframe = !wireframe;[...meshes, ...(exhibits?.meshes ?? []), ...(archive?.meshes ?? [])].forEach(mesh => {
         (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach(m => { (m as THREE.MeshStandardMaterial).wireframe = wireframe; });
@@ -401,10 +367,44 @@ export async function mountModelRoom(root: HTMLElement) {
     for (const [name, factor] of [['closer', .8], ['farther', 1.25]] as const) $(name).addEventListener('click', () => {
       if (!orbit) return;const offset = camera.position.clone().sub(orbit.target);offset.setLength(THREE.MathUtils.clamp(offset.length() * factor, orbit.minDistance, orbit.maxDistance));camera.position.copy(orbit.target).add(offset);orbit.update();
     }, { signal });
-    root.querySelectorAll<HTMLElement>('[data-mr-move]').forEach(button => {
-      button.addEventListener('pointerdown', event => { event.preventDefault();button.setPointerCapture(event.pointerId);touchKeys.set(event.pointerId, button.dataset.mrMove!); }, { signal });
-      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(type, event => touchKeys.delete((event as PointerEvent).pointerId), { signal });
+    // The walking pad is a D-pad read from the fingers actually on it. Phones used to lose a finger's
+    // pointerup to the long-press selection (the walk then ran on forever and the other arrows went dead),
+    // so a finger's direction is recomputed from the live touch list on every touch event: a lifted finger
+    // can never leave a direction held, and sliding from one arrow to the next turns without lifting.
+    const pad = $('touch'), padFingers = new Set<number>();
+    const padRead = (touches: TouchList) => {
+      for (const id of [...touchKeys.keys()]) if (id[0] === 't') touchKeys.delete(id);
+      for (const touch of Array.from(touches)) {
+        if (!padFingers.has(touch.identifier) || !ready || inspecting || kiosk?.isOpen()) continue;
+        const under = document.elementFromPoint(touch.clientX, touch.clientY)?.closest<HTMLElement>('[data-mr-move]');
+        if (under && pad.contains(under)) touchKeys.set(`t${touch.identifier}`, under.dataset.mrMove!);
+      }
+      padShow();
+    };
+    pad.addEventListener('touchstart', event => {
+      event.preventDefault(); window.getSelection()?.removeAllRanges();
+      for (const touch of Array.from(event.changedTouches)) padFingers.add(touch.identifier);
+      padRead(event.touches);
+    }, { signal, passive: false });
+    pad.addEventListener('touchmove', event => { event.preventDefault(); padRead(event.touches); }, { signal, passive: false });
+    for (const type of ['touchend', 'touchcancel'] as const) pad.addEventListener(type, event => {
+      for (const touch of Array.from(event.changedTouches)) padFingers.delete(touch.identifier);
+      padRead(event.touches);
+    }, { signal });
+    // The last finger off the glass anywhere ends every walk, whatever happened to the pad's own events.
+    for (const type of ['touchend', 'touchcancel'] as const) addEventListener(type, event => { if (!event.touches.length && padFingers.size) { padFingers.clear(); padRead(event.touches); } }, { signal, capture: true });
+    // A mouse or a pen still presses the arrows like buttons.
+    padButtons.forEach(button => {
+      button.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'touch') return;
+        event.preventDefault(); button.setPointerCapture(event.pointerId); touchKeys.set(`p${event.pointerId}`, button.dataset.mrMove!); padShow();
+      }, { signal });
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(type, event => { touchKeys.delete(`p${(event as PointerEvent).pointerId}`); padShow(); }, { signal });
     });
+    // Nothing in the room is text to select or a link to press and hold (the archive's search field aside).
+    const typing = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('input,textarea,[contenteditable]'));
+    root.addEventListener('selectstart', event => { if (!typing(event.target)) event.preventDefault(); }, { signal });
+    root.addEventListener('contextmenu', event => { if (!typing(event.target)) event.preventDefault(); }, { signal });
     addEventListener('keydown', event => {
       if (!ready || kiosk?.isOpen() || event.altKey || event.ctrlKey || event.metaKey || document.body.classList.contains('is-nav-opened')) return;
       if ((event.target as HTMLElement)?.closest('button,a,input,textarea,select,[contenteditable]')) return;
@@ -412,7 +412,7 @@ export async function mountModelRoom(root: HTMLElement) {
       if (event.code === 'Escape') mode(false);if (event.code === 'KeyE') mode(true);
     }, { signal });
     addEventListener('keyup', event => keys.delete(event.code), { signal });
-    addEventListener('blur', () => { keys.clear();touchKeys.clear();gesture = undefined; }, { signal });
+    addEventListener('blur', () => { release();gesture = undefined; }, { signal });
     addEventListener('rb:langchange', labels, { signal });coarse.addEventListener('change', labels, { signal });
     document.addEventListener('visibilitychange', () => document.hidden ? stop() : resume(), { signal });
     addEventListener('pagehide', event => { if (event.persisted) stop();else dispose(); }, { signal });

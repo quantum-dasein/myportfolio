@@ -353,6 +353,8 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
     root.traverse(node => {
       const mesh = node as THREE.Mesh; if (!mesh.isMesh) return;
       const m = mesh.material as THREE.MeshStandardMaterial; const name = m.name;
+      // Nothing here is glass: a converter's stray transmission would make three.js draw the room twice a frame.
+      if ((m as THREE.MeshPhysicalMaterial).transmission) (m as THREE.MeshPhysicalMaterial).transmission = 0;
       if (id === 'k2so') Object.assign(m, { metalness: .45, envMapIntensity: 1.1 });
       else if (id === 'svj') {
         // His own paint: deep blue metallic under a clear coat; glass that reflects; lamps that are lit.

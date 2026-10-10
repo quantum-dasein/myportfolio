@@ -99,9 +99,10 @@ over his helmet and in his visor colour. He stops if you stand in his way.
 If you stand still for 15 s while the astronaut waits on the sofa, he gets up, walks over (only along floor
 the colliders leave free), waves, and goes back to his seat.
 
-The personal gift has been retired: the mini astronauts, safe and secret portal are no longer
-mounted. The private `/gallery/night/` route and `public/models/night/` assets were moved to
-`artifacts/retired-gift/`, outside the build. The main museum guide remains.
+The personal gift has been retired for good (2026-10-11): the mini astronauts, the safe, the secret
+portal, the Doctor Doom statue and the private `/gallery/night/` scene are gone from the build. The
+files were moved to `artifacts/retired-gift-2026-10-11/`, outside the repository. The main museum
+guide remains.
 
 `scripts/model-room/fbx6.py` reads FBX 6.1 files (3ds Max, around 2010), which
 Blender's importer refuses. It reuses Blender's low-level FBX reader to rebuild

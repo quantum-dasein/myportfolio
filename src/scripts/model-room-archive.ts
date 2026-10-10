@@ -62,6 +62,14 @@ export function createArchiveBay(o: {
   function shader(material: THREE.Material) {
     const m = material as THREE.MeshStandardMaterial;
     m.wireframe = o.wireframe();
+    // No archive work is glass. One transmissive material (a converter set every one of the children's room
+    // wall to it) makes three.js render the whole room again each frame into a refraction buffer.
+    if ((m as unknown as THREE.MeshPhysicalMaterial).transmission) (m as unknown as THREE.MeshPhysicalMaterial).transmission = 0;
+    // The children's room wall is 3 m of white lacquer right under the stage key: at its exported albedo it burnt
+    // out into the bloom. Its plush carried a pure white sheen, which bleached every toy; tint it with the fur.
+    const p = m as unknown as THREE.MeshPhysicalMaterial;
+    if (/white_lak/i.test(m.name)) { m.color.multiplyScalar(.68); m.roughness = Math.max(m.roughness, .58); }
+    if (p.sheen > 0 && p.sheenColor?.equals(new THREE.Color(1, 1, 1))) p.sheenColor.copy(m.color).lerp(new THREE.Color(1, 1, 1), .3);
     // A little more of the room in every surface; water that glows like a lit pool at dusk.
     m.envMapIntensity = 1.5;
     if (m.name === 'Pool water') { m.roughness = .04; m.metalness = 0; m.color.set('#1b8ea2'); m.emissive.set('#063f4a'); m.emissiveIntensity = .55; m.envMapIntensity = 2.6; }
