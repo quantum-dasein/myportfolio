@@ -119,7 +119,7 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
   updates.push((_t, dt) => {
     frameNo++;
     if (dt <= 0 || dt > .25 || exhausted) return;
-    watched += dt; slow += dt > 1 / 40 ? dt : 0;
+    watched += dt; slow += dt > 1 / 50 ? dt : 0;
     if (watched < 2.5) return;
     if (slow / watched > .5) {
       if (ao?.enabled) ao.enabled = false;
@@ -138,6 +138,10 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
       ao = new GTAOPass(scene, camera, width, height);
       ao.updateGtaoMaterial({ radius: .45, distanceExponent: 1.6, thickness: 1.2, scale: 1.1, samples: 8 });
       ao.blendIntensity = .85;
+      // Occlusion is soft and low-frequency: computed at half resolution it looks the same and costs a quarter.
+      const fullSize = ao.setSize.bind(ao);
+      ao.setSize = (w: number, h: number) => fullSize(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
+      ao.setSize(width, height);
       // GTAO draws everything but points and lines into its normal pass as solid surfaces, so a sprite or
       // a glass/halo plane leaves a dark occlusion square behind it. Leave all see-through things out.
       const pass = ao as unknown as { _overrideVisibility: () => void; _visibilityCache: THREE.Object3D[]; scene: THREE.Scene };

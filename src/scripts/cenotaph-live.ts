@@ -639,7 +639,12 @@ export function mountCenotaphLive(o: {
   /** What the pointer (or the crosshair) is on, and what clicking it does. */
   function actionAt(): (() => void) | null {
     const holo = guide?.hitHologram(ray); if (holo) return () => { emit('open', holo); o.onOpen?.(holo); };
-    for (const c of clickables) if (ray.intersectObject(c.obj, true).length) return () => { if (c.obj === astro.root) unlockFor(); c.act(); };
+    for (const c of clickables) {
+      const hit = ray.intersectObject(c.obj, true)[0];
+      // The curator talks to whoever walks up to him; from across the arena the click is a throw at him.
+      if (hit && c.obj === astro.root && mode === 'explore' && hit.distance > 7) continue;
+      if (hit) return () => { if (c.obj === astro.root) unlockFor(); c.act(); };
+    }
     for (const ex of extras) if (onWord(ex.word)) return () => { emit('open', ex.href); o.onOpen?.(ex.href); };
     return null;
   }
@@ -688,14 +693,15 @@ export function mountCenotaphLive(o: {
   addEventListener('keydown', kd); addEventListener('keyup', ku);
   addEventListener('blur', () => keys.clear());
   let tiltYaw = 0, tiltPitch = 0;
-  const tilt = (e: DeviceOrientationEvent) => { if (e.gamma == null || e.beta == null) return; tiltYaw = -THREE.MathUtils.degToRad(e.gamma) * .5; tiltPitch = THREE.MathUtils.degToRad(e.beta - 55) * .4; };
+  // The phone's tilt is low-passed: a hand's tremor while tapping to walk used to shake the whole view.
+  const tilt = (e: DeviceOrientationEvent) => { if (e.gamma == null || e.beta == null) return; tiltYaw += (-THREE.MathUtils.degToRad(e.gamma) * .5 - tiltYaw) * .08; tiltPitch += (THREE.MathUtils.degToRad(e.beta - 55) * .4 - tiltPitch) * .08; };
   if (mobile) addEventListener('deviceorientation', tilt);
 
   function jump() { if (onGround) { vy = 5.2; onGround = false; emit('jump'); } }
   function setMode(m: LiveMode) {
     if (m === mode) return;
     mode = m; keys.clear(); walkToOn = false; vel.set(0, 0, 0);
-    if (m === 'menu') { tYaw = YAW0; tPitch = PITCH0; if (locked) { releasing = true; document.exitPointerLock(); } }
+    if (m === 'menu') { tYaw = YAW0; tPitch = PITCH0; guide?.close(); if (locked) { releasing = true; document.exitPointerLock(); } }
     else lock();
     cross.dataset.hint = o.lang() === 'de' ? 'Klicken zum Umsehen' : 'Click to look around';
     setTimeout(waiting, 400);
@@ -717,7 +723,7 @@ export function mountCenotaphLive(o: {
     for (const [x, z, rr] of SOLID) if (Math.hypot(nx - x, nz - z) < rr && feet.y < 1.4) return false;
     feet.x = nx; feet.z = nz; return true;
   }
-  const vel = new THREE.Vector3(); let stepDist = 0;
+  const vel = new THREE.Vector3(); let stepDist = 0, stepPhase = 0;
 
   // ---- Resize and quality.
   let dpr = Math.min(devicePixelRatio || 1, mobile ? 1.25 : 1.5);
@@ -775,7 +781,10 @@ export function mountCenotaphLive(o: {
     yaw += (tYaw + tiltYaw + idle.y - yaw) * (1 - Math.pow(.004, dt));
     pitch += (tPitch + tiltPitch + idle.p - pitch) * (1 - Math.pow(.004, dt));
     const speed = Math.hypot(vel.x, vel.z);
-    const bob = mode === 'explore' && onGround ? Math.sin(t * (7 + speed)) * .006 * speed : Math.sin(t * 1.1) * .01;
+    // The step's phase is accumulated: sin(t * (7 + speed)) jumped by t × Δspeed whenever the pace changed,
+    // and the longer the visitor had been on the page the harder every start and stop shook the view.
+    stepPhase += dt * (7 + speed);
+    const bob = mode === 'explore' && onGround ? Math.sin(stepPhase) * .005 * speed : Math.sin(t * 1.1) * .01;
     // The film's camera rode a little higher than eyes do: settle down from it gently.
     const lift = (START.y - EYE - groundAt(START.x, START.z)) * (since > 0 ? 1 - ease(since / 3) : 1);
     camera.position.set(feet.x, feet.y + EYE + bob + lift, feet.z);

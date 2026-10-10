@@ -112,7 +112,7 @@ export class Guide {
       <p class="guide-say" aria-live="polite"></p>
       <div class="guide-chips">${l.chips.map(([label, href]) => `<button type="button" data-go="${href}">${label}</button>`).join('')}</div>
       <form class="guide-ask"><input type="text" maxlength="80" autocomplete="off" placeholder="${l.placeholder}" /><button type="submit">${l.send}</button></form>
-      <a class="guide-go" href="/" hidden>${l.go} ↗</a>`;
+      <a class="guide-go" href="/" hidden>${l.go} <svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>`;
     this.panel.hidden = false;
     this.say(l.hello);
     this.panel.querySelector('.guide-x')!.addEventListener('click', () => this.close());
@@ -166,7 +166,7 @@ export class Guide {
     this.loader.load(route.image, t => { t.colorSpace = THREE.SRGBColorSpace; this.holoMat.uniforms.tMap.value = t; });
     const c = document.createElement('canvas'); c.width = 1024; c.height = 128; const g = c.getContext('2d')!;
     g.font = '600 46px Inter, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#cfeaff';
-    g.fillText(`${route[this.o.lang()].split(' — ')[0]}  ↗`, 512, 64);
+    g.fillText(`${route[this.o.lang()].split(' — ')[0]}  →`, 512, 64);
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; this.titleMat.map = tex; this.titleMat.needsUpdate = true;
     const go = this.panel.querySelector<HTMLAnchorElement>('.guide-go'); if (go) { go.href = route.path; go.hidden = false; }
     if (this.mood !== 'approach') { if (this.isOpen) this.walkTowardViewer(); else this.target.copy(this.o.astro.root.position); this.mood = this.target.distanceTo(this.o.astro.root.position) > .3 ? 'approach' : 'present'; }

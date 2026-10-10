@@ -4,7 +4,7 @@ body:has(.model-room) .site-fx,body:has(.model-room) rb-cursor-field{display:non
 html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.model-room) :is(a,button){cursor:pointer}.mr-stage canvas{cursor:grab}.mr-stage canvas:active{cursor:grabbing}
 .mr-stage{position:fixed;inset:0;touch-action:none}.mr-stage canvas{display:block;width:100%;height:100%;outline:none}.mr-stage canvas:focus-visible{outline:1px solid var(--mr-accent);outline-offset:-5px}
 .mr-header{position:absolute;top:112px;left:5.5%;right:5.5%;display:flex;align-items:center;justify-content:space-between;gap:20px;z-index:2}
-.mr-back{display:flex;align-items:center;gap:13px;font-size:13px;color:var(--mr-ink);text-decoration:none}.mr-back>span:first-child{transform:rotate(-135deg);font-size:24px}.mr-back:hover{color:var(--mr-accent)}
+.mr-back{display:flex;align-items:center;gap:13px;font-size:13px;color:var(--mr-ink);text-decoration:none}.mr-back-ico{display:grid;place-items:center}.mr-touch svg,.mr-back svg,.mr-liquid-arrow svg{display:block;pointer-events:none}.mr-back:hover{color:var(--mr-accent)}
 .mr-edition,.mr-eyebrow{font:10px/1.6 ui-monospace,monospace;letter-spacing:.16em;color:var(--mr-muted)}
 .mr-title{position:absolute;top:175px;left:5.5%;pointer-events:none}.mr-title h1{font-size:clamp(26px,3.3vw,52px);font-weight:400;letter-spacing:-.045em;margin:8px 0}.mr-title h1>span{color:var(--mr-accent)}
 .mr-controls{position:absolute;top:174px;right:5.5%;display:flex;gap:8px;flex-wrap:wrap;justify-content:end;max-width:520px;z-index:2}
@@ -69,7 +69,7 @@ html:has(.model-room),html:has(.model-room) body,.model-room,.mr-catalog{-webkit
   /* One slim strip of controls under the site header that scrolls sideways, the title out of the way,
      the caption and the walking pad at the bottom: the middle of the screen belongs to the model. */
   .model-room .mr-header{top:70px}
-  .model-room .mr-back{font-size:11px;gap:8px}.model-room .mr-back>span:first-child{font-size:18px}
+  .model-room .mr-back{font-size:11px;gap:8px}.model-room .mr-back-ico svg{width:17px;height:17px}
   .model-room[data-state="ready"] .mr-title{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
   .model-room .mr-controls{top:100px;left:0;right:0;max-width:none;padding:2px 5.5% 8px;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 92%,transparent)}
   .model-room .mr-controls::-webkit-scrollbar{display:none}
@@ -173,7 +173,7 @@ html:has(.model-room),html:has(.model-room) body,.model-room,.mr-catalog{-webkit
 .model-room .mr-catalog .mr-liquid:hover::after{transform:translateX(75%)}
 .model-room .mr-catalog .mr-liquid:active{transform:translateY(0) scale(.98)}
 .model-room .mr-catalog .mr-liquid:focus-visible{outline:2px solid #a6f5cb;outline-offset:3px}
-.mr-catalog .mr-liquid-arrow{display:grid;place-items:center;width:26px;height:26px;margin-right:-8px;border-radius:50%;font-size:13px;background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+.mr-catalog .mr-liquid-arrow{display:grid;place-items:center;width:26px;height:26px;color:inherit;margin-right:-8px;border-radius:50%;font-size:13px;background:rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.5);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
 .mr-catalog .mr-liquid:hover .mr-liquid-arrow{transform:translate(2px,-2px)}
 /* Accent: the same glass, tinted mint (the Anfrage button, and the work that is on the stage). */
 .model-room .mr-catalog .mr-liquid--accent{color:#04160d;border-color:rgba(214,255,234,.85);

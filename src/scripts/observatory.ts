@@ -40,12 +40,26 @@ export async function mountObservatory(root:HTMLElement){
   const text=(selector:string,value:string)=>{const el=root.querySelector<HTMLElement>(selector);if(el)el.textContent=value;};
   let bootFailed=Boolean((window as any).__obsBootExpired);
   const finishBoot=()=>{
-    clearTimeout((window as any).__obsBootTimer);
+    clearTimeout((window as any).__obsBootTimer);clearTimeout((window as any).__obsSlowTimer);document.documentElement.classList.remove('obs-boot-slow');
     document.documentElement.classList.remove('obs-booting');
     window.dispatchEvent(new Event('rb:observatory-ready'));
   };
   const fallback=()=>{bootFailed=true;root.classList.remove('is-ready');root.classList.add('is-fallback');indexDialog.close();viewer.close();finishBoot();};
   addEventListener('rb:observatory-timeout',()=>{world?.dispose();fallback();},{once:true,signal});
+  root.querySelector('[data-obs-boot-list]')?.addEventListener('click',()=>{(window as any).__obsBootExpired=true;world?.dispose();fallback();},{signal});
+  root.querySelector('[data-obs-retry]')?.addEventListener('click',()=>{try{sessionStorage.removeItem('rb-obs-lost');}catch{}location.reload();},{signal});
+  // Phones drop the GPU context under memory pressure (coming back from the Model Room, a tab woken from the
+  // background). That used to leave the flat list for good; now the hall is rebuilt with a reload, at most
+  // twice a minute so a GPU that keeps failing still ends on the list.
+  const lost=()=>{
+    world?.dispose();
+    let recent:number[]=[];try{recent=(JSON.parse(sessionStorage.getItem('rb-obs-lost')??'[]') as number[]).filter(t=>Date.now()-t<60000);}catch{}
+    if(recent.length>=2){fallback();return;}
+    try{sessionStorage.setItem('rb-obs-lost',JSON.stringify([...recent,Date.now()]));}catch{}
+    document.documentElement.classList.add('obs-booting');root.classList.remove('is-ready');
+    const reload=()=>location.reload();
+    if(document.hidden)document.addEventListener('visibilitychange',()=>{if(!document.hidden)reload();},{signal});else reload();
+  };
 
   function update(){
     const work=archiveWorks[current];const room=archiveRooms[work.roomIndex];const lang=de()?'de':'en';
@@ -687,7 +701,7 @@ export async function mountObservatory(root:HTMLElement){
     const reelMode=new URLSearchParams(location.search).get('reel'),reel=reelMode!==null;
     if(reel)root.classList.add(reelMode==='ui'?'is-reel-ui':'is-reel');
     let intro=reel;try{intro=reel||!sessionStorage.getItem('rb-observatory-intro');}catch{}
-    world=new ObservatoryWorld(stage,fallback);world.onIndex=setCurrent;
+    world=new ObservatoryWorld(stage,fallback,lost);world.onIndex=setCurrent;
     world.onFrame=state=>sound.frame(state);world.onSettle=room=>{sound.arrive(room);if(room!==announcedRoom&&performance.now()-announcedAt>2500){announcedRoom=room;announcedAt=performance.now();showRoomCard(room);sound.gate();}pendingRoom=-1;};world.onTeleport=phase=>sound.teleport(phase);void loadStars();// The gate ripples on every crossing, but the room is only announced once you have settled in it.
     world.onGate=room=>{pendingRoom=room;};announcedRoom=archiveWorks[current].roomIndex;
     world.setPortalTexts(portalLines());addEventListener('rb:langchange',()=>world?.setPortalTexts(portalLines()),{signal});

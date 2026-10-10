@@ -340,4 +340,13 @@
   let stored = "off";
   try { stored = localStorage.getItem(STORE) || "off"; } catch { /* private mode */ }
   if (stored === "on") resumeFromNavigation();
+  // The 3D rooms play their own music from the moment you step in, unless this visitor has switched sound
+  // off. The choice is not stored: the rest of the site stays quiet until asked. A browser that refuses to
+  // start audio without a gesture on this page gets it on the first tap or key.
+  (window as any).__rbSoundAuto = () => {
+    let choice: string | null = null;
+    try { choice = localStorage.getItem(STORE); } catch { /* private mode */ }
+    if (enabled || choice === "off" || document.documentElement.classList.contains("rb-calm")) return;
+    void resumeFromNavigation();
+  };
 </script>

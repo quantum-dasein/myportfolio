@@ -54,7 +54,7 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
             <span class="mr-catalog-index">${t('COMMISSIONS', 'AUFTRÄGE')}</span>
             <h3>${t('Your model. Made to order.', 'Dein Modell. Nach Maß.')}</h3>
             <p>${t('Products, interiors, architecture, characters: I build custom 3D models to your brief. Tell me what you need.', 'Produkte, Interieurs, Architektur, Figuren: Ich baue individuelle 3D-Modelle nach deinem Briefing. Erzähl mir, was du brauchst.')}</p>
-            <a class="mr-liquid mr-liquid--accent" href="${contact}" data-catalog-enquire><span>${t('Enquire', 'Anfrage')}</span><span class="mr-liquid-arrow" aria-hidden="true">↗</span></a>
+            <a class="mr-liquid mr-liquid--accent" href="${contact}" data-catalog-enquire><span>${t('Enquire', 'Anfrage')}</span><span class="mr-liquid-arrow" aria-hidden="true"><svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
           </div>
         </aside>
         <section class="mr-catalog-library" aria-label="${t('Models', 'Modelle')}">
@@ -71,7 +71,7 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
       </div>
       <footer class="mr-catalog-footer"><p data-catalog-status role="status" aria-live="polite">${t('Choose a work for the archive stage.', 'Wähle eine Arbeit für die Archivbühne.')}</p>
         <div class="mr-catalog-footer-actions"><button type="button" class="mr-liquid mr-liquid--quiet" data-catalog-clear ${o.activeId() ? '' : 'hidden'}>${t('Clear stage', 'Bühne leeren')}</button>
-        <a class="mr-liquid mr-liquid--accent mr-catalog-order" href="${contact}" data-catalog-order><span>${t('Order your own model', 'Eigenes Modell anfragen')}</span><span class="mr-liquid-arrow" aria-hidden="true">↗</span></a></div></footer>
+        <a class="mr-liquid mr-liquid--accent mr-catalog-order" href="${contact}" data-catalog-order><span>${t('Order your own model', 'Eigenes Modell anfragen')}</span><span class="mr-liquid-arrow" aria-hidden="true"><svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a></div></footer>
     </div>`;
     const currentPanel = panel;
     const status = panel.querySelector<HTMLElement>('[data-catalog-status]')!;
@@ -88,7 +88,7 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
           <div class="mr-catalog-work-body">
             <div class="mr-catalog-work-title"><h3>${escape(entry.title)}</h3><span>${escape(archiveDimensions(entry, de))}</span></div>
             <p>${escape(entry.description[de ? 'de' : 'en'])}</p>
-            <button type="button" class="mr-liquid${active ? ' mr-liquid--accent' : ''}" data-catalog-show="${escape(entry.id)}"><span>${active ? t('View in room', 'Im Raum ansehen') : t('Show in room', 'Im Raum zeigen')}</span><span class="mr-liquid-arrow" aria-hidden="true">↗</span></button>
+            <button type="button" class="mr-liquid${active ? ' mr-liquid--accent' : ''}" data-catalog-show="${escape(entry.id)}"><span>${active ? t('View in room', 'Im Raum ansehen') : t('Show in room', 'Im Raum zeigen')}</span><span class="mr-liquid-arrow" aria-hidden="true"><svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
           </div></article>`;
       }).join('') : `<p class="mr-catalog-empty">${t('No matching work. Try another search.', 'Keine passende Arbeit. Versuche einen anderen Suchbegriff.')}</p>`;
     }

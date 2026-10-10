@@ -75,6 +75,9 @@ body:has(.observatory) .site-fx{display:none}body:has(.observatory) .cursor-fiel
 html.obs-booting .obs-fallback{display:none}
 html.obs-booting .obs-boot{display:flex;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:20px;background:#020203;color:#d6dcdf;font:11px/1.5 var(--obs-mono);letter-spacing:.18em}
 .obs-boot small{font:10px/1.4 var(--font-inter);letter-spacing:.06em;opacity:.55}
+.obs-boot-slow{display:none;flex-direction:column;align-items:center;gap:14px;margin-top:6px}html.obs-boot-slow .obs-boot-slow{display:flex}
+.obs-boot-slow button,.obs-fallback-retry{font:500 12px/1 var(--font-display);letter-spacing:.02em;color:#e8eef0;background:#ffffff0f;border:1px solid #ffffff2e;border-radius:999px;padding:13px 20px;cursor:pointer}
+.obs-fallback-retry{margin-top:22px}.obs-boot-slow button:hover,.obs-fallback-retry:hover{background:#ffffff1f}
 .obs-boot-orbit{width:58px;height:58px;border:1px solid #d6dcdf30;border-radius:50%;position:relative;animation:obs-orbit 4s linear infinite}
 .obs-boot-orbit:after{content:'';position:absolute;top:-2px;left:25px;width:4px;height:4px;border-radius:50%;background:#d6dcdf;box-shadow:0 0 10px #d6dcdf90}
 @keyframes obs-orbit{to{transform:rotate(360deg)}}

@@ -290,7 +290,7 @@ export class ObservatoryWorld {
   onFailure:()=>void;
   tick:(time:number)=>void;
 
-  constructor(private host:HTMLElement,onFailure:()=>void){
+  constructor(private host:HTMLElement,onFailure:()=>void,private onLost:()=>void=onFailure){
     this.onFailure=onFailure;
     this.mobile=matchMedia('(max-width: 760px), (pointer: coarse)').matches;
     this.calm=this.isCalm();
@@ -368,7 +368,7 @@ export class ObservatoryWorld {
   }
 
   isCalm(){return document.documentElement.classList.contains('rb-calm')||this.motionQuery.matches;}
-  private contextLost=(event:Event)=>{event.preventDefault();this.onFailure();this.dispose();};
+  private contextLost=(event:Event)=>{event.preventDefault();this.dispose();this.onLost();};
   private narrow(){return this.host.clientWidth<650;}
   private drawingSize(){
     const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight);

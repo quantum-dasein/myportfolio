@@ -11,14 +11,17 @@ const { start } = Astro.props;
 <script is:inline>
   document.documentElement.classList.add('obs-booting');
   window.__obsBootExpired = false;
+  // A slow phone connection used to hit a 10 s limit and was left with the flat list for good. Now the hall
+  // waits up to 35 s; after 9 s the boot screen says it is still coming and offers the list instead.
   window.__obsBootTimer = setTimeout(() => {
     window.__obsBootExpired = true;
     document.documentElement.classList.remove('obs-booting');
     window.dispatchEvent(new Event('rb:observatory-timeout'));
-  }, 10000);
+  }, 35000);
+  window.__obsSlowTimer = setTimeout(() => document.documentElement.classList.add('obs-boot-slow'), 9000);
 </script>
 <section class="observatory" data-observatory data-obs-start={start} aria-label="The Observatory — interactive portfolio">
-  <div class="obs-boot" role="status"><span class="obs-boot-orbit" aria-hidden="true"></span><span>THE OBSERVATORY</span><small class="obs-en">Entering the collection</small><small class="obs-de">Die Sammlung öffnet sich</small></div>
+  <div class="obs-boot" role="status"><span class="obs-boot-orbit" aria-hidden="true"></span><span>THE OBSERVATORY</span><small class="obs-en" data-obs-boot-text>Entering the collection</small><small class="obs-de" data-obs-boot-text-de>Die Sammlung öffnet sich</small><span class="obs-boot-slow"><small class="obs-en">Still on its way: a slow connection</small><small class="obs-de">Noch unterwegs: langsame Verbindung</small><button type="button" data-obs-boot-list><span class="obs-en">Show the works as a list</span><span class="obs-de">Arbeiten als Liste zeigen</span></button></span></div>
   <div class="obs-stage" data-obs-stage aria-hidden="true"></div>
   <span class="obs-star-tip" data-obs-star-tip aria-hidden="true"></span>
   <div class="obs-tour-caption" data-obs-tour-caption aria-live="polite"><span data-obs-tour-step></span><b class="obs-tour-title" data-obs-tour-title></b><p data-obs-tour-text></p><div class="obs-tour-dots" data-obs-tour-dots></div><div class="obs-tour-controls"><button type="button" data-obs-tour-prev aria-label="Previous stop"><ObservatoryIcon name="previous" /></button><button type="button" data-obs-tour-open><span class="obs-en">Open this work</span><span class="obs-de">Werk öffnen</span></button><button type="button" data-obs-tour-next aria-label="Next stop"><ObservatoryIcon name="next" /></button><button type="button" data-obs-tour-stop aria-label="End tour"><ObservatoryIcon name="close" /></button></div><i class="obs-tour-progress"><b data-obs-tour-bar></b></i></div>
@@ -97,7 +100,7 @@ const { start } = Astro.props;
     <div class="obs-finale-actions"><a class="obs-finale-cta" href="/contact/" data-obs-finale-cta><span class="obs-en">Start a project</span><span class="obs-de">Projekt anfragen</span><ObservatoryIcon name="open" /></a><a class="obs-finale-mail" href="mailto:rodionbelousov@protonmail.com">rodionbelousov@protonmail.com</a><button type="button" data-obs-finale-back><ObservatoryIcon name="previous" /><span class="obs-en">Back to the hall</span><span class="obs-de">Zurück in den Saal</span></button></div>
   </div>
   <div class="obs-fallback">
-    <header><span class="obs-eyebrow">RB / THE OBSERVATORY</span><h2><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2><p><span class="obs-en">3D, motion and digital worlds by Rodion Belousov.</span><span class="obs-de">3D, Motion und digitale Welten von Rodion Belousov.</span></p></header>
+    <header><span class="obs-eyebrow">RB / THE OBSERVATORY</span><h2><span class="obs-en">The collection.</span><span class="obs-de">Die Sammlung.</span></h2><p><span class="obs-en">3D, motion and digital worlds by Rodion Belousov.</span><span class="obs-de">3D, Motion und digitale Welten von Rodion Belousov.</span></p><button type="button" class="obs-fallback-retry" data-obs-retry><span class="obs-en">Open the 3D hall</span><span class="obs-de">3D-Saal öffnen</span></button></header>
     <div class="obs-fallback-grid">{archiveWorks.map(work=><a href={work.video ?? work.href}><img src={work.img} alt={title(work)} loading="lazy" width="640" height="400"/><span>{title(work)}</span></a>)}</div>
   </div>
 </section>

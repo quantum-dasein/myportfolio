@@ -40,7 +40,7 @@ const beacons = [
         <p class="void-lead"><span data-i18n="404.lead.a">{t("404.lead.a")}</span> <code data-path>/unknown</code> <span data-i18n="404.gone">{t("404.gone")}</span> <span class="reason" data-reason></span></p>
         <p class="guess-kicker" data-kicker><span data-i18n="404.guess">{t("404.guess")}</span></p>
         <div class="void-actions">
-          <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><img class="evac-thumb" data-thumb alt="" width="84" height="44" hidden /><span class="evac-copy"><span class="evac-label" data-evac-label>{t("404.cta")}</span><span class="evac-path" data-evac-path></span></span><span class="evac-arrow" aria-hidden="true">↗</span></a>
+          <a href="/" class="evac" data-evac><span class="evac-glass" aria-hidden="true"></span><img class="evac-thumb" data-thumb alt="" width="84" height="44" hidden /><span class="evac-copy"><span class="evac-label" data-evac-label>{t("404.cta")}</span><span class="evac-path" data-evac-path></span></span><span class="evac-arrow" aria-hidden="true"><svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
           <a href="/" class="void-home" data-home hidden><span data-i18n="404.home">{t("404.home")}</span></a>
         </div>
         <p class="guess-alt" data-alt hidden><span data-i18n="404.also">{t("404.also")}</span></p>
@@ -68,7 +68,7 @@ const beacons = [
           <a class="beacon" href={beacon.path} data-beacon data-lang-href-en={beacon.key === "services" ? "/services/" : undefined} data-lang-href-de={beacon.key === "services" ? "/de/leistungen/" : undefined}>
             <span class="beacon-id">{beacon.id}</span>
             <span class="beacon-copy"><span class="beacon-type">{beacon.type}<i></i></span><span class="beacon-name" data-i18n={`404.beacon.${beacon.key}.name`}>{t(`404.beacon.${beacon.key}.name`)}</span><span class="beacon-desc" data-i18n={`404.beacon.${beacon.key}.desc`}>{t(`404.beacon.${beacon.key}.desc`)}</span></span>
-            <span class="beacon-go" aria-hidden="true">↗</span>
+            <span class="beacon-go" aria-hidden="true"><svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </a>
         ))}
       </div>
@@ -162,9 +162,9 @@ const beacons = [
   const sections = () => {
     const l = copy[lang()], de = lang() === "de";
     const list = [
-      { text: de ? "archiv" : "gallery", href: "/gallery/", label: `${l.gallery} ↗` },
-      { text: de ? "leistungen" : "services", href: de ? "/de/leistungen/" : "/services/", label: `${l.services} ↗` },
-      { text: de ? "kontakt" : "contact", href: de ? "/de/kontakt/" : "/contact/", label: `${l.contact} ↗` },
+      { text: de ? "archiv" : "gallery", href: "/gallery/", label: `${l.gallery} ↗︎` },
+      { text: de ? "leistungen" : "services", href: de ? "/de/leistungen/" : "/services/", label: `${l.services} ↗︎` },
+      { text: de ? "kontakt" : "contact", href: de ? "/de/kontakt/" : "/contact/", label: `${l.contact} ↗︎` },
     ].filter(sec => sec.href !== guesses[0]?.route.path);
     // A phone has no open vault to spare: the pages are listed below the fold instead.
     const spots = portrait ? [] : [at(.2, .215, .2), at(.79, .55, .19), at(.79, .68, .19)];

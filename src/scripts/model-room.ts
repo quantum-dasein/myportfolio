@@ -60,6 +60,8 @@ export async function mountModelRoom(root: HTMLElement) {
   const astro = createAstronaut();
   let guide: ReturnType<typeof createGuide> | undefined;
   const sound = createRoomSound(); let stepping = 0;
+  // Music and sound start with the room (SoundField: unless the visitor switched sound off).
+  (window as unknown as { __rbSoundAuto?: () => void }).__rbSoundAuto?.();
   let exhibits: ReturnType<typeof createExhibits> | undefined;
   let kiosk: ReturnType<typeof createKiosk> | undefined;
   // When the visitor last moved or looked around (the astronaut comes over if you stand still for long).
@@ -303,7 +305,10 @@ export async function mountModelRoom(root: HTMLElement) {
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     // The composer's own buffer is multisampled: without it the post chain throws away the canvas's antialiasing
     // and every edge stairs (worst on phones, which also render below their screen's resolution).
-    composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:4}));composer.addPass(new RenderPass(scene,camera));
+    // (At 1.5× the frame is already supersampled: there the buffers skip MSAA, which cost a desktop GPU about
+    // as much as the whole scene, since every pass of the chain wrote into a multisampled target.)
+    const samples = renderer.getPixelRatio() >= 1.4 ? 0 : 4;
+    composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples}));composer.addPass(new RenderPass(scene,camera));
     bloom=new UnrealBloomPass(new THREE.Vector2(1,1),.32,.5,1.05);composer.addPass(bloom);composer.addPass(new OutputPass());
     { const r = $('stage').getBoundingClientRect(); fx.extendComposer(composer, Math.max(1, r.width), Math.max(1, r.height)); }
     orbit = new OrbitControls(camera, canvas);orbit.enabled = false;orbit.enableDamping = false;orbit.enablePan = false;

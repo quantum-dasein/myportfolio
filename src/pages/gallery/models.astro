@@ -7,7 +7,7 @@ import '../../styles/model-room.css';
   <section class="model-room" data-model-room aria-label="The Model Room">
     <div class="mr-stage" data-mr-stage></div>
     <header class="mr-header">
-      <a href="/gallery/model-room/" class="mr-back"><span aria-hidden="true">↗</span><span class="mr-en">Back to the archive</span><span class="mr-de">Zurück ins Archiv</span></a>
+      <a href="/gallery/model-room/" class="mr-back"><span class="mr-back-ico"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="mr-en">Back to the archive</span><span class="mr-de">Zurück ins Archiv</span></a>
       <span class="mr-edition">THE OBSERVATORY / ROOM {String(archiveRooms.findIndex(room=>room.id==='models')+1).padStart(2,'0')}</span>
     </header>
     <div class="mr-title"><p class="mr-eyebrow"><span class="mr-en">A collection in three dimensions</span><span class="mr-de">Eine Sammlung in drei Dimensionen</span></p><h1>The Model Room<span>.</span></h1></div>
@@ -33,7 +33,7 @@ import '../../styles/model-room.css';
     </aside>
     <p class="mr-hint" data-mr-hint><span class="mr-en">WASD / arrows to move · Drag to look · Click an object to inspect</span><span class="mr-de">WASD / Pfeile zum Gehen · Ziehen zum Umsehen · Objekt anklicken zum Untersuchen</span></p>
     <div class="mr-touch" data-mr-touch hidden role="group" aria-label="Move around the room">
-      <button type="button" data-mr-move="forward" aria-label="Move forward">↑</button><button type="button" data-mr-move="left" aria-label="Move left">←</button><button type="button" data-mr-move="back" aria-label="Move back">↓</button><button type="button" data-mr-move="right" aria-label="Move right">→</button>
+      <button type="button" data-mr-move="forward" aria-label="Move forward"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="transform:rotate(0deg)"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" data-mr-move="left" aria-label="Move left"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="transform:rotate(-90deg)"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" data-mr-move="back" aria-label="Move back"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="transform:rotate(180deg)"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" data-mr-move="right" aria-label="Move right"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="transform:rotate(90deg)"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     <noscript><p class="mr-nojs">JavaScript is needed to explore the room. <a href="/gallery/">Return to the archive</a>.</p></noscript>
   </section>
