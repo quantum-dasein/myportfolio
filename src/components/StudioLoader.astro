@@ -6,188 +6,386 @@ interface Props {
 }
 
 const { lang = "en" } = Astro.props;
+const de = lang === "de";
+
+// The counter is an odometer: one strip of digits per column, moved by a transform on the compositor. Every
+// strip only ever rolls forward, so it holds a cell for each value it can reach: units 0…100, tens 0…10,
+// hundreds 0…1.
+const strip = (cells: number) => Array.from({ length: cells }, (_, i) => i % 10);
 ---
 
 <!--
-  First visit of a session: the page's own headline, set in the site's display face where it will
-  stand, drawn first as a hairline outline and filled with light from left to right as the page
-  really loads; the headline is the progress bar. Below it, the four crafts light one after another.
-  Then the black gives way and the outline hands over to the real headline in place.
-  One canvas, the site's own type, no library, no images.
+  "Singularity" — the first page of a session.
+
+  Night sky from the first frame. A black hole opens where the home page's glass sculpture will stand, and a
+  ring of light runs round it as the page really loads (fonts, document, images and the sculpture's own first
+  frame). The stars drift in along a slow spiral and bend round the hole; under a fine pointer the cursor is a
+  small lens of its own. At 100 the ring flashes, the hole draws a breath, and a window opens out of it onto
+  the page, the sculpture already standing inside.
+
+  One full-screen fragment shader on plain WebGL in the inline script below: no library, no download, so it
+  draws before any bundle has arrived. The type is HTML and every move it makes is a compositor transform.
+  It is shown once per session, only on pages that ask for it (Layout `intro`); `html.rb-intro` is set by the
+  boot script before first paint, and without it the element never displays at all.
 -->
-<rb-studio-loader aria-hidden="true" data-lang={lang}>
-  <div class="ld-ground"></div>
-  <canvas class="ld-type" data-ld-type></canvas>
+<rb-studio-loader aria-hidden="true">
+  <canvas class="sg-sky" data-sg-sky></canvas>
+  <svg class="sg-ring" data-sg-ring viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="49" pathLength="1" /></svg>
+
+  <div class="sg-type">
+    <div class="sg-meta">
+      <span>Rodion Belousov <i>/</i> Studio</span>
+      <span>{de ? "Wien" : "Vienna"} <i>48.21° N 16.37° E</i></span>
+    </div>
+
+    <div class="sg-foot">
+      <div class="sg-count" data-sg-count>
+        <span class="sg-col" data-col="2"><span>{strip(2).map((d) => <b>{d}</b>)}</span></span>
+        <span class="sg-col" data-col="1"><span>{strip(11).map((d) => <b>{d}</b>)}</span></span>
+        <span class="sg-col" data-col="0"><span>{strip(101).map((d) => <b>{d}</b>)}</span></span>
+        <small>%</small>
+      </div>
+      <ol class="sg-crafts" data-sg-crafts>
+        <li>Websites</li><li>Video</li><li>3D</li><li>SEO</li>
+      </ol>
+    </div>
+  </div>
 </rb-studio-loader>
 
-<style>
-  :global(html.rb-loader-seen) rb-studio-loader { display: none; }
-  rb-studio-loader:not(.is-playing) { display: none; }
+<script is:inline>
+  (function () {
+    var el = document.currentScript && document.currentScript.previousElementSibling;
+    var root = document.documentElement, body = document.body;
+    if (!el || el.localName !== "rb-studio-loader") return;
 
-  rb-studio-loader { position: fixed; inset: 0; z-index: 1000; }
-  rb-studio-loader.is-hidden { pointer-events: none; }
-  .ld-ground { position: absolute; inset: 0; background: #000; transition: opacity .9s cubic-bezier(.4, 0, .2, 1); }
-  .ld-type { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .7s ease .25s; }
-  rb-studio-loader.is-opening .ld-ground { opacity: 0; }
-  rb-studio-loader.is-opening .ld-type { opacity: 0; }
-</style>
+    function loaded() {
+      body.classList.add("is-loaded");
+      root.classList.remove("is-preloading");
+      body.classList.remove("is-preloading");
+      if (window.__rbLenis) window.__rbLenis.resize();
+      dispatchEvent(new CustomEvent("rb:loaded"));
+    }
+    // Seen this session (or the page did not ask for it): the page is simply loaded.
+    if (!root.classList.contains("rb-intro")) { el.remove(); body.classList.add("is-loaded"); setTimeout(loaded); return; }
+    try { sessionStorage.setItem("rb-loader-seen", "1"); } catch (e) { /* the intro still plays */ }
+    el.classList.add("is-live");
 
-<script>
-  class StudioLoader extends HTMLElement {
-    private deadline = 0;
-    private dismissed = false;
-    private raf = 0;
+    var calm = matchMedia("(prefers-reduced-motion: reduce)").matches || root.classList.contains("rb-calm");
+    var phone = matchMedia("(max-width: 760px)").matches;
+    var fine = matchMedia("(pointer: fine)").matches;
+    var MIN_RUN = calm ? 0.5 : phone ? 0.9 : 1.0; // the ring never closes sooner, however fast the page is
+    var BUDGET = phone ? 2.2 : 2.6;                 // after this it closes whatever is still on its way
+    var start = performance.now(), done = false, exitAt = 0, released = false, raf = 0;
+    // Nothing may hold the page longer than this, frames or no frames.
+    var deadline = setTimeout(function () { finish(true); }, 5200);
 
-    connectedCallback() {
-      let seen = false;
-      try { seen = sessionStorage.getItem("rb-loader-seen") === "1"; } catch { /* storage can be unavailable */ }
-      if (seen) {
-        document.documentElement.classList.remove("is-preloading");
-        document.body.classList.remove("is-preloading");
-        document.body.classList.add("is-loaded");
-        this.remove();
-        queueMicrotask(() => window.dispatchEvent(new CustomEvent("rb:loaded")));
-        return;
+    // ── Real progress: the display face, the document, its images, and the sculpture's first frame ─────
+    var got = { font: 0, dom: 0, load: 0, gl: 0 };
+    if (document.fonts && document.fonts.load) document.fonts.load('400 1em "RB Space"').then(function () { got.font = 1; }, function () { got.font = 1; });
+    else got.font = 1;
+    if (document.readyState !== "loading") got.dom = 1; else document.addEventListener("DOMContentLoaded", function () { got.dom = 1; }, { once: true });
+    if (document.readyState === "complete") got.load = 1; else addEventListener("load", function () { got.load = 1; }, { once: true });
+    addEventListener("rb:webgl-ready", function () { got.gl = 1; }, { once: true });
+    // Calm mode holds the sculpture still and never draws it; a page without it has nothing to wait for either.
+    if (root.classList.contains("rb-calm")) got.gl = 1;
+    document.addEventListener("DOMContentLoaded", function () { if (!document.querySelector("rb-hero-gl")) got.gl = 1; }, { once: true });
+    function real() { return got.font * 0.15 + got.dom * 0.15 + got.load * 0.25 + got.gl * 0.45; }
+
+    // ── The counter and the crafts: transforms and classes only ──────────────────────────────────────────
+    var cols = [0, 1, 2].map(function (i) { return el.querySelector('[data-col="' + i + '"]'); });
+    var crafts = el.querySelectorAll("[data-sg-crafts] li");
+    var shownInt = -1;
+    function count(n) {
+      if (n === shownInt) return; shownInt = n;
+      cols[0].firstChild.style.transform = "translate3d(0," + -n + "em,0)";
+      cols[1].firstChild.style.transform = "translate3d(0," + -Math.floor(n / 10) + "em,0)";
+      cols[2].firstChild.style.transform = "translate3d(0," + -Math.floor(n / 100) + "em,0)";
+      cols[1].classList.toggle("is-lead", n < 10);
+      cols[2].classList.toggle("is-lead", n < 100);
+      for (var i = 0; i < crafts.length; i++) crafts[i].classList.toggle("is-on", n >= (i + 1) * 24);
+    }
+    count(0);
+    // The digits wait for their own face (preloaded, usually here at once) rather than flash in Arial.
+    var typeShown = false;
+    function showType() { if (!typeShown) { typeShown = true; el.classList.add("is-typed"); } }
+    if (document.fonts && document.fonts.load) document.fonts.load('400 1em "RB Space"').then(showType, showType);
+    setTimeout(showType, 380);
+
+    // ── Where the hole opens: on the sculpture (desktop), or the middle of a phone's screen ─────────────────
+    // Mirrors Webgl.astro: camera at z 7.2 with a 58° field, the sculpture's radius 2.05 at (3.15, .25), or
+    // (1.45, 1.15) under 760 px, where most of it sits off the right edge (so the ring is drawn mid-screen and
+    // glides over to it as the window opens).
+    var W = 0, H = 0, ring = { x: 0, y: 0, r: 0 }, sculpt = { x: 0, y: 0, r: 0 };
+    function layout() {
+      // The fixed layers (this one and the sculpture's) span the viewport without its scrollbars.
+      W = root.clientWidth || innerWidth; H = root.clientHeight || innerHeight;
+      var small = W < 760, renderH = small ? Math.max(H, screen.height || H) : H;
+      var hh = 7.2 * Math.tan((58 / 2) * Math.PI / 180), hw = hh * (W / renderH);
+      var sx = small ? 1.45 : 3.15, sy = small ? 1.15 : 0.25, R = 2.05;
+      var k = 1 / Math.sqrt(1 - (R / 7.2) * (R / 7.2));
+      sculpt.x = W / 2 + (sx / hw) * (W / 2);
+      sculpt.y = H / 2 - (sy / hh) * (H / 2);
+      sculpt.r = (R / hh) * k * (H / 2) * 1.08; // the glass breathes and folds about 8% past its radius
+      if (small) { ring.x = W / 2; ring.y = H * 0.41; ring.r = Math.min(W * 0.34, H * 0.2); }
+      else { ring.x = sculpt.x; ring.y = sculpt.y; ring.r = sculpt.r; }
+    }
+    layout();
+
+    // ── The sky ─────────────────────────────────────────────────────────────────────────────────────────
+    var canvas = el.querySelector("[data-sg-sky]"), gl = null, U = {};
+    try {
+      gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, powerPreference: "high-performance" });
+    } catch (e) { gl = null; }
+    var VS = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+    var FS = [
+      "precision highp float;",
+      "uniform vec2 uRes,uC,uMouse;uniform float uDpr,uT,uR,uProg,uGrow,uFlash,uWarp,uOpen,uFlow,uTwist,uRmax,uFade,uLens;",
+      "float sq(float x){return x*x;}",
+      "float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
+      // Stars on a log-polar grid round the hole: an integer number of cells round the circle (no seam), and
+      // drifting in along log r means they fall inwards, shrinking, along the spiral uTwist sets.
+      "float layer(vec2 q,float N,float dens,float size,float seed,float speed,float arcs){",
+      " float r=max(length(q),1.),k=N/6.2831853,lr=log(r);",
+      " vec2 g=vec2(lr*k+uFlow*speed,(atan(q.y,q.x)+(lr-5.6)*uTwist)*k);",
+      " vec2 id=floor(g);id.y=mod(id.y,N);",
+      " float h=h21(id+seed);if(h>dens)return 0.;",
+      " vec2 o=(vec2(h21(id+seed+7.1),h21(id+seed+3.7))-.5)*.62;",
+      " float cell=r/k;vec2 d=(fract(g)-.5-o)*cell;d.x/=1.+uWarp*16.;d.y/=1.+arcs;",
+      " float s=size*(.55+h21(id+seed+1.3)*.9);",
+      " float tw=.72+.28*sin(uT*(1.3+h*7.)+h*40.);",
+      " return exp(-dot(d,d)/(s*s))*(.22+.78*pow(h21(id+seed+9.2),2.))*tw*smoothstep(2.4,7.,cell)/(1.+arcs*.7);",
+      "}",
+      "void main(){",
+      " vec2 p=gl_FragCoord.xy/uDpr,q=p-uC;float r=length(q);",
+      " float Rh=uR*uGrow;",
+      // The hole bends the sky: near its edge the stars crowd in from further out and smear into arcs round it.
+      " vec2 qs=q*(1.+.18*Rh*Rh/max(r*r,1.));",
+      " float arcs=6.*exp(-max(r-Rh,0.)/(Rh*.2+1.))*uGrow*(1.-uWarp);",
+      // The cursor is a small lens too.
+      " vec2 m=p-uMouse;float ml=uLens*3600./(dot(m,m)+3600.);qs+=m*ml*.5;",
+      " float sky=layer(qs,96.,.3,1.,1.,1.,arcs)+layer(qs,170.,.26,.85,11.,.8,arcs)+layer(qs,300.,.2,.72,23.,.62,arcs)*.85+layer(qs,46.,.42,1.45,37.,1.25,arcs);",
+      " float hole=smoothstep(Rh-1.2,Rh+1.2,r);",
+      " vec3 col=vec3(.86,.89,.95)*sky*hole*uFade;",
+      // Light piling up round the horizon, and a faint second image of the sky hugging it.
+      " float out_=max(r-Rh,0.);",
+      " col+=vec3(.75,.8,.9)*(exp(-out_/(Rh*.32+1.))*.09+exp(-out_/(Rh*1.6+1.))*.035)*uGrow*hole;",
+      " float a=atan(q.y,q.x);",
+      " col+=vec3(.8,.85,.95)*exp(-sq((r-Rh*1.16)/(Rh*.025+.5)))*(.045+.035*sin(a*2.+uT*.5)+.025*sin(a*5.-uT*.9))*uGrow*(1.-uOpen);",
+      // The ring: a hairline of light round the hole, drawn as far as the progress has come, a spark at its head.
+      " float dr=r-Rh,core=exp(-dr*dr/(1.15*1.15*2.)),glow=dr>0.?exp(-dr/6.)*.32+exp(-dr/38.)*.07:exp(dr/2.2)*.3;",
+      " float t=fract(atan(q.x,q.y)/6.2831853+1.),arc=6.2831853*max(Rh,1.);",
+      " float drawn=smoothstep(uProg*arc+1.,uProg*arc-1.,t*arc)*mix(smoothstep(0.,40.,t*arc),1.,smoothstep(.97,1.,uProg));",
+      " float behind=max(uProg-t,0.)*arc;",
+      " float lit=drawn*(.34+.9*exp(-behind/170.))+(1.-drawn)*.075+uFlash*1.3;",
+      " lit*=.84+.32*sin(a-uT*.45);",
+      " col+=vec3(.88,.92,.98)*(core+glow)*lit*uGrow;",
+      " float ha=uProg*6.2831853;vec2 hd=q-vec2(sin(ha),cos(ha))*Rh;float hl=dot(hd,hd);",
+      " float spark=exp(-hl/14.)*1.6+exp(-sqrt(hl)/22.)*.32+exp(-hd.y*hd.y/2.2)*exp(-abs(hd.x)/46.)*.42;",
+      " col+=vec3(1.,.94,.84)*spark*step(.002,uProg)*(1.-uFlash)*(1.-uOpen)*uGrow;",
+      // Film grain and a soft vignette, like the page underneath.
+      " vec2 v=(p-uRes/uDpr*.5)/(uRes.y/uDpr);col*=1.-smoothstep(.45,1.25,length(v))*.45;",
+      " col+=(h21(gl_FragCoord.xy+fract(uT*7.3)*91.)-.5)*.03;",
+      // The window: the page shows through a disc that opens from the hole, a lit, faintly prismatic rim at its edge.
+      " float e=uOpen,Wd=mix(Rh*.92,uRmax,e);",
+      " float alpha=e>0.?smoothstep(Wd-1.5,Wd+1.5,r):1.;",
+      " float rw=1.6+10.*e,fr=1.2+4.*e;",
+      " vec3 rim=mix(vec3(exp(-sq((r-Wd)/rw))),vec3(exp(-sq((r-Wd-fr)/rw)),exp(-sq((r-Wd)/rw)),exp(-sq((r-Wd+fr)/rw))),.55)*sq(1.-e)*step(.001,e);",
+      " vec3 c=max(col,0.)*alpha;float A=alpha;",
+      " float ra=max(rim.r,max(rim.g,rim.b));c=c+rim*.95;A=max(A,min(1.,ra));c=min(c,vec3(A));",
+      " gl_FragColor=vec4(c,A);",
+      "}",
+    ].join("\n");
+    function shader(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+    if (gl) {
+      var prog = gl.createProgram();
+      gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) gl = null;
+      else {
+        gl.useProgram(prog);
+        var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+        var loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        ["uRes", "uC", "uMouse", "uDpr", "uT", "uR", "uProg", "uGrow", "uFlash", "uWarp", "uOpen", "uFlow", "uTwist", "uRmax", "uFade", "uLens"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
       }
-      try { sessionStorage.setItem("rb-loader-seen", "1"); } catch { /* intro still works */ }
-      this.classList.add("is-playing");
-      document.documentElement.classList.add("is-preloading");
-      document.body.classList.add("is-preloading");
-      // The scroll lock must never outlive the intro, whatever happens to the frame loop.
-      this.deadline = window.setTimeout(() => this.dismiss(), 5000);
-      try { this.play(); } catch { this.dismiss(); }
+    }
+    // Without WebGL the ring is an SVG stroke and the curtain simply fades.
+    if (!gl) el.classList.add("no-gl");
+
+    var nav = navigator, frugal = (nav.connection && nav.connection.saveData) || nav.deviceMemory <= 2 || nav.hardwareConcurrency <= 2;
+    var dpr = 1, quality = frugal ? 0.6 : 1;
+    function size() {
+      layout();
+      if (!gl) return;
+      dpr = Math.min(devicePixelRatio || 1, phone ? 1.5 : 2) * quality;
+      // Keep the sky under ~2.6 million pixels (1.2 on a phone): the stars stay crisp, a 4K screen does not pay
+      // for 8 million.
+      var cap = phone ? 1.2e6 : 2.6e6, px = W * H * dpr * dpr; if (px > cap) dpr *= Math.sqrt(cap / px);
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    size();
+    addEventListener("resize", size);
+
+    // A gentle pull towards the cursor; the lens follows it with a little lag.
+    var mouse = { x: -9999, y: -9999, tx: -9999, ty: -9999, on: 0, lens: 0 };
+    if (fine && !calm) addEventListener("pointermove", function (e) {
+      mouse.tx = e.clientX; mouse.ty = H - e.clientY;
+      if (mouse.x < -999) { mouse.x = mouse.tx; mouse.y = mouse.ty; }
+      mouse.on = 1;
+    }, { passive: true });
+
+    // ── The run ───────────────────────────────────────────────────────────────────────────────────────────
+    var shown = 0, last = start, flow = 0, slow = 0, frames = 0;
+    function clamp(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+    function expoOut(v) { return v >= 1 ? 1 : 1 - Math.pow(2, -10 * v); }
+    function inOut(v) { return v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2; }
+    // Calm, reduced motion or no WebGL: no window, the curtain fades instead.
+    var FADE = calm || !gl;
+    var OPEN_AT = FADE ? 0 : 0.36, OPEN_FOR = phone ? 0.75 : 0.85, END = FADE ? 0.45 : OPEN_AT + OPEN_FOR + 0.04;
+
+    function frame(now) {
+      raf = 0;
+      var s = (now - start) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
+      // A GPU that cannot hold the frame rate gets a smaller sky (once or twice), never a stutter.
+      slow = slow * 0.9 + (dt > 0.024 ? 0.1 : 0); if (++frames > 12 && slow > 0.6 && quality > 0.5 && gl) { quality *= 0.75; slow = 0; frames = 0; size(); }
+      if (!exitAt) {
+        // Never 100 before MIN_RUN, never stuck once the real work is done or the budget is spent.
+        var ceiling = s >= MIN_RUN ? 1 : 1 - Math.pow(1 - s / MIN_RUN, 1.7);
+        var target = Math.min(ceiling, Math.max(real(), Math.min(0.96, s / BUDGET)));
+        if (s >= BUDGET) target = ceiling;
+        // Eased towards the target, plus a steady walk so the last few percent never crawl.
+        shown = Math.min(target, shown + (target - shown) * (1 - Math.exp(-dt * 8)) + dt * 0.12);
+        count(Math.round(shown * 100));
+        if (shown >= 1 && s >= MIN_RUN) exit(now);
+      }
+      var x = exitAt ? (now - exitAt) / 1000 : -1;
+      // The ring flashes, the hole draws a breath (and, on a phone, glides to the sculpture), the window opens.
+      var flash = x < 0 ? 0 : Math.pow(1 - clamp(x / 0.32), 2);
+      var breath = x < 0 ? 0 : inOut(clamp((x - 0.1) / 0.3));
+      var open = x < 0 || FADE ? 0 : expoOut(clamp((x - OPEN_AT) / OPEN_FOR));
+      if (x >= OPEN_AT && !released) { released = true; loaded(); }
+      if (x >= END) { finish(false); return; }
+
+      var grow = calm ? 1 : expoOut(clamp((s - 0.08) / 0.9));
+      var cx = ring.x + (sculpt.x - ring.x) * breath, cy = ring.y + (sculpt.y - ring.y) * breath;
+      var cr = (ring.r + (sculpt.r - ring.r) * breath) * (1 - 0.14 * Math.sin(Math.min(1, breath) * Math.PI) - 0.05 * breath);
+      var warp = calm ? 0 : clamp(breath * 1.2) * (1 - open);
+      flow += dt * (calm ? 0 : 0.05 + shown * 0.09 + warp * 1.4);
+      mouse.x += (mouse.tx - mouse.x) * (1 - Math.exp(-dt * 9)); mouse.y += (mouse.ty - mouse.y) * (1 - Math.exp(-dt * 9));
+      mouse.lens += (mouse.on * (1 - open) - mouse.lens) * (1 - Math.exp(-dt * 4));
+
+      if (gl) {
+        var far = Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy)) + 60;
+        gl.uniform2f(U.uRes, canvas.width, canvas.height); gl.uniform1f(U.uDpr, canvas.width / W);
+        gl.uniform2f(U.uC, cx, H - cy); gl.uniform2f(U.uMouse, mouse.x, mouse.y);
+        gl.uniform1f(U.uT, s); gl.uniform1f(U.uR, cr); gl.uniform1f(U.uProg, shown); gl.uniform1f(U.uGrow, grow);
+        gl.uniform1f(U.uFlash, flash); gl.uniform1f(U.uWarp, warp); gl.uniform1f(U.uOpen, open); gl.uniform1f(U.uFlow, flow);
+        gl.uniform1f(U.uTwist, calm ? 0.12 : 0.16 + shown * 0.22 + breath * 0.3); gl.uniform1f(U.uRmax, far);
+        gl.uniform1f(U.uFade, clamp(s / 0.45)); gl.uniform1f(U.uLens, mouse.lens);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      } else {
+        el.style.setProperty("--sg-p", String(shown));
+        el.style.setProperty("--sg-x", ring.x + "px"); el.style.setProperty("--sg-y", ring.y + "px"); el.style.setProperty("--sg-r", ring.r + "px");
+      }
+      raf = requestAnimationFrame(frame);
     }
 
-    private play() {
-      const canvas = this.querySelector<HTMLCanvasElement>("[data-ld-type]")!;
-      const x = canvas.getContext("2d");
-      if (!x) { this.dismiss(); return; }
-      const de = (this.dataset.lang || "en") === "de";
-      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const touch = matchMedia("(max-width: 760px), (pointer: coarse)").matches;
-      const W = innerWidth, H = innerHeight, dpr = Math.min(devicePixelRatio || 1, 2);
-      canvas.width = W * dpr; canvas.height = H * dpr; x.scale(dpr, dpr);
-      const display = getComputedStyle(document.documentElement).getPropertyValue("--font-display").trim() || "system-ui, sans-serif";
-
-      // ── The headline to draw: the real one, where it will stand, in its own type ────────────
-      type Line = { text: string; left: number; top: number; height: number; font: string; spacing: string };
-      let lines: Line[] = [];
-      const measure = () => {
-      const next: Line[] = [];
-      const sources = [...document.querySelectorAll<HTMLElement>(".hero-title .line")];
-      const shift = (el: HTMLElement) => { const m = new DOMMatrixReadOnly(getComputedStyle(el).transform === "none" ? undefined : getComputedStyle(el).transform); return m.m42; };
-      for (const el of sources) {
-        const cs = getComputedStyle(el), font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        const dy = shift(el), spacing = cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
-        // A line may wrap on narrow screens: take each word's own box and regroup them into the rows the page shows.
-        const rows: { words: string[]; left: number; top: number; height: number }[] = [];
-        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-          const text = node.textContent || "";
-          for (const m of text.matchAll(/\S+/g)) {
-            const range = document.createRange(); range.setStart(node, m.index!); range.setEnd(node, m.index! + m[0].length);
-            const r = range.getBoundingClientRect(); if (r.width < 1) continue;
-            const row = rows.find((w) => Math.abs(w.top - r.top) < r.height * .5);
-            if (row) { row.words.push(m[0]); row.left = Math.min(row.left, r.left); }
-            else rows.push({ words: [m[0]], left: r.left, top: r.top, height: r.height });
-          }
-        }
-        rows.sort((a, b) => a.top - b.top).forEach((r) => next.push({ text: r.words.join(" "), left: r.left, top: r.top - dy, height: r.height, font, spacing }));
-      }
-      if (!next.length) {
-        // Elsewhere: the name, centred, in the same face.
-        const size = Math.min(W * .075, 64), font = `400 ${size}px ${display}`;
-        x.font = font; const w = x.measureText("Rodion Belousov").width;
-        next.push({ text: "Rodion Belousov", left: (W - w) / 2, top: H / 2 - size * .7, height: size * 1.2, font, spacing: "-0.02em" });
-      }
-      lines = next;
-      };
-      // The headline reflows once the display face arrives: follow it so the outline hands over in place.
-      measure();
-      document.fonts?.ready.then(measure);
-      addEventListener("load", measure, { once: true });
-      window.setTimeout(measure, 400);
-      const crafts = de ? ["Websites", "Video", "3D", "SEO"] : ["Websites", "Video", "3D", "SEO"];
-
-      // ── Real progress: fonts, document, eager images; walked to the end by the budget ──────
-      const BUDGET = touch ? 1.7 : 2.2;
-      const MIN_RUN = reduced ? 0.2 : touch ? 1.2 : 1.5;
-      let fontsDone = 0, domDone = document.readyState === "complete" ? 1 : 0;
-      document.fonts?.ready.then(() => (fontsDone = 1));
-      if (!domDone) addEventListener("load", () => (domDone = 1), { once: true });
-      const eager = [...document.images].filter((img) => img.loading !== "lazy");
-      const pending = eager.filter((img) => !img.complete);
-      const total = Math.max(1, eager.length);
-      let loaded = eager.length - pending.length;
-      let imagesDone = pending.length ? loaded / total : 1;
-      pending.forEach((img) => { const bump = () => (imagesDone = ++loaded / total); img.addEventListener("load", bump, { once: true }); img.addEventListener("error", bump, { once: true }); });
-      const real = () => fontsDone * 0.3 + domDone * 0.25 + imagesDone * 0.45;
-      const ceiling = (s: number) => (s >= MIN_RUN ? 1 : 1 - Math.pow(1 - s / MIN_RUN, 1.6));
-      const clamp = (v: number) => Math.max(0, Math.min(1, v));
-
-      const start = performance.now();
-      let shown = 0;
-      const tick = () => {
-        if (this.dismissed) return;
-        const s = (performance.now() - start) / 1000;
-        const target = Math.min(Math.max(real(), Math.min(1, s / BUDGET)), ceiling(s));
-        shown += (target - shown) * 0.12; if (s > BUDGET) shown = 1;
-        const p = Math.min(1, shown);
-        x.clearRect(0, 0, W, H);
-        const appear = clamp(s / .5);
-
-        // The headline: a hairline outline, filled with light line by line as the page arrives.
-        lines.forEach((l, i) => {
-          x.font = l.font; (x as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = l.spacing;
-          x.textBaseline = "alphabetic";
-          const m = x.measureText(l.text), asc = m.actualBoundingBoxAscent || l.height * .72, desc = m.actualBoundingBoxDescent || 0;
-          const y = l.top + (l.height - (asc + desc)) / 2 + asc;
-          x.globalAlpha = appear;
-          x.lineWidth = 1; x.strokeStyle = "rgba(255,255,255,.28)"; x.strokeText(l.text, l.left, y);
-          const k = clamp(p * lines.length - i);
-          if (k > 0) {
-            x.save(); x.beginPath(); x.rect(l.left - 4, l.top - l.height, (m.width + 8) * k, l.height * 3); x.clip();
-            x.fillStyle = "#f4f4f2"; x.fillText(l.text, l.left, y); x.restore();
-          }
-        });
-
-        // The four crafts, lit one after another along the bottom.
-        x.globalAlpha = appear; x.textBaseline = "alphabetic";
-        x.font = `400 ${touch ? 13 : 14}px ${display}`; (x as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = "0.02em";
-        const gap = touch ? 22 : 30; let cx = touch ? 24 : Math.max(24, lines[0].left);
-        // Along the bottom, unless the headline reaches down there; then along the top.
-        const last = lines[lines.length - 1], low = H - (touch ? 34 : 44);
-        const rowY = last.top + last.height > low - 30 ? (touch ? 48 : 56) : low;
-        crafts.forEach((word, i) => {
-          x.fillStyle = `rgba(244,244,242,${.22 + .68 * clamp((p - i * .22) / .18)})`;
-          x.fillText(word, cx, rowY); cx += x.measureText(word).width + gap;
-        });
-        x.textAlign = "right"; x.fillStyle = "rgba(244,244,242,.5)";
-        x.fillText(String(Math.round(p * 100)), W - (touch ? 24 : Math.max(24, lines[0].left)), rowY);
-        x.textAlign = "left"; x.globalAlpha = 1;
-
-        if (p >= 0.999 && s > MIN_RUN) { this.dismiss(); return; }
-        this.raf = requestAnimationFrame(tick);
-      };
-      this.raf = requestAnimationFrame(tick);
+    function exit(now) {
+      if (exitAt) return;
+      exitAt = now; count(100);
+      el.classList.add("is-leaving");
+      if (FADE) el.classList.add("is-fading");
     }
 
-    private dismiss() {
-      if (this.dismissed) return;
-      this.dismissed = true;
-      clearTimeout(this.deadline);
-      cancelAnimationFrame(this.raf);
-      this.classList.add("is-hidden", "is-opening");
-      document.body.classList.add("is-loaded");
-      document.documentElement.classList.remove("is-preloading");
-      document.body.classList.remove("is-preloading");
-      window.__rbLenis?.resize();
-      window.dispatchEvent(new CustomEvent("rb:loaded"));
-      window.setTimeout(() => this.remove(), 1400);
+    function finish(forced) {
+      if (done) return;
+      done = true; clearTimeout(deadline); cancelAnimationFrame(raf);
+      removeEventListener("resize", size);
+      if (!released) { released = true; loaded(); }
+      var gone = function () { el.remove(); root.classList.remove("rb-intro"); };
+      if (forced) { el.classList.add("is-leaving", "is-fading"); setTimeout(gone, 450); } else gone();
+      var lose = gl && gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
     }
-  }
 
-  if (!customElements.get("rb-studio-loader")) {
-    customElements.define("rb-studio-loader", StudioLoader);
-  }
+    raf = requestAnimationFrame(frame);
+    // A tab opened in the background has no frames to give: open the page as soon as it is looked at.
+    document.addEventListener("visibilitychange", function () { if (!document.hidden && !done && !raf) raf = requestAnimationFrame(frame); });
+  })();
 </script>
+
+<style is:global>
+  rb-studio-loader { display: none; }
+  html.rb-intro rb-studio-loader {
+    position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden;
+    background: #000; color: #eef0f2; pointer-events: auto; contain: strict;
+    -webkit-user-select: none; user-select: none;
+    /* If no script ever runs, the curtain lifts by itself. */
+    animation: sg-failsafe .5s 6s forwards;
+  }
+  html.rb-intro rb-studio-loader.is-live { animation: none; }
+  @keyframes sg-failsafe { to { opacity: 0; visibility: hidden; } }
+
+  rb-studio-loader.is-leaving { pointer-events: none; }
+  /* With a window opening in the sky, the black is the canvas's own; the element's background goes at once. */
+  rb-studio-loader.is-leaving:not(.is-fading) { background: transparent; }
+  rb-studio-loader.is-fading { transition: opacity .42s cubic-bezier(.4, 0, .2, 1); opacity: 0; }
+
+  .sg-sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* No WebGL: the ring is a stroke, drawn as the page loads. */
+  .sg-ring { display: none; }
+  rb-studio-loader.no-gl .sg-ring {
+    display: block; position: absolute; left: calc(var(--sg-x, 50vw) - var(--sg-r, 120px)); top: calc(var(--sg-y, 40vh) - var(--sg-r, 120px));
+    width: calc(var(--sg-r, 120px) * 2); height: calc(var(--sg-r, 120px) * 2); transform: rotate(-90deg); overflow: visible;
+  }
+  .sg-ring circle { fill: #000; stroke: #e9edf2; stroke-width: .35; stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--sg-p, 0)); vector-effect: non-scaling-stroke; }
+
+  .sg-type {
+    position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between;
+    padding: clamp(22px, 3.2vw, 44px) clamp(20px, 5.5vw, 84px) clamp(26px, 4.4vw, 60px);
+    opacity: 0; transition: opacity .5s ease;
+  }
+  rb-studio-loader.is-typed .sg-type { opacity: 1; }
+
+  .sg-meta { display: flex; justify-content: space-between; gap: 24px; font: 500 10.5px/1.4 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; color: rgba(238, 240, 242, .62); }
+  .sg-meta i { font-style: normal; color: rgba(238, 240, 242, .34); }
+
+  .sg-foot { display: flex; flex-direction: column; gap: clamp(14px, 1.6vw, 22px); }
+
+  .sg-count {
+    display: flex; align-items: flex-start; font-family: "RB Space", Arial, sans-serif; font-weight: 300;
+    font-size: clamp(76px, 11.5vw, 188px); line-height: 1; letter-spacing: -.06em; color: #f2f3f4;
+  }
+  .sg-col { display: block; height: 1em; overflow: hidden; }
+  .sg-col > span { display: flex; flex-direction: column; transition: transform .62s cubic-bezier(.2, .75, .12, 1); will-change: transform; }
+  .sg-col b { display: block; height: 1em; font-weight: inherit; font-variant-numeric: tabular-nums; text-align: center; width: .62em; }
+  .sg-col.is-lead { color: rgba(242, 243, 244, .16); transition: color .4s ease; }
+  .sg-count small { margin: .14em 0 0 .18em; font: 500 11px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .14em; color: rgba(238, 240, 242, .5); }
+
+  .sg-crafts { display: flex; gap: clamp(14px, 2vw, 30px); margin: 0; padding: 0; list-style: none; font: 500 10.5px/1.4 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; }
+  .sg-crafts li { color: rgba(238, 240, 242, .26); transition: color .5s ease; }
+  .sg-crafts li.is-on { color: rgba(238, 240, 242, .86); }
+  .sg-crafts li + li::before { content: "/"; margin-right: clamp(14px, 2vw, 30px); color: rgba(238, 240, 242, .18); }
+
+  /* Leaving: the digits roll up out of their windows one after another, the lines fade. */
+  rb-studio-loader.is-leaving .sg-col > span { transition: transform .5s cubic-bezier(.55, 0, .75, .2); }
+  rb-studio-loader.is-leaving .sg-col[data-col="2"] > span { transform: translate3d(0, -2em, 0) !important; }
+  rb-studio-loader.is-leaving .sg-col[data-col="1"] > span { transform: translate3d(0, -11em, 0) !important; transition-delay: .04s; }
+  rb-studio-loader.is-leaving .sg-col[data-col="0"] > span { transform: translate3d(0, -101em, 0) !important; transition-delay: .08s; }
+  rb-studio-loader.is-leaving .sg-meta,
+  rb-studio-loader.is-leaving .sg-crafts,
+  rb-studio-loader.is-leaving .sg-count small { opacity: 0; transition: opacity .3s ease; }
+
+  @media (max-width: 760px) {
+    .sg-meta { font-size: 9.5px; letter-spacing: .14em; }
+    .sg-meta span:last-child i { display: none; }
+    .sg-count { font-size: clamp(76px, 25vw, 120px); }
+    .sg-crafts { font-size: 9.5px; letter-spacing: .14em; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sg-col > span { transition: none; }
+  }
+  html.rb-calm .sg-col > span { transition: none; }
+</style>

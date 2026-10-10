@@ -5,6 +5,7 @@ import Footer from "../components/Footer.astro";
 import SmoothScroll from "../components/SmoothScroll.astro";
 import Tunnel from "../components/Tunnel.astro";
 import Webgl from "../components/Webgl.astro";
+import StudioLoader from "../components/StudioLoader.astro";
 import CursorField from "../components/CursorField.astro";
 import SoundField from "../components/SoundField.astro";
 import CaseTransition from "../components/CaseTransition.astro";
@@ -48,6 +49,8 @@ interface Props {
   canonicalPath?: string;
   /** Disable the default Webgl component to provide a custom one */
   noWebgl?: boolean;
+  /** Play the "Singularity" intro on the first page of a session (the home page). */
+  intro?: boolean;
 }
 
 const {
@@ -66,6 +69,7 @@ const {
   lockLang = false,
   hideFinale = false,
   noWebgl = false,
+  intro = false,
   canonicalPath,
 } = Astro.props;
 const t = useTranslations(lang);
@@ -310,7 +314,7 @@ const cta = isDeck
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
 const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
   defaultLang,
-)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
+)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');var first=sessionStorage.getItem('rb-loader-seen')!=='1';sessionStorage.setItem('rb-loader-seen','1');if(${intro && !isDeck ? 'true' : 'false'}&&first){document.documentElement.classList.add('rb-intro','is-preloading');setTimeout(function(){document.documentElement.classList.remove('is-preloading');if(document.body)document.body.classList.remove('is-preloading')},7000)}if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
 ---
 
 <html lang={lang === "de" ? "de-AT" : "en"}>
@@ -387,9 +391,11 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
       }
     </script>
 
+    {intro && <link rel="preload" href="/rb-space.woff2" as="font" type="font/woff2" crossorigin />}
     <title>{title}</title>
   </head>
   <body class:list={[{ "is-deck": isDeck }, theme && `case-theme-${theme}`]}>
+    {intro && !isDeck && <StudioLoader lang={lang} />}
     <CursorField />
     <SoundField />
 

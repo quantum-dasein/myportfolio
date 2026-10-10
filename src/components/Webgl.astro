@@ -88,7 +88,12 @@ const { sculpture = true } = Astro.props;
       addEventListener("scroll", this.updateScroll, { passive: true });
       document.addEventListener("visibilitychange", this.onVisibility);
       addEventListener("rb:calmchange", this.onCalmChange as EventListener);
-      this.raf = requestAnimationFrame(this.render);
+      // The glass material is a large shader. Compiled on the first render it froze the main thread for a
+      // moment, right under the intro; compileAsync lets the GPU link it while the page keeps its frames.
+      const renderer = this.renderer;
+      renderer.compileAsync(this.scene, this.camera).catch(() => {}).then(() => {
+        if (this.isConnected && this.renderer === renderer && !this.raf) this.raf = requestAnimationFrame(this.render);
+      });
     }
 
     disconnectedCallback() {
