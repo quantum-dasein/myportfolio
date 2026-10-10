@@ -45,19 +45,6 @@ const { sculpture = true } = Astro.props;
     private calm = document.documentElement.classList.contains("rb-calm");
 
     connectedCallback() {
-      // On the first page of a visit the intro owns the main thread. The first
-      // render bakes the environment map and compiles the sculpture's physical
-      // material — a stall of a few hundred ms on an ordinary laptop, which
-      // landed squarely on the intro and on the headline rising out from under
-      // it. Hold the boot until the curtain has parted and the headline has
-      // mostly landed; the canvas fades in behind it either way.
-      if (!document.documentElement.classList.contains("rb-intro")) return this.boot();
-      const later = () => setTimeout(() => this.isConnected && !this.renderer && this.boot(), 1100);
-      if (document.body.classList.contains("is-loaded")) later();
-      else addEventListener("rb:loaded", later, { once: true });
-    }
-
-    private boot() {
       this.renderer = new THREE.WebGLRenderer({
         alpha: true,
         antialias: !this.lowPower,
