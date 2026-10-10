@@ -306,7 +306,7 @@ const cta = isDeck
 // preferred <html lang> before paint to avoid a flash of the wrong locale attr.
 const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG__=${JSON.stringify(
   defaultLang,
-)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1'){document.documentElement.classList.add('rb-loader-seen')}else{document.documentElement.classList.add('is-preloading');setTimeout(function(){document.documentElement.classList.remove('is-preloading');if(document.body)document.body.classList.remove('is-preloading')},7000)}if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
+)};window.__LOCKED_LANG__=${JSON.stringify(lockLang ? lang : null)};try{var locked=window.__LOCKED_LANG__;var l=locked||localStorage.getItem('rb-lang')||(navigator.language||'').slice(0,2);if(window.__I18N__[l]){document.documentElement.lang=l==='de'?'de-AT':'en';}}catch(e){}try{if(localStorage.getItem('rb-motion')==='calm')document.documentElement.classList.add('rb-calm');if(sessionStorage.getItem('rb-loader-seen')==='1'){document.documentElement.classList.add('rb-loader-seen')}else{document.documentElement.classList.add('is-preloading','rb-intro');setTimeout(function(){document.documentElement.classList.remove('is-preloading');if(document.body)document.body.classList.remove('is-preloading')},5600)}if(sessionStorage.getItem('rb-case-arrive')||sessionStorage.getItem('rb-case-return')||sessionStorage.getItem('rb-case-direct-arrive'))document.documentElement.classList.add('rb-case-arriving');if(sessionStorage.getItem('rb-warp-arrive'))document.documentElement.classList.add('rb-warp-arriving');if(sessionStorage.getItem('rb-page-arrive'))document.documentElement.classList.add('rb-page-arriving')}catch(e){}`;
 ---
 
 <html lang={lang === "de" ? "de-AT" : "en"}>
@@ -331,6 +331,9 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
     {localizedAlternates?.xDefault && <link rel="alternate" hreflang="x-default" href={localizedAlternates.xDefault} />}
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* The display face is the intro's centrepiece and the hero's headline:
+        fetch it with the HTML so the name does not rise in Arial and swap. */}
+    <link rel="preload" href="/rb-space.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Open Graph -->
     <meta property="og:type" content={pageType === "article" ? "article" : pageType === "profile" ? "profile" : "website"} />
@@ -364,14 +367,12 @@ const bootScript = `window.__I18N__=${JSON.stringify(ui)};window.__DEFAULT_LANG_
 
     <script type="application/ld+json" is:inline set:html={serializedSchema} />
 
-    <!-- The intro's scroll lock is applied here, in the boot script, rather
-         than by the loader element. The element's connectedCallback runs when
-         its bundled module executes — measured at ~3.2s on a throttled phone —
-         and until then the overlay covered the screen while the page scrolled
-         freely underneath it, which is what the intro exists to prevent. The
-         boot script runs before first paint, so the lock is in place for the
-         whole time the overlay is visible. It carries its own 7s timeout so a
-         module that never loads at all still cannot strand the page. -->
+    <!-- The intro's scroll lock and its visibility are both set here, before
+         first paint: `is-preloading` holds the page still, `rb-intro` puts the
+         curtain on screen. StudioLoader paints from HTML and CSS and is driven
+         by an inline script, so it no longer waits for a bundled module; this
+         5.6s timeout is only for a page where that script never runs, and the
+         curtain's own CSS lifts it at 5s in the same case. -->
     <script is:inline set:html={bootScript} />
     <Analytics />
     <script is:inline>
