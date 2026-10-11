@@ -56,6 +56,7 @@ export const driftRoutes: DriftRoute[] = [
   ...pages,
   ...archiveWorks.map(work => {
     const title = work.title ?? CASE_TITLES[work.id] ?? work.id;
-    return { path: `/gallery/${work.id}/`, en: `${title} — in the archive`, de: `${title} — im Archiv`, image: `/og/works/${work.id}.jpg`, lang: 'any' as const };
+    return { path: `/gallery/${work.id}/`, en: `${title} — in the archive`, de: `${title} — im Archiv`, // The portal into the Model Room has no generated card (like its own page, see gallery/[work].astro).
+    image: work.portalHref ? work.img : `/og/works/${work.id}.jpg`, lang: 'any' as const };
   }),
 ];

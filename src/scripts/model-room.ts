@@ -13,7 +13,8 @@ import { createAstronaut } from './observatory-astronaut';
 import { createRoomSound } from './model-room-sound';
 import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits';
 import { createGuide } from './model-room-guide';
-import { createKiosk } from './model-room-kiosk';
+import { createArchiveCatalog } from './model-room-catalog';
+import { createAuthor } from './model-room-author';
 import { createArchiveBay } from './model-room-archive';
 import { modelArchive } from '../data/model-archive';
 import { ROOM, WALK } from './model-room-layout';
@@ -63,7 +64,8 @@ export async function mountModelRoom(root: HTMLElement) {
   // Music and sound start with the room (SoundField: unless the visitor switched sound off).
   (window as unknown as { __rbSoundAuto?: () => void }).__rbSoundAuto?.();
   let exhibits: ReturnType<typeof createExhibits> | undefined;
-  let kiosk: ReturnType<typeof createKiosk> | undefined;
+  let catalog: ReturnType<typeof createArchiveCatalog> | undefined;
+  let author: ReturnType<typeof createAuthor> | undefined;
   // When the visitor last moved or looked around (the astronaut comes over if you stand still for long).
   let stillSince = 0, hoverAt = 0; const lastPose = new THREE.Vector4();
   const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
@@ -121,7 +123,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;release();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();archive?.dispose();exhibits?.dispose();guide?.dispose();kiosk?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();archive?.dispose();exhibits?.dispose();guide?.dispose();catalog?.dispose();author?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -188,9 +190,10 @@ export async function mountModelRoom(root: HTMLElement) {
     pointer.set((clientX - rect.left) / rect.width * 2 - 1, 1 - (clientY - rect.top) / rect.height * 2);
     raycaster.setFromCamera(pointer, camera);
     // The archive terminal answers a click with its panel rather than an inspection orbit.
-    const terminal = kiosk ? raycaster.intersectObjects(kiosk.targets, false)[0] : undefined;
+    // Rodion himself (and his stand) answers a click by turning to talk.
+    const host = author ? raycaster.intersectObjects(author.targets, false)[0] : undefined;
     const hit = raycaster.intersectObjects([...meshes, ...(exhibits?.meshes ?? []), ...(archive?.meshes ?? [])], false)[0];
-    if (terminal && (!hit || terminal.distance < hit.distance)) { kiosk!.open(); return; }
+    if (host && (!hit || host.distance < hit.distance + .05)) { if (inspecting) mode(false); author!.open(); return; }
     if (!hit) { selected = '';selection.visible = false;labelSelection();return; }
     const info = archive?.info(hit.object.userData.exhibit) ?? exhibits?.info(hit.object.userData.exhibit ?? 'kitchen') ?? KITCHEN;
     exhibits?.poke(info.id);
@@ -206,12 +209,12 @@ export async function mountModelRoom(root: HTMLElement) {
     if (Math.abs(x) > WALK.x || z < WALK.back || z > (Math.abs(x) < WALK.doorHalf ? WALK.door : WALK.front)) return true;
     if (self && astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
     // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
-    return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(kiosk ? [kiosk.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
+    return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(author ? [author.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
   }
   function tick(time: number) {
     frame = 0;if (disposed || failed || document.hidden) return;
     const dt = Math.min(.04, Math.max(0, (time - last) / 1000));last = time;
-    if (ready && !inspecting && !kiosk?.isOpen()) {
+    if (ready && !inspecting && !catalog?.isOpen()) {
       const held = (key: string, arrow: string, touch: string) => keys.has(key) || keys.has(arrow) || [...touchKeys.values()].includes(touch);
       let forward = Number(held('KeyW', 'ArrowUp', 'forward')) - Number(held('KeyS', 'ArrowDown', 'back'));
       let right = Number(held('KeyD', 'ArrowRight', 'right')) - Number(held('KeyA', 'ArrowLeft', 'left'));
@@ -233,7 +236,7 @@ export async function mountModelRoom(root: HTMLElement) {
     }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
-    fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);kiosk?.update(t, dt);
+    fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);author?.update(t, dt);author?.place(root.clientWidth, root.clientHeight);
     // The kitchen's shadows are static; only the astronaut moves through them, so a few updates a second are enough.
     if (design && ++frames % 4 === 0) design.key.shadow.needsUpdate = true;
     if (Math.abs(lastPose.x - camera.position.x) + Math.abs(lastPose.y - camera.position.z) + Math.abs(lastPose.z - yaw) + Math.abs(lastPose.w - pitch) > 1e-3 || inspecting) { stillSince = t; lastPose.set(camera.position.x, camera.position.z, yaw, pitch); }
@@ -245,14 +248,14 @@ export async function mountModelRoom(root: HTMLElement) {
     }
     // Walking, the caption follows what you look at.
     if (ready && exhibits && !inspecting && time - captionAt > 250) {
-      captionAt = time; const forward = camera.getWorldDirection(new THREE.Vector3()); caption(archive?.inView(camera.position, forward) ?? exhibits.inView(camera.position, forward));
+      captionAt = time; const forward = camera.getWorldDirection(new THREE.Vector3()); caption(author?.inView(camera.position, forward) ?? archive?.inView(camera.position, forward) ?? exhibits.inView(camera.position, forward));
     }
     sound.frame(stepping, THREE.MathUtils.clamp(1 - (WALK.door - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4));
     // The way back only opens once you have stepped clear of it (you arrive standing in it).
     if (arriveAt < 0 && camera.position.z < 10.2 + ROOM.shift) portalArmed = true;
     if (ready && portalArmed && !leaving && !inspecting && fx?.inPortal(camera.position)) leave();
     // Behind the open archive tablet the room is only a blur: a third of the frames is plenty there.
-    if (!(kiosk?.isOpen() && frames % 3)) { if(composer)composer.render();else renderer!.render(scene, camera); }
+    if (!(catalog?.isOpen() && frames % 3)) { if(composer)composer.render();else renderer!.render(scene, camera); }
     frame = requestAnimationFrame(tick);
   }
   function fit() {
@@ -282,25 +285,33 @@ export async function mountModelRoom(root: HTMLElement) {
       target: () => composer?.readBuffer ?? null, wireframe: () => wireframe,
       onReveal: () => { sound.reveal(); guide?.emote('curious', performance.now() / 1000); },
     });
-    kiosk = createKiosk({
-      scene, camera, root, de, coarse: coarse.matches, at: new THREE.Vector3(-3, 0, 10.9), face: .5,
+    // The archive tablet: Rodion's book of works. He opens it for you (or the "Model archive" button does);
+    // a work chosen in it is built on the stage in the middle of the hall, and he turns to present it.
+    catalog = createArchiveCatalog({
+      root, de, entries: modelArchive, activeId: () => archive?.activeId() ?? null,
       onOpen: () => { release(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
-      archive: {
-        entries: modelArchive, activeId: () => archive?.activeId() ?? null,
-        cancel: () => archive?.cancel(),
-        select: async (entry, progress) => {
-          const info = await archive!.show(entry, progress); if (!info || disposed) return false;
-          selected = ''; selectedMaterial = ''; selection.visible = false; caption(info); arriveAt = -1;
-          if (inspecting) inspectionHome(); else mode(true);
-          return true;
-        },
-        clear: async () => {
-          if (archive?.info(current.id)) { mode(false); caption(KITCHEN); selected = ''; selection.visible = false; labelSelection(); }
-          await archive?.clear();
-        },
+      cancel: () => archive?.cancel(),
+      select: async (entry, progress) => {
+        const info = await archive!.show(entry, progress); if (!info || disposed) return false;
+        selected = ''; selectedMaterial = ''; selection.visible = false; caption(info); arriveAt = -1;
+        if (inspecting) inspectionHome(); else mode(true);
+        author?.present(entry.title);
+        return true;
+      },
+      clear: async () => {
+        if (archive?.info(current.id)) { mode(false); caption(KITCHEN); selected = ''; selection.visible = false; labelSelection(); }
+        await archive?.clear();
       },
     });
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, kiosk, fx, sound, guide: () => guide, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; } };
+    author = createAuthor({
+      scene, camera, renderer, root, loader: gltfLoader, mobile: coarse.matches, reduced, de, coarse: () => coarse.matches,
+      stage: new THREE.Vector3(ROOM.stage.x, 0, ROOM.stage.z), target: () => composer?.readBuffer ?? null,
+      onArchive: () => catalog?.open(),
+      onTalk: () => { release(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); guide?.emote('hi', performance.now() / 1000); },
+      onSpeak: () => sound.click(),
+    });
+    raycaster.layers.enable(author.layer);
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, catalog, author, fx, sound, guide: () => guide, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; } };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     // The composer's own buffer is multisampled: without it the post chain throws away the canvas's antialiasing
@@ -334,7 +345,7 @@ export async function mountModelRoom(root: HTMLElement) {
       yaw -= event.movementX * .0022; pitch = THREE.MathUtils.clamp(pitch - event.movementY * .0022, -1.2, 1.2); look();
     }, { signal });
     canvas.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || !ready || kiosk?.isOpen()) return;canvas.focus({ preventScroll: true });
+      if (event.button !== 0 || !ready || catalog?.isOpen()) return;canvas.focus({ preventScroll: true });
       if (event.pointerType === 'mouse' && !coarse.matches && !inspecting) {
         if (!locked) { try { (canvas.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => {}); } catch { /* not allowed here */ } return; }
         const r = canvas.getBoundingClientRect(); document.exitPointerLock(); select(r.left + r.width / 2, r.top + r.height / 2); return;
@@ -362,7 +373,7 @@ export async function mountModelRoom(root: HTMLElement) {
     canvas.addEventListener('lostpointercapture', () => { gesture = undefined; }, { signal });
     $('light').addEventListener('click',()=>{studioLight=!studioLight;renderer!.toneMappingExposure=studioLight?1.4:.95;scene.environmentIntensity=studioLight?1.1:.45;if(bloom)bloom.strength=studioLight?.16:.32;labels();},{signal});
     $('inspect').addEventListener('click', () => mode(true), { signal });$('walk').addEventListener('click', () => mode(false), { signal });
-    $('archive').addEventListener('click', () => kiosk?.open(), { signal });
+    $('archive').addEventListener('click', () => { author?.close(true); catalog?.open(); }, { signal });
     $('reset').addEventListener('click', () => { selected = '';selection.visible = false;release();inspecting ? inspectionHome() : home();labelSelection(); }, { signal });
     $('wire').addEventListener('click', () => {
       wireframe = !wireframe;[...meshes, ...(exhibits?.meshes ?? []), ...(archive?.meshes ?? [])].forEach(mesh => {
@@ -380,7 +391,7 @@ export async function mountModelRoom(root: HTMLElement) {
     const padRead = (touches: TouchList) => {
       for (const id of [...touchKeys.keys()]) if (id[0] === 't') touchKeys.delete(id);
       for (const touch of Array.from(touches)) {
-        if (!padFingers.has(touch.identifier) || !ready || inspecting || kiosk?.isOpen()) continue;
+        if (!padFingers.has(touch.identifier) || !ready || inspecting || catalog?.isOpen()) continue;
         const under = document.elementFromPoint(touch.clientX, touch.clientY)?.closest<HTMLElement>('[data-mr-move]');
         if (under && pad.contains(under)) touchKeys.set(`t${touch.identifier}`, under.dataset.mrMove!);
       }
@@ -411,10 +422,10 @@ export async function mountModelRoom(root: HTMLElement) {
     root.addEventListener('selectstart', event => { if (!typing(event.target)) event.preventDefault(); }, { signal });
     root.addEventListener('contextmenu', event => { if (!typing(event.target)) event.preventDefault(); }, { signal });
     addEventListener('keydown', event => {
-      if (!ready || kiosk?.isOpen() || event.altKey || event.ctrlKey || event.metaKey || document.body.classList.contains('is-nav-opened')) return;
+      if (!ready || catalog?.isOpen() || event.altKey || event.ctrlKey || event.metaKey || document.body.classList.contains('is-nav-opened')) return;
       if ((event.target as HTMLElement)?.closest('button,a,input,textarea,select,[contenteditable]')) return;
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(event.code)) { event.preventDefault();keys.add(event.code); }
-      if (event.code === 'Escape') mode(false);if (event.code === 'KeyE') mode(true);
+      if (event.code === 'Escape') { author?.close(); mode(false); }if (event.code === 'KeyE') mode(true);
     }, { signal });
     addEventListener('keyup', event => keys.delete(event.code), { signal });
     addEventListener('blur', () => { release();gesture = undefined; }, { signal });
@@ -474,7 +485,7 @@ export async function mountModelRoom(root: HTMLElement) {
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = ARRIVE_Z; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.
-    setTimeout(() => { if (!disposed) void exhibits?.load(); }, reduced ? 0 : 2600);
+    setTimeout(() => { if (!disposed) { void exhibits?.load(); void author?.load().catch(error => console.warn('The author could not join the room', error)); } }, reduced ? 0 : 2600);
     resume();
   } catch (error) {
     if (!disposed) { console.warn('Model Room could not open', error);fail(); }

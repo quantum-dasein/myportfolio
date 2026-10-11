@@ -356,7 +356,7 @@ export function mountCenotaphLive(o: {
       fragmentShader: `uniform sampler2D tWall; uniform float uTime; varying vec3 vW;
         void main(){ vec2 uv = abs(vW.x) > 3.3 ? vW.zy / 3. : vW.zx / 3.;
           vec3 a = texture2D(tWall, uv).rgb;
-          float z = vW.z - 36.; float s = mod(z, 11.) - 5.5; float lamp = exp(-s * s * .05) * exp(-pow(vW.y - 4.4, 2.) * .08);
+          float z = vW.z - 41.5; float s = mod(z, 11.) - 5.5; float lamp = exp(-s * s * .05) * exp(-pow(vW.y - 4.4, 2.) * .08);
           float fl = .85 + .15 * sin(uTime * 7. + floor(z / 11.) * 3.1);
           vec3 c = a * (vec3(1., .6, .3) * lamp * 1.8 * fl + vec3(.05, .055, .07)) * exp(-max(0., vW.z - 60.) * .03);
           gl_FragColor = vec4(c, 1.); }`,
@@ -392,15 +392,35 @@ export function mountCenotaphLive(o: {
     dynamic.push({ update: t => { m.uniforms.uTime.value = t; dm.uniforms.uTime.value = t; dm.uniforms.uPx.value = renderer.getPixelRatio(); spot.intensity = 900 * (1 + .08 * Math.sin(t * .52 + .5)); } });
   }
 
+  // The small fires burn on the walls of the tunnel: each one gets a bronze sconce (a plate on
+  // the wall, an arm, a cup under the flame), so it no longer hangs in the air.
+  const sconceMat = new THREE.MeshStandardMaterial({ color: '#4a3220', roughness: .42, metalness: .75, emissive: '#ff8a3c', emissiveIntensity: .12 });
+  function sconce(at: THREE.Vector3, base: number) {
+    const side = Math.sign(at.x) || 1, wall = at.z > 43.2 ? 3.38 : 3.5;
+    const g = new THREE.Group(); g.position.set(at.x, base, at.z);
+    const cup = new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(.02, -.16), new THREE.Vector2(.06, -.14), new THREE.Vector2(.15, -.02), new THREE.Vector2(.17, .02), new THREE.Vector2(.14, .03)], 20), sconceMat);
+    const reach = wall - Math.abs(at.x) + .02;
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.028, .035, Math.hypot(reach, .32), 10), sconceMat);
+    arm.position.set(side * reach / 2, -.3, 0); arm.rotation.z = side * Math.atan2(reach, .32);
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(.05, .46, .2), sconceMat); plate.position.set(side * reach, -.42, 0);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(.045, 12, 8), sconceMat); knob.position.set(side * reach * .55, -.22, 0);
+    g.add(cup, arm, plate, knob);
+    return g;
+  }
+
   function buildFires() {
     const geo = new THREE.PlaneGeometry(1, 1.6); geo.translate(0, .8, 0);
     meta!.fires.forEach((f, i) => {
       const at = b2t(f);
+      // The bake put the first pair of wall fires at the mouth of the cut, where the stepped wall is only
+      // 1.5 m high: at 4.4 m they burned on nothing. They hang in the tunnel instead, a lamp further in.
+      if (at.z > 30 && at.z < 43.2) at.z += 22;
       const big = at.distanceTo(new THREE.Vector3(0, at.y, 0)) < 20;
       const m = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uSeed: { value: i * .37 } }, vertexShader: flameVertex, fragmentShader: flameFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
       const flame = new THREE.Mesh(geo, m); flame.position.copy(at).add(new THREE.Vector3(0, -.5 * (big ? 1.2 : .5), 0)); flame.scale.setScalar(big ? 1.35 : .5);
       scene.add(flame);
       dynamic.push({ update: t => { m.uniforms.uTime.value = t; flame.rotation.y = Math.atan2(camera.position.x - flame.position.x, camera.position.z - flame.position.z); } });
+      if (!big) scene.add(sconce(at, flame.position.y));
       if (big) {
         const light = new THREE.PointLight('#ff8a3c', 30, 22, 1.6); light.position.copy(at); scene.add(light);
         SOLID.push([at.x, at.z, .95]);
