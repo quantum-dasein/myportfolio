@@ -92,6 +92,7 @@ export async function mountModelRoom(root: HTMLElement) {
   let studioLight = false;
   let frame = 0, last = 0, disposed = false, ready = false, failed = false;
   let inspecting = false, wireframe = false, yaw = 0, pitch = 0, lastInput = -1;
+  let turnTo: { from: number; to: number; at: number } | null = null;
   let selected = '', selectedMaterial = '';
   const keys = new Set<string>();
   // Held directions on the walking pad: `t<id>` for a finger, `p<id>` for a mouse or pen.
@@ -242,6 +243,10 @@ export async function mountModelRoom(root: HTMLElement) {
       camera.position.z = THREE.MathUtils.lerp(ARRIVE_Z, HOME_Z(), e); fx?.setOpen(1);
       if (k >= 1) arriveAt = -1;
     }
+    if (turnTo) {
+      if (lastInput >= turnTo.at * 1000 || inspecting) turnTo = null;
+      else { const k = Math.min(1, (t - turnTo.at) / 1.8), e = k * k * (3 - 2 * k); yaw = THREE.MathUtils.lerp(turnTo.from, turnTo.to, e); look(); if (k >= 1) turnTo = null; }
+    }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
     fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);author?.update(t, dt);author?.place(root.clientWidth, root.clientHeight);
@@ -321,6 +326,15 @@ export async function mountModelRoom(root: HTMLElement) {
       onArchive: () => catalog?.open(),
       onTalk: () => { release(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); guide?.emote('hi', performance.now() / 1000); },
       onSpeak: () => sound.click(),
+      // On a narrow screen (a phone held upright) he stands outside the first view: when he greets you, the view
+      // turns to him once, gently, unless you have already looked or walked anywhere yourself.
+      onGreet: at => {
+        if (lastInput >= 0 || inspecting || catalog?.isOpen()) return;
+        const want = Math.atan2(camera.position.x - at.x, camera.position.z - at.z);
+        const half = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect);
+        const off = Math.abs(THREE.MathUtils.euclideanModulo(want - yaw + Math.PI, Math.PI * 2) - Math.PI);
+        if (off > half - .12) turnTo = { from: yaw, to: yaw + (THREE.MathUtils.euclideanModulo(want - yaw + Math.PI, Math.PI * 2) - Math.PI) * .9, at: performance.now() / 1000 };
+      },
     });
     raycaster.layers.enable(author.layer);
     // He starts loading at once, under the loading glow, so the heavy part never lands in the first seconds you walk.

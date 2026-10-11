@@ -80,6 +80,8 @@ export function createAuthor(o: {
   /** The buffer the frame is drawn into (shaders are compiled for it). */
   target: () => THREE.WebGLRenderTarget | null;
   onArchive: () => void; onTalk?: () => void; onSpeak?: () => void;
+  /** He greets the visitor (with where he stands, to turn a narrow view towards him). */
+  onGreet?: (at: THREE.Vector3) => void;
 }) {
   const { scene, camera } = o;
   const own: { dispose(): void }[] = [];
@@ -523,7 +525,7 @@ export function createAuthor(o: {
     // while the room is still opening: he may be loaded before it is.)
     if (roomAt < 0 && o.root.dataset.state === 'ready') roomAt = t;
     const settled = roomAt >= 0 && t - roomAt > 2.4;
-    if (settled && !greeted && !dialog && dist < 6.5 && inFront(camPos)) { greeted = true; mode = 'wave'; modeAt = t; speakLines(LINES.hello); lastBark = t; }
+    if (settled && !greeted && !dialog && dist < 6.5 && inFront(camPos)) { greeted = true; mode = 'wave'; modeAt = t; speakLines(LINES.hello); lastBark = t; o.onGreet?.(AUTHOR_INFO.focus); }
     if (settled && !dialog && near && greeted && t - lastBark > 16 + (barks % 3) * 4 && barks < 4 && !line && !queue.length) {
       lastBark = t; speakLines([LINES.barks[barks % LINES.barks.length]]); barks++;
       if (mode === 'work') { mode = 'notice'; modeAt = t; }
