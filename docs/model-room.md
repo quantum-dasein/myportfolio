@@ -65,13 +65,28 @@ at a sculptor's stand just inside the entrance on the left, at (-3, 10.9), facin
 `bronze-woman.mobile.glb`, triangles re-ordered bottom to top) rises out of a band of light while his
 tool follows the build line, turns to bronze, holds and starts again. He moves procedurally on his
 own skeleton: two-bone IK for the arms and the legs (planted feet, steps when he turns), a breathing,
-swaying spine, a head that looks at what matters. There are no blendshapes, so the face is still.
+swaying spine, a head that looks at what matters, over his Avaturn idle capture (`idle.json`, taken
+from the export by `scripts/model-room/extract-clip.py`; IK and capture are blended per arm, and the
+fingers keep their rest grip). The avatar has no blendshapes, so `buildFace` morphs the face at load
+from landmarks measured in its bind space: a blink (every 2–6 s, sometimes double), a jaw that opens
+on the syllables while he speaks, and a smile when he waves or talks. (`?mrdebug`:
+`__mr.author.testFace([blink, jaw, smile])` holds an expression for checking it.)
+
+**Build your own.** Whatever is chosen in the archive tablet he builds twice: full size on the stage,
+and small, by hand, on his own wheel. The work's meshes are merged into one piece of clay, scaled to
+the wheel (at most 0.6 m tall and 0.18 m from the axis) and sorted bottom to top in a worker
+(`model-room-piece.ts` / `.worker.ts`: a linear counting sort, normals and the wire's edge index, so a
+400k-triangle model costs the main thread about 5 ms). What stands on the wheel melts back into the
+clay first; the work then rises in clay, turns to bronze and holds, and loops while it is on the
+stage. Clearing the stage brings back his own figure. The denser the model, the fainter its wire.
 
 He greets a visitor who comes within 6.5 m, says a few short lines while you are near, and a click
 (or tap) opens a conversation in a glass card by his head (a bottom sheet on phones): *show me your
 work* opens the archive tablet, *I need a 3D model* shows the way to the form
 (`?project=modeling`), *how do you build them?* replays the build fast while he explains, *who are
-you?*. A work chosen in the tablet makes him turn to the stage and present it. Clicks reach him
+you?*. A work chosen in the tablet makes him turn to the stage and present it. He speaks only once the
+room is ready (2.4 s after), never over the loading screen, and the card closes when you walk away
+(further than 4.8 m, or him off screen for 1.2 s). Clicks reach him
 through invisible proxies on layer 5, which the camera (and so every post pass) never draws.
 
 **Performance.** The room compiles every shader while the loading glow covers

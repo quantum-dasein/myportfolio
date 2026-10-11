@@ -46,8 +46,8 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
   <div class="cf-audit-intro" data-audit-intro hidden>
     <strong>{lang === "de" ? "Kostenloser 3-Punkte-Check" : "Free three-point check"}</strong>
     <p>{lang === "de"
-      ? "Tragen Sie die Website ein. Sie erhalten drei konkrete Verbesserungen — ohne Verkaufsgespräch."
-      : "Add the website below. You will get three concrete improvements — no sales call."}</p>
+      ? "Tragen Sie die Website ein, wenn sie online ist (sonst beschreiben Sie sie kurz). Sie erhalten drei konkrete Verbesserungen — ohne Verkaufsgespräch."
+      : "Add the website below if it is online (if not, describe it in a line). You will get three concrete improvements — no sales call."}</p>
   </div>
   <div class="cf-field">
     <label for="cf-what"><i aria-hidden="true">01</i><span data-i18n="form.what.label">{t("form.what.label")}</span></label>
@@ -81,8 +81,8 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       class="cf-field-note"
       data-url-note
       data-audit-copy={lang === "de"
-        ? "Die Domain genügt — https:// ergänze ich automatisch."
-        : "The domain is enough — https:// is added automatically."}
+        ? "Optional — die Domain genügt. Noch nicht online (nur lokal)? Dann beschreiben Sie sie unten."
+        : "Optional — the domain is enough. Not online yet (only local)? Describe it below instead."}
       data-optional-copy={lang === "de"
         ? "Optional — leer lassen, wenn Sie keine Website haben."
         : "Optional — leave blank if you do not have a website."}
@@ -576,9 +576,10 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
       const syncAudit = () => {
         if (!url) return;
         const audit = what?.value === "audit";
-        url.required = audit;
-        url.closest(".cf-field")?.classList.toggle("is-required", audit);
-        if (urlOptional) urlOptional.hidden = audit;
+        // Never required: a site that is not online yet (on a laptop, on localhost) is a fine thing to ask about.
+        url.required = false;
+        url.closest(".cf-field")?.classList.remove("is-required");
+        if (urlOptional) urlOptional.hidden = false;
         if (urlNote) urlNote.textContent = audit ? (urlNote.dataset.auditCopy || "") : (urlNote.dataset.optionalCopy || "");
         const intro = form.querySelector<HTMLElement>("[data-audit-intro]");
         if (intro) intro.hidden = !audit;
@@ -633,7 +634,7 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
           const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
           const parsed = new URL(candidate);
           const validProtocol = parsed.protocol === "http:" || parsed.protocol === "https:";
-          const validHost = parsed.hostname.includes(".") && !parsed.hostname.startsWith(".") && !parsed.hostname.endsWith(".");
+          const validHost = parsed.hostname === "localhost" || (parsed.hostname.includes(".") && !parsed.hostname.startsWith(".") && !parsed.hostname.endsWith("."));
           if (!validProtocol || !validHost) throw new Error("invalid website URL");
           url.value = parsed.pathname === "/" && !parsed.search && !parsed.hash ? parsed.origin : parsed.href;
           return true;

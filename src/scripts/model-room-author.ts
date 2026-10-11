@@ -2,17 +2,18 @@
 // sculptor's stand by the left wall and builds a figure edge by edge: the clay rises out of a line of light
 // that runs up the piece while his tool works at it, and when it is done it turns to bronze, holds, and
 // starts again. He is the room's host and its archive: he notices you, greets you, talks (in short lines
-// with his hands), opens his archive of models for you and turns to point at whatever you put on the
-// stage, and he is the way to commission a model of your own.
+// with his hands), opens his archive of models for you, and whatever you choose there he builds twice: full
+// size on the stage, and small, by hand, on his own wheel. He is also the way to commission a model.
 //
 // He moves procedurally on his own skeleton (a Mixamo-style rig in a T-pose): two-bone IK for the arms
 // (the tool hand follows the build line) and for the legs (the feet stay planted, and he steps when he
-// turns), a breathing, swaying spine, and a head that looks at what matters. There are no blendshapes,
-// so the face does not move; everything else does.
+// turns), a breathing, swaying spine, and a head that looks at what matters. His avatar has no blendshapes,
+// so his face (blinks, speech, a smile) is morphed from landmarks at load: see buildFace.
 import * as THREE from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ExhibitInfo } from './model-room-exhibits';
 import { ROOM } from './model-room-layout';
+import { buildPiece, PIECE_BINS, type PieceData, type PiecePart } from './model-room-piece';
 
 type Lang = { en: string; de: string };
 const L = (en: string, de: string): Lang => ({ en, de });
@@ -38,7 +39,7 @@ const LINES = {
     L('Need a model of your own? Talk to me.', 'Brauchst du ein eigenes Modell? Sprich mich an.'),
   ],
   ask: L('What can I do for you?', 'Was kann ich für dich tun?'),
-  archive: L("Pick one. I'll build it on the stage for you.", 'Such dir eine aus. Ich baue sie dir auf der Bühne auf.'),
+  archive: L("Pick one. I'll build it for you: big on the stage, small here on my wheel.", 'Such dir eine aus. Ich baue sie dir: groß auf der Bühne, klein hier auf meiner Scheibe.'),
   order: [
     L('Tell me what it is: a product, an interior, a figure, a building.', 'Erzähl mir, was es ist: ein Produkt, ein Interieur, eine Figur, ein Gebäude.'),
     L('From photos or drawings, ready for the web, for film or for print.', 'Aus Fotos oder Zeichnungen, fertig fürs Web, für Film oder Druck.'),
@@ -52,7 +53,7 @@ const LINES = {
     L('Rodion Belousov. 3D artist and developer in Vienna.', 'Rodion Belousov. 3D-Künstler und Entwickler in Wien.'),
     L('I build the models, the films and the websites they live in.', 'Ich baue die Modelle, die Filme und die Websites, in denen sie leben.'),
   ],
-  present: (title: string) => L(`There it is: ${title}.`, `Bitte schön: ${title}.`),
+  present: (title: string) => L(`There it is: ${title}. And a small one, by hand, here on my wheel.`, `Bitte schön: ${title}. Und eine kleine, von Hand, hier auf meiner Scheibe.`),
   bye: L('See you around.', 'Bis später.'),
 };
 const CHOICES: [key: 'archive' | 'order' | 'how' | 'who', label: Lang][] = [
@@ -110,68 +111,105 @@ export function createAuthor(o: {
   shop.updateMatrixWorld(true);
   key.position.copy(shop.localToWorld(new THREE.Vector3(1.1, 4.7, 3.1))); key.target.position.copy(shop.localToWorld(new THREE.Vector3(0, 1.2, .25))); scene.add(key, key.target);
 
-  // ── The piece he is building: a bronze figure, rising edge by edge out of a line of light ─────────────
-  let piece: { clay: THREE.Mesh; wire: THREE.Mesh; band: THREE.Mesh; heights: Float32Array; tris: number; mat: THREE.MeshStandardMaterial } | undefined;
-  const RADIUS_BINS = 40; let pieceRadii: Float32Array | null = null;
+  // ── The piece he is building: a figure (or the work you chose), rising edge by edge out of a line of light ──
+  type Piece = { clay: THREE.Mesh; wire: THREE.LineSegments; heights: Float32Array; tris: number; h: number; radii: Float32Array };
+  const RADIUS_BINS = PIECE_BINS, MAX_R = .18;
+  let piece: Piece | undefined, figure: Piece | undefined, next: Piece | undefined, chosen = false, asked = 0;
   let built = 0, buildSpeed = 1, holdUntil = -1, bronze = 0, phasePiece: 'build' | 'hold' | 'melt' = 'build';
   const CLAY = new THREE.Color('#cdbca2'), BRONZE = new THREE.Color('#8a5d36');
+  const pieceMat = keep(new THREE.MeshStandardMaterial({ color: CLAY.clone(), roughness: .82, metalness: 0, envMapIntensity: 1.2 }));
+  const wireMat = keep(new THREE.LineBasicMaterial({ color: new THREE.Color(.45, 2.4, 1.3), transparent: true, opacity: .55, toneMapped: false, depthWrite: false }));
+  const holder = new THREE.Group(); holder.position.y = .015; wheel.add(holder);
+  const band = new THREE.Mesh(keep(new THREE.TorusGeometry(.2, .0025, 6, 96)), keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(.5, 2.6, 1.4), toneMapped: false, transparent: true, opacity: .8, depthWrite: false })));
+  band.rotation.x = Math.PI / 2; band.visible = false; holder.add(band);
+  /** Any model, as one clay piece for the wheel (made in a worker: see model-room-piece.ts). Here only its
+   *  meshes are copied out, each with its place in the model. */
+  function collect(root: THREE.Object3D): PiecePart[] {
+    root.updateMatrixWorld(true);
+    const inverse = root.matrixWorld.clone().invert(), parts: PiecePart[] = [];
+    root.traverse(n => {
+      const m = n as THREE.Mesh, attr = m.isMesh && m.visible ? m.geometry.attributes.position : undefined; if (!attr) return;
+      let position: Float32Array;
+      if ((attr as THREE.BufferAttribute).isBufferAttribute && attr.array instanceof Float32Array && !attr.normalized && attr.itemSize === 3) position = attr.array.slice(0, attr.count * 3);
+      else { position = new Float32Array(attr.count * 3); for (let i = 0; i < attr.count; i++) { position[i * 3] = attr.getX(i); position[i * 3 + 1] = attr.getY(i); position[i * 3 + 2] = attr.getZ(i); } }
+      const index = m.geometry.index ? Uint32Array.from(m.geometry.index.array) : null;
+      parts.push({ position, index, matrix: inverse.clone().multiply(m.matrixWorld).elements.slice() });
+    });
+    return parts;
+  }
+  let worker: Worker | undefined, jobs = 0;
+  const waiting = new Map<number, (data: PieceData | null) => void>();
+  function build(parts: PiecePart[]): Promise<PieceData | null> {
+    if (typeof Worker !== 'undefined' && !worker) {
+      try {
+        worker = new Worker(new URL('./model-room-piece.worker.ts', import.meta.url), { type: 'module' });
+        worker.onmessage = (e: MessageEvent<{ id: number; piece: PieceData | null }>) => { waiting.get(e.data.id)?.(e.data.piece); waiting.delete(e.data.id); };
+        worker.onerror = () => { worker = undefined; };
+      } catch { worker = undefined; }
+    }
+    if (!worker) return Promise.resolve(buildPiece(parts, PIECE_H, MAX_R));
+    const id = ++jobs, transfer = parts.flatMap(p => (p.index ? [p.position.buffer, p.index.buffer] : [p.position.buffer]));
+    return new Promise(resolve => { waiting.set(id, resolve); worker!.postMessage({ id, parts, maxH: PIECE_H, maxR: MAX_R }, transfer); });
+  }
+  function makePiece(d: PieceData): Piece {
+    const geo = new THREE.BufferGeometry(), indexAttr = new THREE.BufferAttribute(d.index, 1);
+    geo.setAttribute('position', new THREE.BufferAttribute(d.position, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(d.normal, 3)); geo.setIndex(indexAttr);
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, d.h / 2, 0), Math.hypot(d.h / 2, MAX_R * 1.5));
+    // Two views of one geometry, each with its own draw range: the clay behind, the glowing line ahead.
+    const wireGeo = new THREE.BufferGeometry(); wireGeo.setAttribute('position', geo.attributes.position); wireGeo.setIndex(new THREE.BufferAttribute(d.lines, 1)); wireGeo.boundingSphere = geo.boundingSphere;
+    const clay = new THREE.Mesh(geo, pieceMat); clay.castShadow = true; clay.receiveShadow = true;
+    const wire = new THREE.LineSegments(wireGeo, wireMat);
+    clay.geometry.setDrawRange(0, 0); wire.geometry.setDrawRange(0, 0);
+    return { clay, wire, heights: d.heights, tris: d.tris, h: d.h, radii: d.radii };
+  }
+  const forget = (p: Piece) => { if (p !== figure) { p.clay.geometry.dispose(); p.wire.geometry.dispose(); } };
+  function mount(p: Piece) {
+    if (piece && piece !== p) { piece.clay.removeFromParent(); piece.wire.removeFromParent(); forget(piece); }
+    piece = p; holder.add(p.clay, p.wire); built = 0; phasePiece = 'build';
+    // A dense model's wire would be a solid glow at this size: the denser, the fainter.
+    wireMat.opacity = .55 * THREE.MathUtils.clamp(60000 / p.tris, .2, 1);
+  }
   async function loadPiece() {
     const g = await o.loader.loadAsync('/models/archive/bronze-woman.mobile.glb');
-    let src: THREE.Mesh | undefined; g.scene.updateMatrixWorld(true);
-    g.scene.traverse(n => { if (!src && (n as THREE.Mesh).isMesh) src = n as THREE.Mesh; });
-    if (!src) return;
-    const geo = src.geometry.clone(); geo.applyMatrix4(src.matrixWorld);
-    geo.computeBoundingBox(); const b = geo.boundingBox!, size = b.getSize(new THREE.Vector3()), mid = b.getCenter(new THREE.Vector3());
-    const s = PIECE_H / size.y; geo.translate(-mid.x, -b.min.y, -mid.z); geo.scale(s, s, s);
-    // Bottom to top: the triangles are re-ordered by height, so a growing draw range builds the figure upwards.
-    const pos = geo.attributes.position, index = geo.index ? Array.from(geo.index.array) : Array.from({ length: pos.count }, (_, i) => i);
-    const tris = index.length / 3, order = Array.from({ length: tris }, (_, i) => i), cy = new Float32Array(tris);
-    for (let t = 0; t < tris; t++) cy[t] = (pos.getY(index[t * 3]) + pos.getY(index[t * 3 + 1]) + pos.getY(index[t * 3 + 2])) / 3;
-    order.sort((a, c) => cy[a] - cy[c]);
-    // How wide the figure is at each height: the band of light and the tool hand follow its surface.
-    const radii = new Float32Array(RADIUS_BINS);
-    for (let i = 0; i < pos.count; i++) { const k = Math.min(RADIUS_BINS - 1, Math.floor(pos.getY(i) / PIECE_H * RADIUS_BINS)); radii[k] = Math.max(radii[k], Math.hypot(pos.getX(i), pos.getZ(i))); }
-    for (let k = 1; k < RADIUS_BINS; k++) if (!radii[k]) radii[k] = radii[k - 1];
-    pieceRadii = radii;
-    const sorted = new Uint32Array(tris * 3), heights = new Float32Array(tris);
-    order.forEach((t, i) => { sorted.set([index[t * 3], index[t * 3 + 1], index[t * 3 + 2]], i * 3); heights[i] = cy[t]; });
-    const indexAttr = new THREE.BufferAttribute(sorted, 1);
-    geo.setIndex(indexAttr); geo.computeVertexNormals();
-    // Two views of one geometry, each with its own draw range: the clay behind, the glowing line ahead.
-    const wireGeo = new THREE.BufferGeometry(); wireGeo.setAttribute('position', geo.attributes.position); wireGeo.setIndex(indexAttr);
-    keep(geo); keep(wireGeo);
-    const mat = keep(new THREE.MeshStandardMaterial({ color: CLAY.clone(), roughness: .82, metalness: 0, envMapIntensity: 1.2 }));
-    const clay = new THREE.Mesh(geo, mat); clay.castShadow = true; clay.receiveShadow = true;
-    const wire = new THREE.Mesh(wireGeo, keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(.45, 2.4, 1.3), wireframe: true, transparent: true, opacity: .55, toneMapped: false, depthWrite: false })));
-    const band = new THREE.Mesh(keep(new THREE.TorusGeometry(.2, .0025, 6, 96)), keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(.5, 2.6, 1.4), toneMapped: false, transparent: true, opacity: .8, depthWrite: false })));
-    band.rotation.x = Math.PI / 2;
-    const holder = new THREE.Group(); holder.position.y = .015; holder.add(clay, wire, band); wheel.add(holder);
-    clay.geometry.setDrawRange(0, 0); wire.geometry.setDrawRange(0, 0);
-    piece = { clay, wire, band, heights, tris, mat };
+    const parts = collect(g.scene);
     g.scene.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } });
+    const data = await build(parts); if (!data || disposed) return;
+    figure = makePiece(data);
+    if (!piece && !next) mount(figure);
+  }
+  /** Start on another piece: what stands on the wheel goes back into the clay first. */
+  function startPiece(p: Piece) {
+    if (next && next !== p) forget(next);
+    if (p === piece) { next = undefined; return; }
+    if (piece && built > 0) { next = p; phasePiece = 'melt'; } else { next = undefined; mount(p); }
   }
   /** Height (above the wheel) of the line being built, and how far from the axis the surface is there. */
+  const pieceH = () => piece?.h ?? PIECE_H;
   const lineY = () => (piece ? piece.heights[Math.min(piece.tris - 1, Math.floor(built))] ?? 0 : .3);
-  const radiusAt = (y: number) => { const k = THREE.MathUtils.clamp(Math.floor(y / PIECE_H * RADIUS_BINS), 0, RADIUS_BINS - 1); return pieceRadii ? Math.max(.03, pieceRadii[k] * .82) : .1; };
+  const radiusAt = (y: number) => { const k = THREE.MathUtils.clamp(Math.floor(y / pieceH() * RADIUS_BINS), 0, RADIUS_BINS - 1); return piece ? Math.max(.03, piece.radii[k] * .82) : .1; };
   function updatePiece(t: number, dt: number) {
     wheel.rotation.y += dt * (.22 + (buildSpeed > 1 ? .5 : 0));
     if (!piece) return;
     const n = piece.tris;
     if (phasePiece === 'build') {
       built = Math.min(n, built + dt * n / 22 * buildSpeed);
-      if (built >= n) { phasePiece = 'hold'; holdUntil = t + (buildSpeed > 1 ? 4 : 7); buildSpeed = 1; }
+      if (built >= n) { phasePiece = 'hold'; holdUntil = t + (chosen ? 12 : buildSpeed > 1 ? 4 : 7); buildSpeed = 1; }
     } else if (phasePiece === 'hold' && t > holdUntil) phasePiece = 'melt';
-    else if (phasePiece === 'melt') { built = Math.max(0, built - dt * n / 1.4); if (built <= 0) phasePiece = 'build'; }
-    const count = Math.floor(built);
+    else if (phasePiece === 'melt') {
+      built = Math.max(0, built - dt * n / (next ? .8 : 1.4));
+      if (built <= 0) { if (next) { const p = next; next = undefined; mount(p); } else phasePiece = 'build'; }
+    }
+    if (!piece) return;
+    const count = Math.floor(built), m = piece.tris;
     piece.clay.geometry.setDrawRange(0, count * 3);
-    const span = Math.min(count, 1400);
-    piece.wire.geometry.setDrawRange((count - span) * 3, phasePiece === 'build' ? span * 3 : 0);
+    const span = Math.min(count, Math.max(600, Math.round(m * .025)));
+    piece.wire.geometry.setDrawRange((count - span) * 6, phasePiece === 'build' ? span * 6 : 0);
     // Clay while it grows, bronze when it stands (and as it melts away); the band of light rides the line.
     bronze += ((phasePiece === 'build' ? 0 : 1) - bronze) * Math.min(1, dt * (phasePiece === 'build' ? 8 : 1.4));
-    piece.mat.color.copy(CLAY).lerp(BRONZE, bronze); piece.mat.metalness = .8 * bronze; piece.mat.roughness = .82 - .5 * bronze;
-    piece.band.visible = phasePiece === 'build' && count > 0;
-    piece.band.position.y = lineY();
-    piece.band.scale.setScalar((radiusAt(lineY()) + .02) / .2 * (1 + .03 * Math.sin(t * 8)));
+    pieceMat.color.copy(CLAY).lerp(BRONZE, bronze); pieceMat.metalness = .8 * bronze; pieceMat.roughness = .82 - .5 * bronze;
+    band.visible = phasePiece === 'build' && count > 0;
+    band.position.y = lineY();
+    band.scale.setScalar((radiusAt(lineY()) + .02) / .2 * (1 + .03 * Math.sin(t * 8)));
   }
 
   // ── Him ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -234,6 +272,8 @@ export function createAuthor(o: {
   type Foot = { at: THREE.Vector3; yaw: number; from: THREE.Vector3; fromYaw: number; to: THREE.Vector3; toYaw: number; k: number };
   let feet: { L: Foot; R: Foot } | undefined, nextFoot: 'L' | 'R' = 'L';
   let mixer: THREE.AnimationMixer | undefined; const captured = new Map<THREE.Bone, THREE.Quaternion>();
+  let faceTest: [number, number, number] | null = null;
+  let face: ReturnType<typeof buildFace> | undefined, nextBlink = 2, blinkAt = -1, doubleBlink = false, jawNow = 0, smileNow = 0;
   let placed = false;
 
   function euler(x: number, y = 0, z = 0) { return q.setFromEuler(e.set(x, y, z, 'YXZ')); }
@@ -245,6 +285,11 @@ export function createAuthor(o: {
     const parent = (b.parent as THREE.Object3D).getWorldQuaternion(new THREE.Quaternion());
     if (keep > 0) want.slerp(parent.clone().multiply(b.quaternion), keep);
     b.quaternion.copy(parent.invert().multiply(want));
+  }
+  /** Turn a bone from its rest pose (ignoring the capture): for the grip, whose axes are only known at rest. */
+  function relRest(name: string, delta: THREE.Quaternion) {
+    const R = rig!, b = R.B(name), r = R.rest.get(b); if (!b || !r) return;
+    b.quaternion.copy(r.local).multiply(q2.copy(r.figInv).multiply(delta).multiply(r.fig));
   }
   /** Turn a bone on top of the motion-captured pose (or the rest pose, without one), the turn given in his frame. */
   function rel(name: string, delta: THREE.Quaternion) {
@@ -270,7 +315,9 @@ export function createAuthor(o: {
 
   // ── What he is doing ─────────────────────────────────────────────────────────────────────────────────
   type Mode = 'work' | 'admire' | 'notice' | 'talk' | 'present' | 'wave';
-  let awayFor = 0, onScreen = true;
+  let awayFor = 0, onScreen = true, roomAt = -1;
+  // How much each arm follows his action (IK) rather than the motion capture.
+  const armW = { L: 0, R: 0 }, armGoal = { L: 0, R: 0 };
   let mode: Mode = 'work', modeAt = 0, nextAdmire = 9, greeted = false, lastBark = -99, barks = 0, near = false;
   let presentAt = -99;
   const queue: Lang[] = []; let line: Lang | null = null, lineAt = 0, lineHold = 0, typed = 0, dialog = false, cta = false;
@@ -329,6 +376,7 @@ export function createAuthor(o: {
     const model = gltf.scene; dress(model, o.mobile, keep);
     body.add(model);
     rig = makeRig(model);
+    model.traverse(n => { const m = n as THREE.Mesh; if (!face && m.isMesh && /avaturn_body/.test(m.name)) face = buildFace(m); });
     // His motion-captured idle (Avaturn), looped; the arms, the legs' contact and the gaze are layered on it.
     if (idle) {
       const tracks = idle.tracks.map(t => /quaternion$/.test(t.name) ? new THREE.QuaternionKeyframeTrack(t.name, t.times, t.values) : new THREE.VectorKeyframeTrack(t.name, t.times, t.values));
@@ -370,9 +418,12 @@ export function createAuthor(o: {
     awayFor = dialog && !onScreen ? awayFor + dt : 0;
     if (dialog && (dist > 4.8 || awayFor > 1.2)) close();
 
-    // Moods: greet a visitor who comes close, bark now and then, step back to admire the piece.
-    if (!greeted && !dialog && dist < 6.5 && inFront(camPos)) { greeted = true; mode = 'wave'; modeAt = t; speakLines(LINES.hello); lastBark = t; }
-    if (!dialog && near && greeted && t - lastBark > 16 + (barks % 3) * 4 && barks < 4 && !line && !queue.length) {
+    // Moods: greet a visitor who comes close, bark now and then, step back to admire the piece. (Not a word
+    // while the room is still opening: he may be loaded before it is.)
+    if (roomAt < 0 && o.root.dataset.state === 'ready') roomAt = t;
+    const settled = roomAt >= 0 && t - roomAt > 2.4;
+    if (settled && !greeted && !dialog && dist < 6.5 && inFront(camPos)) { greeted = true; mode = 'wave'; modeAt = t; speakLines(LINES.hello); lastBark = t; }
+    if (settled && !dialog && near && greeted && t - lastBark > 16 + (barks % 3) * 4 && barks < 4 && !line && !queue.length) {
       lastBark = t; speakLines([LINES.barks[barks % LINES.barks.length]]); barks++;
       if (mode === 'work') { mode = 'notice'; modeAt = t; }
     }
@@ -409,33 +460,36 @@ export function createAuthor(o: {
       const toHim = new THREE.Vector3(-Math.sin(FACE), 0, -Math.cos(FACE));
       const side = new THREE.Vector3(-toHim.z, 0, toHim.x);
       const rad = radiusAt(lineY());
+      // A tall piece is worked from the side at chest height, not with the arm thrown up across the body.
+      lineW.y = Math.min(lineW.y, shoulderR.y - .1);
       handGoal.R.copy(lineW).addScaledVector(toHim, rad + .1).addScaledVector(side, -.06 + s(t * 1.6) * .045).add(v.set(0, s(t * 3.1) * .02, 0));
       handGoal.L.copy(wheelW).addScaledVector(toHim, .12).addScaledVector(side, .16).add(v.set(0, .03 + Math.max(0, s(t * .4)) * .05, 0));
       lookGoal.copy(handGoal.R).add(v.set(s(t * .7) * .03, .02, 0));
-      if (mode === 'notice') { lookGoal.copy(camPos); lean.goal = .12; handGoal.R.lerp(relaxed('R'), .3); }
+      armGoal.L = 1; armGoal.R = mode === 'notice' ? .35 : 1;
+      if (mode === 'notice') { lookGoal.copy(camPos); lean.goal = .12; }
     } else if (mode === 'admire') {
       // A step back from the stand, a hand at his chin, head on one side.
       yawGoal = FACE; lean.goal = -.04; crouch.goal = 0;
       rig.B('Head').getWorldPosition(headW);
       handGoal.L.copy(headW).add(W(.02, -.14, .1)); handGoal.R.copy(relaxed('R')).add(W(.04, .12, .12));
-      lookGoal.copy(wheelW).setY(FLOOR + WHEEL_Y + PIECE_H * .6);
+      lookGoal.copy(wheelW).setY(FLOOR + WHEEL_Y + pieceH() * .6);
+      armGoal.L = 1; armGoal.R = 0;
     } else if (mode === 'talk' || mode === 'wave') {
       // Turned to you; while he speaks his hands talk too, and while he listens they rest together.
       yawGoal = clampYaw(toCam); lean.goal = 0; crouch.goal = 0;
       lookGoal.copy(camPos).add(v.set(0, -.05, 0));
-      // Listening: hands loosely together in front of the belt. Speaking: open hands out in front, the right one
-      // carrying the beat, elbows away from the body.
+      // Listening, his arms are his own (the capture); speaking, his hands come up in front and talk with him.
       const k = speak.now, hipsW = body.localToWorld(rig.hipsRest.clone());
-      const listenL = hipsW.clone().add(W(.045, .1, .25)), listenR = hipsW.clone().add(W(-.045, .11, .26));
-      const talkL = hipsW.clone().add(W(.19 + .04 * wob(2.3), .24 + .06 * Math.abs(s(t * 2.9)), .3));
-      const talkR = hipsW.clone().add(W(-.22 - .06 * wob(2.1), .3 + .1 * Math.abs(s(t * 3.3 + 1)), .32 + .04 * s(t * 1.9)));
-      handGoal.L.copy(listenL).lerp(talkL, k); handGoal.R.copy(listenR).lerp(talkR, k);
-      if (mode === 'wave') handGoal.R.copy(shoulderR).add(W(-.32, .3 + .02 * s(t * 9), .14)).add(W(.09 * s(t * 9), 0, 0));
+      handGoal.L.copy(hipsW).add(W(.2 + .04 * wob(2.3), .28 + .06 * Math.abs(s(t * 2.9)), .3));
+      handGoal.R.copy(hipsW).add(W(-.22 - .06 * wob(2.1), .34 + .1 * Math.abs(s(t * 3.3 + 1)), .32 + .04 * s(t * 1.9)));
+      armGoal.L = .55 * k; armGoal.R = .85 * k;
+      if (mode === 'wave') { handGoal.R.copy(shoulderR).add(W(-.3, .32 + .02 * s(t * 9), .12)).add(W(.08 * s(t * 9), 0, 0)); armGoal.R = 1; armGoal.L = 0; }
     } else if (mode === 'present') {
       // Turned half to the stage, his arm out to it, an open hand; a look there, then back to you.
       yawGoal = clampYaw(lerpAngle(toCam, toStage, .55)); lean.goal = .02; crouch.goal = 0;
       handGoal.R.copy(shoulderR).add(stageLook.clone().sub(shoulderR).normalize().multiplyScalar(rig.lengths.RightArm + rig.lengths.RightForeArm - .04)).add(v.set(0, .05, 0));
       handGoal.L.copy(relaxed('L'));
+      armGoal.R = 1; armGoal.L = 0;
       lookGoal.copy(t - presentAt < 1.8 ? stageLook : camPos);
     }
 
@@ -452,11 +506,29 @@ export function createAuthor(o: {
     if (!placed) { hand.L.copy(handGoal.L); hand.R.copy(handGoal.R); look.copy(lookGoal); placed = true; }
     hand.L.lerp(handGoal.L, ease(mode === 'wave' ? 14 : 6)); hand.R.lerp(handGoal.R, ease(mode === 'wave' ? 14 : working ? 9 : 6));
     look.lerp(lookGoal, ease(4.5));
+    armW.L += (armGoal.L - armW.L) * ease(4); armW.R += (armGoal.R - armW.R) * ease(4);
     lean.now += (lean.goal - lean.now) * ease(3); crouch.now += (crouch.goal - crouch.now) * ease(3); speak.now += (speak.goal - speak.now) * ease(5);
     body.rotation.y = yaw; body.updateMatrixWorld(true);
     bodyQ.setFromAxisAngle(up, yaw); bodyQi.copy(bodyQ).invert();
     pose(t, dt);
     tool.visible = mode === 'work' || mode === 'notice' || mode === 'admire';
+    // The face: a blink every few seconds (now and then twice), the jaw with the syllables while he speaks, a
+    // smile for a greeting and while he listens to you.
+    if (face) {
+      if (blinkAt < 0 && t > nextBlink) { blinkAt = t; doubleBlink = Math.random() < .18; }
+      let blink = 0;
+      if (blinkAt >= 0) {
+        const k = t - blinkAt, dur = .17;
+        blink = k < .06 ? k / .06 : Math.max(0, 1 - (k - .06) / (dur - .06));
+        if (k > dur) { if (doubleBlink) { doubleBlink = false; blinkAt = t + .08; } else { blinkAt = -1; nextBlink = t + 2.2 + Math.random() * 3.8; } }
+        if (blinkAt > t) blink = 0;
+      }
+      const syllables = speak.now * (.25 + .75 * Math.abs(Math.sin(t * 10.5 + Math.sin(t * 3.1) * 2)));
+      jawNow += (syllables * .85 - jawNow) * ease(18);
+      const wantSmile = mode === 'wave' ? .85 : dialog ? .35 + .25 * (1 - speak.now) : mode === 'notice' ? .3 : 0;
+      smileNow += (wantSmile - smileNow) * ease(3);
+      if (faceTest) face.set(...faceTest); else face.set(blink, jawNow, smileNow);
+    }
   }
 
   function pose(t: number, dt: number) {
@@ -487,17 +559,26 @@ export function createAuthor(o: {
     setFig('Neck', euler(hp * .45 + lean.now * .1, hy * .45, 0), .35);
     setFig('Head', euler(hp + nod, hy, tilt), .2);
 
-    // Arms: two-bone IK to the hands' goals, elbows down and out.
-    limb('RightArm', 'RightForeArm', hand.R, W(-.9, -.45, -.45));
-    limb('LeftArm', 'LeftForeArm', hand.L, W(.9, -.45, -.45));
-    // Hands: the tool hand grips, the others rest half-open; while talking they open up.
-    const grip = mode === 'work' || mode === 'notice' ? 1 : 0;
-    for (const side of ['Left', 'Right'] as const) {
-      const sx = side === 'Left' ? 1 : -1, curl = .25 + (side === 'Right' ? grip * .55 : 0) - speak.now * .12;
-      rel(`${side}Hand`, euler(0, 0, (side === 'Right' && mode === 'wave' ? s(t * 9) * .35 : 0)));
-      for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (let k = 1; k <= 3; k++) rel(`${side}Hand${f}${k}`, q.setFromAxisAngle(v2.set(0, 0, 1), -sx * curl * (k === 1 ? .9 : 1.2) * (f === 'Pinky' ? 1.2 : 1)));
-      rel(`${side}HandThumb2`, q.setFromAxisAngle(v2.set(0, 0, 1), -sx * (.15 + grip * .2)));
+    // Arms: the captured arm where he is not doing anything with it; two-bone IK, blended in by weight, where he
+    // is (the tool, the steadying hand, a gesture, pointing, waving). The pole starts from the captured elbow,
+    // so blending in never flips an elbow; the IK's own pole keeps elbows down and a little out.
+    body.updateMatrixWorld(true);
+    for (const side of ['L', 'R'] as const) {
+      const w = mixer ? armW[side] : 1; if (w < .01) continue;
+      const name = side === 'L' ? 'Left' : 'Right', sx = side === 'L' ? 1 : -1;
+      const sh = R.B(`${name}Arm`).getWorldPosition(new THREE.Vector3()), el = R.B(`${name}ForeArm`).getWorldPosition(new THREE.Vector3()), wr = R.B(`${name}Hand`).getWorldPosition(new THREE.Vector3());
+      const natPole = el.clone().sub(sh.clone().add(wr).multiplyScalar(.5)).normalize();
+      const pole = natPole.lerp(W(sx * .5, -.85, -.22).normalize(), w).normalize();
+      limb(`${name}Arm`, `${name}ForeArm`, wr.lerp(hand[side], w), pole);
     }
+    // Hands: the captured fingers, except the tool hand's grip (set from the rest pose, on its own axes).
+    const grip = mode === 'work' || mode === 'notice' || mode === 'admire' ? 1 : 0;
+    if (grip || !mixer) for (const side of (mixer ? ['Right'] : ['Left', 'Right']) as ('Left' | 'Right')[]) {
+      const sx = side === 'Left' ? 1 : -1, curl = .25 + (side === 'Right' ? grip * .55 : 0);
+      for (const f of ['Index', 'Middle', 'Ring', 'Pinky']) for (let k = 1; k <= 3; k++) relRest(`${side}Hand${f}${k}`, q.setFromAxisAngle(v2.set(0, 0, 1), -sx * curl * (k === 1 ? .9 : 1.2) * (f === 'Pinky' ? 1.2 : 1)));
+      relRest(`${side}HandThumb2`, q.setFromAxisAngle(v2.set(0, 0, 1), -sx * (.15 + grip * .2)));
+    }
+    if (mode === 'wave') rel('RightHand', euler(0, 0, s(t * 9) * .3));
 
     // Legs: the feet stay where they stand; when he has turned far enough, he steps, one foot at a time.
     stepFeet(dt);
@@ -561,11 +642,26 @@ export function createAuthor(o: {
     collider: new THREE.Box3().setFromPoints([AT, AT.clone().add(new THREE.Vector3(Math.sin(FACE), 0, Math.cos(FACE)).multiplyScalar(STAND))]).expandByVector(new THREE.Vector3(.42, 0, .42)).expandByPoint(new THREE.Vector3(AT.x, 2, AT.z)),
     load, update, place, open, close,
     isTalking: () => dialog,
-    /** A work arrived on the stage: he turns to it and presents it. */
-    present(title: string) {
+    /** (Debug: hold the face at blink / jaw / smile.) */
+    testFace(v: [number, number, number] | null) { faceTest = v; },
+    /** A work arrived on the stage: he turns to it and presents it, and starts a small one of it on his wheel. */
+    present(title: string, model?: THREE.Object3D) {
+      if (model) {
+        const ticket = ++asked;
+        void build(collect(model)).then(data => {
+          if (!data || ticket !== asked || disposed) return;
+          chosen = true; buildSpeed = 2.2; startPiece(makePiece(data));
+        });
+      }
       if (!loaded) return;
       mode = 'present'; presentAt = clock; modeAt = clock;
       if (Math.hypot(camPos.x - AT.x, camPos.z - AT.z) < 16) speakLines([LINES.present(title)], !dialog);
+    },
+    /** The stage was cleared: back to his own figure. */
+    unpresent() {
+      asked++;
+      if (!chosen || !figure) return;
+      chosen = false; buildSpeed = 1; startPiece(figure);
     },
     /** The caption's subject when you look at him from close by. */
     inView(position: THREE.Vector3, forward: THREE.Vector3) {
@@ -574,12 +670,69 @@ export function createAuthor(o: {
       return dist < 6.5 && tmp.normalize().angleTo(forward) < .42 ? AUTHOR_INFO : undefined;
     },
     dispose() {
-      disposed = true; events.abort(); ui.remove();
+      disposed = true; events.abort(); ui.remove(); worker?.terminate(); waiting.clear();
       scene.remove(shop, body, key, key.target);
       body.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
       own.forEach(x => x.dispose());
     },
   };
+}
+
+/**
+ * His face. The Avaturn export has no blendshapes, and its eyes and mouth are painted, but the mesh is dense round
+ * them, so three morph targets are built here from landmarks measured on his own model (in its bind space: x to
+ * his left, y up, z forward):
+ *  - blink: between the lower lash line and the lid crease everything closes onto the lower lash line, the lid's
+ *    skin stretching down over the painted eye;
+ *  - jaw: everything below the line of the lips turns down about a hinge by the ears, so the lips part;
+ *  - smile: the corners of the mouth go up and a little out.
+ */
+function buildFace(mesh: THREE.Mesh) {
+  const geo = mesh.geometry, pos = geo.attributes.position as THREE.BufferAttribute, n = pos.count;
+  const blink = new Float32Array(n * 3), jaw = new Float32Array(n * 3), smile = new Float32Array(n * 3);
+  const smooth = (a: number, b: number, x: number) => { const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const EYE = { x: .0336, half: .0187, corner: 1.727, upper: .0067, lower: .0027, crease: .0068 };
+  const LIPS = { y: 1.663, corners: .038, droop: .0028 }, HINGE = { y: 1.69, z: -.005 }, JAW = .15;
+  const rot = new THREE.Vector3();
+  for (let i = 0; i < n; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    if (z < -.01) continue;                                             // the back of the head never moves
+    // Eyes.
+    for (const cx of [-EYE.x, EYE.x]) {
+      const u = (x - cx) / EYE.half; if (Math.abs(u) > 1.25 || y < 1.71 || y > 1.75) continue;
+      const arc = Math.max(0, 1 - u * u);
+      const zL = EYE.corner - EYE.lower * arc, zU = EYE.corner + EYE.upper * arc, zC = zU + EYE.crease + .0012 * arc;
+      const close = zL + .0006, w = 1 - smooth(.85, 1.2, Math.abs(u));
+      let to = y;
+      if (y >= zL - .0004 && y <= zU) to = close;
+      else if (y > zU && y < zC) to = close + (y - zU) / (zC - zU) * (zC - close);
+      blink[i * 3 + 1] += (to - y) * w;
+      if (y >= zL - .0004 && y <= zU) blink[i * 3 + 2] += .0012 * w;     // the closed lid sits over the eye, not in it
+    }
+    // Jaw: below the line of the lips, in front, between the corners and a little beyond.
+    const lip = LIPS.y - LIPS.droop * Math.min(1, (x / LIPS.corners) ** 2);
+    if (y < lip - .0003 && y > 1.57 && Math.abs(x) < .075) {
+      // At the lips the opening is a lens, closed at the corners; lower down the whole chin turns.
+      const lens = 1 - smooth(.008, .04, Math.abs(x)), chin = 1 - smooth(.03, .07, Math.abs(x));
+      const across = THREE.MathUtils.lerp(lens, chin, smooth(.002, .022, lip - y));
+      const w = across * smooth(1.585, 1.615, y) * smooth(-.01, .03, z) * smooth(0, .0015, lip - y);
+      const a = JAW * w, ry = y - HINGE.y, rz = z - HINGE.z;
+      rot.set(0, ry * Math.cos(a) - rz * Math.sin(a), ry * Math.sin(a) + rz * Math.cos(a));
+      jaw[i * 3 + 1] = rot.y - ry; jaw[i * 3 + 2] = rot.z - rz;
+    }
+    // Smile: round each corner of the mouth.
+    for (const sx of [-1, 1]) {
+      const dx = x - sx * LIPS.corners, dy = y - (LIPS.y - LIPS.droop), d = Math.hypot(dx, dy * 1.3);
+      if (d > .03) continue;
+      const w = (1 - d / .03) ** 2;
+      smile[i * 3] += sx * .0034 * w; smile[i * 3 + 1] += .0072 * w; smile[i * 3 + 2] -= .0016 * w;
+    }
+  }
+  geo.morphAttributes.position = [new THREE.BufferAttribute(blink, 3), new THREE.BufferAttribute(jaw, 3), new THREE.BufferAttribute(smile, 3)];
+  geo.morphTargetsRelative = true;
+  mesh.updateMorphTargets();
+  const influences = mesh.morphTargetInfluences!;
+  return { set(b: number, j: number, sm: number) { influences[0] = b; influences[1] = j; influences[2] = sm; } };
 }
 
 /** His avatar's materials, made for the room: skin with a warm sheen, hair cards, cloth. Phones get the plain versions. */

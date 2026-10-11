@@ -303,12 +303,12 @@ export async function mountModelRoom(root: HTMLElement) {
         const info = await archive!.show(entry, progress); if (!info || disposed) return false;
         selected = ''; selectedMaterial = ''; selection.visible = false; caption(info); arriveAt = -1;
         if (inspecting) inspectionHome(); else mode(true);
-        author?.present(entry.title);
+        author?.present(entry.title, archive!.model());
         return true;
       },
       clear: async () => {
         if (archive?.info(current.id)) { mode(false); caption(KITCHEN); selected = ''; selection.visible = false; labelSelection(); }
-        await archive?.clear();
+        author?.unpresent(); await archive?.clear();
       },
     });
     author = createAuthor({

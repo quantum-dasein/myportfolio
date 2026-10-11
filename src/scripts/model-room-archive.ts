@@ -184,6 +184,8 @@ export function createArchiveBay(o: {
   return {
     meshes, colliders, show, cancel,
     activeId: () => current?.entry.id ?? null,
+    /** The work on the stage (for his small copy of it). */
+    model: () => current?.root,
     info: (id: string) => current?.entry.id === id ? current.info : undefined,
     inView(position: THREE.Vector3, forward: THREE.Vector3) {
       if (!current) return undefined;
