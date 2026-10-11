@@ -1,7 +1,7 @@
 // The author in his own room. Rodion, life size (the avatar he made of himself in Avaturn), stands at a
-// sculptor's stand by the left wall and builds a figure edge by edge: the clay rises out of a line of light
-// that runs up the piece while his tool works at it, and when it is done it turns to bronze, holds, and
-// starts again. He is the room's host and its archive: he notices you, greets you, talks (in short lines
+// sculptor's stand by the entrance and builds a piece edge by edge: it rises in its own materials out of a
+// line of light that runs up it while his tool works at it; when it stands he steps back and tells you what
+// it is made of. He is the room's host and its archive: he notices you, greets you, talks (in short lines
 // with his hands), opens his archive of models for you, and whatever you choose there he builds twice: full
 // size on the stage, and small, by hand, on his own wheel. He is also the way to commission a model.
 //
@@ -14,6 +14,7 @@ import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ExhibitInfo } from './model-room-exhibits';
 import { ROOM } from './model-room-layout';
 import { buildPiece, PIECE_BINS, type PieceData, type PiecePart } from './model-room-piece';
+import { modelArchive } from '../data/model-archive';
 
 type Lang = { en: string; de: string };
 const L = (en: string, de: string): Lang => ({ en, de });
@@ -32,7 +33,7 @@ const PIECE_H = .6;         // the figure he is building
 const LINES = {
   hello: [L("Hi, I'm Rodion. Everything in this room I built by hand.", 'Hi, ich bin Rodion. Alles in diesem Raum habe ich von Hand gebaut.')],
   barks: [
-    L('Almost done. Watch the shoulders come in.', 'Fast fertig. Achte auf die Schultern.'),
+    L('Every piece here started as a single edge.', 'Jedes Stück hier hat mit einer einzigen Kante angefangen.'),
     L('Every edge here I place by hand, one at a time.', 'Jede Kante hier setze ich von Hand, eine nach der anderen.'),
     L('Over a thousand models so far. A few of them stand in this room.', 'Über tausend Modelle bisher. Ein paar stehen in diesem Raum.'),
     L('Want to see something from my archive? Just ask.', 'Willst du etwas aus meinem Archiv sehen? Frag einfach.'),
@@ -111,31 +112,78 @@ export function createAuthor(o: {
   shop.updateMatrixWorld(true);
   key.position.copy(shop.localToWorld(new THREE.Vector3(1.1, 4.7, 3.1))); key.target.position.copy(shop.localToWorld(new THREE.Vector3(0, 1.2, .25))); scene.add(key, key.target);
 
-  // ── The piece he is building: a figure (or the work you chose), rising edge by edge out of a line of light ──
-  type Piece = { clay: THREE.Mesh; wire: THREE.LineSegments; heights: Float32Array; tris: number; h: number; radii: Float32Array };
+  // ── The piece he is building: his figure, or the work you chose, rising out of a line of light in its own materials ──
+  type Facts = { tris: number; parts: number; materials: number; textures: number; px: number; kinds: Lang[] };
+  type Piece = {
+    mesh: THREE.Mesh; wire: THREE.LineSegments; groups: { start: number; heights: Float32Array }[];
+    heights: Float32Array; tris: number; h: number; radii: Float32Array; materials: THREE.Material[];
+    title: string; about?: Lang; facts: Facts; told: boolean; source?: THREE.Object3D;
+  };
   const RADIUS_BINS = PIECE_BINS, MAX_R = .18;
   let piece: Piece | undefined, figure: Piece | undefined, next: Piece | undefined, chosen = false, asked = 0;
-  let built = 0, buildSpeed = 1, holdUntil = -1, bronze = 0, phasePiece: 'build' | 'hold' | 'melt' = 'build';
-  const CLAY = new THREE.Color('#cdbca2'), BRONZE = new THREE.Color('#8a5d36');
-  const pieceMat = keep(new THREE.MeshStandardMaterial({ color: CLAY.clone(), roughness: .82, metalness: 0, envMapIntensity: 1.2 }));
+  let built = 0, buildSpeed = 1, phasePiece: 'build' | 'stand' | 'melt' = 'build';
+  /** What a piece turns into when its work has left the stage (its textures went with it). */
+  const clayMat = keep(new THREE.MeshStandardMaterial({ color: '#cdbca2', roughness: .82, metalness: 0, side: THREE.DoubleSide }));
   const wireMat = keep(new THREE.LineBasicMaterial({ color: new THREE.Color(.45, 2.4, 1.3), transparent: true, opacity: .55, toneMapped: false, depthWrite: false }));
   const holder = new THREE.Group(); holder.position.y = .015; wheel.add(holder);
   const band = new THREE.Mesh(keep(new THREE.TorusGeometry(.2, .0025, 6, 96)), keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(.5, 2.6, 1.4), toneMapped: false, transparent: true, opacity: .8, depthWrite: false })));
   band.rotation.x = Math.PI / 2; band.visible = false; holder.add(band);
-  /** Any model, as one clay piece for the wheel (made in a worker: see model-room-piece.ts). Here only its
-   *  meshes are copied out, each with its place in the model. */
-  function collect(root: THREE.Object3D): PiecePart[] {
-    root.updateMatrixWorld(true);
-    const inverse = root.matrixWorld.clone().invert(), parts: PiecePart[] = [];
-    root.traverse(n => {
-      const m = n as THREE.Mesh, attr = m.isMesh && m.visible ? m.geometry.attributes.position : undefined; if (!attr) return;
-      let position: Float32Array;
-      if ((attr as THREE.BufferAttribute).isBufferAttribute && attr.array instanceof Float32Array && !attr.normalized && attr.itemSize === 3) position = attr.array.slice(0, attr.count * 3);
-      else { position = new Float32Array(attr.count * 3); for (let i = 0; i < attr.count; i++) { position[i * 3] = attr.getX(i); position[i * 3 + 1] = attr.getY(i); position[i * 3 + 2] = attr.getZ(i); } }
-      const index = m.geometry.index ? Uint32Array.from(m.geometry.index.array) : null;
-      parts.push({ position, index, matrix: inverse.clone().multiply(m.matrixWorld).elements.slice() });
+  const KINDS: [keyof THREE.MeshStandardMaterial, Lang][] = [
+    ['map', L('colour', 'Farbe')], ['normalMap', L('normals', 'Normalen')], ['roughnessMap', L('roughness', 'Rauheit')],
+    ['metalnessMap', L('metal', 'Metall')], ['emissiveMap', L('glow', 'Leuchten')], ['alphaMap', L('cut-outs', 'Ausschnitte')], ['aoMap', L('occlusion', 'Okklusion')],
+  ];
+  /** A work's material for the wheel: the same colours and maps (shared with the work on the stage), shown from
+   *  both sides; glass stays see-through without the cost of real transmission. */
+  function copyMaterial(src: THREE.Material): THREE.Material {
+    const s = src as THREE.MeshPhysicalMaterial;
+    const tex = (t: THREE.Texture | null | undefined) => (t && t.channel === 0 ? t : null);
+    if (!s.isMeshStandardMaterial) return new THREE.MeshBasicMaterial({ color: s.color?.clone() ?? new THREE.Color(1, 1, 1), map: tex(s.map), side: THREE.DoubleSide, transparent: s.transparent, opacity: s.opacity, alphaTest: s.alphaTest });
+    const m = new THREE.MeshStandardMaterial({
+      name: s.name, color: s.color.clone(), map: tex(s.map), normalMap: tex(s.normalMap), roughness: s.roughness, roughnessMap: tex(s.roughnessMap),
+      metalness: s.metalness, metalnessMap: tex(s.metalnessMap), emissive: s.emissive.clone(), emissiveMap: tex(s.emissiveMap), emissiveIntensity: s.emissiveIntensity,
+      alphaMap: tex(s.alphaMap), alphaTest: s.alphaTest, side: THREE.DoubleSide, envMapIntensity: s.envMapIntensity,
     });
-    return parts;
+    if (m.normalMap) m.normalScale.copy(s.normalScale);
+    if ((s.transmission ?? 0) > 0) { m.transparent = true; m.opacity = .28; m.depthWrite = false; m.roughness = Math.min(m.roughness, .08); }
+    else if (s.transparent) { m.transparent = true; m.opacity = s.opacity; m.depthWrite = s.depthWrite; }
+    return m;
+  }
+  /** Any model, as one piece for the wheel (made in a worker: see model-room-piece.ts). Here its meshes are
+   *  copied out (each material's triangles as one part, with its place in the model), its materials copied,
+   *  and what it is made of counted, for him to tell. */
+  function collect(root: THREE.Object3D) {
+    root.updateMatrixWorld(true);
+    const inverse = root.matrixWorld.clone().invert(), parts: PiecePart[] = [], sources = new Map<THREE.Material, number>(), textures = new Set<THREE.Texture>();
+    let tris = 0, meshes = 0;
+    const floats = (a: THREE.BufferAttribute | THREE.InterleavedBufferAttribute | undefined, size: number) => {
+      if (!a || a.itemSize < size) return null;
+      if ((a as THREE.BufferAttribute).isBufferAttribute && a.array instanceof Float32Array && !a.normalized && a.itemSize === size) return a.array.slice(0, a.count * size);
+      const out = new Float32Array(a.count * size);
+      for (let i = 0; i < a.count; i++) { out[i * size] = a.getX(i); out[i * size + 1] = a.getY(i); if (size > 2) out[i * size + 2] = a.getZ(i); }
+      return out;
+    };
+    root.traverse(n => {
+      const m = n as THREE.Mesh; if (!m.isMesh || !m.visible) return;
+      const g = m.geometry, attr = g.attributes.position; if (!attr) return;
+      const position = floats(attr, 3)!, normal = floats(g.attributes.normal, 3), uv = floats(g.attributes.uv, 2);
+      const matrix = inverse.clone().multiply(m.matrixWorld).elements.slice();
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      const all = g.index ? Uint32Array.from(g.index.array) : null, total = all ? all.length : attr.count;
+      const ranges = Array.isArray(m.material) && g.groups.length ? g.groups.map(r => ({ start: r.start, count: Math.min(r.count, total - r.start), material: mats[r.materialIndex ?? 0] })) : [{ start: 0, count: total, material: mats[0] }];
+      meshes++;
+      for (const r of ranges) {
+        if (!r.material || r.count < 3) continue;
+        if (!sources.has(r.material)) sources.set(r.material, sources.size);
+        for (const v of Object.values(r.material)) if (v instanceof THREE.Texture) textures.add(v);
+        const index = all ? all.slice(r.start, r.start + r.count) : Uint32Array.from({ length: r.count }, (_, i) => r.start + i);
+        parts.push({ position, normal, uv, index, matrix, material: sources.get(r.material)! });
+        tris += r.count / 3;
+      }
+    });
+    const used = [...sources.keys()];
+    const kinds = KINDS.filter(([k]) => used.some(mat => (mat as unknown as Record<string, unknown>)[k as string] instanceof THREE.Texture)).map(([, label]) => label);
+    let px = 0; for (const t of textures) { const img = t.image as { width?: number; height?: number } | undefined; px = Math.max(px, img?.width ?? 0, img?.height ?? 0); }
+    return { parts, materials: used.map(copyMaterial), facts: { tris: Math.round(tris), parts: meshes, materials: used.length, textures: textures.size, px, kinds } as Facts };
   }
   let worker: Worker | undefined, jobs = 0;
   const waiting = new Map<number, (data: PieceData | null) => void>();
@@ -148,68 +196,101 @@ export function createAuthor(o: {
       } catch { worker = undefined; }
     }
     if (!worker) return Promise.resolve(buildPiece(parts, PIECE_H, MAX_R));
-    const id = ++jobs, transfer = parts.flatMap(p => (p.index ? [p.position.buffer, p.index.buffer] : [p.position.buffer]));
-    return new Promise(resolve => { waiting.set(id, resolve); worker!.postMessage({ id, parts, maxH: PIECE_H, maxR: MAX_R }, transfer); });
+    const id = ++jobs, transfer = new Set<ArrayBuffer>();
+    for (const p of parts) for (const a of [p.position, p.normal, p.uv, p.index]) if (a) transfer.add(a.buffer as ArrayBuffer);
+    return new Promise(resolve => { waiting.set(id, resolve); worker!.postMessage({ id, parts, maxH: PIECE_H, maxR: MAX_R }, [...transfer]); });
   }
-  function makePiece(d: PieceData): Piece {
-    const geo = new THREE.BufferGeometry(), indexAttr = new THREE.BufferAttribute(d.index, 1);
-    geo.setAttribute('position', new THREE.BufferAttribute(d.position, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(d.normal, 3)); geo.setIndex(indexAttr);
+  function makePiece(d: PieceData, materials: THREE.Material[], facts: Facts, title: string, about?: Lang, source?: THREE.Object3D): Piece {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(d.position, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(d.normal, 3));
+    if (d.uv) geo.setAttribute('uv', new THREE.BufferAttribute(d.uv, 2));
+    geo.setIndex(new THREE.BufferAttribute(d.index, 1));
+    for (const g of d.groups) geo.addGroup(g.start * 3, 0, g.material);
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, d.h / 2, 0), Math.hypot(d.h / 2, MAX_R * 1.5));
-    // Two views of one geometry, each with its own draw range: the clay behind, the glowing line ahead.
+    // The wire shares the vertices; its edges run bottom to top over the whole piece.
     const wireGeo = new THREE.BufferGeometry(); wireGeo.setAttribute('position', geo.attributes.position); wireGeo.setIndex(new THREE.BufferAttribute(d.lines, 1)); wireGeo.boundingSphere = geo.boundingSphere;
-    const clay = new THREE.Mesh(geo, pieceMat); clay.castShadow = true; clay.receiveShadow = true;
-    const wire = new THREE.LineSegments(wireGeo, wireMat);
-    clay.geometry.setDrawRange(0, 0); wire.geometry.setDrawRange(0, 0);
-    return { clay, wire, heights: d.heights, tris: d.tris, h: d.h, radii: d.radii };
+    const mesh = new THREE.Mesh(geo, materials); mesh.castShadow = true; mesh.receiveShadow = true;
+    const wire = new THREE.LineSegments(wireGeo, wireMat); wire.geometry.setDrawRange(0, 0);
+    return { mesh, wire, groups: d.groups, heights: d.heights, tris: d.tris, h: d.h, radii: d.radii, materials, title, about, facts, told: false, source };
   }
-  const forget = (p: Piece) => { if (p !== figure) { p.clay.geometry.dispose(); p.wire.geometry.dispose(); } };
+  /** Compile a piece's materials for the frame's own buffer before it joins the room (no hitch as it appears). */
+  async function warm(p: Piece) {
+    const previous = o.renderer.getRenderTarget(); let compiling: Promise<unknown> = Promise.resolve();
+    try { o.renderer.setRenderTarget(o.target()); compiling = o.renderer.compileAsync(p.mesh, camera, scene); } finally { o.renderer.setRenderTarget(previous); }
+    await compiling.catch(() => {});
+  }
+  const forget = (p: Piece) => { if (p === figure) return; p.mesh.geometry.dispose(); p.wire.geometry.dispose(); p.materials.forEach(m => m.dispose()); };
   function mount(p: Piece) {
-    if (piece && piece !== p) { piece.clay.removeFromParent(); piece.wire.removeFromParent(); forget(piece); }
-    piece = p; holder.add(p.clay, p.wire); built = 0; phasePiece = 'build';
+    if (piece && piece !== p) { piece.mesh.removeFromParent(); piece.wire.removeFromParent(); forget(piece); }
+    piece = p; holder.add(p.mesh, p.wire); built = 0; phasePiece = 'build';
     // A dense model's wire would be a solid glow at this size: the denser, the fainter.
     wireMat.opacity = .55 * THREE.MathUtils.clamp(60000 / p.tris, .2, 1);
   }
   async function loadPiece() {
     const g = await o.loader.loadAsync('/models/archive/bronze-woman.mobile.glb');
-    const parts = collect(g.scene);
-    g.scene.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } });
+    const { parts, materials, facts } = collect(g.scene);
+    g.scene.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
     const data = await build(parts); if (!data || disposed) return;
-    figure = makePiece(data);
-    if (!piece && !next) mount(figure);
+    const entry = modelArchive.find(e => e.id === 'bronze-woman');
+    figure = makePiece(data, materials, facts, entry?.title ?? 'Bronze woman', entry?.description);
+    await warm(figure);
+    if (!piece && !next && !disposed) mount(figure);
   }
   /** Start on another piece: what stands on the wheel goes back into the clay first. */
   function startPiece(p: Piece) {
     if (next && next !== p) forget(next);
-    if (p === piece) { next = undefined; return; }
+    if (p === piece) { next = undefined; if (phasePiece === 'melt') phasePiece = 'build'; return; }
     if (piece && built > 0) { next = p; phasePiece = 'melt'; } else { next = undefined; mount(p); }
   }
   /** Height (above the wheel) of the line being built, and how far from the axis the surface is there. */
   const pieceH = () => piece?.h ?? PIECE_H;
   const lineY = () => (piece ? piece.heights[Math.min(piece.tris - 1, Math.floor(built))] ?? 0 : .3);
-  const radiusAt = (y: number) => { const k = THREE.MathUtils.clamp(Math.floor(y / pieceH() * RADIUS_BINS), 0, RADIUS_BINS - 1); return piece ? Math.max(.03, piece.radii[k] * .82) : .1; };
+  const widthAt = (y: number) => { const k = THREE.MathUtils.clamp(Math.floor(y / pieceH() * RADIUS_BINS), 0, RADIUS_BINS - 1); return piece ? piece.radii[k] : .1; };
+  const radiusAt = (y: number) => Math.max(.03, widthAt(y) * .82);
+  /** How many of a group's triangles lie below a height (they are in height order). */
+  function below(heights: Float32Array, y: number) {
+    let lo = 0, hi = heights.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (heights[mid] <= y) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
   function updatePiece(t: number, dt: number) {
-    wheel.rotation.y += dt * (.22 + (buildSpeed > 1 ? .5 : 0));
+    // The wheel turns while he works, and slowly, to show the piece off, once it stands.
+    wheel.rotation.y += dt * (phasePiece === 'stand' ? .12 : .22 + (buildSpeed > 1 ? .5 : 0));
     if (!piece) return;
     const n = piece.tris;
     if (phasePiece === 'build') {
       built = Math.min(n, built + dt * n / 22 * buildSpeed);
-      if (built >= n) { phasePiece = 'hold'; holdUntil = t + (chosen ? 12 : buildSpeed > 1 ? 4 : 7); buildSpeed = 1; }
-    } else if (phasePiece === 'hold' && t > holdUntil) phasePiece = 'melt';
-    else if (phasePiece === 'melt') {
+      if (built >= n) { phasePiece = 'stand'; buildSpeed = 1; }
+    } else if (phasePiece === 'melt') {
       built = Math.max(0, built - dt * n / (next ? .8 : 1.4));
       if (built <= 0) { if (next) { const p = next; next = undefined; mount(p); } else phasePiece = 'build'; }
     }
     if (!piece) return;
-    const count = Math.floor(built), m = piece.tris;
-    piece.clay.geometry.setDrawRange(0, count * 3);
-    const span = Math.min(count, Math.max(600, Math.round(m * .025)));
+    const count = Math.floor(built), y = count >= piece.tris ? Infinity : count <= 0 ? -Infinity : piece.heights[count];
+    const groups = piece.mesh.geometry.groups;
+    piece.groups.forEach((g, k) => { groups[k].count = below(g.heights, y) * 3; });
+    const span = Math.min(count, Math.max(600, Math.round(piece.tris * .025)));
     piece.wire.geometry.setDrawRange((count - span) * 6, phasePiece === 'build' ? span * 6 : 0);
-    // Clay while it grows, bronze when it stands (and as it melts away); the band of light rides the line.
-    bronze += ((phasePiece === 'build' ? 0 : 1) - bronze) * Math.min(1, dt * (phasePiece === 'build' ? 8 : 1.4));
-    pieceMat.color.copy(CLAY).lerp(BRONZE, bronze); pieceMat.metalness = .8 * bronze; pieceMat.roughness = .82 - .5 * bronze;
     band.visible = phasePiece === 'build' && count > 0;
     band.position.y = lineY();
     band.scale.setScalar((radiusAt(lineY()) + .02) / .2 * (1 + .03 * Math.sin(t * 8)));
+  }
+  /** What he tells about a piece once it stands: what it is made of, then what it is. */
+  function techLines(p: Piece): Lang[] {
+    const f = p.facts, en = (x: number) => x.toLocaleString('en-US'), de = (x: number) => x.toLocaleString('de-AT');
+    const pl = (x: number, one: string, many: string) => (x === 1 ? one : many);
+    const lines = [L(
+      `${p.title}, done. ${en(f.tris)} triangles in ${f.parts} ${pl(f.parts, 'part', 'parts')}, ${f.materials} ${pl(f.materials, 'material', 'materials')}.`,
+      `${p.title}, fertig. ${de(f.tris)} Dreiecke in ${f.parts} ${pl(f.parts, 'Teil', 'Teilen')}, ${f.materials} ${pl(f.materials, 'Material', 'Materialien')}.`,
+    )];
+    if (f.textures) lines.push(L(
+      `${f.textures} ${pl(f.textures, 'texture', 'textures')}${f.px ? `, up to ${en(f.px)} px` : ''}${f.kinds.length ? `: ${f.kinds.map(k => k.en).join(', ')}` : ''}.`,
+      `${f.textures} ${pl(f.textures, 'Textur', 'Texturen')}${f.px ? `, bis ${de(f.px)} px` : ''}${f.kinds.length ? `: ${f.kinds.map(k => k.de).join(', ')}` : ''}.`,
+    ));
+    else lines.push(L('No textures at all: every colour lives in the materials.', 'Gar keine Texturen: jede Farbe steckt in den Materialien.'));
+    if (p.about) lines.push(p.about);
+    lines.push(L('Want one like it, of your own thing? Ask me.', 'Willst du so eins von deinem eigenen Ding? Frag mich.'));
+    return lines;
   }
 
   // ── Him ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -272,6 +353,8 @@ export function createAuthor(o: {
   type Foot = { at: THREE.Vector3; yaw: number; from: THREE.Vector3; fromYaw: number; to: THREE.Vector3; toYaw: number; k: number };
   let feet: { L: Foot; R: Foot } | undefined, nextFoot: 'L' | 'R' = 'L';
   let mixer: THREE.AnimationMixer | undefined; const captured = new Map<THREE.Bone, THREE.Quaternion>();
+  /** The bones the capture moves, and its last pose of them (see pose()). */
+  const tracked = new Set<string>(), mixHips = new THREE.Vector3(); let mixed = false;
   let faceTest: [number, number, number] | null = null;
   let face: ReturnType<typeof buildFace> | undefined, nextBlink = 2, blinkAt = -1, doubleBlink = false, jawNow = 0, smileNow = 0;
   let placed = false;
@@ -314,7 +397,7 @@ export function createAuthor(o: {
   const W = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(bodyQ);   // his frame → world direction
 
   // ── What he is doing ─────────────────────────────────────────────────────────────────────────────────
-  type Mode = 'work' | 'admire' | 'notice' | 'talk' | 'present' | 'wave';
+  type Mode = 'work' | 'admire' | 'notice' | 'talk' | 'present' | 'wave' | 'idle' | 'explain';
   let awayFor = 0, onScreen = true, roomAt = -1;
   // How much each arm follows his action (IK) rather than the motion capture.
   const armW = { L: 0, R: 0 }, armGoal = { L: 0, R: 0 };
@@ -362,11 +445,13 @@ export function createAuthor(o: {
     if (!dialog) return;
     dialog = false; cta = false; ui.classList.remove('is-dialog'); o.root.classList.remove('mr-talking'); renderChips();
     if (!quiet) speakLines([LINES.bye]);
-    mode = 'work'; modeAt = clock;
+    mode = building() ? 'work' : 'idle'; modeAt = clock;
   }
 
   // ── Load ──────────────────────────────────────────────────────────────────────────────────────────────
   let loaded = false, disposed = false, clock = 0;
+  /** Is there work on the wheel (or is it standing finished)? */
+  const building = () => phasePiece !== 'stand';
   async function load() {
     const url = o.mobile ? '/models/author/rodion.mobile.glb' : '/models/author/rodion.glb';
     const [gltf, idle] = await Promise.all([
@@ -381,6 +466,7 @@ export function createAuthor(o: {
     if (idle) {
       const tracks = idle.tracks.map(t => /quaternion$/.test(t.name) ? new THREE.QuaternionKeyframeTrack(t.name, t.times, t.values) : new THREE.VectorKeyframeTrack(t.name, t.times, t.values));
       mixer = new THREE.AnimationMixer(model); mixer.clipAction(new THREE.AnimationClip('idle', idle.duration, tracks)).play();
+      for (const t of idle.tracks) if (/quaternion$/.test(t.name)) tracked.add(t.name.slice(0, t.name.lastIndexOf('.')));
     }
     // Soles on the platform: measured on the shoes themselves, at rest.
     { let sole = Infinity; const p = new THREE.Vector3();
@@ -408,7 +494,7 @@ export function createAuthor(o: {
   const stageLook = o.stage.clone().setY(1.2);
   function update(t: number, dt: number) {
     clock = t;
-    key.intensity += ((loaded ? 30 : 0) - key.intensity) * Math.min(1, dt * 1.5);
+    key.intensity += ((loaded ? 17 : 0) - key.intensity) * Math.min(1, dt * 1.5);
     updatePiece(t, dt);
     if (!loaded || !rig) return;
     camera.getWorldPosition(camPos);
@@ -427,11 +513,21 @@ export function createAuthor(o: {
       lastBark = t; speakLines([LINES.barks[barks % LINES.barks.length]]); barks++;
       if (mode === 'work') { mode = 'notice'; modeAt = t; }
     }
+    // He works while there is work on the wheel; when it stands he steps back from it, and tells you about it
+    // (once, when you are there to hear it).
+    const rest = () => (building() ? 'work' : 'idle') as Mode;
+    if ((mode === 'idle' || mode === 'explain') && building()) { mode = 'work'; modeAt = t; }
+    if ((mode === 'work' || mode === 'notice') && !building()) { mode = 'idle'; modeAt = t; }
     if (mode === 'work' && t > nextAdmire && !near) { mode = 'admire'; modeAt = t; }
-    if (mode === 'admire' && t - modeAt > 3.2) { mode = 'work'; modeAt = t; nextAdmire = t + 9 + Math.random() * 6; }
-    if (mode === 'wave' && t - modeAt > 2.6) { mode = dialog ? 'talk' : 'notice'; modeAt = t; }
-    if (mode === 'notice' && t - modeAt > 3.2 && !dialog) { mode = 'work'; modeAt = t; }
-    if (mode === 'present' && t - presentAt > 4.2) { mode = dialog ? 'talk' : 'work'; modeAt = t; }
+    if (mode === 'admire' && t - modeAt > 3.2) { mode = rest(); modeAt = t; nextAdmire = t + 9 + Math.random() * 6; }
+    if (mode === 'wave' && t - modeAt > 2.6) { mode = dialog ? 'talk' : building() ? 'notice' : 'idle'; modeAt = t; }
+    if (mode === 'notice' && t - modeAt > 3.2 && !dialog) { mode = rest(); modeAt = t; }
+    if (mode === 'present' && t - presentAt > 4.2) { mode = dialog ? 'talk' : rest(); modeAt = t; }
+    if (piece && !piece.told && !building() && settled && near && inFront(camPos) && (mode === 'idle' || mode === 'talk') && !line && !queue.length) {
+      piece.told = true; speakLines(techLines(piece), false); lastBark = t;
+      if (!dialog) { mode = 'explain'; modeAt = t; }
+    }
+    if (mode === 'explain' && !line && !queue.length && t - modeAt > 1) { mode = 'idle'; modeAt = t; }
 
     // Speech: one line at a time, typed out as he says it, then held long enough to read.
     if (!line && queue.length) { line = queue.shift()!; lineAt = t; typed = 0; lineHold = 1.6 + line.en.length / 22; ui.hidden = false; }
@@ -459,11 +555,13 @@ export function createAuthor(o: {
       yawGoal = FACE; lean.goal = .22; crouch.goal = .05;
       const toHim = new THREE.Vector3(-Math.sin(FACE), 0, -Math.cos(FACE));
       const side = new THREE.Vector3(-toHim.z, 0, toHim.x);
-      const rad = radiusAt(lineY());
-      // A tall piece is worked from the side at chest height, not with the arm thrown up across the body.
-      lineW.y = Math.min(lineW.y, shoulderR.y - .1);
-      handGoal.R.copy(lineW).addScaledVector(toHim, rad + .1).addScaledVector(side, -.06 + s(t * 1.6) * .045).add(v.set(0, s(t * 3.1) * .02, 0));
-      handGoal.L.copy(wheelW).addScaledVector(toHim, .12).addScaledVector(side, .16).add(v.set(0, .03 + Math.max(0, s(t * .4)) * .05, 0));
+      // Both hands work the piece from its sides (the tool on his right, the steadying hand on his left), never
+      // from the near face, where the arms would fold into his chest; a tall piece is worked at chest height.
+      lineW.y = Math.min(lineW.y, shoulderR.y - .14);
+      const rightOf = toHim.clone().multiplyScalar(.55).addScaledVector(side, -.84).normalize(), leftOf = toHim.clone().multiplyScalar(.55).addScaledVector(side, .84).normalize();
+      const stroke = s(t * 1.6) * .04;
+      handGoal.R.copy(lineW).addScaledVector(rightOf, widthAt(lineW.y - wheelW.y) + .045).addScaledVector(toHim, stroke).add(v.set(0, s(t * 3.1) * .02, 0));
+      handGoal.L.copy(wheelW).addScaledVector(leftOf, widthAt(.05) + .05).add(v.set(0, .05 + Math.max(0, s(t * .4)) * .05, 0));
       lookGoal.copy(handGoal.R).add(v.set(s(t * .7) * .03, .02, 0));
       armGoal.L = 1; armGoal.R = mode === 'notice' ? .35 : 1;
       if (mode === 'notice') { lookGoal.copy(camPos); lean.goal = .12; }
@@ -493,6 +591,22 @@ export function createAuthor(o: {
       lookGoal.copy(t - presentAt < 1.8 ? stageLook : camPos);
     }
 
+    if (mode === 'idle' || mode === 'explain') {
+      // Done: a step back from the stand, his own arms (the capture), turned between his work and you. Telling you
+      // about it, his right hand opens towards the piece and the left talks with him.
+      const facing = near && inFront(camPos);
+      yawGoal = clampYaw(facing ? lerpAngle(FACE, toCam, mode === 'explain' ? .5 : .65) : FACE); lean.goal = -.02; crouch.goal = 0;
+      const topW = wheelW.clone().setY(FLOOR + WHEEL_Y + .015 + pieceH() * .6);
+      lookGoal.copy(facing && !(mode === 'explain' && t - lineAt < 1.3) ? camPos : topW);
+      armGoal.L = 0; armGoal.R = 0;
+      if (mode === 'explain') {
+        const reach = rig.lengths.RightArm + rig.lengths.RightForeArm, hipsW = body.localToWorld(rig.hipsRest.clone());
+        handGoal.R.copy(shoulderR).add(topW.clone().sub(shoulderR).normalize().multiplyScalar(reach * .72)).add(v.set(0, .03 * wob(1.7), 0));
+        handGoal.L.copy(hipsW).add(W(.2 + .04 * wob(2.3), .28 + .06 * Math.abs(s(t * 2.9)), .3));
+        armGoal.R = .85; armGoal.L = .5 * speak.now;
+      }
+    }
+
     // No hand ever goes into his body: below the chest, a goal behind the front of the torso is brought forward.
     if (mode !== 'admire') for (const g of [handGoal.L, handGoal.R]) {
       const hipsW = body.localToWorld(rig.hipsRest.clone()), rel = g.clone().sub(hipsW).applyQuaternion(bodyQi);
@@ -511,7 +625,7 @@ export function createAuthor(o: {
     body.rotation.y = yaw; body.updateMatrixWorld(true);
     bodyQ.setFromAxisAngle(up, yaw); bodyQi.copy(bodyQ).invert();
     pose(t, dt);
-    tool.visible = mode === 'work' || mode === 'notice' || mode === 'admire';
+    tool.visible = building() && (mode === 'work' || mode === 'notice' || mode === 'admire');
     // The face: a blink every few seconds (now and then twice), the jaw with the syllables while he speaks, a
     // smile for a greeting and while he listens to you.
     if (face) {
@@ -525,7 +639,7 @@ export function createAuthor(o: {
       }
       const syllables = speak.now * (.25 + .75 * Math.abs(Math.sin(t * 10.5 + Math.sin(t * 3.1) * 2)));
       jawNow += (syllables * .85 - jawNow) * ease(18);
-      const wantSmile = mode === 'wave' ? .85 : dialog ? .35 + .25 * (1 - speak.now) : mode === 'notice' ? .3 : 0;
+      const wantSmile = mode === 'wave' ? .85 : dialog ? .35 + .25 * (1 - speak.now) : mode === 'notice' || mode === 'explain' ? .3 : 0;
       smileNow += (wantSmile - smileNow) * ease(3);
       if (faceTest) face.set(...faceTest); else face.set(blink, jawNow, smileNow);
     }
@@ -540,9 +654,18 @@ export function createAuthor(o: {
     // The motion capture first (his own idle: breath, weight, the small life of a standing person), then
     // everything he does on top of it.
     const hipsBone = R.B('Hips'), hipsRest = R.rest.get(hipsBone)!;
-    captured.clear();
-    if (mixer) { mixer.update(dt); for (const b of R.rest.keys()) captured.set(b, b.quaternion.clone()); }
-    const drift = mixer ? hipsBone.position.clone().sub(hipsRest.pos) : new THREE.Vector3();
+    // (The mixer only writes a value that changed since it last wrote it. So every bone goes back to what the
+    // capture last made of it, or to rest, before it runs; otherwise, wherever the capture holds still (as at
+    // the start of each loop), last frame's pose would be read back as the capture and applied twice: the drop
+    // every eight seconds, the arms folding into him.)
+    if (mixer) {
+      for (const [b, r] of R.rest) b.quaternion.copy(captured.get(b) ?? r.local);
+      hipsBone.position.copy(mixed ? mixHips : hipsRest.pos);
+      mixer.update(dt);
+      for (const b of R.rest.keys()) if (tracked.has(b.name)) (captured.get(b) ?? captured.set(b, new THREE.Quaternion()).get(b)!).copy(b.quaternion);
+      mixHips.copy(hipsBone.position); mixed = true;
+    }
+    const drift = mixer ? mixHips.clone().sub(hipsRest.pos) : new THREE.Vector3();
     const hips = R.hipsRest.clone().add(new THREE.Vector3(mixer ? 0 : sway * .022, -crouch.now * .25 - (mixer ? 0 : Math.abs(sway) * .008), -lean.now * .1));
     hipsBone.position.copy(R.armature.worldToLocal(body.localToWorld(hips.clone()))).add(drift);
     rel('Hips', euler(lean.now * .35, 0, mixer ? 0 : -sway * .035));
@@ -568,7 +691,7 @@ export function createAuthor(o: {
       const name = side === 'L' ? 'Left' : 'Right', sx = side === 'L' ? 1 : -1;
       const sh = R.B(`${name}Arm`).getWorldPosition(new THREE.Vector3()), el = R.B(`${name}ForeArm`).getWorldPosition(new THREE.Vector3()), wr = R.B(`${name}Hand`).getWorldPosition(new THREE.Vector3());
       const natPole = el.clone().sub(sh.clone().add(wr).multiplyScalar(.5)).normalize();
-      const pole = natPole.lerp(W(sx * .5, -.85, -.22).normalize(), w).normalize();
+      const pole = natPole.lerp(W(sx * .72, -.66, -.12).normalize(), w).normalize();
       limb(`${name}Arm`, `${name}ForeArm`, wr.lerp(hand[side], w), pole);
     }
     // Hands: the captured fingers, except the tool hand's grip (set from the rest pose, on its own axes).
@@ -645,12 +768,16 @@ export function createAuthor(o: {
     /** (Debug: hold the face at blink / jaw / smile.) */
     testFace(v: [number, number, number] | null) { faceTest = v; },
     /** A work arrived on the stage: he turns to it and presents it, and starts a small one of it on his wheel. */
-    present(title: string, model?: THREE.Object3D) {
-      if (model) {
-        const ticket = ++asked;
-        void build(collect(model)).then(data => {
-          if (!data || ticket !== asked || disposed) return;
-          chosen = true; buildSpeed = 2.2; startPiece(makePiece(data));
+    present(title: string, model?: THREE.Object3D, about?: Lang) {
+      if (model && piece?.source !== model && next?.source !== model) {
+        const ticket = ++asked, { parts, materials, facts } = collect(model);
+        void build(parts).then(async data => {
+          if (!data || ticket !== asked || disposed) { materials.forEach(m => m.dispose()); return; }
+          const made = makePiece(data, materials, facts, title, about, model);
+          await warm(made);
+          if (ticket !== asked || disposed) { forget(made); return; }
+          chosen = true; buildSpeed = 2.2; startPiece(made);
+          if (mode === 'idle' || mode === 'explain') { mode = 'work'; modeAt = clock; }
         });
       }
       if (!loaded) return;
@@ -662,6 +789,12 @@ export function createAuthor(o: {
       asked++;
       if (!chosen || !figure) return;
       chosen = false; buildSpeed = 1; startPiece(figure);
+    },
+    /** A work is leaving the stage (and its textures with it): his copy of it goes on in plain clay. */
+    retire(root: THREE.Object3D) {
+      for (const p of [piece, next]) if (p && p.source === root) {
+        p.materials.forEach(m => m.dispose()); p.materials = p.materials.map(() => clayMat); p.mesh.material = p.materials; p.source = undefined;
+      }
     },
     /** The caption's subject when you look at him from close by. */
     inView(position: THREE.Vector3, forward: THREE.Vector3) {

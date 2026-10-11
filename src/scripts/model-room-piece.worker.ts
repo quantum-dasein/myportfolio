@@ -4,6 +4,10 @@ import { buildPiece, type PiecePart } from './model-room-piece';
 self.onmessage = (event: MessageEvent<{ id: number; parts: PiecePart[]; maxH: number; maxR: number }>) => {
   const { id, parts, maxH, maxR } = event.data;
   const piece = buildPiece(parts, maxH, maxR);
-  const transfer = piece ? [piece.position.buffer, piece.normal.buffer, piece.index.buffer, piece.lines.buffer, piece.heights.buffer, piece.radii.buffer] : [];
+  const transfer: ArrayBuffer[] = [];
+  if (piece) {
+    for (const a of [piece.position, piece.normal, piece.uv, piece.index, piece.lines, piece.heights, piece.radii]) if (a) transfer.push(a.buffer as ArrayBuffer);
+    for (const g of piece.groups) transfer.push(g.heights.buffer as ArrayBuffer);
+  }
   (self as unknown as Worker).postMessage({ id, piece }, transfer);
 };

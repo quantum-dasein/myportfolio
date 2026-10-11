@@ -10,6 +10,8 @@ export function createArchiveBay(o: {
   scene: THREE.Scene; renderer: THREE.WebGLRenderer; camera: THREE.Camera; loader: GLTFLoader;
   mobile: boolean; reduced: boolean; target: () => THREE.WebGLRenderTarget | null;
   onReveal?: () => void; wireframe: () => boolean;
+  /** A work is about to leave (its textures are freed right after). */
+  onRelease?: (root: THREE.Object3D) => void;
 }) {
   const portal = createArchivePortal(o.scene, o.reduced);
   const station = portal.root, at = station.position;
@@ -119,7 +121,7 @@ export function createArchiveBay(o: {
   }
   function cancel() { generation++; controller?.abort(); controller = undefined; }
   function erase() {
-    if (current) release(current.root);
+    if (current) { o.onRelease?.(current.root); release(current.root); }
     current = undefined; meshes.length = 0; state = 'empty'; colliders.length = 0; clip.value = -1; dropBase();
     finishRemoval?.(); finishRemoval = undefined;
   }

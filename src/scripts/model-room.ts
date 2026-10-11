@@ -292,6 +292,7 @@ export async function mountModelRoom(root: HTMLElement) {
       scene, renderer, camera, loader: gltfLoader, mobile: coarse.matches, reduced,
       target: () => composer?.readBuffer ?? null, wireframe: () => wireframe,
       onReveal: () => { sound.reveal(); guide?.emote('curious', performance.now() / 1000); },
+      onRelease: root => author?.retire(root),
     });
     // The archive tablet: Rodion's book of works. He opens it for you (or the "Model archive" button does);
     // a work chosen in it is built on the stage in the middle of the hall, and he turns to present it.
@@ -303,7 +304,7 @@ export async function mountModelRoom(root: HTMLElement) {
         const info = await archive!.show(entry, progress); if (!info || disposed) return false;
         selected = ''; selectedMaterial = ''; selection.visible = false; caption(info); arriveAt = -1;
         if (inspecting) inspectionHome(); else mode(true);
-        author?.present(entry.title, archive!.model());
+        author?.present(entry.title, archive!.model(), entry.description);
         return true;
       },
       clear: async () => {
