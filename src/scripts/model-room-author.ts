@@ -80,10 +80,11 @@ const LINES = {
       { en: 'Rodion Belousov. Three-D artist and developer in Vienna.', de: 'Rodion Belousov. Drei-D-Künstler und Entwickler in Wien.' }),
     L('I build the models, the films and the websites they live in.', 'Ich baue die Modelle, die Filme und die Websites, in denen sie leben.', 'who-1'),
   ],
-  expect: (title: string, id?: string) => L(`${title}? Coming up. Give it a moment.`, `${title}? Kommt gleich. Einen Moment.`, id && `expect-${id}`,
-    { en: `${spokenTitle(title, false)}? Coming up. Give it a moment.`, de: `${spokenTitle(title, true)}? Kommt gleich. Einen Moment.` }),
-  present: (title: string, id?: string) => L(`There it is: ${title}. And a small one, by hand, here on my wheel.`, `Bitte schön: ${title}. Und eine kleine, von Hand, hier auf meiner Scheibe.`, id && `present-${id}`,
-    { en: `There it is: ${spokenTitle(title, false)}. And a small one, by hand, here on my wheel.`, de: `Bitte schön: ${spokenTitle(title, true)}. Und eine kleine, von Hand, hier auf meiner Scheibe.` }),
+  // (No line opens on a work's name: spoken first, it lost its start.)
+  expect: (title: string, id?: string) => L(`Good choice. ${title} is on its way.`, `Gute Wahl. ${title} ist unterwegs.`, id && `expect-${id}`,
+    { en: `Good choice. ${spokenTitle(title, false)} is on its way.`, de: `Gute Wahl. ${spokenTitle(title, true)} ist unterwegs.` }),
+  present: (title: string, id?: string) => L(`Here it is: ${title}. And a small one, by hand, here on my wheel.`, `Bitte schön: ${title}. Und eine kleine, von Hand, hier auf meiner Scheibe.`, id && `present-${id}`,
+    { en: `Here it is: ${spokenTitle(title, false)}. And a small one, by hand, here on my wheel.`, de: `Bitte schön: ${spokenTitle(title, true)}. Und eine kleine, von Hand, hier auf meiner Scheibe.` }),
   bye: L('See you around.', 'Bis später.', 'bye'),
 };
 const CHOICES: [key: 'archive' | 'order' | 'how' | 'who', label: Lang][] = [
@@ -332,11 +333,11 @@ export function createAuthor(o: {
     const deTex = f.textures === 1 ? 'Eine Textur' : `${wordsDe(f.textures, false)} Texturen`;
     const v = (n: number) => `tech-${p.key}-${n}`;
     const lines = [L(
-      `${p.title}, done. ${en(f.tris)} triangles in ${f.parts} ${pl(f.parts, 'part', 'parts')}, ${f.materials} ${pl(f.materials, 'material', 'materials')}.`,
-      `${p.title}, fertig. ${de(f.tris)} Dreiecke in ${f.parts} ${pl(f.parts, 'Teil', 'Teilen')}, ${f.materials} ${pl(f.materials, 'Material', 'Materialien')}.`,
+      `Done. ${p.title}: ${en(f.tris)} triangles in ${f.parts} ${pl(f.parts, 'part', 'parts')}, ${f.materials} ${pl(f.materials, 'material', 'materials')}.`,
+      `Fertig. ${p.title}: ${de(f.tris)} Dreiecke in ${f.parts} ${pl(f.parts, 'Teil', 'Teilen')}, ${f.materials} ${pl(f.materials, 'Material', 'Materialien')}.`,
       v(0), {
-        en: cap(`${spokenTitle(p.title, false)}, done. ${spokenCount(f.tris, false)} triangles in ${wordsEn(f.parts)} ${pl(f.parts, 'part', 'parts')}, ${wordsEn(f.materials)} ${pl(f.materials, 'material', 'materials')}.`),
-        de: cap(`${spokenTitle(p.title, true)}, fertig. ${spokenCount(f.tris, true)} Dreiecke in ${deParts}, ${deMats}.`),
+        en: cap(`Done. ${spokenTitle(p.title, false)}: ${spokenCount(f.tris, false)} triangles in ${wordsEn(f.parts)} ${pl(f.parts, 'part', 'parts')}, ${wordsEn(f.materials)} ${pl(f.materials, 'material', 'materials')}.`),
+        de: cap(`Fertig. ${spokenTitle(p.title, true)}: ${spokenCount(f.tris, true)} Dreiecke in ${deParts}, ${deMats}.`),
       },
     )];
     const kindsEn = f.kinds.map(x => x.en).join(', '), kindsDe = f.kinds.map(x => x.de).join(', ');
@@ -422,6 +423,7 @@ export function createAuthor(o: {
   /** The bones the capture moves, and its last pose of them (see pose()). */
   const tracked = new Set<string>(), mixHips = new THREE.Vector3(); let mixed = false;
   let faceTest: [number, number, number] | null = null;
+  let nextGlance = 1; const eyeGoal = new THREE.Vector2(), eyeNow = new THREE.Vector2();
   let face: ReturnType<typeof buildFace> | undefined, nextBlink = 2, blinkAt = -1, doubleBlink = false, jawNow = 0, smileNow = 0;
   let placed = false;
 
@@ -792,10 +794,18 @@ export function createAuthor(o: {
         mouth.getFloatTimeDomainData(wave); let sum = 0; for (let i = 0; i < wave.length; i++) sum += wave[i] * wave[i];
         syllables = THREE.MathUtils.clamp((Math.sqrt(sum / wave.length) - .012) * 7, 0, 1);
       }
-      jawNow += (syllables * .85 - jawNow) * ease(18);
+      jawNow += (syllables * .55 - jawNow) * ease(18);
       const wantSmile = mode === 'wave' ? .85 : dialog ? .35 + .25 * (1 - speak.now) : mode === 'notice' || mode === 'explain' ? .3 : 0;
       smileNow += (wantSmile - smileNow) * ease(3);
       if (faceTest) face.set(...faceTest); else face.set(blink, jawNow, smileNow);
+      // The gaze: small jumps every second or two (now and then back to the middle), a little down while he works.
+      if (t > nextGlance) {
+        const busy = mode === 'work' || mode === 'notice';
+        if (Math.random() < .35) eyeGoal.set(0, 0); else eyeGoal.set((Math.random() - .5) * .0032, (Math.random() - .5) * .0014);
+        if (busy) eyeGoal.y -= .0009;
+        nextGlance = t + .5 + Math.random() * 2;
+      }
+      eyeNow.lerp(eyeGoal, 1 - Math.exp(-dt * 30)); face.look(eyeNow.x, eyeNow.y);
     }
   }
 
@@ -993,6 +1003,9 @@ export function createAuthor(o: {
  *    skin stretching down over the painted eye;
  *  - jaw: everything below the line of the lips turns down about a hinge by the ears, so the lips part;
  *  - smile: the corners of the mouth go up and a little out.
+ * And, in his skin's shader, from masks made here: the inside of the mouth, dark where the lips part as the jaw
+ * opens; wet eyes with a catchlight; and irises that move (the painted iris is
+ * slid inside the opening of each eye, the lids staying put), for glances and the small jumps of a living gaze.
  */
 function buildFace(mesh: THREE.Mesh) {
   const geo = mesh.geometry, pos = geo.attributes.position as THREE.BufferAttribute, n = pos.count;
@@ -1001,9 +1014,31 @@ function buildFace(mesh: THREE.Mesh) {
   const EYE = { x: .0336, half: .0187, corner: 1.727, upper: .0067, lower: .0027, crease: .0068 };
   const LIPS = { y: 1.663, corners: .038, droop: .0028 }, HINGE = { y: 1.69, z: -.005 }, JAW = .15;
   const rot = new THREE.Vector3();
+  // aEye: how much of the eye's painting slides with the iris (+ his left eye, - his right); aEyeAt: where the
+  // vertex is from the eye's centre (metres, for the catchlight); aMouth: which side of the lips (+ upper, - lower)
+  // and how far in from the corners; triangles across the line are the parting, dark when it opens.
+  const aEye = new Float32Array(n), aEyeAt = new Float32Array(n * 2).fill(1), aMouth = new Float32Array(n * 2);
+  const uv = geo.attributes.uv as THREE.BufferAttribute | undefined;
+  const fit = [0, 1].map(() => ({ sx: 0, sy: 0, su: 0, sv: 0, sxx: 0, syy: 0, sxy: 0, sxu: 0, syu: 0, sxv: 0, syv: 0, k: 0 }));
+  const EYE_Y = EYE.corner + (EYE.upper - EYE.lower) / 2;
   for (let i = 0; i < n; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     if (z < -.01) continue;                                             // the back of the head never moves
+    for (const [side, cx] of [[1, EYE.x], [0, -EYE.x]] as const) {
+      const u = (x - cx) / EYE.half; if (Math.abs(u) > 1.3 || y < 1.705 || y > 1.755) continue;
+      aEyeAt[i * 2] = x - cx; aEyeAt[i * 2 + 1] = y - EYE_Y;
+      const arc = Math.max(0, 1 - u * u), zL = EYE.corner - EYE.lower * arc, zU = EYE.corner + EYE.upper * arc;
+      if (y < zL || y > zU || Math.abs(u) > 1) continue;
+      const inner = Math.min(y - zL, zU - y) / Math.max(1e-4, zU - zL);
+      const m = smooth(.08, .38, inner) * (1 - smooth(.5, .88, Math.abs(u)));
+      aEye[i] = side ? m : -m;
+      if (uv && m > .2) { const f = fit[side], U = uv.getX(i), V = uv.getY(i), X = x - cx, Y = y - EYE_Y;
+        f.sx += X; f.sy += Y; f.su += U; f.sv += V; f.sxx += X * X; f.syy += Y * Y; f.sxy += X * Y; f.sxu += X * U; f.syu += Y * U; f.sxv += X * V; f.syv += Y * V; f.k++; }
+    }
+    const lipAt = LIPS.y - LIPS.droop * Math.min(1, (x / LIPS.corners) ** 2);
+    // (Which side of the line of the lips; where: the mouth only.)
+    aMouth[i * 2] = y >= lipAt ? 1 : -1;
+    aMouth[i * 2 + 1] = z > 0 && Math.abs(y - lipAt) < .012 ? 1 - smooth(LIPS.corners * .7, LIPS.corners * 1.15, Math.abs(x)) : 0;
     // Eyes.
     for (const cx of [-EYE.x, EYE.x]) {
       const u = (x - cx) / EYE.half; if (Math.abs(u) > 1.25 || y < 1.71 || y > 1.75) continue;
@@ -1018,11 +1053,13 @@ function buildFace(mesh: THREE.Mesh) {
     }
     // Jaw: below the line of the lips, in front, between the corners and a little beyond.
     const lip = LIPS.y - LIPS.droop * Math.min(1, (x / LIPS.corners) ** 2);
-    if (y < lip - .0003 && y > 1.57 && Math.abs(x) < .075) {
+    if (y < lip && y > 1.57 && Math.abs(x) < .075) {
       // At the lips the opening is a lens, closed at the corners; lower down the whole chin turns.
       const lens = 1 - smooth(.008, .04, Math.abs(x)), chin = 1 - smooth(.03, .07, Math.abs(x));
       const across = THREE.MathUtils.lerp(lens, chin, smooth(.002, .022, lip - y));
-      const w = across * smooth(1.585, 1.615, y) * smooth(-.01, .03, z) * smooth(0, .0015, lip - y);
+      // (Everything below the line moves in full: a ramp right under it stretched whole triangles of the lower lip
+      // into pale spikes. Only the triangles across the line stretch, and they are the dark parting.)
+      const w = across * smooth(1.585, 1.615, y) * smooth(-.01, .03, z);
       const a = JAW * w, ry = y - HINGE.y, rz = z - HINGE.z;
       rot.set(0, ry * Math.cos(a) - rz * Math.sin(a), ry * Math.sin(a) + rz * Math.cos(a));
       jaw[i * 3 + 1] = rot.y - ry; jaw[i * 3 + 2] = rot.z - rz;
@@ -1038,8 +1075,60 @@ function buildFace(mesh: THREE.Mesh) {
   geo.morphAttributes.position = [new THREE.BufferAttribute(blink, 3), new THREE.BufferAttribute(jaw, 3), new THREE.BufferAttribute(smile, 3)];
   geo.morphTargetsRelative = true;
   mesh.updateMorphTargets();
+  geo.setAttribute('aEye', new THREE.BufferAttribute(aEye, 1)); geo.setAttribute('aEyeAt', new THREE.BufferAttribute(aEyeAt, 2)); geo.setAttribute('aMouth', new THREE.BufferAttribute(aMouth, 2));
+  // How the painting's UVs run across each eye (a least-squares fit of uv against position): an iris moved by so
+  // many millimetres is the painting slid by so much.
+  const jac = fit.map(f => {
+    if (f.k < 6) return null;
+    const mx = f.sx / f.k, my = f.sy / f.k, cxx = f.sxx / f.k - mx * mx, cyy = f.syy / f.k - my * my, cxy = f.sxy / f.k - mx * my, det = cxx * cyy - cxy * cxy;
+    if (Math.abs(det) < 1e-16) return null;
+    const cu = [f.sxu / f.k - mx * f.su / f.k, f.syu / f.k - my * f.su / f.k], cv = [f.sxv / f.k - mx * f.sv / f.k, f.syv / f.k - my * f.sv / f.k];
+    const solve = (c: number[]) => [(c[0] * cyy - c[1] * cxy) / det, (c[1] * cxx - c[0] * cxy) / det];
+    const [ux, uy] = solve(cu), [vx, vy] = solve(cv); return { ux, uy, vx, vy };
+  });
+  const uniforms = { uJaw: { value: 0 }, uEyeUVL: { value: new THREE.Vector2() }, uEyeUVR: { value: new THREE.Vector2() }, uLook: { value: new THREE.Vector2() } };
+  const material = mesh.material as THREE.MeshStandardMaterial, before = material.onBeforeCompile.bind(material);
+  material.onBeforeCompile = (sh, r) => {
+    before(sh, r);
+    Object.assign(sh.uniforms, uniforms);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+        attribute float aEye; attribute vec2 aEyeAt; attribute vec2 aMouth; uniform vec2 uEyeUVL, uEyeUVR;
+        varying float vEye; varying vec2 vEyeAt; varying vec3 vMouth;`)
+      .replace('#include <uv_vertex>', `#include <uv_vertex>
+        vEye = aEye; vEyeAt = aEyeAt; vMouth = vec3(max(aMouth.x, 0.), max(-aMouth.x, 0.), aMouth.y);
+        #ifdef USE_MAP
+          vMapUv += (aEye > 0. ? uEyeUVL : uEyeUVR) * abs(aEye);
+        #endif`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        uniform float uJaw; uniform vec2 uLook; varying float vEye; varying vec2 vEyeAt; varying vec3 vMouth;`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        // The parting of the lips: every triangle across the line of the lips (only there are both its "above" and
+        // its "below" shares above zero), dark as the jaw opens, so the mouth opens instead of stretching. Its edges
+        // are the rows of the lips themselves.
+        float parted = smoothstep(.02, .12, uJaw) * vMouth.z * smoothstep(0., .035, min(vMouth.x, vMouth.y));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075, .02, .018), clamp(parted, 0., .95));`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor = mix(roughnessFactor, .14, smoothstep(.05, .5, abs(vEye)));`)
+      .replace('#include <opaque_fragment>', `
+        // A catchlight in each eye, up and to the side, riding with the iris.
+        vec2 glint = vEyeAt - uLook - vec2(-.0017, .0019);
+        outgoingLight += vec3(1., .97, .92) * (1. - smoothstep(.00045, .001, length(glint))) * smoothstep(.04, .3, abs(vEye)) * .85;
+        #include <opaque_fragment>`);
+  };
+  const key = material.customProgramCacheKey.bind(material);
+  material.customProgramCacheKey = () => key() + '-face';
+  material.needsUpdate = true;
   const influences = mesh.morphTargetInfluences!;
-  return { set(b: number, j: number, sm: number) { influences[0] = b; influences[1] = j; influences[2] = sm; } };
+  return {
+    set(b: number, j: number, sm: number) { influences[0] = b; influences[1] = j; influences[2] = sm; uniforms.uJaw.value = j; },
+    /** The irises' offset from the middle of each eye, in metres (x to his left, y up). */
+    look(x: number, y: number) {
+      uniforms.uLook.value.set(x, y);
+      jac.forEach((J, side) => { const t = side ? uniforms.uEyeUVL.value : uniforms.uEyeUVR.value; if (J) t.set(-(J.ux * x + J.uy * y), -(J.vx * x + J.vy * y)); });   // (sliding the painting the other way moves the iris this way)
+    },
+  };
 }
 
 /** His avatar's materials, made for the room: skin with a warm sheen, hair cards, cloth. Phones get the plain versions. */
@@ -1060,7 +1149,7 @@ function dress(model: THREE.Object3D, mobile: boolean, keep: <T extends { dispos
       if (old.transparent) mesh.renderOrder = 2;
     } else if (/body/.test(name) && !mobile) {
       // Skin: a soft sheen, and light scattering red through the edges (ears, the rim of a cheek against the light).
-      const skin = new THREE.MeshPhysicalMaterial({ ...base, roughness: .6, specularIntensity: .45, sheen: .3, sheenColor: new THREE.Color('#ff9f8a'), sheenRoughness: .55 });
+      const skin = new THREE.MeshPhysicalMaterial({ ...base, roughness: .66, specularIntensity: .3, sheen: .14, sheenColor: new THREE.Color('#ff9f8a'), sheenRoughness: .6 });
       skin.onBeforeCompile = sh => {
         sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
           float rimScatter = pow(1. - clamp(dot(normal, normalize(vViewPosition)), 0., 1.), 2.5);
