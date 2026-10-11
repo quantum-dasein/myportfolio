@@ -15,9 +15,34 @@ import type { ExhibitInfo } from './model-room-exhibits';
 import { ROOM } from './model-room-layout';
 import { buildPiece, PIECE_BINS, type PieceData, type PiecePart } from './model-room-piece';
 import { modelArchive } from '../data/model-archive';
+import { archiveFacts } from '../data/model-archive-facts';
 
-type Lang = { en: string; de: string };
-const L = (en: string, de: string): Lang => ({ en, de });
+/** A line in both languages; `v` names its recording (public/audio/rodion/<lang>/<v>.mp3), `say` is how it is
+ *  spoken where that differs from how it is written (numbers in words, "3D"). */
+type Lang = { en: string; de: string; v?: string; say?: { en: string; de: string } };
+const L = (en: string, de: string, v?: string, say?: { en: string; de: string }): Lang => ({ en, de, v, say });
+
+// Numbers as he says them: whole numbers in words; above ten thousand, rounded to the thousand ("about").
+const ONES_EN = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS_EN = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+function wordsEn(n: number): string {
+  if (n < 20) return ONES_EN[n];
+  if (n < 100) return TENS_EN[Math.floor(n / 10)] + (n % 10 ? '-' + ONES_EN[n % 10] : '');
+  if (n < 1000) return ONES_EN[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + wordsEn(n % 100) : '');
+  return wordsEn(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? (n % 1000 < 100 ? ' and ' : ' ') + wordsEn(n % 1000) : '');
+}
+const ONES_DE = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn'];
+const TENS_DE = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+function wordsDe(n: number, alone = true): string {
+  if (n === 1) return alone ? 'eins' : 'ein';
+  if (n < 20) return ONES_DE[n];
+  if (n < 100) return (n % 10 ? (n % 10 === 1 ? 'ein' : ONES_DE[n % 10]) + 'und' : '') + TENS_DE[Math.floor(n / 10)];
+  if (n < 1000) return wordsDe(Math.floor(n / 100), false) + 'hundert' + (n % 100 ? wordsDe(n % 100, alone) : '');
+  return wordsDe(Math.floor(n / 1000), false) + 'tausend' + (n % 1000 ? wordsDe(n % 1000, alone) : '');
+}
+const spokenCount = (n: number, de: boolean) => (n > 10000 ? (de ? 'rund ' : 'about ') + (de ? wordsDe(Math.round(n / 1000), false) + 'tausend' : wordsEn(Math.round(n / 1000)) + ' thousand') : de ? wordsDe(n) : wordsEn(n));
+/** Archive titles as spoken: the digits of a model number one by one ("oh three"). */
+const spokenTitle = (title: string, de: boolean) => title.replace(/\b0(\d)\b/g, (_, d) => (de ? 'null ' + ONES_DE[+d] : 'oh ' + ONES_EN[+d])).replace(/\b(\d{1,2})\b/g, (_, d) => (de ? wordsDe(+d) : wordsEn(+d)));
 
 /** Where he works: just inside the entrance on the left, between the door and the stage, facing the visitor who
  *  steps out of the frame (the first person you see in the room, not a figure in a corner). */
@@ -31,32 +56,35 @@ const WHEEL_Y = .965;       // the banding wheel the piece turns on
 const PIECE_H = .6;         // the figure he is building
 
 const LINES = {
-  hello: [L("Hi, I'm Rodion. Everything in this room I built by hand.", 'Hi, ich bin Rodion. Alles in diesem Raum habe ich von Hand gebaut.')],
+  hello: [L("Hi, I'm Rodion. Everything in this room I built by hand.", 'Hi, ich bin Rodion. Alles in diesem Raum habe ich von Hand gebaut.', 'hello')],
   barks: [
-    L('Every piece here started as a single edge.', 'Jedes Stück hier hat mit einer einzigen Kante angefangen.'),
-    L('Every edge here I place by hand, one at a time.', 'Jede Kante hier setze ich von Hand, eine nach der anderen.'),
-    L('Over a thousand models so far. A few of them stand in this room.', 'Über tausend Modelle bisher. Ein paar stehen in diesem Raum.'),
-    L('Want to see something from my archive? Just ask.', 'Willst du etwas aus meinem Archiv sehen? Frag einfach.'),
-    L('Need a model of your own? Talk to me.', 'Brauchst du ein eigenes Modell? Sprich mich an.'),
+    L('Every piece here started as a single edge.', 'Jedes Stück hier hat mit einer einzigen Kante angefangen.', 'bark-0'),
+    L('Every edge here I place by hand, one at a time.', 'Jede Kante hier setze ich von Hand, eine nach der anderen.', 'bark-1'),
+    L('Over a thousand models so far. A few of them stand in this room.', 'Über tausend Modelle bisher. Ein paar stehen in diesem Raum.', 'bark-2'),
+    L('Want to see something from my archive? Just ask.', 'Willst du etwas aus meinem Archiv sehen? Frag einfach.', 'bark-3'),
+    L('Need a model of your own? Talk to me.', 'Brauchst du ein eigenes Modell? Sprich mich an.', 'bark-4'),
   ],
-  ask: L('What can I do for you?', 'Was kann ich für dich tun?'),
-  archive: L("Pick one. I'll build it for you: big on the stage, small here on my wheel.", 'Such dir eine aus. Ich baue sie dir: groß auf der Bühne, klein hier auf meiner Scheibe.'),
+  ask: L('What can I do for you?', 'Was kann ich für dich tun?', 'ask'),
+  archive: L("Pick one. I'll build it for you: big on the stage, small here on my wheel.", 'Such dir eine aus. Ich baue sie dir: groß auf der Bühne, klein hier auf meiner Scheibe.', 'archive'),
   order: [
-    L('Tell me what it is: a product, an interior, a figure, a building.', 'Erzähl mir, was es ist: ein Produkt, ein Interieur, eine Figur, ein Gebäude.'),
-    L('From photos or drawings, ready for the web, for film or for print.', 'Aus Fotos oder Zeichnungen, fertig fürs Web, für Film oder Druck.'),
+    L('Tell me what it is: a product, an interior, a figure, a building.', 'Erzähl mir, was es ist: ein Produkt, ein Interieur, eine Figur, ein Gebäude.', 'order-0'),
+    L('From photos or drawings, ready for the web, for film or for print.', 'Aus Fotos oder Zeichnungen, fertig fürs Web, für Film oder Druck.', 'order-1'),
   ],
   how: [
-    L('First the shape, in big blocks.', 'Erst die Form, in großen Blöcken.'),
-    L('Then the edges, one by one, until they hold the light.', 'Dann die Kanten, eine nach der anderen, bis sie das Licht halten.'),
-    L('Then materials, light and a camera. Watch.', 'Dann Materialien, Licht und eine Kamera. Schau.'),
+    L('First the shape, in big blocks.', 'Erst die Form, in großen Blöcken.', 'how-0'),
+    L('Then the edges, one by one, until they hold the light.', 'Dann die Kanten, eine nach der anderen, bis sie das Licht halten.', 'how-1'),
+    L('Then materials, light and a camera. Watch.', 'Dann Materialien, Licht und eine Kamera. Schau.', 'how-2'),
   ],
   who: [
-    L('Rodion Belousov. 3D artist and developer in Vienna.', 'Rodion Belousov. 3D-Künstler und Entwickler in Wien.'),
-    L('I build the models, the films and the websites they live in.', 'Ich baue die Modelle, die Filme und die Websites, in denen sie leben.'),
+    L('Rodion Belousov. 3D artist and developer in Vienna.', 'Rodion Belousov. 3D-Künstler und Entwickler in Wien.', 'who-0',
+      { en: 'Rodion Belousov. Three-D artist and developer in Vienna.', de: 'Rodion Belousov. Drei-D-Künstler und Entwickler in Wien.' }),
+    L('I build the models, the films and the websites they live in.', 'Ich baue die Modelle, die Filme und die Websites, in denen sie leben.', 'who-1'),
   ],
-  expect: (title: string) => L(`${title}? Coming up. Give it a moment.`, `${title}? Kommt gleich. Einen Moment.`),
-  present: (title: string) => L(`There it is: ${title}. And a small one, by hand, here on my wheel.`, `Bitte schön: ${title}. Und eine kleine, von Hand, hier auf meiner Scheibe.`),
-  bye: L('See you around.', 'Bis später.'),
+  expect: (title: string, id?: string) => L(`${title}? Coming up. Give it a moment.`, `${title}? Kommt gleich. Einen Moment.`, id && `expect-${id}`,
+    { en: `${spokenTitle(title, false)}? Coming up. Give it a moment.`, de: `${spokenTitle(title, true)}? Kommt gleich. Einen Moment.` }),
+  present: (title: string, id?: string) => L(`There it is: ${title}. And a small one, by hand, here on my wheel.`, `Bitte schön: ${title}. Und eine kleine, von Hand, hier auf meiner Scheibe.`, id && `present-${id}`,
+    { en: `There it is: ${spokenTitle(title, false)}. And a small one, by hand, here on my wheel.`, de: `Bitte schön: ${spokenTitle(title, true)}. Und eine kleine, von Hand, hier auf meiner Scheibe.` }),
+  bye: L('See you around.', 'Bis später.', 'bye'),
 };
 const CHOICES: [key: 'archive' | 'order' | 'how' | 'who', label: Lang][] = [
   ['archive', L('Show me your work', 'Zeig mir deine Arbeiten')],
@@ -124,6 +152,8 @@ export function createAuthor(o: {
     mesh: THREE.Mesh; wire: THREE.LineSegments; groups: { start: number; heights: Float32Array }[];
     heights: Float32Array; tris: number; h: number; radii: Float32Array; materials: THREE.Material[];
     title: string; about?: Lang; facts: Facts; told: boolean; source?: THREE.Object3D; extents: Float32Array;
+    /** Whose recordings it has: an archive id, or 'figure'. */
+    key: string;
   };
   const RADIUS_BINS = PIECE_BINS, MAX_R = .24;
   let piece: Piece | undefined, figure: Piece | undefined, next: Piece | undefined, chosen = false, asked = 0;
@@ -206,7 +236,7 @@ export function createAuthor(o: {
     for (const p of parts) for (const a of [p.position, p.normal, p.uv, p.index]) if (a) transfer.add(a.buffer as ArrayBuffer);
     return new Promise(resolve => { waiting.set(id, resolve); worker!.postMessage({ id, parts, maxH: PIECE_H, maxR: MAX_R }, [...transfer]); });
   }
-  function makePiece(d: PieceData, materials: THREE.Material[], facts: Facts, title: string, about?: Lang, source?: THREE.Object3D): Piece {
+  function makePiece(d: PieceData, materials: THREE.Material[], facts: Facts, title: string, key: string, about?: Lang, source?: THREE.Object3D): Piece {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(d.position, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(d.normal, 3));
     if (d.uv) geo.setAttribute('uv', new THREE.BufferAttribute(d.uv, 2));
@@ -217,7 +247,7 @@ export function createAuthor(o: {
     const wireGeo = new THREE.BufferGeometry(); wireGeo.setAttribute('position', geo.attributes.position); wireGeo.setIndex(new THREE.BufferAttribute(d.lines, 1)); wireGeo.boundingSphere = geo.boundingSphere;
     const mesh = new THREE.Mesh(geo, materials); mesh.castShadow = true; mesh.receiveShadow = true;
     const wire = new THREE.LineSegments(wireGeo, wireMat); wire.geometry.setDrawRange(0, 0);
-    return { mesh, wire, groups: d.groups, heights: d.heights, tris: d.tris, h: d.h, radii: d.radii, materials, title, about, facts, told: false, source, extents: d.extents };
+    return { mesh, wire, groups: d.groups, heights: d.heights, tris: d.tris, h: d.h, radii: d.radii, materials, title, about, facts, told: false, source, extents: d.extents, key };
   }
   /** Compile a piece's materials for the frame's own buffer before it joins the room (no hitch as it appears). */
   async function warm(p: Piece) {
@@ -238,7 +268,7 @@ export function createAuthor(o: {
     g.scene.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
     const data = await build(parts); if (!data || disposed) return;
     const entry = modelArchive.find(e => e.id === 'bronze-woman');
-    figure = makePiece(data, materials, facts, entry?.title ?? 'Bronze woman', entry?.description);
+    figure = makePiece(data, materials, facts, entry?.title ?? 'Bronze woman', 'figure', entry?.description);
     await warm(figure);
     if (!piece && !next && !disposed) mount(figure);
   }
@@ -287,22 +317,46 @@ export function createAuthor(o: {
     band.position.set((e[k] + e[k + 1]) / 2, lineY(), (e[k + 2] + e[k + 3]) / 2);
     band.scale.set(((e[k + 1] - e[k]) / 2 + .018) / .2 * pulse, ((e[k + 3] - e[k + 2]) / 2 + .018) / .2 * pulse, 1);
   }
-  /** What he tells about a piece once it stands: what it is made of, then what it is. */
+  /** What he tells about a piece once it stands: what it is made of, then what it is. (Each line has its own
+   *  recording, named after the piece; numbers are written exactly and spoken in words, the big ones rounded.) */
   function techLines(p: Piece): Lang[] {
     const f = p.facts, en = (x: number) => x.toLocaleString('en-US'), de = (x: number) => x.toLocaleString('de-AT');
     const pl = (x: number, one: string, many: string) => (x === 1 ? one : many);
+    // (Texture sizes are said the way artists say them: "two K", "three and a half K"; small ones in pixels.)
+    const k = Math.round(f.px / 1024 * 2) / 2;
+    const kEn = f.px < 1024 ? `${wordsEn(f.px)} pixels` : k % 1 ? `${wordsEn(Math.floor(k))} and a half K` : `${wordsEn(k)} K`;
+    const kDe = f.px < 1024 ? `${wordsDe(f.px)} Pixel` : k % 1 ? `${wordsDe(Math.floor(k))}einhalb K` : `${wordsDe(k, false)} K`;
+    const cap = (x: string) => x.replace(/(^|[.?!] )([a-zäöü])/g, (_, a, b) => a + b.toUpperCase());
+    // (German counts by gender: "in einem Teil", "ein Material", "eine Textur".)
+    const deParts = f.parts === 1 ? 'einem Teil' : `${wordsDe(f.parts, false)} Teilen`, deMats = f.materials === 1 ? 'ein Material' : `${wordsDe(f.materials, false)} Materialien`;
+    const deTex = f.textures === 1 ? 'Eine Textur' : `${wordsDe(f.textures, false)} Texturen`;
+    const v = (n: number) => `tech-${p.key}-${n}`;
     const lines = [L(
       `${p.title}, done. ${en(f.tris)} triangles in ${f.parts} ${pl(f.parts, 'part', 'parts')}, ${f.materials} ${pl(f.materials, 'material', 'materials')}.`,
       `${p.title}, fertig. ${de(f.tris)} Dreiecke in ${f.parts} ${pl(f.parts, 'Teil', 'Teilen')}, ${f.materials} ${pl(f.materials, 'Material', 'Materialien')}.`,
+      v(0), {
+        en: cap(`${spokenTitle(p.title, false)}, done. ${spokenCount(f.tris, false)} triangles in ${wordsEn(f.parts)} ${pl(f.parts, 'part', 'parts')}, ${wordsEn(f.materials)} ${pl(f.materials, 'material', 'materials')}.`),
+        de: cap(`${spokenTitle(p.title, true)}, fertig. ${spokenCount(f.tris, true)} Dreiecke in ${deParts}, ${deMats}.`),
+      },
     )];
+    const kindsEn = f.kinds.map(x => x.en).join(', '), kindsDe = f.kinds.map(x => x.de).join(', ');
     if (f.textures) lines.push(L(
-      `${f.textures} ${pl(f.textures, 'texture', 'textures')}${f.px ? `, up to ${en(f.px)} px` : ''}${f.kinds.length ? `: ${f.kinds.map(k => k.en).join(', ')}` : ''}.`,
-      `${f.textures} ${pl(f.textures, 'Textur', 'Texturen')}${f.px ? `, bis ${de(f.px)} px` : ''}${f.kinds.length ? `: ${f.kinds.map(k => k.de).join(', ')}` : ''}.`,
+      `${f.textures} ${pl(f.textures, 'texture', 'textures')}${f.px ? `, up to ${en(f.px)} px` : ''}${kindsEn ? `: ${kindsEn}` : ''}.`,
+      `${f.textures} ${pl(f.textures, 'Textur', 'Texturen')}${f.px ? `, bis ${de(f.px)} px` : ''}${kindsDe ? `: ${kindsDe}` : ''}.`,
+      v(1), {
+        en: cap(`${wordsEn(f.textures)} ${pl(f.textures, 'texture', 'textures')}${f.px ? `, up to ${kEn}` : ''}${kindsEn ? `: ${kindsEn}` : ''}.`),
+        de: cap(`${deTex}${f.px ? `, bis ${kDe}` : ''}${kindsDe ? `: ${kindsDe}` : ''}.`),
+      },
     ));
-    else lines.push(L('No textures at all: every colour lives in the materials.', 'Gar keine Texturen: jede Farbe steckt in den Materialien.'));
-    if (p.about) lines.push(p.about);
-    lines.push(L('Want one like it, of your own thing? Ask me.', 'Willst du so eins von deinem eigenen Ding? Frag mich.'));
+    else lines.push(L('No textures at all: every colour lives in the materials.', 'Gar keine Texturen: jede Farbe steckt in den Materialien.', v(1)));
+    if (p.about) lines.push({ ...p.about, v: v(2) });
+    lines.push(L('Want one like it, of your own thing? Ask me.', 'Willst du so eins von deinem eigenen Ding? Frag mich.', 'offer'));
     return lines;
+  }
+  /** The archive's own count of a work (so every device tells, and his voice says, the same numbers). */
+  function knownFacts(id: string | undefined, live: Facts): Facts {
+    const known = id ? archiveFacts[id] : undefined; if (!known) return live;
+    return { ...known, kinds: known.kinds.map(k => KINDS.find(([, label]) => label.en === k)?.[1] ?? L(k, k)) };
   }
 
   // ── Him ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -444,9 +498,48 @@ export function createAuthor(o: {
     ctaEl.innerHTML = `<span>${o.de() ? 'Projekt anfragen' : 'Start a project'}</span><svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
   addEventListener('rb:langchange', () => { renderChips(); typed = 0; }, { signal: events.signal });
+  // ── His voice: his own lines, recorded (synthesised from his voice), from where he stands ─────────────
+  // While the site's sound is on, each line he says plays its recording; the card types in step with it and his
+  // jaw follows its loudness. Off (or a recording missing), he speaks silently as before.
+  const html = document.documentElement;
+  const voiceOn = () => html.classList.contains('rb-sound') && !html.classList.contains('rb-calm') && !document.hidden;
+  const clips = new Map<string, Promise<AudioBuffer | null>>();
+  let actx: AudioContext | null = null, mouth: AnalyserNode | null = null, place3d: PannerNode | null = null;
+  const wave = new Float32Array(512);
+  function audio() {
+    if (!actx) actx = (window as unknown as { __rbAudioContext?: () => AudioContext | null }).__rbAudioContext?.() ?? null;
+    if (actx && !mouth) {
+      mouth = actx.createAnalyser(); mouth.fftSize = 512;
+      place3d = actx.createPanner(); place3d.panningModel = 'equalpower'; place3d.distanceModel = 'inverse'; place3d.refDistance = 2.4; place3d.rolloffFactor = 1.2;
+      const level = actx.createGain(); level.gain.value = 1.15;
+      mouth.connect(place3d).connect(level).connect(actx.destination);
+    }
+    return actx;
+  }
+  function clip(v: string, l = lang()) {
+    const key = `${l}/${v}`;
+    if (!clips.has(key)) clips.set(key, fetch(`/audio/rodion/${key}.mp3`).then(r => (r.ok ? r.arrayBuffer() : null))
+      .then(b => (b && audio() ? audio()!.decodeAudioData(b) : null)).catch(() => null));
+    return clips.get(key)!;
+  }
+  /** The recording now playing, and when it began (on his clock). */
+  let voice: { src: AudioBufferSourceNode; at: number; dur: number; line: Lang } | null = null, waitingFor: Lang | null = null;
+  function hush() { try { voice?.src.stop(); } catch { /* already ended */ } voice = null; waitingFor = null; }
+  function sayAloud(l: Lang) {
+    if (!l.v || !voiceOn()) return;
+    const c = audio(); if (!c || c.state !== 'running') return;
+    waitingFor = l;
+    void clip(l.v).then(buf => {
+      if (waitingFor !== l || line !== l || !buf || disposed) return;
+      const src = c.createBufferSource(); src.buffer = buf; src.connect(mouth!); src.start();
+      voice = { src, at: clock, dur: buf.duration, line: l }; waitingFor = null;
+      src.onended = () => { if (voice?.src === src) voice = null; };
+    });
+  }
   function speakLines(lines: Lang[], replace = true) {
-    if (replace) { queue.length = 0; line = null; }
+    if (replace) { queue.length = 0; line = null; hush(); }
     queue.push(...lines);
+    if (voiceOn()) for (const l of lines) if (l.v) void clip(l.v);   // (fetched while the line before is said)
   }
   function choose(key: 'archive' | 'order' | 'how' | 'who') {
     cta = key === 'order'; renderChips(); o.onSpeak?.();
@@ -563,14 +656,29 @@ export function createAuthor(o: {
     if (mode === 'explain' && !line && !queue.length && t - modeAt > 1) { mode = 'idle'; modeAt = t; }
 
     // Speech: one line at a time, typed out as he says it, then held long enough to read.
-    if (!line && queue.length) { line = queue.shift()!; lineAt = t; typed = 0; lineHold = 1.6 + line.en.length / 22; ui.hidden = false; }
+    if (!line && queue.length) { line = queue.shift()!; lineAt = t; typed = 0; lineHold = 1.6 + line.en.length / 22; ui.hidden = false; sayAloud(line); }
+    // (A recording is given half a second to arrive; the card waits for it, then types in step with it.)
+    if (waitingFor && t - lineAt > .5) waitingFor = null;
     if (line) {
-      const text = line[lang()], chars = Math.min(text.length, Math.floor((t - lineAt) * 34));
+      const text = line[lang()], heard = voice?.line === line ? voice : null;
+      const chars = heard ? Math.min(text.length, Math.floor((t - heard.at) / Math.max(.4, heard.dur * .9) * text.length))
+        : waitingFor === line ? 0 : Math.min(text.length, Math.floor((t - lineAt) * 34));
       if (chars !== typed) { typed = chars; say.textContent = text.slice(0, chars); }
       const typing = chars < text.length;
-      speak.goal = typing ? 1 : 0;
-      if (!typing && t - lineAt > text.length / 34 + lineHold) { line = null; if (!dialog && !queue.length) ui.hidden = true; }
+      speak.goal = heard ? 1 : typing ? 1 : 0;
+      const done = heard ? t - heard.at > heard.dur + Math.min(lineHold, 1.4) : waitingFor !== line && !typing && t - lineAt > text.length / 34 + lineHold;
+      if (done) { if (heard) voice = null; line = null; if (!dialog && !queue.length) ui.hidden = true; }
     } else speak.goal = 0;
+    // The voice comes from his head; you hear it from where you stand.
+    if (actx && place3d) {
+      rig.B('Head').getWorldPosition(headW); const L3 = actx.listener, now = actx.currentTime;
+      place3d.positionX.setTargetAtTime(headW.x, now, .05); place3d.positionY.setTargetAtTime(headW.y, now, .05); place3d.positionZ.setTargetAtTime(headW.z, now, .05);
+      if (L3.positionX) {
+        const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        L3.positionX.setTargetAtTime(camPos.x, now, .05); L3.positionY.setTargetAtTime(camPos.y, now, .05); L3.positionZ.setTargetAtTime(camPos.z, now, .05);
+        L3.forwardX.setTargetAtTime(f.x, now, .05); L3.forwardY.setTargetAtTime(f.y, now, .05); L3.forwardZ.setTargetAtTime(f.z, now, .05);
+      }
+    }
     if (dialog) ui.hidden = false;
 
     // Where he faces, what his hands do, what he looks at.
@@ -679,7 +787,11 @@ export function createAuthor(o: {
         if (k > dur) { if (doubleBlink) { doubleBlink = false; blinkAt = t + .08; } else { blinkAt = -1; nextBlink = t + 2.2 + Math.random() * 3.8; } }
         if (blinkAt > t) blink = 0;
       }
-      const syllables = speak.now * (.25 + .75 * Math.abs(Math.sin(t * 10.5 + Math.sin(t * 3.1) * 2)));
+      let syllables = speak.now * (.25 + .75 * Math.abs(Math.sin(t * 10.5 + Math.sin(t * 3.1) * 2)));
+      if (voice && mouth) {
+        mouth.getFloatTimeDomainData(wave); let sum = 0; for (let i = 0; i < wave.length; i++) sum += wave[i] * wave[i];
+        syllables = THREE.MathUtils.clamp((Math.sqrt(sum / wave.length) - .012) * 7, 0, 1);
+      }
       jawNow += (syllables * .85 - jawNow) * ease(18);
       const wantSmile = mode === 'wave' ? .85 : dialog ? .35 + .25 * (1 - speak.now) : mode === 'notice' || mode === 'explain' ? .3 : 0;
       smileNow += (wantSmile - smileNow) * ease(3);
@@ -809,15 +921,29 @@ export function createAuthor(o: {
     isTalking: () => dialog,
     /** (Debug: hold the face at blink / jaw / smile.) */
     testFace(v: [number, number, number] | null) { faceTest = v; },
+    /** Every line he can say, with its recording's name and how it is spoken (scripts/voice: the recordings are
+     *  made from this list). */
+    voiceLines() {
+      const all: Lang[] = [...LINES.hello, ...LINES.barks, LINES.ask, LINES.archive, ...LINES.order, ...LINES.how, ...LINES.who, LINES.bye];
+      for (const e of modelArchive) {
+        all.push(LINES.expect(e.title, e.id), LINES.present(e.title, e.id));
+        if (archiveFacts[e.id]) all.push(...techLines({ key: e.id, title: e.title, about: e.description, facts: knownFacts(e.id, null as unknown as Facts) } as Piece));
+      }
+      if (figure) all.push(...techLines(figure));
+      const seen = new Set<string>();
+      return all.filter(l => l.v && !seen.has(l.v) && seen.add(l.v)).map(l => ({ v: l.v!, en: l.say?.en ?? l.en, de: l.say?.de ?? l.de }));
+    },
+    /** (Debug: what a model is made of, as he would tell it.) */
+    factsOf(root: THREE.Object3D) { const { materials, facts } = collect(root); materials.forEach(m => m.dispose()); return facts; },
     /** (Debug: what he is doing and how far the piece is.) */
-    state: () => ({ mode, phase: phasePiece, built: Math.round(built), tris: piece?.tris ?? 0, told: piece?.told ?? false, clock: +clock.toFixed(2) }),
+    state: () => ({ voice: voice ? `${voice.line.v} ${voice.dur.toFixed(1)}s` : null, mode, phase: phasePiece, built: Math.round(built), tris: piece?.tris ?? 0, told: piece?.told ?? false, clock: +clock.toFixed(2) }),
     /** A work arrived on the stage: he turns to it and presents it, and starts a small one of it on his wheel. */
-    present(title: string, model?: THREE.Object3D, about?: Lang) {
+    present(title: string, model?: THREE.Object3D, about?: Lang, id?: string) {
       if (model && piece?.source !== model && next?.source !== model) {
         const ticket = ++asked, { parts, materials, facts } = collect(model);
         void build(parts).then(async data => {
           if (!data || ticket !== asked || disposed) { materials.forEach(m => m.dispose()); return; }
-          const made = makePiece(data, materials, facts, title, about, model);
+          const made = makePiece(data, materials, knownFacts(id, facts), title, id ?? 'work', about, model);
           await warm(made);
           if (ticket !== asked || disposed) { forget(made); return; }
           chosen = true; buildSpeed = 2.2; startPiece(made);
@@ -826,11 +952,11 @@ export function createAuthor(o: {
       }
       if (!loaded) return;
       mode = 'present'; presentAt = clock; modeAt = clock;
-      if (Math.hypot(camPos.x - AT.x, camPos.z - AT.z) < 16) speakLines([LINES.present(title)], !dialog);
+      if (Math.hypot(camPos.x - AT.x, camPos.z - AT.z) < 16) speakLines([LINES.present(title, id)], !dialog);
     },
     /** A work was chosen and is on its way to the stage. */
-    expect(title: string) {
-      if (loaded && Math.hypot(camPos.x - AT.x, camPos.z - AT.z) < 16) speakLines([LINES.expect(title)], !dialog);
+    expect(title: string, id?: string) {
+      if (loaded && Math.hypot(camPos.x - AT.x, camPos.z - AT.z) < 16) speakLines([LINES.expect(title, id)], !dialog);
     },
     /** The stage was cleared: back to his own figure. */
     unpresent() {
@@ -851,7 +977,7 @@ export function createAuthor(o: {
       return dist < 6.5 && tmp.normalize().angleTo(forward) < .42 ? AUTHOR_INFO : undefined;
     },
     dispose() {
-      disposed = true; events.abort(); ui.remove(); worker?.terminate(); waiting.clear();
+      disposed = true; hush(); events.abort(); ui.remove(); worker?.terminate(); waiting.clear();
       scene.remove(shop, body, key, key.target);
       body.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
       own.forEach(x => x.dispose());

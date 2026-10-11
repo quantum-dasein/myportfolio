@@ -106,6 +106,20 @@ room is ready (2.4 s after), never over the loading screen, and the card closes 
 (further than 4.8 m, or him off screen for 1.2 s). Clicks reach him
 through invisible proxies on layer 5, which the camera (and so every post pass) never draws.
 
+**His voice** (since 2026-10-12). Every line Rodion says has a recording, synthesised from two short samples
+of Rodion's own voice (German and English, ~45 s each) with Chatterbox Multilingual (Resemble AI, MIT),
+locally on the GPU: each language from its own sample, exaggeration .6, cfg .15 (less accent carried over
+from the sample), then polished (rumble and mud out, presence, gentle compression, silence trimmed,
+-16 LUFS) into `public/audio/rodion/<lang>/<v>.mp3`, 48 kbps mono, ~30 KB a line. The tools live outside
+the repo in `../.tools/voice` (venv, weights in `hf/`, references in `ref/`, `scripts/gen.py` to speak a
+job list, `scripts/finish.py` to check lengths and polish). The list of lines comes from the page:
+`?mrdebug`, `__mr.author.voiceLines()` → `lines.json`; each line has a recording name (`v`) and, where
+numbers or "3D" are involved, a spoken text (`say`: numbers in words, big ones rounded, texture sizes as
+"two K"). Model facts are fixed in `src/data/model-archive-facts.ts` so every device says the same numbers.
+In the room, while the site's sound is on, a line's recording plays through the shared audio context from a
+panner at his head; the card types in step with it and the jaw follows its loudness. Without sound, or
+without the file, he speaks silently as before. New or changed lines need new recordings.
+
 **Ghosts** (`src/scripts/model-room-ghosts.ts`, since 2026-10-11). Everyone in the room at the same time sees
 everyone else as a translucent mint astronaut (a clone of the guide with its own mixer, a fresnel scan
 shader, a pool of light at its feet), walking where they walk. Transport: Supabase Realtime, project

@@ -315,11 +315,11 @@ export async function mountModelRoom(root: HTMLElement) {
       select: async (entry, progress) => {
         // (The tablet is already closed: if you walk or look around while it loads, the camera stays yours.)
         const chosenAt = performance.now();
-        if (archive?.activeId() !== entry.id) author?.expect(entry.title);
+        if (archive?.activeId() !== entry.id) author?.expect(entry.title, entry.id);
         const info = await archive!.show(entry, progress); if (!info || disposed) return false;
         selected = ''; selectedMaterial = ''; selection.visible = false; caption(info); arriveAt = -1;
         if (inspecting) inspectionHome(); else if (lastInput < chosenAt) mode(true);
-        author?.present(entry.title, archive!.model(), entry.description);
+        author?.present(entry.title, archive!.model(), entry.description, entry.id);
         return true;
       },
       clear: async () => {
