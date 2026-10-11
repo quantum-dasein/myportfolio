@@ -92,12 +92,11 @@ export function createAuthor(o: {
   const disc = new THREE.Mesh(keep(new THREE.CylinderGeometry(1.02, 1.07, FLOOR, 72)), stone); disc.position.set(0, FLOOR / 2, .3); disc.receiveShadow = true; shop.add(disc);
   const ring = new THREE.Mesh(keep(new THREE.TorusGeometry(1.04, .008, 6, 120)), glow); ring.rotation.x = Math.PI / 2; ring.position.set(0, FLOOR + .002, .3); shop.add(ring);
   const stand = new THREE.Group(); stand.position.set(0, FLOOR, STAND); shop.add(stand);
-  for (let i = 0; i < 3; i++) {
-    const a = i / 3 * Math.PI * 2 + .5, leg = new THREE.Mesh(keep(new THREE.BoxGeometry(.035, .62, .035)), steel);
-    leg.position.set(Math.sin(a) * .17, .3, Math.cos(a) * .17); leg.rotation.set(Math.cos(a) * .42, 0, -Math.sin(a) * .42); leg.castShadow = true; stand.add(leg);
-  }
-  const column = new THREE.Mesh(keep(new THREE.CylinderGeometry(.032, .04, .38, 16)), steel); column.position.y = .74; column.castShadow = true; stand.add(column);
-  const top = new THREE.Mesh(keep(new THREE.BoxGeometry(.4, .035, .4)), wood); top.position.y = .935; top.castShadow = top.receiveShadow = true; stand.add(top);
+  // A sculptor's plinth: a dark stone column with a line of light at its foot, a wooden top, the turning wheel.
+  const column = new THREE.Mesh(keep(new THREE.BoxGeometry(.3, .9, .3)), stone); column.position.y = .45; column.castShadow = column.receiveShadow = true; stand.add(column);
+  const foot = new THREE.Mesh(keep(new THREE.BoxGeometry(.34, .03, .34)), steel); foot.position.y = .015; stand.add(foot);
+  const footLine = new THREE.Mesh(keep(new THREE.BoxGeometry(.342, .004, .342)), glow); footLine.position.y = .032; stand.add(footLine);
+  const top = new THREE.Mesh(keep(new THREE.BoxGeometry(.4, .04, .4)), wood); top.position.y = .92; top.castShadow = top.receiveShadow = true; stand.add(top);
   const wheel = new THREE.Group(); wheel.position.y = WHEEL_Y - .015; stand.add(wheel);
   const plate = new THREE.Mesh(keep(new THREE.CylinderGeometry(.17, .17, .025, 48)), steel); plate.receiveShadow = true; wheel.add(plate);
   const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(.172, .003, 6, 64)), glow); rim.rotation.x = Math.PI / 2; rim.position.y = .013; wheel.add(rim);
@@ -234,18 +233,23 @@ export function createAuthor(o: {
   const lean = { now: 0, goal: 0 }, crouch = { now: 0, goal: 0 }, speak = { now: 0, goal: 0 };
   type Foot = { at: THREE.Vector3; yaw: number; from: THREE.Vector3; fromYaw: number; to: THREE.Vector3; toYaw: number; k: number };
   let feet: { L: Foot; R: Foot } | undefined, nextFoot: 'L' | 'R' = 'L';
+  let mixer: THREE.AnimationMixer | undefined; const captured = new Map<THREE.Bone, THREE.Quaternion>();
   let placed = false;
 
   function euler(x: number, y = 0, z = 0) { return q.setFromEuler(e.set(x, y, z, 'YXZ')); }
-  function setFig(name: string, delta: THREE.Quaternion) {
+  /** Set a bone's orientation in his own frame (delta on the rest orientation); `keep` leaves that much of the
+   *  motion-captured pose in it (the head keeps a little of its own life while it looks at you). */
+  function setFig(name: string, delta: THREE.Quaternion, keep = 0) {
     const R = rig!, b = R.B(name), r = R.rest.get(b); if (!b || !r) return;
     const want = q2.copy(bodyQ).multiply(delta).multiply(r.fig);
     const parent = (b.parent as THREE.Object3D).getWorldQuaternion(new THREE.Quaternion());
+    if (keep > 0) want.slerp(parent.clone().multiply(b.quaternion), keep);
     b.quaternion.copy(parent.invert().multiply(want));
   }
+  /** Turn a bone on top of the motion-captured pose (or the rest pose, without one), the turn given in his frame. */
   function rel(name: string, delta: THREE.Quaternion) {
     const R = rig!, b = R.B(name), r = R.rest.get(b); if (!b || !r) return;
-    b.quaternion.copy(r.local).multiply(q2.copy(r.figInv).multiply(delta).multiply(r.fig));
+    b.quaternion.copy(captured.get(b) ?? r.local).multiply(q2.copy(r.figInv).multiply(delta).multiply(r.fig));
   }
   function aim(name: string, worldDir: THREE.Vector3) {
     const R = rig!; v2.copy(worldDir).applyQuaternion(bodyQi).normalize();
@@ -266,6 +270,7 @@ export function createAuthor(o: {
 
   // ── What he is doing ─────────────────────────────────────────────────────────────────────────────────
   type Mode = 'work' | 'admire' | 'notice' | 'talk' | 'present' | 'wave';
+  let awayFor = 0, onScreen = true;
   let mode: Mode = 'work', modeAt = 0, nextAdmire = 9, greeted = false, lastBark = -99, barks = 0, near = false;
   let presentAt = -99;
   const queue: Lang[] = []; let line: Lang | null = null, lineAt = 0, lineHold = 0, typed = 0, dialog = false, cta = false;
@@ -317,11 +322,18 @@ export function createAuthor(o: {
   let loaded = false, disposed = false, clock = 0;
   async function load() {
     const url = o.mobile ? '/models/author/rodion.mobile.glb' : '/models/author/rodion.glb';
-    const [gltf] = await Promise.all([o.loader.loadAsync(url), loadPiece().catch(() => {})]);
+    const [gltf, idle] = await Promise.all([
+      o.loader.loadAsync(url), fetch('/models/author/idle.json').then(r => r.ok ? r.json() : null).catch(() => null), loadPiece().catch(() => {}),
+    ]) as [Awaited<ReturnType<GLTFLoader['loadAsync']>>, { duration: number; tracks: { name: string; times: number[]; values: number[] }[] } | null, unknown];
     if (disposed) return;
     const model = gltf.scene; dress(model, o.mobile, keep);
     body.add(model);
     rig = makeRig(model);
+    // His motion-captured idle (Avaturn), looped; the arms, the legs' contact and the gaze are layered on it.
+    if (idle) {
+      const tracks = idle.tracks.map(t => /quaternion$/.test(t.name) ? new THREE.QuaternionKeyframeTrack(t.name, t.times, t.values) : new THREE.VectorKeyframeTrack(t.name, t.times, t.values));
+      mixer = new THREE.AnimationMixer(model); mixer.clipAction(new THREE.AnimationClip('idle', idle.duration, tracks)).play();
+    }
     // Soles on the platform: measured on the shoes themselves, at rest.
     { let sole = Infinity; const p = new THREE.Vector3();
       model.updateMatrixWorld(true);
@@ -354,7 +366,9 @@ export function createAuthor(o: {
     camera.getWorldPosition(camPos);
     const dist = Math.hypot(camPos.x - AT.x, camPos.z - AT.z);
     near = dist < 7;
-    if (dialog && dist > 9.5) close();
+    // Walking away (or turning away from him for a moment) ends the conversation.
+    awayFor = dialog && !onScreen ? awayFor + dt : 0;
+    if (dialog && (dist > 4.8 || awayFor > 1.2)) close();
 
     // Moods: greet a visitor who comes close, bark now and then, step back to admire the piece.
     if (!greeted && !dialog && dist < 6.5 && inFront(camPos)) { greeted = true; mode = 'wave'; modeAt = t; speakLines(LINES.hello); lastBark = t; }
@@ -448,11 +462,18 @@ export function createAuthor(o: {
   function pose(t: number, dt: number) {
     const R = rig!, s = Math.sin;
     // Breath and weight: the chest rises, the weight drifts from foot to foot.
-    const breath = s(t * 1.65) * .5 + .5, sway = s(t * .42) * (mode === 'work' ? .5 : 1);
+    // (With the captured idle these come from the capture; the procedural ones are the fallback.)
+    const live = mixer ? 0 : 1, breath = (s(t * 1.65) * .5 + .5) * live, sway = s(t * .42) * (mode === 'work' ? .5 : 1) * live;
     // Hips: down a little when he works, shifted over the standing leg, turned a touch with the shoulders.
-    const hips = R.hipsRest.clone().add(new THREE.Vector3(sway * .022, -crouch.now * .25 - Math.abs(sway) * .008, -lean.now * .1));
-    R.B('Hips').position.copy(R.armature.worldToLocal(body.localToWorld(hips.clone())));
-    setFig('Hips', euler(lean.now * .35, 0, -sway * .035));
+    // The motion capture first (his own idle: breath, weight, the small life of a standing person), then
+    // everything he does on top of it.
+    const hipsBone = R.B('Hips'), hipsRest = R.rest.get(hipsBone)!;
+    captured.clear();
+    if (mixer) { mixer.update(dt); for (const b of R.rest.keys()) captured.set(b, b.quaternion.clone()); }
+    const drift = mixer ? hipsBone.position.clone().sub(hipsRest.pos) : new THREE.Vector3();
+    const hips = R.hipsRest.clone().add(new THREE.Vector3(mixer ? 0 : sway * .022, -crouch.now * .25 - (mixer ? 0 : Math.abs(sway) * .008), -lean.now * .1));
+    hipsBone.position.copy(R.armature.worldToLocal(body.localToWorld(hips.clone()))).add(drift);
+    rel('Hips', euler(lean.now * .35, 0, mixer ? 0 : -sway * .035));
     rel('Spine', euler(lean.now * .3 + breath * .012, 0, sway * .02));
     rel('Spine1', euler(lean.now * .25 + breath * .01, speak.now * s(t * 1.3) * .04));
     rel('Spine2', euler(lean.now * .2 - breath * .015, speak.now * s(t * 1.1 + .7) * .05));
@@ -463,8 +484,8 @@ export function createAuthor(o: {
     let hy = Math.atan2(d.x, d.z), hp = -Math.atan2(d.y, Math.hypot(d.x, d.z));
     hy = THREE.MathUtils.clamp(hy, -1.25, 1.25); hp = THREE.MathUtils.clamp(hp, -.5, .75);
     const nod = speak.now * (s(t * 4.1) * .035 + s(t * 2.3) * .02), tilt = mode === 'admire' ? .16 : speak.now * s(t * .9) * .05;
-    setFig('Neck', euler(hp * .45 + lean.now * .1, hy * .45, 0));
-    setFig('Head', euler(hp + nod, hy, tilt));
+    setFig('Neck', euler(hp * .45 + lean.now * .1, hy * .45, 0), .35);
+    setFig('Head', euler(hp + nod, hy, tilt), .2);
 
     // Arms: two-bone IK to the hands' goals, elbows down and out.
     limb('RightArm', 'RightForeArm', hand.R, W(-.9, -.45, -.45));
@@ -523,6 +544,7 @@ export function createAuthor(o: {
     rig.B('Head').getWorldPosition(proj); proj.y += .32; proj.project(camera);
     const behind = proj.z > 1, x = (proj.x * .5 + .5) * width, y = (-proj.y * .5 + .5) * height;
     const offscreen = behind || x < -40 || x > width + 40 || y < -40 || y > height + 40;
+    onScreen = !offscreen;
     ui.classList.toggle('is-away', offscreen && !dialog);
     // The card hangs above and beside the anchor: keep all of it on screen, under the site's header.
     const card = ui.firstElementChild as HTMLElement, cw = card.offsetWidth + 30, ch = card.offsetHeight + 16;
