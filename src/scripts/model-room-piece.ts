@@ -15,6 +15,8 @@ export type PieceData = {
   groups: { material: number; start: number; heights: Float32Array }[];
   /** Every triangle's height, ascending (the build's pace). */
   heights: Float32Array; radii: Float32Array; tris: number; h: number;
+  /** Per height slice: the piece's outline, [minX, maxX, minZ, maxZ] (for the band of light that hugs it). */
+  extents: Float32Array;
 };
 
 export const PIECE_BINS = 40;
@@ -81,10 +83,18 @@ export function buildPiece(parts: PiecePart[], maxH: number, maxR: number): Piec
     const t = byHeight[i], a = index[t * 3], b = index[t * 3 + 1], c = index[t * 3 + 2], o = i * 6; heights[i] = cy[t];
     lines[o] = a; lines[o + 1] = b; lines[o + 2] = b; lines[o + 3] = c; lines[o + 4] = c; lines[o + 5] = a;
   }
-  // How wide it is at each height.
-  const radii = new Float32Array(PIECE_BINS);
-  for (let i = 0; i < verts; i++) { const k = Math.min(PIECE_BINS - 1, Math.max(0, Math.floor(P[i * 3 + 1] / h * PIECE_BINS))); radii[k] = Math.max(radii[k], Math.hypot(P[i * 3], P[i * 3 + 2])); }
-  for (let k = 1; k < PIECE_BINS; k++) if (!radii[k]) radii[k] = radii[k - 1];
+  // How wide it is at each height, and its outline there.
+  const radii = new Float32Array(PIECE_BINS), extents = new Float32Array(PIECE_BINS * 4).fill(NaN);
+  for (let i = 0; i < verts; i++) {
+    const x = P[i * 3], z = P[i * 3 + 2], k = Math.min(PIECE_BINS - 1, Math.max(0, Math.floor(P[i * 3 + 1] / h * PIECE_BINS))), e = k * 4;
+    radii[k] = Math.max(radii[k], Math.hypot(x, z));
+    if (!(extents[e] <= x)) extents[e] = x; if (!(extents[e + 1] >= x)) extents[e + 1] = x;
+    if (!(extents[e + 2] <= z)) extents[e + 2] = z; if (!(extents[e + 3] >= z)) extents[e + 3] = z;
+  }
+  for (let k = 0; k < PIECE_BINS; k++) {
+    if (k && !radii[k]) radii[k] = radii[k - 1];
+    if (Number.isNaN(extents[k * 4])) for (let j = 0; j < 4; j++) extents[k * 4 + j] = k ? extents[(k - 1) * 4 + j] : 0;
+  }
   // Parts without normals of their own get smooth ones (area weighted).
   if (needNormals.length) {
     for (let t = 0; t < tris; t++) {
@@ -96,5 +106,5 @@ export function buildPiece(parts: PiecePart[], maxH: number, maxR: number): Piec
     }
     for (const [lo, hi] of needNormals) for (let i = lo * 3; i < hi * 3; i += 3) { const l = Math.hypot(N[i], N[i + 1], N[i + 2]) || 1; N[i] /= l; N[i + 1] /= l; N[i + 2] /= l; }
   }
-  return { position: P, normal: N, uv: UV, index: sorted, lines, groups, heights, radii, tris, h };
+  return { position: P, normal: N, uv: UV, index: sorted, lines, groups, heights, radii, tris, h, extents };
 }

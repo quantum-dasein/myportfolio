@@ -91,14 +91,14 @@ export async function mountModelRoom(root: HTMLElement) {
   let composer: EffectComposer | undefined, bloom: UnrealBloomPass | undefined;
   let studioLight = false;
   let frame = 0, last = 0, disposed = false, ready = false, failed = false;
-  let inspecting = false, wireframe = false, yaw = 0, pitch = 0;
+  let inspecting = false, wireframe = false, yaw = 0, pitch = 0, lastInput = -1;
   let selected = '', selectedMaterial = '';
   const keys = new Set<string>();
   // Held directions on the walking pad: `t<id>` for a finger, `p<id>` for a mouse or pen.
   const touchKeys = new Map<string, string>();
   const padButtons = [...root.querySelectorAll<HTMLElement>('[data-mr-move]')];
   /** Light the arrows that are held (a touch that cancels its default never shows :active). */
-  const padShow = () => { const held = new Set(touchKeys.values()); padButtons.forEach(b => b.classList.toggle('is-held', held.has(b.dataset.mrMove!))); };
+  const padShow = () => { if (touchKeys.size) lastInput = performance.now(); const held = new Set(touchKeys.values()); padButtons.forEach(b => b.classList.toggle('is-held', held.has(b.dataset.mrMove!))); };
   const release = () => { keys.clear(); touchKeys.clear(); padShow(); };
   const colliders: THREE.Box3[] = [];
   const target = new THREE.Vector3(0, 1.65, -3.5);
@@ -301,9 +301,12 @@ export async function mountModelRoom(root: HTMLElement) {
       onOpen: () => { release(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); },
       cancel: () => archive?.cancel(),
       select: async (entry, progress) => {
+        // (The tablet is already closed: if you walk or look around while it loads, the camera stays yours.)
+        const chosenAt = performance.now();
+        if (archive?.activeId() !== entry.id) author?.expect(entry.title);
         const info = await archive!.show(entry, progress); if (!info || disposed) return false;
         selected = ''; selectedMaterial = ''; selection.visible = false; caption(info); arriveAt = -1;
-        if (inspecting) inspectionHome(); else mode(true);
+        if (inspecting) inspectionHome(); else if (lastInput < chosenAt) mode(true);
         author?.present(entry.title, archive!.model(), entry.description);
         return true;
       },
@@ -356,7 +359,7 @@ export async function mountModelRoom(root: HTMLElement) {
       yaw -= event.movementX * .0022; pitch = THREE.MathUtils.clamp(pitch - event.movementY * .0022, -1.2, 1.2); look();
     }, { signal });
     canvas.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || !ready || catalog?.isOpen()) return;canvas.focus({ preventScroll: true });
+      if (event.button !== 0 || !ready || catalog?.isOpen()) return; lastInput = performance.now();canvas.focus({ preventScroll: true });
       if (event.pointerType === 'mouse' && !coarse.matches && !inspecting) {
         if (!locked) { try { (canvas.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => {}); } catch { /* not allowed here */ } return; }
         const r = canvas.getBoundingClientRect(); document.exitPointerLock(); select(r.left + r.width / 2, r.top + r.height / 2); return;
@@ -435,7 +438,7 @@ export async function mountModelRoom(root: HTMLElement) {
     addEventListener('keydown', event => {
       if (!ready || catalog?.isOpen() || event.altKey || event.ctrlKey || event.metaKey || document.body.classList.contains('is-nav-opened')) return;
       if ((event.target as HTMLElement)?.closest('button,a,input,textarea,select,[contenteditable]')) return;
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(event.code)) { event.preventDefault();keys.add(event.code); }
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(event.code)) { event.preventDefault();keys.add(event.code); lastInput = performance.now(); }
       if (event.code === 'Escape') { author?.close(); mode(false); }if (event.code === 'KeyE') mode(true);
     }, { signal });
     addEventListener('keyup', event => keys.delete(event.code), { signal });

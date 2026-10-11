@@ -23,12 +23,13 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
   root: HTMLElement; de: () => boolean; onOpen?: () => void; onClose?: () => void;
 }) {
   let panel: HTMLDialogElement | null = null, previousFocus: HTMLElement | null = null;
-  let pending = false, request = 0;
+  // A chosen work keeps loading after the tablet closes (it closes at once: nobody waits on a progress line).
+  let pending: string | null = null, failed = false, request = 0, loads = 0;
   const events = new AbortController();
   const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
   function close() {
     if (!panel) return;
-    request++; o.cancel(); pending = false; panel.close(); panel.remove(); panel = null; o.onClose?.();
+    request++; panel.close(); panel.remove(); panel = null; o.onClose?.();
     if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
   }
   function open() {
@@ -69,7 +70,7 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
           <div class="mr-catalog-grid" data-catalog-grid></div>
         </section>
       </div>
-      <footer class="mr-catalog-footer"><p data-catalog-status role="status" aria-live="polite">${t('Choose a work for the archive stage.', 'Wähle eine Arbeit für die Archivbühne.')}</p>
+      <footer class="mr-catalog-footer"><p data-catalog-status role="status" aria-live="polite">${pending ? t('Loading the work…', 'Die Arbeit wird geladen…') : failed ? t('The work could not load. Please try again.', 'Die Arbeit konnte nicht geladen werden. Bitte versuche es erneut.') : t('Choose a work for the archive stage.', 'Wähle eine Arbeit für die Archivbühne.')}</p>
         <div class="mr-catalog-footer-actions"><button type="button" class="mr-liquid mr-liquid--quiet" data-catalog-clear ${o.activeId() ? '' : 'hidden'}>${t('Clear stage', 'Bühne leeren')}</button>
         <a class="mr-liquid mr-liquid--accent mr-catalog-order" href="${contact}" data-catalog-order><span>${t('Order your own model', 'Eigenes Modell anfragen')}</span><span class="mr-liquid-arrow" aria-hidden="true"><svg class="ico-arrow" viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M5.5 4.5h6v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a></div></footer>
     </div>`;
@@ -82,7 +83,7 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
       currentPanel.querySelector('[data-catalog-count]')!.textContent = `${String(entries.length).padStart(2, '0')} ${t('AVAILABLE', 'VERFÜGBAR')}`;
       currentPanel.querySelector('[data-catalog-grid]')!.innerHTML = entries.length ? entries.map((entry, i) => {
         const active = o.activeId() === entry.id;
-        return `<article class="mr-catalog-work mr-glass${active ? ' is-active' : ''}" style="--i:${i}">
+        return `<article class="mr-catalog-work mr-glass${active ? ' is-active' : ''}${pending === entry.id ? ' is-loading' : ''}" style="--i:${i}">
           <div class="mr-catalog-image"><img src="${escape(entry.preview)}" alt="${escape(entry.title)}" width="960" height="720" loading="lazy" decoding="async" />
             <span class="mr-catalog-no">${escape(entry.no)}</span><span class="mr-catalog-tag">${active ? t('ON THE STAGE', 'AUF DER BÜHNE') : CATEGORY[entry.category][de ? 1 : 0].toUpperCase()}</span></div>
           <div class="mr-catalog-work-body">
@@ -108,27 +109,17 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
         currentPanel.querySelectorAll('[data-catalog-filter]').forEach(c => c.setAttribute('aria-pressed', String(c === chip))); render(); return;
       }
       if (target.closest('[data-catalog-clear]')) {
-        const ticket = ++request; o.cancel(); pending = false; currentPanel.setAttribute('aria-busy', 'false');
+        const ticket = ++request; o.cancel(); pending = null; loads++; currentPanel.setAttribute('aria-busy', 'false');
         status.textContent = t('Clearing the stage…', 'Die Bühne wird geleert…');
         await o.clear(); if (panel !== currentPanel || ticket !== request) return;
         currentPanel.querySelector<HTMLElement>('[data-catalog-clear]')!.hidden = true; status.textContent = t('The stage is ready.', 'Die Bühne ist bereit.'); render(); return;
       }
       const button = target.closest<HTMLButtonElement>('[data-catalog-show]'); if (!button) return;
       const entry = o.entries.find(e => e.id === button.dataset.catalogShow); if (!entry) return;
-      const ticket = ++request; pending = true; currentPanel.setAttribute('aria-busy', 'true');
-      currentPanel.querySelectorAll('.mr-catalog-work').forEach(card => card.classList.toggle('is-loading', card.contains(button)));
-      try {
-        const done = await o.select(entry, phase => {
-          if (ticket !== request || panel !== currentPanel) return;
-          status.textContent = phase === 'loading' ? t('Loading the work…', 'Die Arbeit wird geladen…') : t('Preparing the materials…', 'Materialien werden vorbereitet…');
-        });
-        if (ticket !== request || panel !== currentPanel) return;
-        if (done) close();
-      } catch {
-        if (ticket === request && panel === currentPanel) status.textContent = t('The work could not load. Please try again.', 'Die Arbeit konnte nicht geladen werden. Bitte versuche es erneut.');
-      } finally {
-        if (ticket === request) { pending = false; currentPanel.setAttribute('aria-busy', 'false'); currentPanel.querySelectorAll('.is-loading').forEach(card => card.classList.remove('is-loading')); }
-      }
+      // The tablet closes at once; the work loads behind it and arrives on the stage when it is ready.
+      const load = ++loads; pending = entry.id; failed = false;
+      o.select(entry, () => {}).catch(() => { if (load === loads) failed = true; }).finally(() => { if (load === loads) pending = null; });
+      close();
     });
     panel.addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
@@ -142,5 +133,5 @@ export function createArchiveCatalog(o: ArchiveCatalogOptions & {
     o.root.append(panel); o.onOpen?.(); panel.showModal(); panel.querySelector<HTMLElement>('[data-catalog-close]')?.focus({ preventScroll: true });
   }
   addEventListener('rb:langchange', close, { signal: events.signal });
-  return { open, close, isOpen: () => Boolean(panel), isLoading: () => pending, dispose() { close(); events.abort(); } };
+  return { open, close, isOpen: () => Boolean(panel), isLoading: () => Boolean(pending), dispose() { close(); o.cancel(); events.abort(); } };
 }
