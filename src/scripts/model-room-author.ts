@@ -767,6 +767,8 @@ export function createAuthor(o: {
     isTalking: () => dialog,
     /** (Debug: hold the face at blink / jaw / smile.) */
     testFace(v: [number, number, number] | null) { faceTest = v; },
+    /** (Debug: what he is doing and how far the piece is.) */
+    state: () => ({ mode, phase: phasePiece, built: Math.round(built), tris: piece?.tris ?? 0, told: piece?.told ?? false, clock: +clock.toFixed(2) }),
     /** A work arrived on the stage: he turns to it and presents it, and starts a small one of it on his wheel. */
     present(title: string, model?: THREE.Object3D, about?: Lang) {
       if (model && piece?.source !== model && next?.source !== model) {
