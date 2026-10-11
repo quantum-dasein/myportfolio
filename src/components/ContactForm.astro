@@ -463,6 +463,8 @@ const budget = ["small", "mid", "large", "xl", "unsure"] as const;
     menu.className = "cf-select-menu";
     menu.id = menuId;
     menu.setAttribute("role", "listbox");
+    // Smooth scrolling (Lenis) swallowed the wheel over the open list, so it only scrolled by dragging its bar.
+    menu.setAttribute("data-lenis-prevent", "");
     menu.hidden = true;
 
     const options = Array.from(select.options).map((option, index) => {

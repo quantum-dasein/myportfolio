@@ -17,9 +17,12 @@ import { ROOM } from './model-room-layout';
 type Lang = { en: string; de: string };
 const L = (en: string, de: string): Lang => ({ en, de });
 
-/** Where he works: by the left wall, between the SVJ and the lounge, facing into the hall. */
-const AT = new THREE.Vector3(-ROOM.halfW + 1.75, 0, 9);
-const FACE = Math.PI / 2;
+/** Where he works: just inside the entrance on the left, between the door and the stage, facing the visitor who
+ *  steps out of the frame (the first person you see in the room, not a figure in a corner). */
+const AT = new THREE.Vector3(-3, 0, 10.9);
+const FACE = Math.atan2(0 - AT.x, ROOM.shift + 9.5 - AT.z);
+/** He and his stand stand on the platform, not in it. */
+const FLOOR = .06;
 const HEIGHT = 1.83;
 const STAND = .58;          // the stand in front of him
 const WHEEL_Y = .965;       // the banding wheel the piece turns on
@@ -63,7 +66,7 @@ export const AUTHOR_INFO: ExhibitInfo = {
   id: 'author', no: '000', kind: L('The author', 'Der Autor'), title: 'Rodion Belousov',
   sub: L('3D artist · Vienna', '3D-Künstler · Wien'),
   text: L('He built every piece in this room.\nTalk to him: click him.', 'Er hat jedes Stück in diesem Raum gebaut.\nSprich ihn an: klick ihn an.'),
-  focus: new THREE.Vector3(AT.x, 1.35, AT.z), distance: 3.4, elevation: .12,
+  focus: new THREE.Vector3(AT.x, 1.4, AT.z), distance: 3.4, elevation: .12,
 };
 
 export function createAuthor(o: {
@@ -86,9 +89,9 @@ export function createAuthor(o: {
   const glow = keep(new THREE.MeshBasicMaterial({ color: new THREE.Color(.35, 2.1, 1.1), toneMapped: false }));
   const steel = keep(new THREE.MeshStandardMaterial({ color: '#2a2d2f', roughness: .38, metalness: .85 }));
   const wood = keep(new THREE.MeshStandardMaterial({ color: '#6b4a2f', roughness: .62, metalness: 0 }));
-  const disc = new THREE.Mesh(keep(new THREE.CylinderGeometry(1.25, 1.3, .06, 72)), stone); disc.position.set(0, .03, .3); disc.receiveShadow = true; shop.add(disc);
-  const ring = new THREE.Mesh(keep(new THREE.TorusGeometry(1.27, .008, 6, 120)), glow); ring.rotation.x = Math.PI / 2; ring.position.set(0, .062, .3); shop.add(ring);
-  const stand = new THREE.Group(); stand.position.set(0, 0, STAND); shop.add(stand);
+  const disc = new THREE.Mesh(keep(new THREE.CylinderGeometry(1.02, 1.07, FLOOR, 72)), stone); disc.position.set(0, FLOOR / 2, .3); disc.receiveShadow = true; shop.add(disc);
+  const ring = new THREE.Mesh(keep(new THREE.TorusGeometry(1.04, .008, 6, 120)), glow); ring.rotation.x = Math.PI / 2; ring.position.set(0, FLOOR + .002, .3); shop.add(ring);
+  const stand = new THREE.Group(); stand.position.set(0, FLOOR, STAND); shop.add(stand);
   for (let i = 0; i < 3; i++) {
     const a = i / 3 * Math.PI * 2 + .5, leg = new THREE.Mesh(keep(new THREE.BoxGeometry(.035, .62, .035)), steel);
     leg.position.set(Math.sin(a) * .17, .3, Math.cos(a) * .17); leg.rotation.set(Math.cos(a) * .42, 0, -Math.sin(a) * .42); leg.castShadow = true; stand.add(leg);
@@ -101,11 +104,12 @@ export function createAuthor(o: {
   // A soft contact shadow under him and the stand: he stands on the floor, not over it.
   const sc = document.createElement('canvas'); sc.width = sc.height = 128; const sg = sc.getContext('2d')!;
   const grad = sg.createRadialGradient(64, 64, 6, 64, 64, 62); grad.addColorStop(0, 'rgba(0,0,0,.62)'); grad.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = grad; sg.fillRect(0, 0, 128, 128);
-  const blob = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.5, 1.8)), keep(new THREE.MeshBasicMaterial({ map: keep(new THREE.CanvasTexture(sc)), transparent: true, depthWrite: false })));
-  blob.rotation.x = -Math.PI / 2; blob.position.set(0, .064, .25); shop.add(blob);
+  const blob = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.3, 1.6)), keep(new THREE.MeshBasicMaterial({ map: keep(new THREE.CanvasTexture(sc)), transparent: true, depthWrite: false })));
+  blob.rotation.x = -Math.PI / 2; blob.position.set(0, FLOOR + .004, .25); shop.add(blob);
   // His light: a warm key from above and in front (made now, so the scene's light count never changes later).
   const key = new THREE.SpotLight('#ffe2c2', 0, 11, .55, .85, 1.5);
-  key.position.copy(AT).add(new THREE.Vector3(3.2, 4.9, 1.6)); key.target.position.copy(AT).add(new THREE.Vector3(.3, 1.15, 0)); scene.add(key, key.target);
+  shop.updateMatrixWorld(true);
+  key.position.copy(shop.localToWorld(new THREE.Vector3(1.1, 4.7, 3.1))); key.target.position.copy(shop.localToWorld(new THREE.Vector3(0, 1.2, .25))); scene.add(key, key.target);
 
   // ── The piece he is building: a bronze figure, rising edge by edge out of a line of light ─────────────
   let piece: { clay: THREE.Mesh; wire: THREE.Mesh; band: THREE.Mesh; heights: Float32Array; tris: number; mat: THREE.MeshStandardMaterial } | undefined;
@@ -172,18 +176,18 @@ export function createAuthor(o: {
   }
 
   // ── Him ───────────────────────────────────────────────────────────────────────────────────────────────
-  const body = new THREE.Group(); body.position.copy(AT); body.rotation.y = FACE; scene.add(body);
+  // (He joins the scene only once he is posed and compiled: never a frame of T-pose, never a compile hitch.)
+  const body = new THREE.Group(); body.position.copy(AT).setY(FLOOR); body.rotation.y = FACE;
   let rig: ReturnType<typeof makeRig> | undefined;
   /** A raycast target round him (on a layer the camera never draws, so no pass ever sees it). */
   const proxy = new THREE.Mesh(keep(new THREE.CylinderGeometry(.34, .34, 1.9, 12)), keep(new THREE.MeshBasicMaterial({ visible: false })));
   proxy.position.y = .95; proxy.layers.set(5); body.add(proxy);
-  const proxyStand = new THREE.Mesh(keep(new THREE.CylinderGeometry(.3, .3, 1.6, 10)), proxy.material); proxyStand.position.set(0, .8, STAND); proxyStand.layers.set(5); shop.add(proxyStand);
+  const proxyStand = new THREE.Mesh(keep(new THREE.CylinderGeometry(.3, .3, 1.6, 10)), proxy.material); proxyStand.position.set(0, .8 + FLOOR, STAND); proxyStand.layers.set(5); shop.add(proxyStand);
 
   // His modelling tool: a boxwood stick with a wire loop, held in the right hand and pointed at the work.
   const tool = new THREE.Group(); tool.visible = false; scene.add(tool);
   const stick = new THREE.Mesh(keep(new THREE.CylinderGeometry(.0045, .006, .15, 8)), wood); stick.position.y = .075; tool.add(stick);
   const loop = new THREE.Mesh(keep(new THREE.TorusGeometry(.011, .0012, 6, 20)), steel); loop.position.y = .162; tool.add(loop);
-  const toolTip = new THREE.Vector3(), toolHand = new THREE.Vector3(), toolDir = new THREE.Vector3();
 
   function makeRig(model: THREE.Object3D) {
     const bones = new Map<string, THREE.Bone>();
@@ -207,6 +211,17 @@ export function createAuthor(o: {
     const hipsRest = toFig(wp('Hips'));
     const ankleRest = { L: toFig(wp('LeftFoot')), R: toFig(wp('RightFoot')) };
     const headRest = toFig(wp('Head'));
+    // The tool, held like a pen: from the palm, past the fingers, tipped towards the palm and the thumb. Placed once
+    // at rest and handed to the hand bone, so it moves with the hand and never on its own.
+    {
+      const h = wp('RightHand'), f = wp('RightHandMiddle1').sub(h).normalize(), th = wp('RightHandThumb1').sub(h);
+      th.sub(f.clone().multiplyScalar(th.dot(f))).normalize();
+      const palm = new THREE.Vector3().crossVectors(f, th).normalize(); if (palm.y > 0) palm.negate();   // the T-pose palm faces the floor
+      const aimTool = f.clone().multiplyScalar(.8).addScaledVector(palm, .42).addScaledVector(th, .3).normalize();
+      tool.position.copy(h).addScaledVector(f, .07).addScaledVector(palm, .025);
+      tool.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), aimTool);
+      B('RightHand').attach(tool);
+    }
     return { model, armature, B, rest, restDir, lengths, hipsRest, ankleRest, headRest };
   }
 
@@ -307,13 +322,25 @@ export function createAuthor(o: {
     const model = gltf.scene; dress(model, o.mobile, keep);
     body.add(model);
     rig = makeRig(model);
-    // Compile his shaders for the frame's own buffer before he appears, so his arrival never stutters.
+    // Soles on the platform: measured on the shoes themselves, at rest.
+    { let sole = Infinity; const p = new THREE.Vector3();
+      model.updateMatrixWorld(true);
+      model.traverse(n => { const m = n as THREE.SkinnedMesh; if (!m.isSkinnedMesh || !/shoes|body/.test(m.name)) return; const pos = m.geometry.attributes.position; for (let i = 0; i < pos.count; i += 3) { m.getVertexPosition(i, p); m.localToWorld(p); sole = Math.min(sole, p.y); } });
+      if (Number.isFinite(sole)) body.position.y += FLOOR - sole + .002;
+      body.updateMatrixWorld(true); }
+    // His textures go up to the GPU one per frame, and his shaders compile in parallel for the frame's own buffer,
+    // before he appears: all at once on one frame they were the stutter as he came in.
+    const textures = new Set<THREE.Texture>();
+    model.traverse(n => { const m = (n as THREE.Mesh).material as THREE.Material | undefined; if (m) for (const value of Object.values(m)) if (value instanceof THREE.Texture) textures.add(value); });
+    for (const texture of textures) { if (disposed) return; o.renderer.initTexture(texture); await new Promise(r => requestAnimationFrame(r)); }
+    // (The room's post buffer only exists once the room is built; compile for that one, not the canvas.)
+    while (!o.target() && !disposed) await new Promise(r => requestAnimationFrame(r));
     const previous = o.renderer.getRenderTarget();
     let compiling: Promise<unknown> = Promise.resolve();
     try { o.renderer.setRenderTarget(o.target()); compiling = o.renderer.compileAsync(shop, camera, scene).then(() => o.renderer.compileAsync(body, camera, scene)); } finally { o.renderer.setRenderTarget(previous); }
     await compiling.catch(() => {});
     if (disposed) return;
-    loaded = true;
+    loaded = true; update(clock, 1 / 60); scene.add(body);
   }
 
   // ── Every frame ───────────────────────────────────────────────────────────────────────────────────────
@@ -355,8 +382,8 @@ export function createAuthor(o: {
     // Where he faces, what his hands do, what he looks at.
     const toCam = Math.atan2(camPos.x - AT.x, camPos.z - AT.z);
     const toStage = Math.atan2(o.stage.x - AT.x, o.stage.z - AT.z);
-    const wheelW = shop.localToWorld(new THREE.Vector3(0, WHEEL_Y, STAND));
-    const lineW = wheelW.clone().setY(WHEEL_Y + .015 + lineY());
+    const wheelW = shop.localToWorld(new THREE.Vector3(0, FLOOR + WHEEL_Y, STAND));
+    const lineW = wheelW.clone().setY(FLOOR + WHEEL_Y + .015 + lineY());
     bodyQ.setFromAxisAngle(up, yaw); bodyQi.copy(bodyQ).invert();
     const shoulderR = rig.B('RightArm').getWorldPosition(new THREE.Vector3()), shoulderL = rig.B('LeftArm').getWorldPosition(new THREE.Vector3());
     const relaxed = (side: 'L' | 'R') => (side === 'L' ? shoulderL : shoulderR).clone().add(W(side === 'L' ? .06 : -.06, -.56, .06));
@@ -368,25 +395,27 @@ export function createAuthor(o: {
       const toHim = new THREE.Vector3(-Math.sin(FACE), 0, -Math.cos(FACE));
       const side = new THREE.Vector3(-toHim.z, 0, toHim.x);
       const rad = radiusAt(lineY());
-      handGoal.R.copy(lineW).addScaledVector(toHim, rad + .03).addScaledVector(side, -.06 + s(t * 1.6) * .045).add(v.set(0, s(t * 3.1) * .02, 0));
+      handGoal.R.copy(lineW).addScaledVector(toHim, rad + .1).addScaledVector(side, -.06 + s(t * 1.6) * .045).add(v.set(0, s(t * 3.1) * .02, 0));
       handGoal.L.copy(wheelW).addScaledVector(toHim, .12).addScaledVector(side, .16).add(v.set(0, .03 + Math.max(0, s(t * .4)) * .05, 0));
       lookGoal.copy(handGoal.R).add(v.set(s(t * .7) * .03, .02, 0));
-      toolTip.copy(lineW).addScaledVector(toHim, rad * .6);
       if (mode === 'notice') { lookGoal.copy(camPos); lean.goal = .12; handGoal.R.lerp(relaxed('R'), .3); }
     } else if (mode === 'admire') {
       // A step back from the stand, a hand at his chin, head on one side.
       yawGoal = FACE; lean.goal = -.04; crouch.goal = 0;
       rig.B('Head').getWorldPosition(headW);
       handGoal.L.copy(headW).add(W(.02, -.14, .1)); handGoal.R.copy(relaxed('R')).add(W(.04, .12, .12));
-      lookGoal.copy(wheelW).setY(WHEEL_Y + PIECE_H * .6);
+      lookGoal.copy(wheelW).setY(FLOOR + WHEEL_Y + PIECE_H * .6);
     } else if (mode === 'talk' || mode === 'wave') {
       // Turned to you; while he speaks his hands talk too, and while he listens they rest together.
       yawGoal = clampYaw(toCam); lean.goal = 0; crouch.goal = 0;
       lookGoal.copy(camPos).add(v.set(0, -.05, 0));
-      const k = speak.now, base = (sx: number) => (sx > 0 ? shoulderL : shoulderR).clone().add(W(sx * .06, -.42, .26));
-      handGoal.L.copy(base(1)).add(W(.03 * wob(2.3) * k + .06 * k, .08 * Math.abs(s(t * 2.9)) * k + .04 * k, .05 * k));
-      handGoal.R.copy(base(-1)).add(W(-.05 * wob(2.1) * k - .09 * k, .1 * Math.abs(s(t * 3.3 + 1)) * k + .06 * k, .06 * k + .04 * s(t * 1.9) * k));
-      if (k < .2) { const mid = shoulderL.clone().add(shoulderR).multiplyScalar(.5).add(W(0, -.5, .2)); handGoal.L.lerp(mid.clone().add(W(.035, 0, 0)), 1 - k * 5); handGoal.R.lerp(mid.clone().add(W(-.035, .01, .01)), 1 - k * 5); }
+      // Listening: hands loosely together in front of the belt. Speaking: open hands out in front, the right one
+      // carrying the beat, elbows away from the body.
+      const k = speak.now, hipsW = body.localToWorld(rig.hipsRest.clone());
+      const listenL = hipsW.clone().add(W(.045, .1, .25)), listenR = hipsW.clone().add(W(-.045, .11, .26));
+      const talkL = hipsW.clone().add(W(.19 + .04 * wob(2.3), .24 + .06 * Math.abs(s(t * 2.9)), .3));
+      const talkR = hipsW.clone().add(W(-.22 - .06 * wob(2.1), .3 + .1 * Math.abs(s(t * 3.3 + 1)), .32 + .04 * s(t * 1.9)));
+      handGoal.L.copy(listenL).lerp(talkL, k); handGoal.R.copy(listenR).lerp(talkR, k);
       if (mode === 'wave') handGoal.R.copy(shoulderR).add(W(-.32, .3 + .02 * s(t * 9), .14)).add(W(.09 * s(t * 9), 0, 0));
     } else if (mode === 'present') {
       // Turned half to the stage, his arm out to it, an open hand; a look there, then back to you.
@@ -394,6 +423,12 @@ export function createAuthor(o: {
       handGoal.R.copy(shoulderR).add(stageLook.clone().sub(shoulderR).normalize().multiplyScalar(rig.lengths.RightArm + rig.lengths.RightForeArm - .04)).add(v.set(0, .05, 0));
       handGoal.L.copy(relaxed('L'));
       lookGoal.copy(t - presentAt < 1.8 ? stageLook : camPos);
+    }
+
+    // No hand ever goes into his body: below the chest, a goal behind the front of the torso is brought forward.
+    if (mode !== 'admire') for (const g of [handGoal.L, handGoal.R]) {
+      const hipsW = body.localToWorld(rig.hipsRest.clone()), rel = g.clone().sub(hipsW).applyQuaternion(bodyQi);
+      if (rel.y > -.2 && rel.y < .5 && Math.abs(rel.x) < .26 && rel.z < .2) { rel.z = .2; g.copy(hipsW).add(rel.applyQuaternion(bodyQ)); }
     }
 
     // Ease everything (the body turns at a person's pace; the hands are quicker than the head).
@@ -407,13 +442,7 @@ export function createAuthor(o: {
     body.rotation.y = yaw; body.updateMatrixWorld(true);
     bodyQ.setFromAxisAngle(up, yaw); bodyQi.copy(bodyQ).invert();
     pose(t, dt);
-    // The tool rides in the hand, from the palm to where the line is being built.
-    tool.visible = mode === 'work' || mode === 'notice';
-    if (tool.visible) {
-      rig.B('RightHand').getWorldPosition(toolHand); const fingers = rig.B('RightHandMiddle1').getWorldPosition(v2);
-      toolHand.lerp(fingers, .75); toolDir.copy(toolTip).sub(toolHand).normalize();
-      tool.position.copy(toolHand); tool.quaternion.setFromUnitVectors(up, toolDir);
-    }
+    tool.visible = mode === 'work' || mode === 'notice' || mode === 'admire';
   }
 
   function pose(t: number, dt: number) {
@@ -438,8 +467,8 @@ export function createAuthor(o: {
     setFig('Head', euler(hp + nod, hy, tilt));
 
     // Arms: two-bone IK to the hands' goals, elbows down and out.
-    limb('RightArm', 'RightForeArm', hand.R, W(-.55, -.7, -.35));
-    limb('LeftArm', 'LeftForeArm', hand.L, W(.55, -.7, -.35));
+    limb('RightArm', 'RightForeArm', hand.R, W(-.9, -.45, -.45));
+    limb('LeftArm', 'LeftForeArm', hand.L, W(.9, -.45, -.45));
     // Hands: the tool hand grips, the others rest half-open; while talking they open up.
     const grip = mode === 'work' || mode === 'notice' ? 1 : 0;
     for (const side of ['Left', 'Right'] as const) {
@@ -507,7 +536,7 @@ export function createAuthor(o: {
     /** What a click can hit: him and his stand. */
     targets: [proxy, proxyStand] as THREE.Object3D[],
     layer: 5,
-    collider: new THREE.Box3(new THREE.Vector3(AT.x - .45, 0, AT.z - .55), new THREE.Vector3(AT.x + STAND + .3, 2, AT.z + .55)),
+    collider: new THREE.Box3().setFromPoints([AT, AT.clone().add(new THREE.Vector3(Math.sin(FACE), 0, Math.cos(FACE)).multiplyScalar(STAND))]).expandByVector(new THREE.Vector3(.42, 0, .42)).expandByPoint(new THREE.Vector3(AT.x, 2, AT.z)),
     load, update, place, open, close,
     isTalking: () => dialog,
     /** A work arrived on the stage: he turns to it and presents it. */
@@ -524,7 +553,7 @@ export function createAuthor(o: {
     },
     dispose() {
       disposed = true; events.abort(); ui.remove();
-      scene.remove(shop, body, key, key.target, tool);
+      scene.remove(shop, body, key, key.target);
       body.traverse(n => { const m = n as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); });
       own.forEach(x => x.dispose());
     },

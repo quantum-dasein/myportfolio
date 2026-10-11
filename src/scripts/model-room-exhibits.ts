@@ -5,6 +5,7 @@
 // "printed" into the room by a rising green scan line.
 import * as THREE from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { dressLounge } from './model-room-lounge';
 import { ROOM } from './model-room-layout';
 
 type Lang = { en: string; de: string };
@@ -397,9 +398,10 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
         const swap: Record<string, () => THREE.Material> = {
           'Material #7100': () => velvet('#23402f', '#7fc6a0'), 'Material #7087': () => velvet('#1a3226', '#5fa07e'),
           'Material #7024': () => fabric('#d9cfbb'), 'Material #7137': () => fabric('#b8764f'), 'Material #7162': () => velvet('#2f5a47', '#8fd0b0'),
-          'Material #7136': () => fabric('#cbbfa6'), 'Material #7160': () => fabric('#1e2426'),
+          'Material #7136': () => fabric('#cbbfa6'),
         };
         if (swap[name]) mesh.material = swap[name]();
+        else if (dressLounge(mesh, own, o.mobile)) { /* rug, marble, walnut, linen, print, ceramic, glass */ }
         else if (name === 'Material #7022') Object.assign(m, { metalness: 0, roughness: .5 }), m.color.set('#aeaba4');
         else if (/Chrome|Nickel|Brass|Material #698|Material #6975/.test(name)) Object.assign(m, { metalness: .85, roughness: .3 }), m.color.set(/Brass/.test(name) ? '#b08a4a' : '#1a1a1a');
         else Object.assign(m, { roughness: Math.max(.35, m.roughness) });

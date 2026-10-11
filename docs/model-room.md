@@ -61,7 +61,7 @@ Since 2026-09-30 the collection is:
 
 **The author** (`src/scripts/model-room-author.ts`, since 2026-10-11) replaced the archive terminal
 that stood by the entrance. Rodion, life size (his Avaturn avatar, `public/models/author/`), works
-at a sculptor's stand by the left wall at (-12.25, 9): a bronze figure (the archive's
+at a sculptor's stand just inside the entrance on the left, at (-3, 10.9), facing the arriving visitor: a bronze figure (the archive's
 `bronze-woman.mobile.glb`, triangles re-ordered bottom to top) rises out of a band of light while his
 tool follows the build line, turns to bronze, holds and starts again. He moves procedurally on his
 own skeleton: two-bone IK for the arms and the legs (planted feet, steps when he turns), a breathing,
@@ -290,7 +290,7 @@ vegetation shown in source settings. Both models use reconstructed web PBR mater
 those previews as WebP in `public/models/archive/`.
 
 The portal's outer hardware has a 2.34 m conservative radius. It clears the SVJ's
-2.75 m turntable by 4.1 m. The author's workshop is at (-12.25, 0, 9), outside both display
+2.75 m turntable by 4.1 m. The author's workshop is at (-3, 0, 10.9), outside both display
 areas. The suspended scanner fades after the reveal to keep the work visible.
 
 The catalogue links to `/contact/?project=modeling` or `/de/kontakt/?project=modeling`.
@@ -313,7 +313,7 @@ moved with `ROOM.shift`. The pieces were spread out:
 | E-bike wall mount | (13.4, 6), on the right wall |
 | ABS House table | (8.2, 9.2) |
 | Lounge and hanging garden | (-8.5, 13.2) |
-| The author at his stand | (-12.25, 9), facing +x |
+| The author at his stand | (-3, 10.9), facing the entrance |
 
 The guide's tour (`model-room-guide.ts`) was re-laid for these positions; `artifacts/mr-tour.mjs`
 follows him and reports how close he comes to every obstacle.

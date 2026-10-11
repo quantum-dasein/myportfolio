@@ -209,7 +209,15 @@ export async function mountModelRoom(root: HTMLElement) {
     if (Math.abs(x) > WALK.x || z < WALK.back || z > (Math.abs(x) < WALK.doorHalf ? WALK.door : WALK.front)) return true;
     if (self && astro.root.visible && Math.hypot(x - astro.root.position.x, z - astro.root.position.z) < .6) return true;
     // The exhibits' list grows as pieces arrive (the lounge measures itself), so read it live.
-    return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(author ? [author.collider] : [])].some(b => x > b.min.x - .3 && x < b.max.x + .3 && z > b.min.z - .3 && z < b.max.z + .3);
+    // A piece can appear where you stand (a work built on the stage under your feet): from inside a box you may
+    // always move outwards, so you are never stuck in it, only kept from going deeper.
+    const p = camera.position, inside = (b: THREE.Box3, px: number, pz: number) => px > b.min.x - .3 && px < b.max.x + .3 && pz > b.min.z - .3 && pz < b.max.z + .3;
+    return [...colliders, ...(exhibits?.colliders ?? []), ...(archive?.colliders ?? []), ...(author ? [author.collider] : [])].some(b => {
+      if (!inside(b, x, z)) return false;
+      if (!self || !inside(b, p.x, p.z)) return true;
+      const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2;
+      return Math.hypot(x - cx, z - cz) < Math.hypot(p.x - cx, p.z - cz) - 1e-4;
+    });
   }
   function tick(time: number) {
     frame = 0;if (disposed || failed || document.hidden) return;
@@ -311,6 +319,8 @@ export async function mountModelRoom(root: HTMLElement) {
       onSpeak: () => sound.click(),
     });
     raycaster.layers.enable(author.layer);
+    // He starts loading at once, under the loading glow, so the heavy part never lands in the first seconds you walk.
+    void author.load().catch(error => console.warn('The author could not join the room', error));
     if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, catalog, author, fx, sound, guide: () => guide, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; } };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
@@ -485,7 +495,7 @@ export async function mountModelRoom(root: HTMLElement) {
     ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = ARRIVE_Z; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.
-    setTimeout(() => { if (!disposed) { void exhibits?.load(); void author?.load().catch(error => console.warn('The author could not join the room', error)); } }, reduced ? 0 : 2600);
+    setTimeout(() => { if (!disposed) void exhibits?.load(); }, reduced ? 0 : 2600);
     resume();
   } catch (error) {
     if (!disposed) { console.warn('Model Room could not open', error);fail(); }
