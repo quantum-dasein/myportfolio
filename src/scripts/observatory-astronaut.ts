@@ -252,7 +252,7 @@ export function createAstronaut(){
       for(const key of Object.keys(bones))if(!rig[key])throw new Error(`Missing rig joint: ${key}`);
       root.add(model);suit(rig);
       root.remove(fallback);fallback.traverse(object=>{if((object as THREE.Mesh).isMesh)(object as THREE.Mesh).geometry.dispose();});
-      mixer=new THREE.AnimationMixer(model);
+      mixer=new THREE.AnimationMixer(model);root.userData.clips=gltf.animations;
       const idleClip=gltf.animations.find(c=>c.name==='idle'),walkClip=gltf.animations.find(c=>c.name==='walk');
       if(idleClip)idle=mixer.clipAction(idleClip).play();if(walkClip){walk=mixer.clipAction(walkClip).play();walk.setEffectiveWeight(0);}
       activeBones=rig;gazeApplied=false;root.userData.astronautRig='mixamo';

@@ -443,7 +443,8 @@ export function createExhibits(o: { scene: THREE.Scene; renderer: THREE.WebGLRen
             for (const v of Object.values(mat)) if (v instanceof THREE.Texture) textures.add(v);
           }
         });
-        for (const t of textures) { renderer.initTexture(t); await frame(); }
+        // (One upload at a time with a pause after each: a 2K texture can hold a frame for tens of milliseconds.)
+        for (const t of textures) { renderer.initTexture(t); await frame(); await new Promise(r => setTimeout(r, 70)); }
         // Compile before the piece joins the scene (a drawn-but-uncompiled mesh blocks the frame), and for the
         // target the frame is drawn into: the post-processing buffer, not the canvas.
         slot.clip.value = -1;

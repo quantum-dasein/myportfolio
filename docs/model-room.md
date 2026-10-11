@@ -106,6 +106,24 @@ room is ready (2.4 s after), never over the loading screen, and the card closes 
 (further than 4.8 m, or him off screen for 1.2 s). Clicks reach him
 through invisible proxies on layer 5, which the camera (and so every post pass) never draws.
 
+**Ghosts** (`src/scripts/model-room-ghosts.ts`, since 2026-10-11). Everyone in the room at the same time sees
+everyone else as a translucent mint astronaut (a clone of the guide with its own mixer, a fresnel scan
+shader, a pool of light at its feet), walking where they walk. Transport: Supabase Realtime, project
+`meprkjzcsoixnxwpgtpd`, public channel `model-room`, the public anon key (in the code on purpose; it only
+reaches public channels), spoken over the Phoenix websocket protocol directly (no client library).
+Presence says who is there; positions (`{i, x, z, r}`) go out only while someone else is present, at most
+5/s and only when they change, with a keep-alive every 4 s. A background tab leaves; a ghost not heard for
+12 s fades out. At most 10 ghosts (5 on phones). Nothing is stored. Inspecting, your ghost stays where you
+stood.
+
+**Arrival.** The loading glow fades into the room over a second (it used to vanish and leave a black frame
+under the menu). The portal's hum is held back for the first seconds (you arrive standing in it, and its
+air hissed), and the arrival whoosh is soft. The other exhibits start streaming 5.2 s after arrival, one
+texture at a time with a pause after each. Rodion's shaders, including the variant the ambient-occlusion
+pass draws him with, are compiled before he joins (`overrides`); he casts no real-time shadow; and the
+production build does not check shaders for errors (`checkShaderErrors`), since that check waits for the
+driver to finish compiling: together these took the arrival's worst frame from ~600 ms to ~120 ms.
+
 **Performance.** The room compiles every shader while the loading glow covers
 it. The target must be `composer.readBuffer`, not the canvas, or the work is
 wasted. Exhibits are compiled before they join the scene. The printing reveal

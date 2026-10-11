@@ -10,6 +10,7 @@ import { createModelRoomDesign } from './model-room-design';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createRoomFx } from './model-room-fx';
 import { createAstronaut } from './observatory-astronaut';
+import { createGhosts } from './model-room-ghosts';
 import { createRoomSound } from './model-room-sound';
 import { createExhibits, KITCHEN, type ExhibitInfo } from './model-room-exhibits';
 import { createGuide } from './model-room-guide';
@@ -66,6 +67,7 @@ export async function mountModelRoom(root: HTMLElement) {
   let exhibits: ReturnType<typeof createExhibits> | undefined;
   let catalog: ReturnType<typeof createArchiveCatalog> | undefined;
   let author: ReturnType<typeof createAuthor> | undefined;
+  let ghosts: ReturnType<typeof createGhosts> | undefined;
   // When the visitor last moved or looked around (the astronaut comes over if you stand still for long).
   let stillSince = 0, hoverAt = 0; const lastPose = new THREE.Vector4();
   const draco = new DRACOLoader(); draco.setDecoderPath('/draco/');
@@ -124,7 +126,7 @@ export async function mountModelRoom(root: HTMLElement) {
   function stop() { cancelAnimationFrame(frame);frame = 0;release();gesture = undefined; }
   function dispose() {
     if (disposed) return;disposed = true;stop();download.abort();events.abort();
-    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();archive?.dispose();exhibits?.dispose();guide?.dispose();catalog?.dispose();author?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
+    resize?.disconnect();orbit?.dispose();design?.dispose();fx?.dispose();sound.dispose();archive?.dispose();exhibits?.dispose();guide?.dispose();ghosts?.dispose();catalog?.dispose();author?.dispose();draco.dispose();astro.dispose();disposeTree(scene);environment?.dispose();bloom?.dispose();composer?.dispose();renderer?.dispose();renderer?.domElement.remove();
   }
   function fail() {
     failed = true;dispose();root.dataset.state = 'error';
@@ -249,7 +251,7 @@ export async function mountModelRoom(root: HTMLElement) {
     }
     // The astronaut came through with you and now tours the collection on his own (model-room-guide.ts).
     if (guide && t - (arriveAtStart ?? t) > .6) guide.update(t, dt);
-    fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);author?.update(t, dt);author?.place(root.clientWidth, root.clientHeight);
+    ghosts?.update(t, dt, inspecting ? null : { x: camera.position.x, z: camera.position.z, yaw });fx?.update(t, dt);exhibits?.update(t, dt);archive?.update(t, dt);author?.update(t, dt);author?.place(root.clientWidth, root.clientHeight);
     // The kitchen's shadows are static; only the astronaut moves through them, so a few updates a second are enough.
     if (design && ++frames % 4 === 0) design.key.shadow.needsUpdate = true;
     if (Math.abs(lastPose.x - camera.position.x) + Math.abs(lastPose.y - camera.position.z) + Math.abs(lastPose.z - yaw) + Math.abs(lastPose.w - pitch) > 1e-3 || inspecting) { stillSince = t; lastPose.set(camera.position.x, camera.position.z, yaw, pitch); }
@@ -263,7 +265,9 @@ export async function mountModelRoom(root: HTMLElement) {
     if (ready && exhibits && !inspecting && time - captionAt > 250) {
       captionAt = time; const forward = camera.getWorldDirection(new THREE.Vector3()); caption(author?.inView(camera.position, forward) ?? archive?.inView(camera.position, forward) ?? exhibits.inView(camera.position, forward));
     }
-    sound.frame(stepping, THREE.MathUtils.clamp(1 - (WALK.door - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4));
+    // (The portal's hum is held back while you come out of it: arriving, you stand in it, and its air hissed.)
+    const settled = arriveAtStart === undefined ? 1 : THREE.MathUtils.clamp((t - arriveAtStart - 3) / 4, 0, 1);
+    sound.frame(stepping, THREE.MathUtils.clamp(1 - (WALK.door - camera.position.z) / 5, 0, 1) * (Math.abs(camera.position.x) < 2.5 ? 1 : .4) * settled);
     // The way back only opens once you have stepped clear of it (you arrive standing in it).
     if (arriveAt < 0 && camera.position.z < 10.2 + ROOM.shift) portalArmed = true;
     if (ready && portalArmed && !leaving && !inspecting && fx?.inPortal(camera.position)) leave();
@@ -280,6 +284,9 @@ export async function mountModelRoom(root: HTMLElement) {
   const timeout = setTimeout(() => download.abort(), 45000);
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    // (Checking every new shader for errors waits for the driver to finish compiling it: a frame-long stall each
+    // time something new appears. The site's shaders are checked in development.)
+    renderer.debug.checkShaderErrors = !import.meta.env.PROD;
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, coarse.matches ? 1.25 : 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;renderer.toneMapping = THREE.ACESFilmicToneMapping;renderer.toneMappingExposure = .95;
     renderer.shadowMap.enabled = true;renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -322,7 +329,7 @@ export async function mountModelRoom(root: HTMLElement) {
     });
     author = createAuthor({
       scene, camera, renderer, root, loader: gltfLoader, mobile: coarse.matches, reduced, de, coarse: () => coarse.matches,
-      stage: new THREE.Vector3(ROOM.stage.x, 0, ROOM.stage.z), target: () => composer?.readBuffer ?? null,
+      stage: new THREE.Vector3(ROOM.stage.x, 0, ROOM.stage.z), target: () => composer?.readBuffer ?? null, overrides: () => fx?.overrides() ?? [],
       onArchive: () => catalog?.open(),
       onTalk: () => { release(); if (document.pointerLockElement) document.exitPointerLock(); sound.click(); guide?.emote('hi', performance.now() / 1000); },
       onSpeak: () => sound.click(),
@@ -339,7 +346,7 @@ export async function mountModelRoom(root: HTMLElement) {
     raycaster.layers.enable(author.layer);
     // He starts loading at once, under the loading glow, so the heavy part never lands in the first seconds you walk.
     void author.load().catch(error => console.warn('The author could not join the room', error));
-    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, catalog, author, fx, sound, guide: () => guide, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; } };
+    if (location.search.includes('mrdebug')) (window as unknown as { __mr: unknown }).__mr = { scene, camera, exhibits, archive, astro, renderer, catalog, author, fx, sound, guide: () => guide, ghosts: () => ghosts, get composer() { return composer; }, get yaw() { return yaw; }, set yaw(v: number) { yaw = v; look(); }, get pitch() { return pitch; }, set pitch(v: number) { pitch = v; look(); }, mode: (v: boolean) => mode(v), select: (x: number, y: number) => select(x, y), get orbit() { return orbit; } };
     astro.root.visible = false; scene.add(astro.root);
     colliders.push(new THREE.Box3(new THREE.Vector3(5.35,0,-3.4),new THREE.Vector3(8.05,2,-2.2)),new THREE.Box3(new THREE.Vector3(-7.1,0,-3.9),new THREE.Vector3(-5.9,1,-.7)));
     // The composer's own buffer is multisampled: without it the post chain throws away the canvas's antialiasing
@@ -499,6 +506,8 @@ export async function mountModelRoom(root: HTMLElement) {
       clear: (x, z) => !blocked(x, z, false),
     });
     guide.begin(performance.now() / 1000);
+    // Everyone else in the room right now, as ghosts of the astronaut (model-room-ghosts.ts).
+    try { ghosts = createGhosts({ scene, camera, renderer: renderer!, target: () => composer?.readBuffer ?? null, astro: astro.root, mobile: coarse.matches }); } catch (error) { console.warn('Ghosts', error); }
     if (location.search.includes('mrdebug')) (window as unknown as { __mr: Record<string, unknown> }).__mr.guide = guide;
     // Compile every shader while the loading glow still covers the room, for the buffer the frame is really drawn
     // into (post-processing, not the canvas), then draw one hidden frame so the passes and shadows are ready too.
@@ -510,10 +519,12 @@ export async function mountModelRoom(root: HTMLElement) {
       if (disposed) return;
       composer.render();
     }
-    ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').hidden = true;$('controls').hidden = false;labels();
+    // The loading glow dissolves into the room instead of vanishing (it used to leave a black frame under the menu).
+    ready = true;root.dataset.state = 'ready';root.dataset.mode = 'walk';$('loading').classList.add('is-leaving');setTimeout(() => { $('loading').hidden = true; }, 1100);$('controls').hidden = false;labels();
     if (!reduced) { camera.position.z = ARRIVE_Z; arriveAt = arriveAtStart = performance.now() / 1000; sound.arrive(); }
     // The rest of the collection streams in once you are standing in the room.
-    setTimeout(() => { if (!disposed) void exhibits?.load(); }, reduced ? 0 : 2600);
+    // (After the glide in and his greeting: nothing heavy goes to the GPU while the first view settles.)
+    setTimeout(() => { if (!disposed) void exhibits?.load(); }, reduced ? 0 : 5200);
     resume();
   } catch (error) {
     if (!disposed) { console.warn('Model Room could not open', error);fail(); }

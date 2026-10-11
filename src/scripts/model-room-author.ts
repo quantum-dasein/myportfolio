@@ -79,6 +79,8 @@ export function createAuthor(o: {
   stage: THREE.Vector3;
   /** The buffer the frame is drawn into (shaders are compiled for it). */
   target: () => THREE.WebGLRenderTarget | null;
+  /** Materials the post passes draw him with (ambient occlusion's normals): compiled for him too. */
+  overrides?: () => THREE.Material[];
   onArchive: () => void; onTalk?: () => void; onSpeak?: () => void;
   /** He greets the visitor (with where he stands, to turn a narrow view towards him). */
   onGreet?: (at: THREE.Vector3) => void;
@@ -500,8 +502,22 @@ export function createAuthor(o: {
     while (!o.target() && !disposed) await new Promise(r => requestAnimationFrame(r));
     const previous = o.renderer.getRenderTarget();
     let compiling: Promise<unknown> = Promise.resolve();
-    try { o.renderer.setRenderTarget(o.target()); compiling = o.renderer.compileAsync(shop, camera, scene).then(() => o.renderer.compileAsync(body, camera, scene)); } finally { o.renderer.setRenderTarget(previous); }
+    try {
+      o.renderer.setRenderTarget(o.target());
+      compiling = Promise.all([o.renderer.compileAsync(shop, camera, scene), o.renderer.compileAsync(body, camera, scene)]);
+    } finally { o.renderer.setRenderTarget(previous); }
     await compiling.catch(() => {});
+    // The post passes draw him once more in their own material (skinned and morphed: its own shader variant).
+    // He is not in the room yet, so he can wear it until it is ready (compileAsync waits on what he wears).
+    const meshes: THREE.Mesh[] = []; body.traverse(n => { if ((n as THREE.Mesh).isMesh) meshes.push(n as THREE.Mesh); });
+    for (const override of o.overrides?.() ?? []) {
+      if (disposed) return;
+      const own = meshes.map(m => m.material); meshes.forEach(m => { m.material = override; });
+      const before = o.renderer.getRenderTarget(); let job: Promise<unknown> = Promise.resolve();
+      try { o.renderer.setRenderTarget(o.target()); job = o.renderer.compileAsync(body, camera, scene); } finally { o.renderer.setRenderTarget(before); }
+      await job.catch(() => {});
+      meshes.forEach((m, i) => { m.material = own[i]; });
+    }
     if (disposed) return;
     loaded = true; update(clock, 1 / 60); scene.add(body);
   }
@@ -904,7 +920,8 @@ function buildFace(mesh: THREE.Mesh) {
 function dress(model: THREE.Object3D, mobile: boolean, keep: <T extends { dispose(): void }>(x: T) => T) {
   model.traverse(node => {
     const mesh = node as THREE.Mesh; if (!mesh.isMesh) return;
-    mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false;
+    // (No real-time shadow: the soft pool under him stands in, and a skinned shadow caster costs every frame.)
+    mesh.castShadow = false; mesh.receiveShadow = true; mesh.frustumCulled = false;
     const old = mesh.material as THREE.MeshStandardMaterial, name = old.name ?? '';
     if (!/^avaturn_/.test(name)) return;
     const base = { name, map: old.map, normalMap: old.normalMap, roughnessMap: old.roughnessMap, metalnessMap: old.metalnessMap, color: old.color, metalness: 0, side: THREE.FrontSide } as THREE.MeshPhysicalMaterialParameters;

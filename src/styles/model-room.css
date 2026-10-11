@@ -44,7 +44,7 @@ html.has-custom-cursor:has(.model-room){cursor:auto}html.has-custom-cursor:has(.
 .mr-loading p{position:relative;font:500 11px/1.6 var(--font-display);letter-spacing:.2em;text-transform:uppercase;color:#e6fffa;text-shadow:0 1px 12px #0009}
 @keyframes mr-portal-breathe{50%{opacity:.55;transform:scale(1.06)}}
 .model-room[data-state="ready"] .mr-stage{animation:mr-arrive 2.2s cubic-bezier(.2,.7,.2,1) both}
-@keyframes mr-arrive{from{opacity:0;filter:brightness(3) saturate(.4) blur(6px)}to{opacity:1;filter:none}}
+@keyframes mr-arrive{from{opacity:.55;filter:brightness(2.4) saturate(.5) blur(5px)}to{opacity:1;filter:none}}
 .mr-exit-veil{position:fixed;inset:0;z-index:50;pointer-events:none;background:radial-gradient(ellipse at center,#e8fffb 0%,#7fd8cc 30%,#10302d 80%);opacity:0}
 /* Crosshair while the pointer is captured. */
 .mr-cross{position:fixed;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border:1.5px solid #ffffffcc;border-radius:50%;box-shadow:0 0 6px #000a;opacity:0;pointer-events:none;z-index:3;transition:opacity .2s}
@@ -298,3 +298,4 @@ html:has(.model-room),html:has(.model-room) body,.model-room,.mr-catalog{-webkit
   .model-room.mr-talking .mr-touch,.model-room.mr-talking .mr-caption{opacity:0;pointer-events:none}
 }
 @media(prefers-reduced-motion:reduce){.mr-author-card{animation:none}}
+.mr-loading{transition:opacity 1s ease}.mr-loading.is-leaving{opacity:0;pointer-events:none}

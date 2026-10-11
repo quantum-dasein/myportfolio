@@ -178,6 +178,8 @@ export function createRoomFx(o: { scene: THREE.Scene; camera: THREE.PerspectiveC
     /** Walked into the rear frame. */
     inPortal: (p: THREE.Vector3) => p.z > 10.75 + ROOM.shift && Math.abs(p.x) < 1.3,
     setOpen(v: number) { pm.uniforms.uOpen.value = v; },
+    /** Materials the passes draw the scene with in place of its own (to compile for a newcomer ahead of time). */
+    overrides: (): THREE.Material[] => (ao ? [(ao as unknown as { normalMaterial: THREE.Material }).normalMaterial] : []),
     dispose() { disposables.forEach(d => d.dispose()); },
   };
 }

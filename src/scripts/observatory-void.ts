@@ -1017,12 +1017,12 @@ export class ObservatoryWorld {
       vertexShader:`attribute float aSeed;uniform float uTime,uPixelRatio,uHover,uMine;varying float vA;varying float vWarm;
         void main(){float id=float(gl_VertexID);float hot=(id==uHover||id==uMine)?1.:0.;
           vA=.55+.45*sin(uTime*(.8+aSeed*1.6)+aSeed*40.);vA=mix(vA,1.,hot);vWarm=aSeed;
-          gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=(4.2+hot*5.)*uPixelRatio;}`,
+          gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=(5.8+hot*5.)*uPixelRatio;}`,
       fragmentShader:`uniform float uLight;varying float vA;varying float vWarm;
         void main(){vec2 q=gl_PointCoord-.5;float d=length(q);
-          float core=1.-smoothstep(.02,.18,d),glow=(1.-smoothstep(.1,.5,d))*.35,rays=max(0.,1.-abs(q.x)*14.)*max(0.,1.-abs(q.y)*2.2)+max(0.,1.-abs(q.y)*14.)*max(0.,1.-abs(q.x)*2.2);
+          float core=1.-smoothstep(.02,.2,d),glow=(1.-smoothstep(.1,.5,d))*.55,rays=max(0.,1.-abs(q.x)*14.)*max(0.,1.-abs(q.y)*2.2)+max(0.,1.-abs(q.y)*14.)*max(0.,1.-abs(q.x)*2.2);
           vec3 tint=mix(vec3(1.,.86,.62),vec3(.8,.9,1.),vWarm*.5);
-          gl_FragColor=vec4(tint*(core+glow+rays*.35)*vA*uLight,1.);}`,
+          gl_FragColor=vec4(tint*(core+glow+rays*.45)*vA*uLight*1.6,1.);}`,
       transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
     });
     this.visitorPoints=new THREE.Points(new THREE.BufferGeometry(),material);this.visitorPoints.frustumCulled=false;
@@ -1043,7 +1043,7 @@ export class ObservatoryWorld {
   private updateVisitorStars(dt:number,ov:number){
     this.visitorGroup.position.x=this.camera.position.x*.85;
     const u=this.visitorPoints.material.uniforms;u.uTime.value=this.elapsed;u.uPixelRatio.value=this.renderer.getPixelRatio();
-    u.uLight.value=smooth(.2,.6,this.intro)*(1-ov*.7)*(.6+.4*this.daylight.stars);
+    u.uLight.value=smooth(.05,.35,this.intro)*(1-ov*.7)*(.85+.15*this.daylight.stars);
     const flight=this.sparkFlight;if(!flight)return;
     flight.t=Math.min(1,flight.t+dt/1.8);
     const end=this.starPoint(flight.star.u,flight.star.v,new THREE.Vector3()).add(this.visitorGroup.position);

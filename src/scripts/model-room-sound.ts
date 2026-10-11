@@ -72,7 +72,7 @@ export function createRoomSound() {
     for (const [f, l] of [[55, .5], [82.41, .25], [220, .08]] as const) { const o = c.createOscillator(); o.frequency.value = f; const g = c.createGain(); g.gain.value = l; o.connect(g).connect(hum); o.start(); }
     const air = c.createBufferSource(); air.buffer = noise(c); air.loop = true;
     humTone = c.createBiquadFilter(); humTone.type = 'bandpass'; humTone.frequency.value = 600; humTone.Q.value = .7;
-    const airGain = c.createGain(); airGain.gain.value = .35; air.connect(humTone).connect(airGain).connect(hum); air.start();
+    const airGain = c.createGain(); airGain.gain.value = .18; air.connect(humTone).connect(airGain).connect(hum); air.start();
     return c;
   }
   function setChord(i: number, now = false) {
@@ -137,7 +137,7 @@ export function createRoomSound() {
       if (walking > .5 && now > stepAt) { burst({ f: 480 + Math.random() * 180, dur: .07, level: .09, q: 1.8 }); stepAt = now + 430 + Math.random() * 40; }
     },
     /** Out of the light into the room: a rising shimmer. */
-    arrive() { if (!act()) return; burst({ f: 3200, to: 500, q: .6, dur: 1.6, level: .1, attack: .3 }); [440, 554.37, 659.25, 880].forEach((f, i) => bell(f, .045, .25 + i * .14, sfxBus)); },
+    arrive() { if (!act()) return; burst({ f: 1400, to: 380, q: .7, dur: 1.8, level: .035, attack: .5 }); [440, 554.37, 659.25, 880].forEach((f, i) => bell(f, .045, .25 + i * .14, sfxBus)); },
     /** Back into the light: the same shimmer, falling. */
     leave() { if (!act()) return; burst({ f: 400, to: 3600, q: .6, dur: .9, level: .16, attack: .2 }); [880, 659.25, 554.37, 440].forEach((f, i) => bell(f, .045, i * .09, sfxBus)); },
     /** A piece printed into the room: a soft rising scan and three notes, with the music. */
