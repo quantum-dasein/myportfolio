@@ -76,7 +76,10 @@ fingers keep their rest grip). Every bone goes back to the capture's last pose o
 mixer runs: the mixer writes only values that changed, so wherever the capture holds still (the start of
 each loop) last frame's pose was read back as the capture and applied twice, and he dropped every 8 s. The avatar has no blendshapes, so `buildFace` morphs the face at load
 from landmarks measured in its bind space: a blink (every 2–6 s, sometimes double), a jaw that opens
-on the syllables while he speaks, and a smile when he waves or talks. (`?mrdebug`:
+on the syllables while he speaks, and a smile when he waves or talks. When the jaw opens, the triangles across the line of
+the lips are cut away (the jaw morph moves everything below the line in full, so only they stretch) and
+behind them is a mouth: a dark cavity and two rows of teeth on the head bone, the lower row turning with the
+jaw. The eyes are wet with a catchlight, and their painted irises slide inside each opening for a moving gaze. (`?mrdebug`:
 `__mr.author.testFace([blink, jaw, smile])` holds an expression for checking it.)
 
 The archive tablet closes as soon as a work is chosen; it loads behind it (closing no longer cancels it),
@@ -116,6 +119,10 @@ job list, `scripts/finish.py` to check lengths and polish). The list of lines co
 `?mrdebug`, `__mr.author.voiceLines()` → `lines.json`; each line has a recording name (`v`) and, where
 numbers or "3D" are involved, a spoken text (`say`: numbers in words, big ones rounded, texture sizes as
 "two K"). Model facts are fixed in `src/data/model-archive-facts.ts` so every device says the same numbers.
+A new line waits for the one he is saying (only a visitor's own click, a choice or the close button, cuts
+him short); walking off or turning away ends a conversation without cutting the last line (a phone waits
+2.5 s, a desktop 1.2 s). The samples are cleaned with DeepFilterNet before cloning and every recording
+after it; `scripts/check.py` runs Whisper over the finished files to catch any line that stops early.
 In the room, while the site's sound is on, a line's recording plays through the shared audio context from a
 panner at his head; the card types in step with it and the jaw follows its loudness. Without sound, or
 without the file, he speaks silently as before. New or changed lines need new recordings.
