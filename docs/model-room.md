@@ -76,10 +76,10 @@ fingers keep their rest grip). Every bone goes back to the capture's last pose o
 mixer runs: the mixer writes only values that changed, so wherever the capture holds still (the start of
 each loop) last frame's pose was read back as the capture and applied twice, and he dropped every 8 s. The avatar has no blendshapes, so `buildFace` morphs the face at load
 from landmarks measured in its bind space: a blink (every 2–6 s, sometimes double), a jaw that opens
-on the syllables while he speaks, and a smile when he waves or talks. When the jaw opens, the triangles across the line of
-the lips are cut away (the jaw morph moves everything below the line in full, so only they stretch) and
-behind them is a mouth: a dark cavity and two rows of teeth on the head bone, the lower row turning with the
-jaw. The eyes are wet with a catchlight, and their painted irises slide inside each opening for a moving gaze. (`?mrdebug`:
+on the syllables while he speaks, and a smile when he waves or talks. When the jaw opens, only the triangles across the line of
+the lips stretch (the jaw morph moves everything below the line in full), and they are shaded as a dark
+parting. (Modelled teeth behind them were tried on 2026-10-12 and looked monstrous at this mesh density;
+removed the same day.) The eyes are wet with a catchlight, and their painted irises slide inside each opening for a moving gaze. (`?mrdebug`:
 `__mr.author.testFace([blink, jaw, smile])` holds an expression for checking it.)
 
 The archive tablet closes as soon as a work is chosen; it loads behind it (closing no longer cancels it),

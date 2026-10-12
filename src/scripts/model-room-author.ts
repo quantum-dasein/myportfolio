@@ -11,7 +11,6 @@
 // so his face (blinks, speech, a smile) is morphed from landmarks at load: see buildFace.
 import * as THREE from 'three';
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ExhibitInfo } from './model-room-exhibits';
 import { ROOM } from './model-room-layout';
 import { buildPiece, PIECE_BINS, type PieceData, type PiecePart } from './model-room-piece';
@@ -1028,7 +1027,6 @@ function buildFace(mesh: THREE.Mesh) {
   const uv = geo.attributes.uv as THREE.BufferAttribute | undefined;
   const fit = [0, 1].map(() => ({ sx: 0, sy: 0, su: 0, sv: 0, sxx: 0, syy: 0, sxy: 0, sxu: 0, syu: 0, sxv: 0, syv: 0, k: 0 }));
   const EYE_Y = EYE.corner + (EYE.upper - EYE.lower) / 2;
-  let lipFront = -Infinity;
   for (let i = 0; i < n; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     if (z < -.01) continue;                                             // the back of the head never moves
@@ -1044,7 +1042,6 @@ function buildFace(mesh: THREE.Mesh) {
         f.sx += X; f.sy += Y; f.su += U; f.sv += V; f.sxx += X * X; f.syy += Y * Y; f.sxy += X * Y; f.sxu += X * U; f.syu += Y * U; f.sxv += X * V; f.syv += Y * V; f.k++; }
     }
     const lipAt = LIPS.y - LIPS.droop * Math.min(1, (x / LIPS.corners) ** 2);
-    if (Math.abs(x) < .008 && Math.abs(y - LIPS.y) < .004) lipFront = Math.max(lipFront, z);
     // (Which side of the line of the lips; where: the mouth only.)
     aMouth[i * 2] = y >= lipAt ? 1 : -1;
     aMouth[i * 2 + 1] = z > 0 && Math.abs(y - lipAt) < .012 ? 1 - smooth(LIPS.corners * .7, LIPS.corners * 1.15, Math.abs(x)) : 0;
@@ -1117,8 +1114,7 @@ function buildFace(mesh: THREE.Mesh) {
         // its "below" shares above zero), dark as the jaw opens, so the mouth opens instead of stretching. Its edges
         // are the rows of the lips themselves.
         float parted = smoothstep(.02, .12, uJaw) * vMouth.z * smoothstep(0., .035, min(vMouth.x, vMouth.y));
-        // (Open, it is cut away: behind it are the mouth and the teeth, built below.)
-        if (parted > .5) discard;
+        // (Modelled teeth behind it read as a monster's at this mesh density: the mouth stays a dark parting.)
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075, .02, .018), clamp(parted * 1.6, 0., .95));`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = mix(roughnessFactor, .14, smoothstep(.05, .5, abs(vEye)));`)
@@ -1131,41 +1127,10 @@ function buildFace(mesh: THREE.Mesh) {
   const key = material.customProgramCacheKey.bind(material);
   material.customProgramCacheKey = () => key() + '-face';
   material.needsUpdate = true;
-  // The inside of the mouth, in the face's own bind space, carried by the head bone: a dark cavity, the upper teeth
-  // fixed under the upper lip, the lower teeth turning down with the jaw about the same hinge as the lower lip.
-  const mouth = new THREE.Group(); mouth.matrixAutoUpdate = false;
-  const skinned = mesh as THREE.SkinnedMesh, headIx = skinned.skeleton?.bones.findIndex(b => /Head$/.test(b.name) && !/Top|End/.test(b.name)) ?? -1;
-  let lowerTeeth: THREE.Group | undefined;
-  if (skinned.isSkinnedMesh && headIx >= 0 && Number.isFinite(lipFront)) {
-    const head = skinned.skeleton.bones[headIx];
-    mouth.matrix.copy(skinned.skeleton.boneInverses[headIx]).multiply(skinned.bindMatrix);
-    const front = lipFront - .0055, R = .024;
-    const row = (y: number, h: number, down: number) => {
-      const teeth: THREE.BufferGeometry[] = [];
-      for (let k = -4; k <= 4; k++) {
-        const a = k * .2, w = (k === 0 ? .0062 : Math.abs(k) < 3 ? .0058 : .0066) * 1.3;   // (wide enough to close up into one row)
-        const g = new THREE.BoxGeometry(w, h * (1 - Math.abs(k) * .05), .0045, 1, 1, 1);
-        g.translate(0, down * h * (1 - Math.abs(k) * .05) / 2, 0); g.rotateY(-a);
-        g.translate(Math.sin(a) * R, y, front - R + Math.cos(a) * R); teeth.push(g);
-      }
-      const merged = mergeGeometries(teeth)!; teeth.forEach(g => g.dispose()); return merged;
-    };
-    // (In the shade of the lips: darker and warmer than white, so they never glow.)
-    const enamel = new THREE.MeshStandardMaterial({ color: '#a39784', roughness: .55, envMapIntensity: .4 });
-    const cavity = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: '#160606', side: THREE.BackSide }));
-    cavity.scale.set(.028, .02, .024); cavity.position.set(0, LIPS.y - .003, front - .02);
-    const upper = new THREE.Mesh(row(LIPS.y - .0022, .0088, 1), enamel);   // (its edge just under the upper lip)
-    lowerTeeth = new THREE.Group(); lowerTeeth.position.set(0, HINGE.y, HINGE.z);
-    const lower = new THREE.Mesh(row(LIPS.y - .0012, .0075, -1), enamel); lower.position.set(0, -HINGE.y, -HINGE.z);
-    lowerTeeth.add(lower); mouth.add(cavity, upper, lowerTeeth);
-    for (const m of [cavity, upper, lower]) { m.frustumCulled = false; m.castShadow = false; }
-    head.add(mouth);
-  }
   const influences = mesh.morphTargetInfluences!;
   return {
     set(b: number, j: number, sm: number) {
       influences[0] = b; influences[1] = j; influences[2] = sm; uniforms.uJaw.value = j;
-      if (lowerTeeth) lowerTeeth.rotation.x = JAW * j;   // (the lower lip's own turn at its middle)
     },
     /** The irises' offset from the middle of each eye, in metres (x to his left, y up). */
     look(x: number, y: number) {
